@@ -4,12 +4,16 @@ Roadmap for completing the Underlay Reference Implementation (Acme) to serve as 
 
 ## Current Status
 
-The reference implementation has solid foundations:
+**All core phases complete.** The reference implementation now demonstrates:
 - Full authentication system (passwords, 2FA, passkeys, sessions)
-- Media library with versioned uploads and blob storage
-- Task/Project domain with categories, labels, and comments
-- Admin and public frontends with core CRUD patterns
-- TypeScript client with typed commands
+- Media library with versioned uploads, deduplication, and thumbnails
+- Task/Project domain with categories, labels, batch operations
+- Admin and public frontends with CRUD, search, and filtering
+- Activity/audit logging with admin visibility
+- Background job system with scheduled tasks
+- Comprehensive testing patterns
+- Docker-based developer setup
+- Standardized configuration across all Underlay crates
 
 ## Goals
 
@@ -207,7 +211,7 @@ Demonstrate background job patterns beyond media.
 
 ---
 
-## Phase 6: Media Library Enhancements
+## Phase 6: Media Library Enhancements ✓
 
 Complete the media library implementation with missing features.
 
@@ -341,7 +345,7 @@ Lower priority items (OAuth/SSO, Real-time, Multi-tenancy, Advanced Media) have 
 
 ---
 
-## Phase 10: Underlay Configuration Audit
+## Phase 10: Underlay Configuration Audit ✓
 
 Review all Underlay Rust crates and expose configurable parameters through standardized config structs (like `MediaConfig` in `underlay-blob`).
 
@@ -484,10 +488,10 @@ impl FeatureConfig {
 ```
 
 ### Deliverables
-- [ ] Audit each crate and document current hardcoded values
-- [ ] Create config structs for each crate
-- [ ] Update Acme to use the new configs (demonstrating usage)
-- [ ] Document config options in crate-level docs
+- [x] Audit each crate and document current hardcoded values
+- [x] Create config structs for each crate
+- [x] Update Acme to use the new configs (demonstrating usage)
+- [x] Document config options in crate-level docs
 
 **Files (Underlay):**
 - `underlay-auth/src/config.rs` (new)
@@ -504,23 +508,23 @@ impl FeatureConfig {
 
 The reference implementation is complete when:
 
-- [ ] New developers can understand Underlay patterns by reading the code
-- [ ] All common admin features are demonstrated (users, activity, batch ops)
-- [ ] Search and filtering patterns are clear
-- [ ] Media library is fully featured (deduplication, validation, thumbnails)
-- [ ] Testing patterns are provided
-- [ ] Setup is straightforward (single command)
-- [ ] Architecture is documented
+- [x] New developers can understand Underlay patterns by reading the code
+- [x] All common admin features are demonstrated (users, activity, batch ops)
+- [x] Search and filtering patterns are clear
+- [x] Media library is fully featured (deduplication, validation, thumbnails)
+- [x] Testing patterns are provided
+- [x] Setup is straightforward (single command)
+- [x] Architecture is documented
 
 ## Priority Order
 
-1. **Phase 1** - Admin dashboard & user management (most requested feature) ✓
-2. **Phase 2** - Search & filtering (common pattern) ✓
-3. **Phase 6** - Media library enhancements (complete existing feature) — in progress
-4. **Phase 3** - Activity logging (admin essential) ✓
-5. **Phase 4** - Batch operations (nice to have) ✓
-6. **Phase 10** - Underlay configuration audit (infrastructure improvement)
-7. **Phase 8** - Documentation (helps others learn)
-8. **Phase 5** - Background jobs (already partially done)
-9. **Phase 7** - Testing (important but can be added incrementally)
-10. **Phase 9** - Advanced features (future work)
+1. **Phase 1** - Admin dashboard & user management ✓
+2. **Phase 2** - Search & filtering ✓
+3. **Phase 3** - Activity logging ✓
+4. **Phase 4** - Batch operations ✓
+5. **Phase 5** - Background jobs ✓
+6. **Phase 6** - Media library enhancements ✓
+7. **Phase 7** - Testing patterns ✓
+8. **Phase 8** - Documentation & developer experience ✓
+9. **Phase 10** - Underlay configuration audit ✓
+10. **Phase 9** - Advanced features → Backlog
