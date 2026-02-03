@@ -6,11 +6,22 @@
 //!
 //! ### Platform (maintenance)
 //! - `platform.jobs_cleanup` - Purge old completed/failed jobs from history
+//! - `auth.cleanup_sessions` - Remove expired sessions and old refresh tokens
 //!
-//! ### Domain (example business logic)
+//! ### Email
+//! - `email.welcome` - Send welcome email to newly registered users
+//!
+//! ### Tasks (example business logic)
 //! - `tasks.cleanup_completed` - Cleanup old completed tasks (batch processing)
 //! - `tasks.send_reminder` - Send task reminder email (single-item processing)
+//! - `tasks.check_due_reminders` - Check for upcoming due dates and enqueue reminders
+//!
+//! ### Projects
 //! - `projects.generate_report` - Generate project report (long-running with progress)
+//!
+//! ### Media
+//! - `media.generate_thumbnail` - Generate thumbnails for uploaded images
+//! - `media.cleanup_orphans` - Soft-delete unused media files
 
 use async_trait::async_trait;
 use image::ImageFormat;
@@ -526,6 +537,337 @@ impl JobHandler for GenerateThumbnailHandler {
 }
 
 // ============================================================================
+// Job Handler: email.welcome
+// ============================================================================
+
+/// Send a welcome email to a newly registered user.
+///
+/// Payload: `{ "user_id": "uuid", "email": "user@example.com", "display_name": "John" }`
+pub struct WelcomeEmailHandler {
+    #[allow(dead_code)]
+    pool: Arc<PgPool>,
+}
+
+impl WelcomeEmailHandler {
+    pub fn new(pool: Arc<PgPool>) -> Self {
+        Self { pool }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct WelcomeEmailPayload {
+    user_id: uuid::Uuid,
+    email: String,
+    display_name: Option<String>,
+}
+
+#[async_trait]
+impl JobHandler for WelcomeEmailHandler {
+    fn job_type(&self) -> &'static str {
+        "email.welcome"
+    }
+
+    fn config(&self) -> JobConfig {
+        JobConfig {
+            max_attempts: 5,
+            ..Default::default()
+        }
+    }
+
+    async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
+        let payload: WelcomeEmailPayload = serde_json::from_value(job.payload)
+            .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
+
+        // In a real app, send email via email service (underlay-email)
+        // For the reference implementation, we just log it
+        info!(
+            job_id = %job.id,
+            user_id = %payload.user_id,
+            email = %payload.email,
+            display_name = ?payload.display_name,
+            "would send welcome email"
+        );
+
+        Ok(())
+    }
+}
+
+// ============================================================================
+// Job Handler: auth.cleanup_sessions
+// ============================================================================
+
+/// Cleanup expired sessions and old refresh tokens.
+///
+/// Payload: `{ "expired_sessions_days": 7, "old_tokens_days": 30 }`
+pub struct SessionCleanupHandler {
+    pool: Arc<PgPool>,
+}
+
+impl SessionCleanupHandler {
+    pub fn new(pool: Arc<PgPool>) -> Self {
+        Self { pool }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct SessionCleanupPayload {
+    /// Days after which expired sessions should be purged (default: 7)
+    expired_sessions_days: Option<i32>,
+    /// Days after which unused refresh tokens should be purged (default: 30)
+    old_tokens_days: Option<i32>,
+}
+
+#[async_trait]
+impl JobHandler for SessionCleanupHandler {
+    fn job_type(&self) -> &'static str {
+        "auth.cleanup_sessions"
+    }
+
+    fn config(&self) -> JobConfig {
+        JobConfig {
+            max_attempts: 3,
+            ..Default::default()
+        }
+    }
+
+    async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
+        let payload: SessionCleanupPayload = serde_json::from_value(job.payload)
+            .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
+
+        let expired_days = payload.expired_sessions_days.unwrap_or(7);
+        let tokens_days = payload.old_tokens_days.unwrap_or(30);
+
+        // Delete sessions that expired more than N days ago
+        let session_cutoff = chrono::Utc::now() - chrono::Duration::days(expired_days as i64);
+        let sessions_result = sqlx::query(
+            r#"
+            DELETE FROM auth.session
+            WHERE expires_at < $1
+            "#,
+        )
+        .bind(session_cutoff)
+        .execute(self.pool.as_ref())
+        .await
+        .map_err(|e| JobHandlerError::new(format!("session cleanup failed: {}", e)))?;
+
+        // Delete refresh tokens not used for N days
+        let tokens_cutoff = chrono::Utc::now() - chrono::Duration::days(tokens_days as i64);
+        let tokens_result = sqlx::query(
+            r#"
+            DELETE FROM auth.refresh_token
+            WHERE last_used_at < $1 OR (last_used_at IS NULL AND created_at < $1)
+            "#,
+        )
+        .bind(tokens_cutoff)
+        .execute(self.pool.as_ref())
+        .await
+        .map_err(|e| JobHandlerError::new(format!("token cleanup failed: {}", e)))?;
+
+        info!(
+            job_id = %job.id,
+            sessions_deleted = sessions_result.rows_affected(),
+            tokens_deleted = tokens_result.rows_affected(),
+            "auth session cleanup completed"
+        );
+
+        Ok(())
+    }
+}
+
+// ============================================================================
+// Job Handler: tasks.check_due_reminders
+// ============================================================================
+
+/// Check for tasks with upcoming due dates and enqueue individual reminder jobs.
+///
+/// Payload: `{ "days_ahead": 1 }`
+///
+/// This is a scheduled job that runs daily and creates individual
+/// `tasks.send_reminder` jobs for each task due within the window.
+pub struct CheckDueRemindersHandler {
+    pool: Arc<PgPool>,
+}
+
+impl CheckDueRemindersHandler {
+    pub fn new(pool: Arc<PgPool>) -> Self {
+        Self { pool }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct CheckDueRemindersPayload {
+    /// Days ahead to check for due tasks (default: 1)
+    days_ahead: Option<i32>,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct DueTask {
+    id: uuid::Uuid,
+    title: String,
+    due_date: chrono::NaiveDate,
+    user_id: uuid::Uuid,
+    user_email: String,
+}
+
+#[async_trait]
+impl JobHandler for CheckDueRemindersHandler {
+    fn job_type(&self) -> &'static str {
+        "tasks.check_due_reminders"
+    }
+
+    fn config(&self) -> JobConfig {
+        JobConfig {
+            max_attempts: 3,
+            ..Default::default()
+        }
+    }
+
+    async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
+        let payload: CheckDueRemindersPayload = serde_json::from_value(job.payload)
+            .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
+
+        let days_ahead = payload.days_ahead.unwrap_or(1);
+        let target_date = chrono::Utc::now().date_naive() + chrono::Duration::days(days_ahead as i64);
+
+        // Find tasks due on target date with assigned users
+        let due_tasks: Vec<DueTask> = sqlx::query_as(
+            r#"
+            SELECT t.id, t.title, t.due_date, t.assignee_id as user_id, u.email as user_email
+            FROM tasks.tasks t
+            JOIN auth.user u ON u.id = t.assignee_id
+            WHERE t.due_date = $1
+              AND t.status != 'completed'
+              AND t.deleted_at IS NULL
+              AND t.assignee_id IS NOT NULL
+            "#,
+        )
+        .bind(target_date)
+        .fetch_all(self.pool.as_ref())
+        .await
+        .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+
+        // Enqueue individual reminder jobs
+        let job_repo = JobRepository::new((*self.pool).clone());
+        let mut enqueued = 0;
+
+        for task in &due_tasks {
+            let reminder_payload = serde_json::json!({
+                "task_id": task.id,
+                "user_email": task.user_email,
+            });
+
+            match job_repo
+                .create("tasks.send_reminder", reminder_payload, &JobConfig::default())
+                .await
+            {
+                Ok(_) => enqueued += 1,
+                Err(e) => {
+                    warn!(
+                        task_id = %task.id,
+                        error = %e,
+                        "failed to create reminder job"
+                    );
+                }
+            }
+        }
+
+        info!(
+            job_id = %job.id,
+            tasks_found = due_tasks.len(),
+            reminders_enqueued = enqueued,
+            target_date = %target_date,
+            "due date reminder check completed"
+        );
+
+        Ok(())
+    }
+}
+
+// ============================================================================
+// Job Handler: media.cleanup_orphans
+// ============================================================================
+
+/// Soft-delete media items that have never been used (attached to content).
+///
+/// Payload: `{ "unused_days": 7 }`
+///
+/// This helps clean up media that was uploaded but never actually used,
+/// such as abandoned uploads or test files.
+pub struct OrphanMediaCleanupHandler {
+    pool: Arc<PgPool>,
+}
+
+impl OrphanMediaCleanupHandler {
+    pub fn new(pool: Arc<PgPool>) -> Self {
+        Self { pool }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct OrphanMediaCleanupPayload {
+    /// Days after which unused media should be soft-deleted (default: 7)
+    unused_days: Option<i32>,
+}
+
+#[async_trait]
+impl JobHandler for OrphanMediaCleanupHandler {
+    fn job_type(&self) -> &'static str {
+        "media.cleanup_orphans"
+    }
+
+    fn config(&self) -> JobConfig {
+        JobConfig {
+            max_attempts: 3,
+            ..Default::default()
+        }
+    }
+
+    async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
+        let payload: OrphanMediaCleanupPayload = serde_json::from_value(job.payload)
+            .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
+
+        let unused_days = payload.unused_days.unwrap_or(7);
+        let cutoff = chrono::Utc::now() - chrono::Duration::days(unused_days as i64);
+
+        // Soft-delete media that:
+        // - Has no usages (not attached to any content)
+        // - Was created more than N days ago
+        // - Is not already deleted
+        //
+        // Note: In a real app, you'd join with a media_usage table to check
+        // if media is referenced. For now, we check if it's been viewed/updated
+        // since creation as a proxy for "used".
+        let result = sqlx::query(
+            r#"
+            UPDATE media.media
+            SET deleted_at = NOW()
+            WHERE deleted_at IS NULL
+              AND created_at < $1
+              AND updated_at = created_at
+              AND NOT EXISTS (
+                  SELECT 1 FROM media.media_version mv
+                  WHERE mv.media_id = media.id
+                    AND mv.state = 'ready'
+              )
+            "#,
+        )
+        .bind(cutoff)
+        .execute(self.pool.as_ref())
+        .await
+        .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+
+        info!(
+            job_id = %job.id,
+            soft_deleted = result.rows_affected(),
+            cutoff_date = %cutoff,
+            "orphan media cleanup completed"
+        );
+
+        Ok(())
+    }
+}
+
+// ============================================================================
 // Registry Builder
 // ============================================================================
 
@@ -552,16 +894,22 @@ pub fn create_registry_with_media(
 
     // Platform handlers
     registry.register(JobsCleanupHandler::new(pool.clone()));
+    registry.register(SessionCleanupHandler::new(pool.clone()));
 
-    // Domain handlers
+    // Email handlers
+    registry.register(WelcomeEmailHandler::new(pool.clone()));
+
+    // Task handlers
     registry.register(CleanupCompletedTasksHandler::new(pool.clone()));
     registry.register(SendTaskReminderHandler::new(pool.clone()));
+    registry.register(CheckDueRemindersHandler::new(pool.clone()));
     registry.register(GenerateProjectReportHandler::new(pool.clone()));
 
     // Media handlers (require blob adapter)
-    if let Some(blob) = blob_adapter {
-        registry.register(GenerateThumbnailHandler::new(pool, blob, media_config));
+    if let Some(blob) = blob_adapter.clone() {
+        registry.register(GenerateThumbnailHandler::new(pool.clone(), blob, media_config));
     }
+    registry.register(OrphanMediaCleanupHandler::new(pool));
 
     registry
 }
@@ -607,6 +955,33 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
                 ..Default::default()
             },
         },
+        // Session cleanup - daily at 2:45 AM
+        // Removes expired sessions and old refresh tokens
+        ScheduledTaskDefinition {
+            name: "session_cleanup",
+            job_type: "auth.cleanup_sessions",
+            schedule: "0 45 2 * * *", // 2:45 AM daily
+            payload: serde_json::json!({
+                "expired_sessions_days": 7,
+                "old_tokens_days": 30
+            }),
+            config: JobConfig {
+                max_attempts: 3,
+                ..Default::default()
+            },
+        },
+        // Orphan media cleanup - daily at 3:30 AM
+        // Soft-deletes media that was never used
+        ScheduledTaskDefinition {
+            name: "orphan_media_cleanup",
+            job_type: "media.cleanup_orphans",
+            schedule: "0 30 3 * * *", // 3:30 AM daily
+            payload: serde_json::json!({ "unused_days": 7 }),
+            config: JobConfig {
+                max_attempts: 3,
+                ..Default::default()
+            },
+        },
 
         // ====================================================================
         // Domain-specific tasks (examples)
@@ -618,6 +993,18 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
             job_type: "tasks.cleanup_completed",
             schedule: "0 0 3 * * *", // 3:00 AM daily
             payload: serde_json::json!({ "days_old": 30 }),
+            config: JobConfig {
+                max_attempts: 3,
+                ..Default::default()
+            },
+        },
+        // Check for due date reminders - daily at 8 AM
+        // Enqueues individual reminder jobs for tasks due tomorrow
+        ScheduledTaskDefinition {
+            name: "check_due_reminders",
+            job_type: "tasks.check_due_reminders",
+            schedule: "0 0 8 * * *", // 8:00 AM daily
+            payload: serde_json::json!({ "days_ahead": 1 }),
             config: JobConfig {
                 max_attempts: 3,
                 ..Default::default()

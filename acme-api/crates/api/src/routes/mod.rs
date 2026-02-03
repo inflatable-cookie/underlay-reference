@@ -310,6 +310,17 @@ pub fn build_router() -> Router<AppState> {
             "/v1/admin/media/:media_id/usage",
             get(admin::media::list_usage),
         )
+        // ====================================================================
+        // Background Jobs admin routes
+        // ====================================================================
+        .route("/v1/admin/jobs", get(admin::jobs::list_jobs))
+        .route("/v1/admin/jobs/stats", get(admin::jobs::get_job_stats))
+        .route("/v1/admin/jobs/:job_id", get(admin::jobs::get_job))
+        .route(
+            "/v1/admin/jobs/:job_id/cancel",
+            post(admin::jobs::cancel_job),
+        )
+        .route("/v1/admin/jobs/:job_id/retry", post(admin::jobs::retry_job))
         .layer(cors)
 }
 

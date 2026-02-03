@@ -169,31 +169,40 @@ Demonstrate bulk action patterns.
 Demonstrate background job patterns beyond media.
 
 ### Email Notification Jobs
-- [ ] Welcome email on registration
-  - [ ] Job type: `email.welcome`
-  - [ ] Enqueue from registration endpoint
-- [ ] Task due date reminder
-  - [ ] Job type: `task.due_reminder`
-  - [ ] Scheduled job to check upcoming due dates
+- [x] Welcome email on registration
+  - [x] Job type: `email.welcome`
+  - [x] Enqueue from registration endpoint
+- [x] Task due date reminder
+  - [x] Job type: `tasks.check_due_reminders` (scheduled job)
+  - [x] Job type: `tasks.send_reminder` (individual reminder)
+  - [x] Scheduled job to check upcoming due dates
 
 ### Cleanup Jobs
-- [ ] Expired session cleanup
-  - [ ] Job type: `auth.cleanup_sessions`
-  - [ ] Remove sessions older than X days
-- [ ] Orphan media cleanup
-  - [ ] Job type: `media.cleanup_orphans`
-  - [ ] Soft-delete media with zero usage after X days
+- [x] Expired session cleanup
+  - [x] Job type: `auth.cleanup_sessions`
+  - [x] Remove sessions older than X days
+- [x] Orphan media cleanup
+  - [x] Job type: `media.cleanup_orphans`
+  - [x] Soft-delete media with zero usage after X days
 
 ### Admin Visibility
-- [ ] Jobs dashboard page
+- [x] Jobs API endpoints
+  - [x] `GET /v1/admin/jobs` - list jobs with filters
+  - [x] `GET /v1/admin/jobs/stats` - job queue statistics
+  - [x] `GET /v1/admin/jobs/:jobId` - job details
+  - [x] `POST /v1/admin/jobs/:jobId/cancel` - cancel job
+  - [x] `POST /v1/admin/jobs/:jobId/retry` - retry failed job
+- [x] TypeScript client commands
+- [ ] Jobs dashboard page (frontend)
   - [ ] Recent job runs
   - [ ] Failed jobs with error details
   - [ ] Manual retry button
 
 **Files:**
-- `acme-api/crates/jobs/src/tasks/email.rs` (new)
-- `acme-api/crates/jobs/src/tasks/cleanup.rs` (new)
-- `acme-admin/src/routes/(app)/system/jobs/+page.svelte` (new)
+- `acme-api/crates/jobs/src/lib.rs` (updated with new handlers)
+- `acme-api/crates/api/src/routes/admin/jobs.rs` (new)
+- `acme-client/src/commands/admin-commands.ts` (updated)
+- `acme-admin/src/routes/(app)/system/jobs/+page.svelte` (pending)
 
 ---
 

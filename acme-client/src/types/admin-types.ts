@@ -329,3 +329,47 @@ export interface BatchUpdateResult {
   ok: boolean;
   updated: number;
 }
+
+// ============================================================================
+// Jobs
+// ============================================================================
+
+export type JobStatus = "pending" | "claimed" | "running" | "succeeded" | "failed" | "cancelled";
+
+export interface JobProgress {
+  current: number;
+  total: number;
+  percent: number;
+  message?: string | null;
+}
+
+export interface JobSummary {
+  id: string;
+  jobType: string;
+  status: JobStatus;
+  attempts: number;
+  maxAttempts: number;
+  createdAt: string;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  errorMessage?: string | null;
+}
+
+export interface JobDetail extends JobSummary {
+  payload: Record<string, unknown>;
+  progress?: JobProgress | null;
+  scheduledFor?: string | null;
+}
+
+export interface JobStats {
+  pending: number;
+  running: number;
+  failed: number;
+  succeededRecent: number;
+}
+
+export interface ListJobsQuery {
+  status?: JobStatus;
+  jobType?: string;
+  limit?: number;
+}

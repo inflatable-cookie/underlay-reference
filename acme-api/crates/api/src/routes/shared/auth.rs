@@ -225,6 +225,21 @@ pub async fn register(
         .await
     {
         Ok(session) => {
+            // Enqueue welcome email job
+            if let Some(ref job_repo) = state.job_repository {
+                let job_payload = serde_json::json!({
+                    "user_id": session.user.id,
+                    "email": email,
+                    "display_name": display_name,
+                });
+                if let Err(e) = job_repo
+                    .create("email.welcome", job_payload, &Default::default())
+                    .await
+                {
+                    tracing::warn!("Failed to enqueue welcome email job: {}", e);
+                }
+            }
+
             let refresh_token = session.refresh_token.clone();
             let dto = auth_session_dto_from_session(session, "user".to_string());
 
