@@ -32,6 +32,31 @@ pub struct MediaSummaryDto {
     pub updated_at: DateTime<Utc>,
     pub byte_size: Option<i64>,
     pub mime_type: Option<String>,
+    /// URL to thumbnail image (if available).
+    pub thumbnail_url: Option<String>,
+}
+
+impl MediaSummaryDto {
+    /// Create a summary DTO from a row with a thumbnail URL generator.
+    pub fn from_row_with_thumbnail<F>(row: MediaWithVersionRow, url_fn: F) -> Self
+    where
+        F: FnOnce(&str) -> String,
+    {
+        let thumbnail_url = row.thumbnail_object_key.as_ref().map(|key| url_fn(key));
+        Self {
+            id: row.id,
+            kind: row.kind,
+            visibility: row.visibility,
+            title: row.title,
+            original_filename: row.original_filename,
+            current_version_id: row.current_version_id,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            byte_size: row.byte_size,
+            mime_type: row.mime_type,
+            thumbnail_url,
+        }
+    }
 }
 
 impl From<MediaWithVersionRow> for MediaSummaryDto {
@@ -47,6 +72,7 @@ impl From<MediaWithVersionRow> for MediaSummaryDto {
             updated_at: m.updated_at,
             byte_size: m.byte_size,
             mime_type: m.mime_type,
+            thumbnail_url: None, // Use from_row_with_thumbnail for URL generation
         }
     }
 }
@@ -64,6 +90,7 @@ impl From<MediaRow> for MediaSummaryDto {
             updated_at: m.updated_at,
             byte_size: None,
             mime_type: None,
+            thumbnail_url: None,
         }
     }
 }

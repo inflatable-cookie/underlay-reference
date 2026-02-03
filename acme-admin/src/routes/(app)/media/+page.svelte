@@ -397,7 +397,11 @@
             onclick={() => handleSelectionChange(item.id, !selectedIds.has(item.id))}
           >
             {#snippet media()}
-              <KindIcon size={20} />
+              {#if item.thumbnailUrl}
+                <img src={item.thumbnailUrl} alt="" class="thumbnail" />
+              {:else}
+                <KindIcon size={20} />
+              {/if}
             {/snippet}
             {#snippet titleSuffix()}
               <Badge variant={getKindVariant(item.kind)} size="sm">
@@ -413,7 +417,11 @@
           href={`/media/${item.id}`}
         >
           {#snippet media()}
-            <KindIcon size={20} />
+            {#if item.thumbnailUrl}
+              <img src={item.thumbnailUrl} alt="" class="thumbnail" />
+            {:else}
+              <KindIcon size={20} />
+            {/if}
           {/snippet}
           {#snippet titleSuffix()}
             <Badge variant={getKindVariant(item.kind)} size="sm">
@@ -466,5 +474,12 @@
     height: 1rem;
     accent-color: var(--accent-color, #3b82f6);
     cursor: pointer;
+  }
+
+  .thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0.25rem;
   }
 </style>

@@ -164,7 +164,14 @@ pub async fn list_media(
 
     match media::list_media_admin(pool, &query).await {
         Ok(rows) => {
-            let items: Vec<MediaSummaryDto> = rows.into_iter().map(Into::into).collect();
+            let items: Vec<MediaSummaryDto> = rows
+                .into_iter()
+                .map(|row| {
+                    MediaSummaryDto::from_row_with_thumbnail(row, |key| {
+                        state.blob_adapter.public_url(key)
+                    })
+                })
+                .collect();
             Json(json!({ "data": items })).into_response()
         }
         Err(e) => {
@@ -186,7 +193,15 @@ pub async fn list_media_paginated(
 
     match media::list_media_admin_paginated(pool, params).await {
         Ok(response) => {
-            let items: Vec<MediaSummaryDto> = response.data.into_iter().map(Into::into).collect();
+            let items: Vec<MediaSummaryDto> = response
+                .data
+                .into_iter()
+                .map(|row| {
+                    MediaSummaryDto::from_row_with_thumbnail(row, |key| {
+                        state.blob_adapter.public_url(key)
+                    })
+                })
+                .collect();
             Json(json!({
                 "data": items,
                 "nextCursor": response.next_cursor,
@@ -214,7 +229,14 @@ pub async fn list_media_trash(
 
     match media::list_media_trash(pool).await {
         Ok(rows) => {
-            let items: Vec<MediaSummaryDto> = rows.into_iter().map(Into::into).collect();
+            let items: Vec<MediaSummaryDto> = rows
+                .into_iter()
+                .map(|row| {
+                    MediaSummaryDto::from_row_with_thumbnail(row, |key| {
+                        state.blob_adapter.public_url(key)
+                    })
+                })
+                .collect();
             Json(json!({ "data": items })).into_response()
         }
         Err(e) => {

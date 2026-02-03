@@ -87,6 +87,8 @@ pub struct MediaWithVersionRow {
     // From current version
     pub byte_size: Option<i64>,
     pub mime_type: Option<String>,
+    // Thumbnail rendition object key (if available)
+    pub thumbnail_object_key: Option<String>,
 }
 
 // ============================================================================
@@ -191,9 +193,11 @@ pub async fn list_media_admin(
         r#"
         SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
                m.created_at, m.updated_at, m.deleted_at,
-               v.byte_size, v.mime_type
+               v.byte_size, v.mime_type,
+               r.object_key AS thumbnail_object_key
         FROM media.media m
         LEFT JOIN media.media_version v ON m.current_version_id = v.id
+        LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
         WHERE {}
         ORDER BY {}
         "#,
@@ -223,9 +227,11 @@ pub async fn list_media_admin_paginated(
                     r#"
                     SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
                            m.created_at, m.updated_at, m.deleted_at,
-                           v.byte_size, v.mime_type
+                           v.byte_size, v.mime_type,
+                           r.object_key AS thumbnail_object_key
                     FROM media.media m
                     LEFT JOIN media.media_version v ON m.current_version_id = v.id
+                    LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
                     WHERE m.deleted_at IS NULL
                       AND m.current_version_id IS NOT NULL
                       AND (m.updated_at, m.id) < ($1, $2)
@@ -244,9 +250,11 @@ pub async fn list_media_admin_paginated(
                     r#"
                     SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
                            m.created_at, m.updated_at, m.deleted_at,
-                           v.byte_size, v.mime_type
+                           v.byte_size, v.mime_type,
+                           r.object_key AS thumbnail_object_key
                     FROM media.media m
                     LEFT JOIN media.media_version v ON m.current_version_id = v.id
+                    LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
                     WHERE m.deleted_at IS NULL
                       AND m.current_version_id IS NOT NULL
                       AND (m.updated_at, m.id) > ($1, $2)
@@ -268,9 +276,11 @@ pub async fn list_media_admin_paginated(
             r#"
             SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
                    m.created_at, m.updated_at, m.deleted_at,
-                   v.byte_size, v.mime_type
+                   v.byte_size, v.mime_type,
+                   r.object_key AS thumbnail_object_key
             FROM media.media m
             LEFT JOIN media.media_version v ON m.current_version_id = v.id
+            LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
             WHERE m.deleted_at IS NULL
               AND m.current_version_id IS NOT NULL
             ORDER BY m.updated_at DESC, m.id DESC
@@ -307,9 +317,11 @@ pub async fn list_media_trash(pool: &DbPool) -> Result<Vec<MediaWithVersionRow>,
         r#"
         SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
                m.created_at, m.updated_at, m.deleted_at,
-               v.byte_size, v.mime_type
+               v.byte_size, v.mime_type,
+               r.object_key AS thumbnail_object_key
         FROM media.media m
         LEFT JOIN media.media_version v ON m.current_version_id = v.id
+        LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
         WHERE m.deleted_at IS NOT NULL
           AND m.current_version_id IS NOT NULL
         ORDER BY m.deleted_at DESC
