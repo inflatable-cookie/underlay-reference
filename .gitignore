@@ -1,0 +1,33 @@
+# Symlink to underlay library (local development)
+underlay
+
+# Rust
+**/target/
+**/*.rs.bk
+
+# Node
+**/node_modules/
+**/dist/
+**/.svelte-kit/
+
+# Environment
+**/.env
+**/.env.local
+**/.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Bun
+*.lockb
+bun.lockb
+
+# Logs
+*.log

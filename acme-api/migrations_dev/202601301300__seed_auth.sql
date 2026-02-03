@@ -1,0 +1,89 @@
+-- Dev seeds: Auth schema
+--
+-- Users, credentials for local development and testing.
+--
+-- Test credentials:
+--   Email: admin@example.com
+--   Password: AcmeAdmin123!
+--
+--   Email: user@example.com
+--   Password: AcmeAdmin123!
+
+-- =========================================
+-- auth.users
+-- =========================================
+
+INSERT INTO auth.users (id, email, display_name, role, status)
+VALUES
+  -- Admin user
+  ('018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
+   'admin@example.com',
+   'Admin User',
+   'admin',
+   'active'),
+  -- Regular user
+  ('018f2a3b-3c4d-7e8f-8a9b-00000000a002'::uuid,
+   'user@example.com',
+   'Regular User',
+   'student',
+   'active'),
+  -- Another user for assignment testing
+  ('018f2a3b-3c4d-7e8f-8a9b-00000000a003'::uuid,
+   'alice@example.com',
+   'Alice',
+   'student',
+   'active'),
+  ('018f2a3b-3c4d-7e8f-8a9b-00000000a004'::uuid,
+   'bob@example.com',
+   'Bob',
+   'student',
+   'active')
+ON CONFLICT (email) DO UPDATE
+  SET display_name = EXCLUDED.display_name,
+      role = EXCLUDED.role,
+      status = EXCLUDED.status,
+      updated_at = NOW();
+
+-- =========================================
+-- auth.credentials
+-- =========================================
+
+-- Delete existing credentials for seeded users to ensure clean state
+DELETE FROM auth.credentials
+WHERE user_id IN (
+  SELECT id FROM auth.users WHERE email IN (
+    'admin@example.com',
+    'user@example.com',
+    'alice@example.com',
+    'bob@example.com'
+  )
+);
+
+-- Password credentials (all use: AcmeAdmin123!)
+-- Hash generated with argon2id
+INSERT INTO auth.credentials (id, user_id, type, secret_encrypted, metadata, verified)
+VALUES
+  (gen_random_uuid(),
+   '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
+   'password',
+   '$argon2id$v=19$m=65536,t=3,p=4$YWNtZURldlNlZWQyMDI2MDEzMA$7FpKqDr6d+UQHJ5wCLJBz8hNrM1r4K+InZBr7K5W42k',
+   '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
+   TRUE),
+  (gen_random_uuid(),
+   '018f2a3b-3c4d-7e8f-8a9b-00000000a002'::uuid,
+   'password',
+   '$argon2id$v=19$m=65536,t=3,p=4$YWNtZURldlNlZWQyMDI2MDEzMA$7FpKqDr6d+UQHJ5wCLJBz8hNrM1r4K+InZBr7K5W42k',
+   '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
+   TRUE),
+  (gen_random_uuid(),
+   '018f2a3b-3c4d-7e8f-8a9b-00000000a003'::uuid,
+   'password',
+   '$argon2id$v=19$m=65536,t=3,p=4$YWNtZURldlNlZWQyMDI2MDEzMA$7FpKqDr6d+UQHJ5wCLJBz8hNrM1r4K+InZBr7K5W42k',
+   '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
+   TRUE),
+  (gen_random_uuid(),
+   '018f2a3b-3c4d-7e8f-8a9b-00000000a004'::uuid,
+   'password',
+   '$argon2id$v=19$m=65536,t=3,p=4$YWNtZURldlNlZWQyMDI2MDEzMA$7FpKqDr6d+UQHJ5wCLJBz8hNrM1r4K+InZBr7K5W42k',
+   '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
+   TRUE);

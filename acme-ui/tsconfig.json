@@ -1,0 +1,12 @@
+{
+  "extends": "../../ts/tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "paths": {
+      "@decodelabs/underlay": ["../../ts/src"],
+      "@decodelabs/underlay/*": ["../../ts/src/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}

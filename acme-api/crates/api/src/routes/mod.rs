@@ -1,0 +1,307 @@
+//! Route handlers for the Acme API.
+//!
+//! This module organizes routes into:
+//! - `shared/` - Auth, health, account routes (used by all clients)
+//! - `tasks` - User-facing project/task routes
+//! - `admin/` - Admin-only routes with enhanced features
+
+use axum::http::header::HeaderName;
+use axum::routing::{delete, get, patch, post, put};
+use axum::Router;
+use underlay_http::{cors_layer, CorsConfig};
+
+use crate::state::AppState;
+
+mod admin;
+mod shared;
+mod tasks;
+
+/// Build the main API router with all routes configured.
+pub fn build_router() -> Router<AppState> {
+    let cors = build_cors_layer();
+
+    Router::new()
+        // Health
+        .route("/v1/health", get(shared::health::health))
+        // Auth routes
+        .route("/v1/auth/register", post(shared::auth::register))
+        .route("/v1/auth/login", post(shared::auth::login))
+        .route("/v1/auth/login/start", post(shared::auth::login_start))
+        .route("/v1/auth/login/finish", post(shared::auth::login_finish))
+        .route("/v1/auth/refresh", post(shared::auth::refresh))
+        .route("/v1/auth/logout", post(shared::auth::logout))
+        .route("/v1/auth/me", get(shared::auth::me))
+        .route(
+            "/v1/auth/password/change",
+            post(shared::auth::change_password),
+        )
+        .route(
+            "/v1/auth/password/requirements",
+            get(shared::auth::password_requirements),
+        )
+        .route(
+            "/v1/auth/password/change-2fa",
+            post(shared::auth::change_password_with_verification),
+        )
+        // Password reset (forgot password) routes
+        .route(
+            "/v1/auth/password/reset/request",
+            post(shared::auth::password_reset_request),
+        )
+        .route(
+            "/v1/auth/password/reset/verify",
+            post(shared::auth::password_reset_verify),
+        )
+        .route(
+            "/v1/auth/password/reset/complete",
+            post(shared::auth::password_reset_complete),
+        )
+        // TOTP routes
+        .route("/v1/auth/totp/status", get(shared::auth::totp_status))
+        .route("/v1/auth/totp/setup", post(shared::auth::totp_setup))
+        .route("/v1/auth/totp/enable", post(shared::auth::totp_enable))
+        .route("/v1/auth/totp/disable", post(shared::auth::totp_disable))
+        .route("/v1/auth/totp/verify", post(shared::auth::totp_verify))
+        // 2FA status route
+        .route("/v1/auth/2fa-status", get(shared::auth::two_factor_status))
+        // Email TOTP routes
+        .route(
+            "/v1/auth/email-totp/request",
+            post(shared::auth::email_totp_request),
+        )
+        .route(
+            "/v1/auth/email-totp/verify",
+            post(shared::auth::email_totp_verify),
+        )
+        // Passkey routes
+        .route("/v1/auth/passkeys", get(shared::auth::list_passkeys))
+        .route(
+            "/v1/auth/passkeys/:credential_id",
+            patch(shared::auth::rename_passkey).delete(shared::auth::delete_passkey),
+        )
+        .route(
+            "/v1/auth/passkeys/register/start",
+            post(shared::auth::passkey_register_start),
+        )
+        .route(
+            "/v1/auth/passkeys/register/finish",
+            post(shared::auth::passkey_register_finish),
+        )
+        .route(
+            "/v1/auth/passkeys/login/start",
+            post(shared::auth::passkey_login_start),
+        )
+        .route(
+            "/v1/auth/passkeys/login/finish",
+            post(shared::auth::passkey_login_finish),
+        )
+        .route(
+            "/v1/auth/passkeys/verify/start",
+            post(shared::auth::passkey_verify_start),
+        )
+        .route(
+            "/v1/auth/passkeys/verify/finish",
+            post(shared::auth::passkey_verify_finish),
+        )
+        // Session routes
+        .route("/v1/auth/sessions", get(shared::auth::list_sessions))
+        .route(
+            "/v1/auth/sessions/:session_id/revoke",
+            post(shared::auth::revoke_session),
+        )
+        // Account routes
+        .route(
+            "/v1/account/profile",
+            get(shared::account::get_profile).patch(shared::account::update_profile),
+        )
+        // ====================================================================
+        // User-facing routes (authenticated users)
+        // ====================================================================
+        // Project routes
+        .route(
+            "/v1/projects",
+            get(tasks::list_projects).post(tasks::create_project),
+        )
+        .route(
+            "/v1/projects/:project_id",
+            get(tasks::get_project)
+                .patch(tasks::update_project)
+                .delete(tasks::delete_project),
+        )
+        // Task routes
+        .route(
+            "/v1/projects/:project_id/tasks",
+            get(tasks::list_tasks).post(tasks::create_task),
+        )
+        .route(
+            "/v1/projects/:project_id/tasks/:task_id",
+            patch(tasks::update_task).delete(tasks::delete_task),
+        )
+        // ====================================================================
+        // Admin routes (require Admin role)
+        // ====================================================================
+        // Validation endpoint (for async form validation)
+        .route(
+            "/v1/admin/validate-field",
+            post(admin::validation::validate_field),
+        )
+        // Category admin routes
+        .route(
+            "/v1/admin/categories",
+            get(admin::categories::list_categories).post(admin::categories::create_category),
+        )
+        .route(
+            "/v1/admin/categories/reorder",
+            put(admin::categories::reorder_categories),
+        )
+        .route(
+            "/v1/admin/categories/:category_id",
+            get(admin::categories::get_category)
+                .patch(admin::categories::update_category)
+                .delete(admin::categories::soft_delete_category),
+        )
+        .route(
+            "/v1/admin/categories/:category_id/restore",
+            post(admin::categories::restore_category),
+        )
+        // Project admin routes
+        .route(
+            "/v1/admin/projects",
+            get(admin::projects::list_projects).post(admin::projects::create_project),
+        )
+        .route(
+            "/v1/admin/projects/reorder",
+            put(admin::projects::reorder_projects),
+        )
+        .route(
+            "/v1/admin/projects/:project_id",
+            get(admin::projects::get_project)
+                .patch(admin::projects::update_project)
+                .delete(admin::projects::soft_delete_project),
+        )
+        .route(
+            "/v1/admin/projects/:project_id/restore",
+            post(admin::projects::restore_project),
+        )
+        // Task admin routes (nested under projects)
+        .route(
+            "/v1/admin/projects/:project_id/tasks",
+            get(admin::tasks::list_tasks).post(admin::tasks::create_task),
+        )
+        .route(
+            "/v1/admin/projects/:project_id/tasks/reorder",
+            put(admin::tasks::reorder_tasks),
+        )
+        .route(
+            "/v1/admin/projects/:project_id/tasks/:task_id",
+            get(admin::tasks::get_task)
+                .patch(admin::tasks::update_task)
+                .delete(admin::tasks::soft_delete_task),
+        )
+        .route(
+            "/v1/admin/projects/:project_id/tasks/:task_id/labels",
+            get(admin::tasks::get_task_labels).put(admin::tasks::set_task_labels),
+        )
+        // Label admin routes (nested under projects)
+        .route(
+            "/v1/admin/projects/:project_id/labels",
+            get(admin::tasks::list_labels).post(admin::tasks::create_label),
+        )
+        // ====================================================================
+        // Media Library admin routes
+        // ====================================================================
+        .route(
+            "/v1/admin/media/check-duplicate",
+            post(admin::media::check_duplicate),
+        )
+        .route(
+            "/v1/admin/media",
+            get(admin::media::list_media).post(admin::media::create_media),
+        )
+        .route(
+            "/v1/admin/media/paginated",
+            get(admin::media::list_media_paginated),
+        )
+        .route("/v1/admin/media/trash", get(admin::media::list_media_trash))
+        .route(
+            "/v1/admin/media/:media_id",
+            get(admin::media::get_media)
+                .put(admin::media::update_media)
+                .delete(admin::media::purge_media),
+        )
+        .route(
+            "/v1/admin/media/:media_id/soft-delete",
+            post(admin::media::soft_delete_media),
+        )
+        .route(
+            "/v1/admin/media/:media_id/restore",
+            post(admin::media::restore_media),
+        )
+        .route(
+            "/v1/admin/media/:media_id/versions",
+            get(admin::media::list_versions),
+        )
+        .route(
+            "/v1/admin/media/:media_id/versions/initiate-upload",
+            post(admin::media::initiate_upload),
+        )
+        .route(
+            "/v1/admin/media/:media_id/versions/:version_id/finalise-upload",
+            post(admin::media::finalise_upload),
+        )
+        .route(
+            "/v1/admin/media/:media_id/versions/:version_id/activate",
+            post(admin::media::activate_version),
+        )
+        .route(
+            "/v1/admin/media/:media_id/versions/:version_id",
+            delete(admin::media::delete_version),
+        )
+        .route(
+            "/v1/admin/media/:media_id/usage",
+            get(admin::media::list_usage),
+        )
+        .layer(cors)
+}
+
+fn build_cors_layer() -> tower_http::cors::CorsLayer {
+    // Underlay CORS policy (matches guide patterns):
+    // - Use `CORS_ORIGINS` in production.
+    // - In local/dev, if `CORS_ORIGINS` is unset, mirror the request origin.
+    // - Allow credentials so cookie-based auth can be enabled without reworking CORS.
+
+    let env = std::env::var("ENVIRONMENT")
+        .or_else(|_| std::env::var("ACME_ENV"))
+        .unwrap_or_else(|_| "local".to_string());
+
+    let origins = parse_cors_origins();
+
+    // If no explicit origins are set and we're in local/dev, mirror request origin.
+    let mirror_origin = origins.is_empty() && (env == "local" || env == "dev");
+
+    // NOTE: the browser will preflight if we send `X-Api-Version`.
+    // Add it explicitly to allowed headers.
+    let mut allowed_headers = CorsConfig::default().allowed_headers;
+    allowed_headers.push(HeaderName::from_static("x-api-version"));
+
+    cors_layer(CorsConfig {
+        allow_any_origin: false,
+        mirror_origin,
+        allowed_origins: origins,
+        allowed_headers,
+        allow_credentials: true,
+    })
+}
+
+fn parse_cors_origins() -> Vec<axum::http::HeaderValue> {
+    let raw = std::env::var("CORS_ORIGINS").unwrap_or_default();
+    if raw.trim().is_empty() {
+        return vec![];
+    }
+
+    raw.split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .filter_map(|s| axum::http::HeaderValue::from_str(s).ok())
+        .collect()
+}

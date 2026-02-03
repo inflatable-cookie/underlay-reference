@@ -1,0 +1,207 @@
+//! Acme HTTP API entrypoint.
+
+use acme_db::infra::DbEmailStore;
+use acme_db::{create_pool, run_dev_seeds, run_migrations};
+use acme_infra::{create_email_manager, create_template_engine, EmailAdapterType, EmailConfig};
+use std::sync::Arc;
+use tracing::info;
+use underlay_blob::{BlobAdapter, LocalAdapter, LocalConfig, NoopAdapter};
+
+// Routes and state from the library crate
+use acme_api::routes;
+use acme_api::state::{AppState, DB_POOL};
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    dotenvy::dotenv().ok();
+    acme_infra::init_tracing();
+
+    let db_url = std::env::var("DATABASE_URL")
+        .or_else(|_| std::env::var("ACME_DATABASE_URL"))
+        .map_err(|_| anyhow::anyhow!("DATABASE_URL must be set"))?;
+
+    let pool = create_pool(&db_url).await?;
+    run_migrations(&pool).await?;
+
+    // Prefer standard Underlay env vars; accept ACME_* as legacy fallbacks.
+    let env = std::env::var("ENVIRONMENT")
+        .or_else(|_| std::env::var("ACME_ENV"))
+        .unwrap_or_else(|_| "local".to_string());
+    if env == "local" || env == "dev" {
+        if let Err(err) = run_dev_seeds(&pool).await {
+            tracing::error!(%err, "failed to run dev seed SQL");
+        }
+    }
+
+    // Initialize auth service
+    let local_auth = match acme_auth::AcmeLocalAuthService::from_env(pool.clone()) {
+        Ok(service) => Arc::new(service),
+        Err(err) => {
+            tracing::error!(code = err.code(), message = %err.message(), "failed to configure local auth");
+            tracing::error!(
+                "set AUTH_JWT_PRIVATE_KEY/AUTH_JWT_PUBLIC_KEY env vars"
+            );
+            std::process::exit(1);
+        }
+    };
+
+    let auth_provider: Arc<dyn underlay_auth::AuthProvider> = Arc::new(
+        acme_auth::AcmeLocalAuthProvider::new(local_auth.clone()),
+    );
+
+    // Configure auth cookies
+    let cookie_domain = std::env::var("COOKIE_DOMAIN").ok();
+    let cookie_secure = std::env::var("COOKIE_SECURE")
+        .map(|v| v == "true" || v == "1")
+        .unwrap_or(false);
+
+    let cookie_config = underlay_http::AuthCookieConfig {
+        domain: cookie_domain,
+        secure: cookie_secure,
+        refresh_token_max_age: 7 * 24 * 60 * 60, // 7 days
+    };
+
+    // Initialize email system with DevCapture adapter (captures emails to database)
+    let email_adapter = std::env::var("EMAIL_ADAPTER")
+        .map(|s| EmailAdapterType::parse(&s))
+        .unwrap_or_else(|_| {
+            // Default to DevCapture in local/dev, Noop otherwise
+            if env == "local" || env == "dev" {
+                EmailAdapterType::DevCapture
+            } else {
+                EmailAdapterType::Noop
+            }
+        });
+
+    let email_config = EmailConfig {
+        adapter: email_adapter,
+        default_from: std::env::var("EMAIL_DEFAULT_FROM")
+            .unwrap_or_else(|_| "noreply@acme.local".to_string()),
+        app_name: "Acme".to_string(),
+        app_url: std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:40012".to_string()),
+        support_email: std::env::var("SUPPORT_EMAIL")
+            .unwrap_or_else(|_| "support@acme.local".to_string()),
+        templates_dir: "templates/emails".to_string(),
+        smtp: None,
+        ses: None,
+        dev_capture: Some(acme_infra::DevCaptureEmailConfig {
+            whitelist: vec![],
+            fallback_adapter: None,
+        }),
+    };
+
+    // Create email manager with database-backed store for DevCapture
+    let db_email_store = Arc::new(DbEmailStore::new(pool.clone()));
+    let email_manager = Arc::new(
+        create_email_manager(&email_config, Some(db_email_store))
+            .map_err(|e| anyhow::anyhow!("failed to create email manager: {}", e))?,
+    );
+
+    // Load email templates from disk
+    let email_templates = Arc::new(
+        create_template_engine(&email_config)
+            .map_err(|e| anyhow::anyhow!("failed to load email templates: {}", e))?,
+    );
+
+    // Initialize email TOTP service
+    let email_totp = Arc::new(acme_auth::EmailTotpService::new(
+        pool.clone(),
+        email_manager.clone(),
+        email_templates.clone(),
+        email_config.clone(),
+    ));
+
+    // Parse host/port early so blob adapter can use them
+    let host = std::env::var("HOST")
+        .or_else(|_| std::env::var("ACME_BIND_ADDR"))
+        .unwrap_or_else(|_| "127.0.0.1".to_string());
+    let port = std::env::var("PORT")
+        .or_else(|_| std::env::var("ACME_PORT"))
+        .ok()
+        .and_then(|v| v.parse::<u16>().ok())
+        .unwrap_or(40011);
+
+    // Initialize blob storage adapter
+    // In local/dev, use LocalAdapter with filesystem storage
+    // In production, this should be configured to use S3Adapter
+    let blob_adapter: Arc<dyn BlobAdapter> = if env == "local" || env == "dev" {
+        let base_path = std::env::var("BLOB_STORAGE_DIR")
+            .unwrap_or_else(|_| "./.blob-storage".to_string());
+        let serve_url_base = std::env::var("BLOB_SERVE_URL")
+            .unwrap_or_else(|_| format!("http://{}:{}/v1/dev-blobs", host, port));
+
+        let local_adapter = LocalAdapter::new(LocalConfig {
+            base_path: base_path.into(),
+            serve_url_base,
+            bucket: "media".to_string(),
+            upload_url_base: None,
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to create local blob adapter: {}", e))?;
+
+        Arc::new(local_adapter)
+    } else {
+        // Production: use NoopAdapter as placeholder (configure S3 in production)
+        tracing::warn!("Using NoopAdapter for blob storage - configure S3 for production");
+        Arc::new(NoopAdapter::new())
+    };
+
+    let state = AppState {
+        local_auth,
+        auth_provider,
+        cookie_config,
+        email_manager,
+        email_templates,
+        email_totp,
+        email_config,
+        blob_adapter,
+    };
+
+    // Set global DB pool for middleware
+    if DB_POOL.set(pool.clone()).is_err() {
+        tracing::warn!("DB pool already initialised for DB_POOL");
+    }
+
+    let app = routes::build_router()
+        .with_state(state)
+        .layer(underlay_observability::trace_layer())
+        .layer(underlay_observability::request_id_layer());
+
+    let addr = format!("{host}:{port}");
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    info!(%addr, "api listening");
+
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
+    Ok(())
+}
+
+async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        use tokio::signal::unix::{signal as unix_signal, SignalKind};
+
+        let mut sigint = unix_signal(SignalKind::interrupt())
+            .expect("failed to install SIGINT handler");
+        let mut sigterm = unix_signal(SignalKind::terminate())
+            .expect("failed to install SIGTERM handler");
+
+        tokio::select! {
+            _ = sigint.recv() => {
+                tracing::info!("received SIGINT; starting graceful shutdown");
+            }
+            _ = sigterm.recv() => {
+                tracing::info!("received SIGTERM; starting graceful shutdown");
+            }
+        }
+    }
+
+    #[cfg(not(unix))]
+    {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+        tracing::info!("received Ctrl+C; starting graceful shutdown");
+    }
+}

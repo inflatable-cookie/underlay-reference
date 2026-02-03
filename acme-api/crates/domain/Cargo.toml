@@ -1,0 +1,10 @@
+[package]
+name = "acme-domain"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+acme-core = { path = "../core" }
+chrono = { workspace = true }
+serde = { workspace = true }
+uuid = { workspace = true }

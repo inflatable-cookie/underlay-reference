@@ -1,0 +1,9 @@
+// Register Acme Nightfire block editors.
+//
+// This file should import (and thereby execute) editor registration modules that
+// call `registerBlockEditor(...)` / `registerSchema(...)` from
+// `@decodelabs/underlay/nightfire`.
+
+import "./notes/editor";
+
+export {};

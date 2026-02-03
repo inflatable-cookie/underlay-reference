@@ -1,0 +1,54 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/core",
+  "crates/infra",
+  "crates/db",
+  "crates/auth",
+  "crates/domain",
+  "crates/api",
+  "crates/jobs",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+anyhow = "1"
+async-trait = "0.1"
+axum = "0.7"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock", "serde"] }
+dotenvy = "0.15"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tower-http = { version = "0.6", features = ["trace", "cors", "request-id", "propagate-header"] }
+uuid = { version = "1", features = ["v7", "serde"] }
+
+# Database (optional for now)
+sqlx = { version = "0.8.6", default-features = true, features = ["runtime-tokio-rustls", "postgres", "uuid", "migrate", "chrono", "json", "macros"] }
+
+# Underlay crates (via symlink at repo root)
+underlay-core = { path = "../underlay/rust/crates/underlay-core" }
+underlay-http = { path = "../underlay/rust/crates/underlay-http" }
+underlay-observability = { path = "../underlay/rust/crates/underlay-observability" }
+underlay-auth = { path = "../underlay/rust/crates/underlay-auth" }
+underlay-blob = { path = "../underlay/rust/crates/underlay-blob", features = ["local"] }
+underlay-auth-email-totp = { path = "../underlay/rust/crates/underlay-auth-email-totp" }
+underlay-auth-jwt = { path = "../underlay/rust/crates/underlay-auth-jwt" }
+underlay-auth-oauth = { path = "../underlay/rust/crates/underlay-auth-oauth" }
+underlay-auth-password = { path = "../underlay/rust/crates/underlay-auth-password" }
+underlay-auth-state = { path = "../underlay/rust/crates/underlay-auth-state" }
+underlay-auth-totp = { path = "../underlay/rust/crates/underlay-auth-totp" }
+underlay-auth-webauthn = { path = "../underlay/rust/crates/underlay-auth-webauthn" }
+underlay-db = { path = "../underlay/rust/crates/underlay-db" }
+underlay-devtools = { path = "../underlay/rust/crates/underlay-devtools" }
+underlay-email = { path = "../underlay/rust/crates/underlay-email", features = ["templates"] }
+underlay-events = { path = "../underlay/rust/crates/underlay-events" }
+underlay-jobs = { path = "../underlay/rust/crates/underlay-jobs", features = ["full"] }
+underlay-ratelimit = { path = "../underlay/rust/crates/underlay-ratelimit" }

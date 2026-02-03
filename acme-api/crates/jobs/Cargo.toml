@@ -1,0 +1,20 @@
+[package]
+name = "acme-jobs"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+chrono = { workspace = true }
+dotenvy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time", "signal"] }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+underlay-jobs = { workspace = true }
+
+acme-db = { path = "../db" }
+acme-infra = { path = "../infra" }

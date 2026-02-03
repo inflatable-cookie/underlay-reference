@@ -1,0 +1,10 @@
+[package]
+name = "acme-infra"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+dotenvy = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+underlay-email = { workspace = true }

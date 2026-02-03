@@ -1,0 +1,41 @@
+{
+  "name": "@acme/ui",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./components": {
+      "types": "./src/components/index.ts",
+      "default": "./src/components/index.ts"
+    },
+    "./render": {
+      "types": "./src/render.ts",
+      "default": "./src/render.ts"
+    },
+    "./editor": {
+      "types": "./src/editor.ts",
+      "default": "./src/editor.ts"
+    },
+    "./validation": {
+      "types": "./src/validation.ts",
+      "default": "./src/validation.ts"
+    }
+  },
+  "scripts": {
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "validate": "bun run check",
+    "refresh:deps": "bun install"
+  },
+  "devDependencies": {
+    "svelte": "^5.46.3",
+    "svelte-check": "^4.3.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@decodelabs/underlay": "file:../underlay"
+  }
+}

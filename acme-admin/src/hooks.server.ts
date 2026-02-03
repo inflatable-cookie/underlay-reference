@@ -1,0 +1,62 @@
+import {
+  applyCspHeaders,
+  createCspConfig,
+  createCspResolveOptions,
+  generateNonce,
+} from "@decodelabs/underlay/server";
+import { UnderlayHttpError } from "@decodelabs/underlay/client";
+import { dev } from "$app/environment";
+import type { Handle, HandleServerError } from "@sveltejs/kit";
+import { env } from "$env/dynamic/public";
+
+import { configureAcmeClient } from "@api-client";
+
+configureAcmeClient({
+  baseUrl: env.PUBLIC_API_URL ?? "http://localhost:40011",
+  apiVersion: env.PUBLIC_API_VERSION ?? "v1",
+});
+
+const cspConfig = createCspConfig({
+  connectSrc: [env.PUBLIC_API_URL ?? "http://localhost:40011"],
+  reportOnly: true,
+});
+
+export const handle: Handle = async ({ event, resolve }) => {
+  const nonce = generateNonce();
+
+  const response = await resolve(
+    event,
+    createCspResolveOptions(nonce, {
+      filterSerializedResponseHeaders: (name: string) => name === "content-type",
+    }),
+  );
+
+  // Apply CSP headers only in production (Vite's HMR needs inline scripts)
+  if (!dev) {
+    applyCspHeaders(response, cspConfig, nonce);
+  }
+
+  return response;
+};
+
+export const handleError: HandleServerError = async ({ error: err }) => {
+  if (err instanceof UnderlayHttpError) {
+    return {
+      message: err.message,
+      status: err.status,
+      code: err.code,
+    };
+  }
+
+  if (err instanceof Error && "status" in err && "code" in err) {
+    const apiError = err as Error & { status: number; code: string };
+    return {
+      message: apiError.message,
+      status: apiError.status,
+      code: apiError.code,
+    };
+  }
+
+  console.error("Unexpected error:", err);
+  return { message: "An unexpected error occurred" };
+};

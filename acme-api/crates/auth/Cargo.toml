@@ -1,0 +1,33 @@
+[package]
+name = "acme-auth"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+aes-gcm = "0.10"
+async-trait = { workspace = true }
+base64 = "0.21"
+chrono = { workspace = true }
+acme-core = { path = "../core" }
+acme-db = { path = "../db" }
+acme-infra = { path = "../infra" }
+rand = "0.8"
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+thiserror = "1"
+tokio = { workspace = true }
+tracing = { workspace = true }
+underlay-auth = { workspace = true }
+underlay-auth-email-totp = { workspace = true }
+underlay-auth-jwt = { workspace = true }
+underlay-auth-oauth = { workspace = true }
+underlay-auth-password = { workspace = true }
+underlay-auth-state = { workspace = true }
+underlay-auth-totp = { workspace = true }
+underlay-auth-webauthn = { workspace = true, features = ["danger-allow-state-serialisation"] }
+underlay-core = { workspace = true }
+underlay-email = { workspace = true, features = ["templates"] }
+underlay-ratelimit = { workspace = true }
+uuid = { workspace = true }
+webauthn-rs-proto = "0.5.4"
