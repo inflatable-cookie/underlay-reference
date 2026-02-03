@@ -236,14 +236,14 @@ Complete the media library implementation with missing features.
 - [x] Thumbnail generation for images
   - [x] Generate on upload finalisation (via job queue)
   - [x] Store in media_rendition table
-  - [ ] Display in media list/detail views
+  - [x] Display in media list/detail views
 - [ ] PDF first-page thumbnail (future)
   - [ ] Extract first page as image
   - [ ] Requires PDF rendering library
 
 ### UI Enhancements
-- [ ] Display thumbnails in media list grid
-- [ ] Show renditions in media detail view
+- [x] Display thumbnails in media list grid
+- [x] Show renditions in media detail view
 - [ ] Bulk upload support
   - [ ] Multiple file selection
   - [ ] Queue and progress for each file
