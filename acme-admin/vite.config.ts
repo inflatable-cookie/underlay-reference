@@ -4,6 +4,12 @@ import devtoolsJson from "vite-plugin-devtools-json";
 
 export default defineConfig({
     plugins: [devtoolsJson(), sveltekit() as PluginOption],
+    test: {
+        include: ["tests/**/*.{test,spec}.ts"],
+        environment: "jsdom",
+        globals: true,
+        setupFiles: ["tests/setup.ts"],
+    },
     resolve: {
         dedupe: ["@decodelabs/underlay"],
     },
