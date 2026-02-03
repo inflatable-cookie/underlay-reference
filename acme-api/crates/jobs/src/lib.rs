@@ -299,13 +299,12 @@ impl JobHandler for GenerateProjectReportHandler {
             .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
 
         // Fetch project name
-        let project_name: Option<String> = sqlx::query_scalar(
-            r#"SELECT name FROM tasks.projects WHERE id = $1"#,
-        )
-        .bind(payload.project_id)
-        .fetch_optional(self.pool.as_ref())
-        .await
-        .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+        let project_name: Option<String> =
+            sqlx::query_scalar(r#"SELECT name FROM tasks.projects WHERE id = $1"#)
+                .bind(payload.project_id)
+                .fetch_optional(self.pool.as_ref())
+                .await
+                .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
 
         let Some(project_name) = project_name else {
             return Err(JobHandlerError::permanent("project not found"));
@@ -397,8 +396,16 @@ pub struct GenerateThumbnailHandler {
 }
 
 impl GenerateThumbnailHandler {
-    pub fn new(pool: Arc<PgPool>, blob_adapter: Arc<dyn BlobAdapter>, media_config: MediaConfig) -> Self {
-        Self { pool, blob_adapter, media_config }
+    pub fn new(
+        pool: Arc<PgPool>,
+        blob_adapter: Arc<dyn BlobAdapter>,
+        media_config: MediaConfig,
+    ) -> Self {
+        Self {
+            pool,
+            blob_adapter,
+            media_config,
+        }
     }
 }
 
@@ -728,7 +735,8 @@ impl JobHandler for CheckDueRemindersHandler {
             .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
 
         let days_ahead = payload.days_ahead.unwrap_or(1);
-        let target_date = chrono::Utc::now().date_naive() + chrono::Duration::days(days_ahead as i64);
+        let target_date =
+            chrono::Utc::now().date_naive() + chrono::Duration::days(days_ahead as i64);
 
         // Find tasks due on target date with assigned users
         let due_tasks: Vec<DueTask> = sqlx::query_as(
@@ -758,7 +766,11 @@ impl JobHandler for CheckDueRemindersHandler {
             });
 
             match job_repo
-                .create("tasks.send_reminder", reminder_payload, &JobConfig::default())
+                .create(
+                    "tasks.send_reminder",
+                    reminder_payload,
+                    &JobConfig::default(),
+                )
                 .await
             {
                 Ok(_) => enqueued += 1,
@@ -881,7 +893,10 @@ pub fn create_registry(pool: Arc<PgPool>) -> JobRegistry {
 }
 
 /// Create a job registry with blob adapter for media processing jobs.
-pub fn create_registry_with_blob(pool: Arc<PgPool>, blob_adapter: Option<Arc<dyn BlobAdapter>>) -> JobRegistry {
+pub fn create_registry_with_blob(
+    pool: Arc<PgPool>,
+    blob_adapter: Option<Arc<dyn BlobAdapter>>,
+) -> JobRegistry {
     create_registry_with_media(pool, blob_adapter, MediaConfig::default())
 }
 
@@ -908,7 +923,11 @@ pub fn create_registry_with_media(
 
     // Media handlers (require blob adapter)
     if let Some(blob) = blob_adapter.clone() {
-        registry.register(GenerateThumbnailHandler::new(pool.clone(), blob, media_config));
+        registry.register(GenerateThumbnailHandler::new(
+            pool.clone(),
+            blob,
+            media_config,
+        ));
     }
     registry.register(OrphanMediaCleanupHandler::new(pool));
 
@@ -983,7 +1002,6 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
                 ..Default::default()
             },
         },
-
         // ====================================================================
         // Domain-specific tasks (examples)
         // ====================================================================

@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use acme_infra::EmailConfig;
+use async_trait::async_trait;
 use underlay_auth_email_totp::{EmailTotpError, EmailTotpResult, EmailTotpSender};
 use underlay_email::{EmailAddress, EmailContext, EmailManager, EmailTemplateEngine};
 
@@ -57,10 +57,9 @@ impl EmailTotpSender for AcmeEmailTotpSender {
         // Build subject based on purpose
         let subject = match purpose {
             "login" => format!("Your {} login code", self.email_config.app_name),
-            "password_change" => format!(
-                "Your {} password change code",
-                self.email_config.app_name
-            ),
+            "password_change" => {
+                format!("Your {} password change code", self.email_config.app_name)
+            }
             "password_reset" => format!("Reset your {} password", self.email_config.app_name),
             _ => format!("Your {} verification code", self.email_config.app_name),
         };

@@ -683,12 +683,10 @@ pub async fn list_media_usages(
 
 /// Get usage count for a media item.
 pub async fn get_media_usage_count(pool: &DbPool, media_id: Uuid) -> Result<i64, sqlx::Error> {
-    sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM media.media_usage WHERE media_id = $1",
-    )
-    .bind(media_id)
-    .fetch_one(pool)
-    .await
+    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM media.media_usage WHERE media_id = $1")
+        .bind(media_id)
+        .fetch_one(pool)
+        .await
 }
 
 /// List media items with zero usages (excludes incomplete uploads).

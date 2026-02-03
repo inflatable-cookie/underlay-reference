@@ -205,12 +205,12 @@ impl AcmeLocalAuthService {
         }));
 
         // WebAuthn relying party configuration
-        let webauthn_rp_id = std::env::var("WEBAUTHN_RP_ID")
-            .unwrap_or_else(|_| "localhost".to_string());
+        let webauthn_rp_id =
+            std::env::var("WEBAUTHN_RP_ID").unwrap_or_else(|_| "localhost".to_string());
         let webauthn_rp_origin = std::env::var("WEBAUTHN_RP_ORIGIN")
             .unwrap_or_else(|_| "http://localhost:4174".to_string());
-        let webauthn_rp_name = std::env::var("WEBAUTHN_RP_NAME")
-            .unwrap_or_else(|_| "Acme".to_string());
+        let webauthn_rp_name =
+            std::env::var("WEBAUTHN_RP_NAME").unwrap_or_else(|_| "Acme".to_string());
 
         let webauthn = WebAuthnService::new(WebAuthnConfig {
             rp_id: webauthn_rp_id.clone(),
@@ -318,7 +318,8 @@ impl AcmeLocalAuthService {
     async fn check_password_change_rate_limit(&self, user_id: Uuid) -> AuthResult<()> {
         let key = format!("password_change:{}", user_id);
 
-        let rl_config = RateLimitConfig::per_hour(self.config.password_change_rate_limit_per_hour.into());
+        let rl_config =
+            RateLimitConfig::per_hour(self.config.password_change_rate_limit_per_hour.into());
 
         let result = self
             .rate_limiter
@@ -339,7 +340,8 @@ impl AcmeLocalAuthService {
     async fn check_passkey_register_rate_limit(&self, user_id: Uuid) -> AuthResult<()> {
         let key = format!("passkey_register:{}", user_id);
 
-        let rl_config = RateLimitConfig::per_hour(self.config.passkey_register_rate_limit_per_hour.into());
+        let rl_config =
+            RateLimitConfig::per_hour(self.config.passkey_register_rate_limit_per_hour.into());
 
         let result = self
             .rate_limiter
@@ -363,7 +365,8 @@ impl AcmeLocalAuthService {
             None => "passkey_login:discoverable".to_string(),
         };
 
-        let rl_config = RateLimitConfig::per_hour(self.config.passkey_login_rate_limit_per_hour.into());
+        let rl_config =
+            RateLimitConfig::per_hour(self.config.passkey_login_rate_limit_per_hour.into());
 
         let result = self
             .rate_limiter
@@ -1527,7 +1530,8 @@ impl AcmeLocalAuthService {
         user_id: Uuid,
         roles: Vec<String>,
     ) -> AuthResult<(Tokens, Session)> {
-        self.create_session_with_fingerprint(user_id, roles, None).await
+        self.create_session_with_fingerprint(user_id, roles, None)
+            .await
     }
 
     async fn create_session_with_fingerprint(
@@ -1981,7 +1985,9 @@ impl AcmeLocalAuthService {
             5, // 5 minutes
         )
         .await
-        .map_err(|e| AuthError::Internal(format!("Failed to create verification session: {}", e)))?;
+        .map_err(|e| {
+            AuthError::Internal(format!("Failed to create verification session: {}", e))
+        })?;
 
         Ok(session)
     }
@@ -1994,7 +2000,10 @@ impl AcmeLocalAuthService {
     ///
     /// Returns the user ID and email if the user exists and is active.
     /// Returns None if user doesn't exist or is not active (prevents enumeration).
-    pub async fn get_user_for_password_reset(&self, email: &str) -> AuthResult<Option<(Uuid, String)>> {
+    pub async fn get_user_for_password_reset(
+        &self,
+        email: &str,
+    ) -> AuthResult<Option<(Uuid, String)>> {
         // Use case-insensitive lookup for password reset
         let row = sqlx::query(
             r#"
@@ -2061,9 +2070,9 @@ impl AcmeLocalAuthService {
                 | crate::email_totp::EmailTotpError::NoActiveCode => {
                     AuthError::BadRequest("Invalid or expired code".into())
                 }
-                crate::email_totp::EmailTotpError::TooManyAttempts => {
-                    AuthError::BadRequest("Too many invalid attempts. Please request a new code.".into())
-                }
+                crate::email_totp::EmailTotpError::TooManyAttempts => AuthError::BadRequest(
+                    "Too many invalid attempts. Please request a new code.".into(),
+                ),
                 _ => AuthError::Internal(format!("Verification failed: {}", e)),
             })?;
 
@@ -2406,12 +2415,17 @@ impl AcmeLocalAuthService {
             .filter_map(|stored| {
                 // CredentialId deserializes from a base64url JSON string
                 serde_json::from_value::<underlay_auth_webauthn::CredentialId>(
-                    serde_json::Value::String(stored.credential_id.clone())
-                ).ok()
+                    serde_json::Value::String(stored.credential_id.clone()),
+                )
+                .ok()
             })
             .collect::<Vec<_>>();
 
-        let exclude = if exclude.is_empty() { None } else { Some(exclude) };
+        let exclude = if exclude.is_empty() {
+            None
+        } else {
+            Some(exclude)
+        };
 
         let display_name = user
             .display_name
@@ -2463,12 +2477,17 @@ impl AcmeLocalAuthService {
             .ok_or_else(|| AuthError::BadRequest("invalid passkey registration state".into()))?;
 
         let state = underlay_auth_webauthn::WebAuthnService::decode_registration_state(encoded)?;
-        let passkey = self.webauthn.finish_passkey_registration(&state, &credential)?;
+        let passkey = self
+            .webauthn
+            .finish_passkey_registration(&state, &credential)?;
 
         let stored_passkey = self.webauthn.stored_passkey_from_passkey(&passkey)?;
         let secret = serde_json::to_string(&stored_passkey)
             .map_err(|_| AuthError::Internal("failed to encode passkey".into()))?;
-        let metadata = underlay_auth_webauthn::WebAuthnService::credential_metadata_from_stored_passkey(&stored_passkey);
+        let metadata =
+            underlay_auth_webauthn::WebAuthnService::credential_metadata_from_stored_passkey(
+                &stored_passkey,
+            );
 
         let credential_id = Uuid::new_v7();
         let now = Utc::now();
@@ -2519,7 +2538,8 @@ impl AcmeLocalAuthService {
             }
 
             let (options, state) = self.webauthn.start_passkey_authentication(allowed)?;
-            let encoded = underlay_auth_webauthn::WebAuthnService::encode_authentication_state(&state)?;
+            let encoded =
+                underlay_auth_webauthn::WebAuthnService::encode_authentication_state(&state)?;
 
             let state_id = self
                 .create_public_auth_state(
@@ -2536,7 +2556,10 @@ impl AcmeLocalAuthService {
         }
 
         let (options, state) = self.webauthn.start_discoverable_authentication()?;
-        let encoded = underlay_auth_webauthn::WebAuthnService::encode_discoverable_authentication_state(&state)?;
+        let encoded =
+            underlay_auth_webauthn::WebAuthnService::encode_discoverable_authentication_state(
+                &state,
+            )?;
 
         let state_id = self
             .create_public_auth_state(
@@ -2567,8 +2590,11 @@ impl AcmeLocalAuthService {
                 AuthError::BadRequest("invalid passkey authentication state".into())
             })?;
 
-            let state = underlay_auth_webauthn::WebAuthnService::decode_authentication_state(encoded)?;
-            let result = self.webauthn.finish_passkey_authentication(&credential, &state)?;
+            let state =
+                underlay_auth_webauthn::WebAuthnService::decode_authentication_state(encoded)?;
+            let result = self
+                .webauthn
+                .finish_passkey_authentication(&credential, &state)?;
 
             let credential_id =
                 underlay_auth_webauthn::WebAuthnService::authentication_result_credential_id_base64url(&result)?;
@@ -2591,12 +2617,16 @@ impl AcmeLocalAuthService {
                 AuthError::BadRequest("invalid passkey authentication state".into())
             })?;
 
-            let state = underlay_auth_webauthn::WebAuthnService::decode_discoverable_authentication_state(encoded)?;
+            let state =
+                underlay_auth_webauthn::WebAuthnService::decode_discoverable_authentication_state(
+                    encoded,
+                )?;
 
             let (identified_user_id, cred_id) = self
                 .webauthn
                 .identify_discoverable_authentication(&credential)?;
-            let credential_id = underlay_auth_webauthn::WebAuthnService::credential_id_to_base64url(&cred_id)?;
+            let credential_id =
+                underlay_auth_webauthn::WebAuthnService::credential_id_to_base64url(&cred_id)?;
 
             let (user_id, passkey_credential_id, stored) = self
                 .find_passkey_by_credential_id(&credential_id)
@@ -2618,7 +2648,9 @@ impl AcmeLocalAuthService {
         };
 
         // Update the stored passkey with new counter
-        let update_result = self.webauthn.update_stored_passkey_after_authentication(&stored, &result)?;
+        let update_result = self
+            .webauthn
+            .update_stored_passkey_after_authentication(&stored, &result)?;
         if update_result.changed {
             let updated_secret = serde_json::to_string(&update_result.stored_passkey)
                 .map_err(|_| AuthError::Internal("failed to encode passkey".into()))?;
@@ -2723,9 +2755,9 @@ impl AcmeLocalAuthService {
                 AuthError::BadRequest("invalid or expired passkey verification".into())
             })?;
 
-        let state_data = value.as_object().ok_or_else(|| {
-            AuthError::BadRequest("invalid passkey verification state".into())
-        })?;
+        let state_data = value
+            .as_object()
+            .ok_or_else(|| AuthError::BadRequest("invalid passkey verification state".into()))?;
 
         let encoded = state_data
             .get("encoded_state")
@@ -2751,10 +2783,14 @@ impl AcmeLocalAuthService {
         }
 
         let state = underlay_auth_webauthn::WebAuthnService::decode_authentication_state(encoded)?;
-        let result = self.webauthn.finish_passkey_authentication(&credential, &state)?;
+        let result = self
+            .webauthn
+            .finish_passkey_authentication(&credential, &state)?;
 
         let credential_id =
-            underlay_auth_webauthn::WebAuthnService::authentication_result_credential_id_base64url(&result)?;
+            underlay_auth_webauthn::WebAuthnService::authentication_result_credential_id_base64url(
+                &result,
+            )?;
 
         let (pk_user_id, passkey_credential_id, stored) = self
             .find_passkey_by_credential_id(&credential_id)
@@ -2766,7 +2802,9 @@ impl AcmeLocalAuthService {
         }
 
         // Update the stored passkey with new counter
-        let update_result = self.webauthn.update_stored_passkey_after_authentication(&stored, &result)?;
+        let update_result = self
+            .webauthn
+            .update_stored_passkey_after_authentication(&stored, &result)?;
         if update_result.changed {
             let updated_secret = serde_json::to_string(&update_result.stored_passkey)
                 .map_err(|_| AuthError::Internal("failed to encode passkey".into()))?;
@@ -2794,7 +2832,9 @@ impl AcmeLocalAuthService {
             5,
         )
         .await
-        .map_err(|e| AuthError::Internal(format!("Failed to create verification session: {}", e)))?;
+        .map_err(|e| {
+            AuthError::Internal(format!("Failed to create verification session: {}", e))
+        })?;
 
         Ok(session)
     }

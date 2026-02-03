@@ -2,8 +2,8 @@
 //!
 //! Endpoints for user profile management.
 
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use acme_core::AppError;
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use underlay_core::SingleResponse;
 use validator::Validate;
 
@@ -55,7 +55,10 @@ pub async fn update_profile(
     if let Err(errors) = request.validate() {
         return error_response(
             StatusCode::BAD_REQUEST,
-            AppError::new("validation.failed", format!("Validation failed: {}", errors)),
+            AppError::new(
+                "validation.failed",
+                format!("Validation failed: {}", errors),
+            ),
         );
     }
 

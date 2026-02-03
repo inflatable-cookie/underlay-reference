@@ -39,24 +39,20 @@ async fn main() -> anyhow::Result<()> {
         Ok(service) => Arc::new(service),
         Err(err) => {
             tracing::error!(code = err.code(), message = %err.message(), "failed to configure local auth");
-            tracing::error!(
-                "set AUTH_JWT_PRIVATE_KEY/AUTH_JWT_PUBLIC_KEY env vars"
-            );
+            tracing::error!("set AUTH_JWT_PRIVATE_KEY/AUTH_JWT_PUBLIC_KEY env vars");
             std::process::exit(1);
         }
     };
 
-    let auth_provider: Arc<dyn underlay_auth::AuthProvider> = Arc::new(
-        acme_auth::AcmeLocalAuthProvider::new(local_auth.clone()),
-    );
+    let auth_provider: Arc<dyn underlay_auth::AuthProvider> =
+        Arc::new(acme_auth::AcmeLocalAuthProvider::new(local_auth.clone()));
 
     // Configure auth cookies
     let cookie_secure = std::env::var("COOKIE_SECURE")
         .map(|v| v == "true" || v == "1")
         .unwrap_or(false);
 
-    let mut cookie_config = underlay_http::AuthCookieConfig::new()
-        .with_secure(cookie_secure);
+    let mut cookie_config = underlay_http::AuthCookieConfig::new().with_secure(cookie_secure);
 
     if let Ok(domain) = std::env::var("COOKIE_DOMAIN") {
         cookie_config = cookie_config.with_domain(domain);
@@ -68,7 +64,9 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Allow customizing refresh token max age (in seconds)
-    if let Ok(max_age) = std::env::var("REFRESH_TOKEN_MAX_AGE").and_then(|v| v.parse::<u64>().map_err(|_| std::env::VarError::NotPresent)) {
+    if let Ok(max_age) = std::env::var("REFRESH_TOKEN_MAX_AGE")
+        .and_then(|v| v.parse::<u64>().map_err(|_| std::env::VarError::NotPresent))
+    {
         cookie_config = cookie_config.with_refresh_token_max_age(max_age);
     }
 
@@ -136,8 +134,8 @@ async fn main() -> anyhow::Result<()> {
     // In local/dev, use LocalAdapter with filesystem storage
     // In production, this should be configured to use S3Adapter
     let blob_adapter: Arc<dyn BlobAdapter> = if env == "local" || env == "dev" {
-        let base_path = std::env::var("BLOB_STORAGE_DIR")
-            .unwrap_or_else(|_| "./.blob-storage".to_string());
+        let base_path =
+            std::env::var("BLOB_STORAGE_DIR").unwrap_or_else(|_| "./.blob-storage".to_string());
         let serve_url_base = std::env::var("BLOB_SERVE_URL")
             .unwrap_or_else(|_| format!("http://{}:{}/v1/dev-blobs", host, port));
 
@@ -201,10 +199,10 @@ async fn shutdown_signal() {
     {
         use tokio::signal::unix::{signal as unix_signal, SignalKind};
 
-        let mut sigint = unix_signal(SignalKind::interrupt())
-            .expect("failed to install SIGINT handler");
-        let mut sigterm = unix_signal(SignalKind::terminate())
-            .expect("failed to install SIGTERM handler");
+        let mut sigint =
+            unix_signal(SignalKind::interrupt()).expect("failed to install SIGINT handler");
+        let mut sigterm =
+            unix_signal(SignalKind::terminate()).expect("failed to install SIGTERM handler");
 
         tokio::select! {
             _ = sigint.recv() => {

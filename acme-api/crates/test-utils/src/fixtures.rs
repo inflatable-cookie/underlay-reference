@@ -4,8 +4,8 @@
 //! All fixtures use UUIDv7 for predictable, time-ordered IDs.
 
 use chrono::{DateTime, Utc};
-use rand::Rng;
 use rand::thread_rng;
+use rand::Rng;
 use sqlx::PgPool;
 use uuid::Uuid;
 

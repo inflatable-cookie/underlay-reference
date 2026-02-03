@@ -63,8 +63,7 @@ pub async fn cleanup_expired_sessions(
 
     info!(
         expired_deleted,
-        revoked_deleted,
-        "Session cleanup completed"
+        revoked_deleted, "Session cleanup completed"
     );
 
     Ok(SessionCleanupResult {

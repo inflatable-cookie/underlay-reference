@@ -11,13 +11,9 @@ async fn main() {
         }
     }
 
-    if let Err(err) = underlay_devtools::reset_from_env(
-        "DATABASE_URL",
-        acme_db::DEV_RESET_SCHEMAS,
-        true,
-        true,
-    )
-    .await
+    if let Err(err) =
+        underlay_devtools::reset_from_env("DATABASE_URL", acme_db::DEV_RESET_SCHEMAS, true, true)
+            .await
     {
         eprintln!("Failed to reset schemas: {err}");
         std::process::exit(1);

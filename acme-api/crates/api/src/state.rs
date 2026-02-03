@@ -1,16 +1,16 @@
 //! Application state and authentication extractors for the Acme API.
 
+use acme_auth::{user_principal_from_underlay, EmailTotpService, UserPrincipal, UserRole};
+use acme_db::DbPool;
+use acme_infra::EmailConfig;
 use axum::{
     extract::FromRequestParts,
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
     Json,
 };
-use acme_auth::{user_principal_from_underlay, EmailTotpService, UserPrincipal, UserRole};
-use acme_db::DbPool;
-use acme_infra::EmailConfig;
-use serde_json::json;
 use once_cell::sync::OnceCell;
+use serde_json::json;
 use std::sync::Arc;
 use underlay_auth::Authenticated;
 use underlay_blob::BlobAdapter;

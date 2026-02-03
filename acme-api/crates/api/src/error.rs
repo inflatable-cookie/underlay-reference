@@ -1,10 +1,7 @@
 //! Error handling utilities for the Acme API.
 
-use axum::{
-    http::StatusCode,
-    response::Response,
-};
 use acme_core::AppError;
+use axum::{http::StatusCode, response::Response};
 use serde::Serialize;
 use utoipa::ToSchema;
 

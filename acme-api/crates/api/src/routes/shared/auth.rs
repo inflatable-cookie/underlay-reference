@@ -12,13 +12,13 @@
 //!
 //! The refresh endpoint accepts the refresh token from EITHER the request body OR cookie.
 
+use acme_core::{AppError, Uuid};
 use axum::{
     extract::{Path, State},
     http::{header, HeaderMap, HeaderValue, StatusCode},
     response::IntoResponse,
     Json,
 };
-use acme_core::{AppError, Uuid};
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use underlay_core::{ListResponse, SingleResponse};
@@ -26,14 +26,13 @@ use underlay_http::{clear_auth_cookies, extract_refresh_token, set_auth_cookies}
 use validator::Validate;
 
 use crate::dto::auth::{
-    auth_session_dto_from_session, roles_for_user, AuthUserDto,
-    ChangePasswordRequest, ChangePasswordWithVerificationRequest,
-    EmailTotpRequestRequest, EmailTotpRequestResponse, EmailTotpVerifyRequest, EmailTotpVerifyResponse,
-    LoginFinishRequest, LoginRequest, LoginStartRequest, LoginStartResponse,
-    LogoutRequest, PasswordResetCompleteRequest, PasswordResetRequestRequest,
-    PasswordResetVerifyRequest, PasswordResetVerifyResponse,
-    RefreshRequest, RegisterRequest, SessionDto,
-    TotpEnableRequest, TotpStatusResponse, TotpVerifyRequest, TwoFactorStatusResponse,
+    auth_session_dto_from_session, roles_for_user, AuthUserDto, ChangePasswordRequest,
+    ChangePasswordWithVerificationRequest, EmailTotpRequestRequest, EmailTotpRequestResponse,
+    EmailTotpVerifyRequest, EmailTotpVerifyResponse, LoginFinishRequest, LoginRequest,
+    LoginStartRequest, LoginStartResponse, LogoutRequest, PasswordResetCompleteRequest,
+    PasswordResetRequestRequest, PasswordResetVerifyRequest, PasswordResetVerifyResponse,
+    RefreshRequest, RegisterRequest, SessionDto, TotpEnableRequest, TotpStatusResponse,
+    TotpVerifyRequest, TwoFactorStatusResponse,
 };
 use crate::error::error_response;
 use crate::state::{AppState, AuthenticatedUser};
@@ -250,7 +249,12 @@ pub async fn register(
                 tracing::warn!("Failed to set auth cookies: {}", e);
             }
 
-            (StatusCode::OK, response_headers, Json(SingleResponse { data: dto })).into_response()
+            (
+                StatusCode::OK,
+                response_headers,
+                Json(SingleResponse { data: dto }),
+            )
+                .into_response()
         }
         Err(err) => map_auth_error_to_response(err),
     }
@@ -299,7 +303,12 @@ pub async fn login(
                 tracing::warn!("Failed to set auth cookies: {}", e);
             }
 
-            (StatusCode::OK, response_headers, Json(SingleResponse { data: dto })).into_response()
+            (
+                StatusCode::OK,
+                response_headers,
+                Json(SingleResponse { data: dto }),
+            )
+                .into_response()
         }
         Err(err) => map_auth_error_to_response(err),
     }
@@ -350,7 +359,11 @@ pub async fn login_start(
                 tracing::warn!("Failed to set auth cookies: {}", e);
             }
 
-            (StatusCode::OK, response_headers, Json(SingleResponse { data: response }))
+            (
+                StatusCode::OK,
+                response_headers,
+                Json(SingleResponse { data: response }),
+            )
                 .into_response()
         }
         Ok(acme_auth::LoginStartOutcome::TwoFactorRequired { login_state_id }) => {
@@ -376,7 +389,10 @@ pub async fn login_start(
                 tracing::error!("Failed to send email code: {}", e);
                 return error_response(
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    AppError::new("auth.email_send_failed", "Failed to send verification email"),
+                    AppError::new(
+                        "auth.email_send_failed",
+                        "Failed to send verification email",
+                    ),
                 )
                 .into_response();
             }
@@ -436,7 +452,12 @@ pub async fn login_finish(
                 tracing::warn!("Failed to set auth cookies: {}", e);
             }
 
-            return (StatusCode::OK, response_headers, Json(SingleResponse { data: dto })).into_response();
+            return (
+                StatusCode::OK,
+                response_headers,
+                Json(SingleResponse { data: dto }),
+            )
+                .into_response();
         }
         Err(underlay_auth::AuthError::TwoFactorNotSetUp) => {
             // Not a TOTP state - try email verification
@@ -448,7 +469,11 @@ pub async fn login_finish(
 
     // Try email verification
     // First validate the state and code
-    let user_id = match state.local_auth.get_email_login_state(state_id, &fingerprint).await {
+    let user_id = match state
+        .local_auth
+        .get_email_login_state(state_id, &fingerprint)
+        .await
+    {
         Ok(uid) => uid,
         Err(err) => return map_auth_error_to_response(err),
     };
@@ -471,39 +496,45 @@ pub async fn login_finish(
                     let dto = auth_session_dto_from_session(session, role);
 
                     let mut response_headers = HeaderMap::new();
-                    if let Err(e) =
-                        set_auth_cookies(&mut response_headers, &refresh_token, &state.cookie_config)
-                    {
+                    if let Err(e) = set_auth_cookies(
+                        &mut response_headers,
+                        &refresh_token,
+                        &state.cookie_config,
+                    ) {
                         tracing::warn!("Failed to set auth cookies: {}", e);
                     }
 
-                    (StatusCode::OK, response_headers, Json(SingleResponse { data: dto })).into_response()
+                    (
+                        StatusCode::OK,
+                        response_headers,
+                        Json(SingleResponse { data: dto }),
+                    )
+                        .into_response()
                 }
                 Err(err) => map_auth_error_to_response(err),
             }
         }
         Err(acme_auth::EmailTotpError::InvalidCode) => {
-            let _ = state.local_auth.increment_email_login_attempts(state_id).await;
+            let _ = state
+                .local_auth
+                .increment_email_login_attempts(state_id)
+                .await;
             error_response(
                 StatusCode::BAD_REQUEST,
                 AppError::new("auth.invalid_code", "Invalid verification code"),
             )
             .into_response()
         }
-        Err(acme_auth::EmailTotpError::CodeExpired) => {
-            error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("auth.code_expired", "Verification code has expired"),
-            )
-            .into_response()
-        }
-        Err(acme_auth::EmailTotpError::TooManyAttempts) => {
-            error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("auth.too_many_attempts", "Too many invalid attempts"),
-            )
-            .into_response()
-        }
+        Err(acme_auth::EmailTotpError::CodeExpired) => error_response(
+            StatusCode::BAD_REQUEST,
+            AppError::new("auth.code_expired", "Verification code has expired"),
+        )
+        .into_response(),
+        Err(acme_auth::EmailTotpError::TooManyAttempts) => error_response(
+            StatusCode::BAD_REQUEST,
+            AppError::new("auth.too_many_attempts", "Too many invalid attempts"),
+        )
+        .into_response(),
         Err(e) => {
             tracing::error!("Email TOTP verification error: {}", e);
             error_response(
@@ -536,7 +567,11 @@ pub async fn refresh(
     // Extract fingerprint for session validation
     let fingerprint = extract_session_fingerprint(&headers);
 
-    match state.local_auth.refresh_with_fingerprint(&refresh_token, Some(fingerprint)).await {
+    match state
+        .local_auth
+        .refresh_with_fingerprint(&refresh_token, Some(fingerprint))
+        .await
+    {
         Ok(session) => {
             let role = state
                 .local_auth
@@ -549,13 +584,20 @@ pub async fn refresh(
             let dto = auth_session_dto_from_session(session, role);
 
             let mut response_headers = HeaderMap::new();
-            if let Err(e) =
-                set_auth_cookies(&mut response_headers, &new_refresh_token, &state.cookie_config)
-            {
+            if let Err(e) = set_auth_cookies(
+                &mut response_headers,
+                &new_refresh_token,
+                &state.cookie_config,
+            ) {
                 tracing::warn!("Failed to set auth cookies: {}", e);
             }
 
-            (StatusCode::OK, response_headers, Json(SingleResponse { data: dto })).into_response()
+            (
+                StatusCode::OK,
+                response_headers,
+                Json(SingleResponse { data: dto }),
+            )
+                .into_response()
         }
         Err(err) => map_auth_error_to_response(err),
     }
@@ -947,7 +989,10 @@ pub async fn totp_verify(
         }
         Err(underlay_auth::AuthError::TwoFactorNotSetUp) => error_response(
             StatusCode::BAD_REQUEST,
-            AppError::new("auth.totp.not_configured", "TOTP is not configured for this account"),
+            AppError::new(
+                "auth.totp.not_configured",
+                "TOTP is not configured for this account",
+            ),
         )
         .into_response(),
         Err(underlay_auth::AuthError::TwoFactorInvalid) => error_response(
@@ -978,7 +1023,10 @@ pub async fn change_password_with_verification(
         Err(_) => {
             return error_response(
                 StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_session_id", "Invalid verification session ID"),
+                AppError::new(
+                    "validation.invalid_session_id",
+                    "Invalid verification session ID",
+                ),
             )
             .into_response();
         }
@@ -1036,7 +1084,11 @@ pub async fn password_reset_request(
             // User exists - send the reset code
             if let Err(e) = state
                 .email_totp
-                .request_code(user_id, &user_email, acme_db::auth::EmailTotpPurpose::PasswordReset)
+                .request_code(
+                    user_id,
+                    &user_email,
+                    acme_db::auth::EmailTotpPurpose::PasswordReset,
+                )
                 .await
             {
                 // Log error but don't reveal to client
@@ -1084,13 +1136,11 @@ pub async fn password_reset_verify(
             };
             (StatusCode::OK, Json(SingleResponse { data: response })).into_response()
         }
-        Err(underlay_auth::AuthError::BadRequest(msg)) => {
-            error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("auth.password_reset.invalid_code", msg),
-            )
-            .into_response()
-        }
+        Err(underlay_auth::AuthError::BadRequest(msg)) => error_response(
+            StatusCode::BAD_REQUEST,
+            AppError::new("auth.password_reset.invalid_code", msg),
+        )
+        .into_response(),
         Err(err) => map_auth_error_to_response(err),
     }
 }
@@ -1151,9 +1201,9 @@ pub async fn password_reset_complete(
 // ============================================================================
 
 use crate::dto::auth::{
-    PasskeyCredentialDto, PasskeyLoginFinishRequest, PasskeyLoginStartDto, PasskeyLoginStartRequest,
-    PasskeyRegisterFinishRequest, PasskeyRenameRequest, PasskeyStartRegistrationDto,
-    PasskeyVerifyFinishRequest, PasskeyVerifyStartRequest,
+    PasskeyCredentialDto, PasskeyLoginFinishRequest, PasskeyLoginStartDto,
+    PasskeyLoginStartRequest, PasskeyRegisterFinishRequest, PasskeyRenameRequest,
+    PasskeyStartRegistrationDto, PasskeyVerifyFinishRequest, PasskeyVerifyStartRequest,
 };
 
 /// List all passkeys for the current user.
@@ -1244,7 +1294,11 @@ pub async fn passkey_register_start(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    match state.local_auth.passkey_register_start(user.user_id.0).await {
+    match state
+        .local_auth
+        .passkey_register_start(user.user_id.0)
+        .await
+    {
         Ok(response) => {
             let dto = PasskeyStartRegistrationDto {
                 options: response.options,
@@ -1303,7 +1357,11 @@ pub async fn passkey_login_start(
         return validation_error_response(validation_err).into_response();
     }
 
-    match state.local_auth.passkey_login_start(payload.email.as_deref()).await {
+    match state
+        .local_auth
+        .passkey_login_start(payload.email.as_deref())
+        .await
+    {
         Ok(response) => {
             let dto = PasskeyLoginStartDto {
                 options: response.options,
@@ -1362,7 +1420,12 @@ pub async fn passkey_login_finish(
                 tracing::warn!("Failed to set auth cookies: {}", e);
             }
 
-            (StatusCode::OK, response_headers, Json(SingleResponse { data: dto })).into_response()
+            (
+                StatusCode::OK,
+                response_headers,
+                Json(SingleResponse { data: dto }),
+            )
+                .into_response()
         }
         Err(err) => map_auth_error_to_response(err),
     }

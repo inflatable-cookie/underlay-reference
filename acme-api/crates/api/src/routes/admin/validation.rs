@@ -93,12 +93,9 @@ async fn validate_category_slug(
     pool: &acme_db::DbPool,
     req: &ValidateFieldRequest,
 ) -> Result<ValidationResponse, AnyhowError> {
-    let is_available = categories::is_slug_available(
-        pool,
-        &req.value,
-        req.exclude_id.map(|id| id.into_inner()),
-    )
-    .await?;
+    let is_available =
+        categories::is_slug_available(pool, &req.value, req.exclude_id.map(|id| id.into_inner()))
+            .await?;
 
     Ok(if is_available {
         ValidationResponse {

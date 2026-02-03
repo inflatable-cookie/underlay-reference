@@ -358,10 +358,7 @@ pub async fn retry_job(
 /// Get job statistics for the dashboard.
 ///
 /// GET /v1/admin/jobs/stats
-pub async fn get_job_stats(
-    _user: AdminUser,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+pub async fn get_job_stats(_user: AdminUser, State(state): State<AppState>) -> impl IntoResponse {
     let Some(ref job_repo) = state.job_repository else {
         return error_response(
             StatusCode::SERVICE_UNAVAILABLE,

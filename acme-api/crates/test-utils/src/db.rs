@@ -71,9 +71,7 @@ pub async fn setup_test_db() -> TestDb {
     let pool = TEST_POOL
         .get_or_init(|| {
             tokio::task::block_in_place(|| {
-                tokio::runtime::Handle::current().block_on(async {
-                    create_test_pool().await
-                })
+                tokio::runtime::Handle::current().block_on(async { create_test_pool().await })
             })
         })
         .clone();

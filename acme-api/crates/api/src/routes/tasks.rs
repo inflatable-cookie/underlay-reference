@@ -146,12 +146,23 @@ pub async fn create_project(
     let user_id = user.user_id.0.into_inner();
     let project_id = Uuid::new_v7().into_inner();
 
-    match tasks::create_project(pool, project_id, user_id, &req.name, req.description.as_deref(), None)
-        .await
+    match tasks::create_project(
+        pool,
+        project_id,
+        user_id,
+        &req.name,
+        req.description.as_deref(),
+        None,
+    )
+    .await
     {
         Ok(project) => {
             let response: ProjectResponse = project.into();
-            (StatusCode::CREATED, Json(serde_json::json!({ "data": response }))).into_response()
+            (
+                StatusCode::CREATED,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response()
         }
         Err(e) => {
             tracing::error!("Failed to create project: {}", e);
@@ -334,7 +345,11 @@ pub async fn create_task(
     {
         Ok(task) => {
             let response: TaskResponse = task.into();
-            (StatusCode::CREATED, Json(serde_json::json!({ "data": response }))).into_response()
+            (
+                StatusCode::CREATED,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response()
         }
         Err(e) => {
             tracing::error!("Failed to create task: {}", e);

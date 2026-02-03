@@ -155,7 +155,6 @@ pub struct EmailConfig {
     pub dev_capture: Option<DevCaptureEmailConfig>,
 }
 
-
 /// Top-level application configuration.
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -221,8 +220,8 @@ impl AppConfig {
         let email_adapter = EmailAdapterType::parse(&email_adapter_str);
 
         // Email branding
-        let default_from =
-            env::var("EMAIL_DEFAULT_FROM").unwrap_or_else(|_| "noreply@acme.example.com".to_string());
+        let default_from = env::var("EMAIL_DEFAULT_FROM")
+            .unwrap_or_else(|_| "noreply@acme.example.com".to_string());
         let app_name = env::var("EMAIL_APP_NAME").unwrap_or_else(|_| "Acme".to_string());
         let app_url =
             env::var("EMAIL_APP_URL").unwrap_or_else(|_| "https://acme.example.com".to_string());

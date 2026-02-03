@@ -157,14 +157,14 @@ impl Default for AuthConfig {
             max_backup_code_attempts: 5,
 
             // Timeouts
-            totp_state_timeout: Duration::from_secs(300),           // 5 minutes
-            email_state_timeout: Duration::from_secs(600),          // 10 minutes
+            totp_state_timeout: Duration::from_secs(300), // 5 minutes
+            email_state_timeout: Duration::from_secs(600), // 10 minutes
             verification_session_timeout: Duration::from_secs(300), // 5 minutes
-            rate_limit_cleanup_interval: Duration::from_secs(300),  // 5 minutes
+            rate_limit_cleanup_interval: Duration::from_secs(300), // 5 minutes
 
             // Rate limit responses
-            rate_limit_retry_after_short: Duration::from_secs(60),  // 1 minute
-            rate_limit_retry_after_long: Duration::from_secs(300),  // 5 minutes
+            rate_limit_retry_after_short: Duration::from_secs(60), // 1 minute
+            rate_limit_retry_after_long: Duration::from_secs(300), // 5 minutes
 
             // Account lockout
             max_failed_logins: 5,

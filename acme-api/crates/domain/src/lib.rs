@@ -202,7 +202,10 @@ mod tests {
     #[test]
     fn task_status_parse_valid_values() {
         assert_eq!(TaskStatus::parse("pending"), Some(TaskStatus::Pending));
-        assert_eq!(TaskStatus::parse("in_progress"), Some(TaskStatus::InProgress));
+        assert_eq!(
+            TaskStatus::parse("in_progress"),
+            Some(TaskStatus::InProgress)
+        );
         assert_eq!(TaskStatus::parse("completed"), Some(TaskStatus::Completed));
         assert_eq!(TaskStatus::parse("cancelled"), Some(TaskStatus::Cancelled));
     }

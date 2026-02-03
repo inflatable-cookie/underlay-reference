@@ -16,12 +16,10 @@ pub use config::{AuthConfig, AuthConfigBuilder};
 pub use email_totp::{
     EmailTotpConfig, EmailTotpError, EmailTotpResult, EmailTotpService, VerificationSession,
 };
-pub use email_totp_repository::{
-    AcmeEmailTotpCodeRepository, AcmeVerificationSessionRepository,
-};
+pub use email_totp_repository::{AcmeEmailTotpCodeRepository, AcmeVerificationSessionRepository};
 pub use email_totp_sender::AcmeEmailTotpSender;
 pub use local::{
-    AuthSession, AcmeLocalAuthProvider, AcmeLocalAuthService, GoogleOAuthStartResult,
+    AcmeLocalAuthProvider, AcmeLocalAuthService, AuthSession, GoogleOAuthStartResult,
     LoginStartOutcome, PasskeyRecord, SessionFingerprint, TotpSetupResult,
 };
 pub use principal::{UserId, UserPrincipal, UserRole};

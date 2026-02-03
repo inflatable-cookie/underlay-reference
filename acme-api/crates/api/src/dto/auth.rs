@@ -367,7 +367,9 @@ impl EmailTotpPurposeDto {
         match self {
             EmailTotpPurposeDto::Login => acme_db::auth::EmailTotpPurpose::Login,
             EmailTotpPurposeDto::PasswordChange => acme_db::auth::EmailTotpPurpose::PasswordChange,
-            EmailTotpPurposeDto::SensitiveAction => acme_db::auth::EmailTotpPurpose::SensitiveAction,
+            EmailTotpPurposeDto::SensitiveAction => {
+                acme_db::auth::EmailTotpPurpose::SensitiveAction
+            }
         }
     }
 }

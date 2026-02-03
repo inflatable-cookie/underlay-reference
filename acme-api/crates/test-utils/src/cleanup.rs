@@ -155,10 +155,7 @@ pub async fn delete_category(pool: &PgPool, category_id: Uuid) -> Result<(), sql
 /// // Clean up by prefix
 /// cleanup::delete_users_by_email_prefix(&pool, &prefix).await;
 /// ```
-pub async fn delete_users_by_email_prefix(
-    pool: &PgPool,
-    prefix: &str,
-) -> Result<u64, sqlx::Error> {
+pub async fn delete_users_by_email_prefix(pool: &PgPool, prefix: &str) -> Result<u64, sqlx::Error> {
     // Get user IDs first
     let user_ids: Vec<(Uuid,)> = sqlx::query_as(
         r#"
@@ -240,24 +237,24 @@ mod tests {
         let _task = create_test_task(db.pool(), project.id, Default::default()).await;
 
         // Delete user (should cascade)
-        delete_user(db.pool(), user.id).await.expect("delete should succeed");
+        delete_user(db.pool(), user.id)
+            .await
+            .expect("delete should succeed");
 
         // Verify user is gone
-        let row: Option<(Uuid,)> =
-            sqlx::query_as("SELECT id FROM auth.users WHERE id = $1")
-                .bind(user.id)
-                .fetch_optional(db.pool())
-                .await
-                .expect("query should succeed");
+        let row: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM auth.users WHERE id = $1")
+            .bind(user.id)
+            .fetch_optional(db.pool())
+            .await
+            .expect("query should succeed");
         assert!(row.is_none(), "user should be deleted");
 
         // Verify project is gone
-        let row: Option<(Uuid,)> =
-            sqlx::query_as("SELECT id FROM acme.projects WHERE id = $1")
-                .bind(project.id)
-                .fetch_optional(db.pool())
-                .await
-                .expect("query should succeed");
+        let row: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM acme.projects WHERE id = $1")
+            .bind(project.id)
+            .fetch_optional(db.pool())
+            .await
+            .expect("query should succeed");
         assert!(row.is_none(), "project should be deleted");
     }
 }

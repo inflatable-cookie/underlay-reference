@@ -1,14 +1,14 @@
 //! Repository implementations for email TOTP using Acme database.
 
-use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use acme_db::auth::{
     check_email_totp_rate_limit, consume_verification_session, create_email_totp_code,
-    create_verification_session, get_email_totp_code_for_verification,
-    get_verification_session, increment_email_totp_attempts, increment_email_totp_send_count,
-    mark_email_totp_code_used, EmailTotpPurpose, VerificationMethod,
+    create_verification_session, get_email_totp_code_for_verification, get_verification_session,
+    increment_email_totp_attempts, increment_email_totp_send_count, mark_email_totp_code_used,
+    EmailTotpPurpose, VerificationMethod,
 };
 use acme_db::DbPool;
+use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use underlay_auth_email_totp::{
     EmailTotpCodeRepository, EmailTotpError, EmailTotpResult, RateLimitStatus, StoredCode,
     VerificationSession, VerificationSessionRepository,
@@ -209,9 +209,10 @@ impl VerificationSessionRepository for AcmeVerificationSessionRepository {
 
         let purpose_enum = parse_purpose(purpose);
 
-        let consumed = consume_verification_session(&self.pool, session_uuid, user_uuid, purpose_enum)
-            .await
-            .map_err(|e| EmailTotpError::Storage(e.to_string()))?;
+        let consumed =
+            consume_verification_session(&self.pool, session_uuid, user_uuid, purpose_enum)
+                .await
+                .map_err(|e| EmailTotpError::Storage(e.to_string()))?;
 
         if !consumed {
             return Err(EmailTotpError::SessionNotFound);

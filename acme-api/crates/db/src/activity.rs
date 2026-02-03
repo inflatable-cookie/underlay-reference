@@ -231,7 +231,10 @@ pub struct LogActivityParams<'a> {
 }
 
 /// Log an activity to the audit log.
-pub async fn log_activity(pool: &DbPool, params: LogActivityParams<'_>) -> Result<Uuid, sqlx::Error> {
+pub async fn log_activity(
+    pool: &DbPool,
+    params: LogActivityParams<'_>,
+) -> Result<Uuid, sqlx::Error> {
     let id = sqlx::query_scalar::<_, Uuid>(
         r#"
         INSERT INTO platform.audit_log (

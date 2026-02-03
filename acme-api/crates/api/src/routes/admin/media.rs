@@ -260,7 +260,10 @@ pub async fn get_media(
         Ok(Some(row)) => {
             // Get current version if set
             let current_version = if let Some(version_id) = row.current_version_id {
-                media::get_media_version(pool, version_id).await.ok().flatten()
+                media::get_media_version(pool, version_id)
+                    .await
+                    .ok()
+                    .flatten()
             } else {
                 None
             };
@@ -351,7 +354,10 @@ pub async fn update_media(
 
             // Get current version if set
             let current_version = if let Some(version_id) = row.current_version_id {
-                media::get_media_version(pool, version_id).await.ok().flatten()
+                media::get_media_version(pool, version_id)
+                    .await
+                    .ok()
+                    .flatten()
             } else {
                 None
             };
@@ -810,7 +816,10 @@ pub async fn finalise_upload(
                 max_attempts: 3,
                 ..Default::default()
             };
-            if let Err(e) = job_repo.create("media.generate_thumbnail", payload, &config).await {
+            if let Err(e) = job_repo
+                .create("media.generate_thumbnail", payload, &config)
+                .await
+            {
                 // Log but don't fail the request - thumbnail is not critical
                 tracing::warn!("Failed to enqueue thumbnail job: {}", e);
             } else {
@@ -837,7 +846,8 @@ pub async fn finalise_upload(
         .await
         .unwrap_or(0);
 
-    let detail = MediaDetailDto::from_media(updated_media, Some(finalised_version.clone()), usage_count);
+    let detail =
+        MediaDetailDto::from_media(updated_media, Some(finalised_version.clone()), usage_count);
     let version_dto = MediaVersionDto::from(finalised_version);
 
     Json(FinaliseUploadResponse {
