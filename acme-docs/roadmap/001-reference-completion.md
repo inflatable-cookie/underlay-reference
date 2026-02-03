@@ -221,9 +221,9 @@ Complete the media library implementation with missing features.
   - [x] Explicitly reject video uploads
 
 ### Server-side Validation
-- [ ] Magic byte detection
-  - [ ] Verify file content matches declared MIME type
-  - [ ] Reject files with mismatched extension/content
+- [x] Magic byte detection
+  - [x] Verify file content matches declared MIME type
+  - [x] Reject files with mismatched extension/content
 - [x] Video format rejection (done client-side)
   - [x] Explicitly reject video uploads with clear error
 - [x] Size limit enforcement (server-side)

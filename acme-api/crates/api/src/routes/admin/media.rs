@@ -700,6 +700,79 @@ pub async fn finalise_upload(
             .into_response();
     }
 
+    // Magic byte detection: verify file content matches declared MIME type
+    let file_bytes = match state.blob_adapter.get_bytes(&object_key).await {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            tracing::error!("Failed to read file for magic byte detection: {}", e);
+            // Continue without magic byte check - don't block upload for this
+            vec![]
+        }
+    };
+
+    if !file_bytes.is_empty() {
+        // Use infer crate to detect actual file type
+        if let Some(detected) = infer::get(&file_bytes) {
+            let detected_mime = detected.mime_type();
+            let declared_mime = &stored.content_type;
+
+            // Check if types are compatible
+            let types_match = match (detected_mime, declared_mime.as_str()) {
+                // Exact match
+                (d, s) if d == s => true,
+                // JPEG variations
+                ("image/jpeg", "image/jpg") | ("image/jpg", "image/jpeg") => true,
+                // SVG is XML-based, infer might detect as text/xml
+                ("text/xml", "image/svg+xml") | ("application/xml", "image/svg+xml") => true,
+                // PDF check
+                ("application/pdf", s) if s == "application/pdf" => true,
+                // Generic image type checks (same category is OK)
+                (d, s) if d.starts_with("image/") && s.starts_with("image/") => {
+                    // Log mismatch but allow - some formats are flexible
+                    if d != s {
+                        tracing::info!(
+                            detected = detected_mime,
+                            declared = declared_mime,
+                            "Minor MIME type mismatch (allowed)"
+                        );
+                    }
+                    true
+                }
+                // Different categories - reject
+                _ => {
+                    tracing::warn!(
+                        detected = detected_mime,
+                        declared = declared_mime,
+                        "MIME type mismatch detected"
+                    );
+                    false
+                }
+            };
+
+            if !types_match {
+                // Clean up: delete the uploaded blob and fail the version
+                let _ = state.blob_adapter.delete(&object_key).await;
+                let _ = media::fail_media_version(pool, version_id).await;
+                return (
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    Json(json!({
+                        "ok": false,
+                        "error": {
+                            "code": "media.content_type_mismatch",
+                            "message": format!(
+                                "File content does not match declared type. Detected: {}, Declared: {}",
+                                detected_mime,
+                                declared_mime
+                            )
+                        }
+                    })),
+                )
+                    .into_response();
+            }
+        }
+        // If infer returns None, allow the upload (unknown format)
+    }
+
     // Update version with storage info
     let finalised_version = match media::finalise_media_version(
         pool,
