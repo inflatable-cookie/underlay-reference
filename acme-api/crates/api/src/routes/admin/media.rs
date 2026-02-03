@@ -2,6 +2,9 @@
 //!
 //! Provides admin endpoints for managing media items, versions, and uploads.
 
+/// Maximum allowed file size for uploads (50 MB).
+const MAX_FILE_SIZE_BYTES: u64 = 50 * 1024 * 1024;
+
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -488,6 +491,25 @@ pub async fn initiate_upload(
             .into_response();
     }
 
+    // Check declared file size before initiating upload
+    if req.content_length > MAX_FILE_SIZE_BYTES {
+        return (
+            StatusCode::PAYLOAD_TOO_LARGE,
+            Json(json!({
+                "ok": false,
+                "error": {
+                    "code": "media.file_too_large",
+                    "message": format!(
+                        "File size ({:.1} MB) exceeds maximum allowed size ({:.0} MB)",
+                        req.content_length as f64 / (1024.0 * 1024.0),
+                        MAX_FILE_SIZE_BYTES as f64 / (1024.0 * 1024.0)
+                    )
+                }
+            })),
+        )
+            .into_response();
+    }
+
     let pool = state.local_auth.pool();
 
     // Verify media exists
@@ -615,6 +637,33 @@ pub async fn finalise_upload(
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
+
+    // Check file size limit
+    if stored.size > MAX_FILE_SIZE_BYTES {
+        tracing::warn!(
+            "Upload rejected: file size {} exceeds limit {}",
+            stored.size,
+            MAX_FILE_SIZE_BYTES
+        );
+        // Clean up: delete the uploaded blob and fail the version
+        let _ = state.blob_adapter.delete(&object_key).await;
+        let _ = media::fail_media_version(pool, version_id).await;
+        return (
+            StatusCode::PAYLOAD_TOO_LARGE,
+            Json(json!({
+                "ok": false,
+                "error": {
+                    "code": "media.file_too_large",
+                    "message": format!(
+                        "File size ({:.1} MB) exceeds maximum allowed size ({:.0} MB)",
+                        stored.size as f64 / (1024.0 * 1024.0),
+                        MAX_FILE_SIZE_BYTES as f64 / (1024.0 * 1024.0)
+                    )
+                }
+            })),
+        )
+            .into_response();
+    }
 
     // Update version with storage info
     let finalised_version = match media::finalise_media_version(

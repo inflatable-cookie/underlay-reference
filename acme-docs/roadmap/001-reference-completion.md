@@ -128,7 +128,7 @@ Track and display changes for admin visibility.
 
 ---
 
-## Phase 4: Batch Operations
+## Phase 4: Batch Operations ✓
 
 Demonstrate bulk action patterns.
 
@@ -226,9 +226,11 @@ Complete the media library implementation with missing features.
   - [ ] Reject files with mismatched extension/content
 - [x] Video format rejection (done client-side)
   - [x] Explicitly reject video uploads with clear error
-- [ ] Size limit enforcement (server-side)
-  - [ ] Configurable max file size (e.g., 25MB or 50MB)
-  - [ ] Return clear error when exceeded
+- [x] Size limit enforcement (server-side)
+  - [x] Max file size 50MB (constant, can be made configurable)
+  - [x] Early rejection in initiate-upload if declared size exceeds limit
+  - [x] Post-upload verification in finalise-upload with cleanup on rejection
+  - [x] Return clear error with file size details
 
 ### Rendition Generation
 - [ ] Thumbnail generation for images
