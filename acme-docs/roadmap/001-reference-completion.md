@@ -202,31 +202,32 @@ Demonstrate background job patterns beyond media.
 
 Complete the media library implementation with missing features.
 
-### Upload Flow Improvements
-- [ ] Deduplication check before upload
-  - [ ] Compute sha256 hash client-side using `computeFileHash()` from Underlay
-  - [ ] Call `checkDuplicate()` before creating media record
-  - [ ] Show prompt if duplicate found: "Use existing" or "Upload as new"
-  - [ ] Skip upload if user chooses existing
-- [ ] Upload progress indicator
-  - [ ] Use XHR or fetch with progress events
-  - [ ] Show progress bar during upload
-  - [ ] Show finalisation state
-- [ ] Proper hash verification
-  - [ ] Pass computed sha256 to `finaliseUpload()` instead of empty string
-  - [ ] Backend verifies hash matches uploaded file
-- [ ] Client-side file validation
-  - [ ] Validate file type against allowed list
-  - [ ] Validate file size against limit
-  - [ ] Show clear error messages
+### Upload Flow Improvements ✓
+- [x] Deduplication check before upload
+  - [x] Compute sha256 hash client-side using `computeFileHash()` from Underlay
+  - [x] Call `checkDuplicate()` before creating media record
+  - [x] Show prompt if duplicate found: "Use existing" or "Upload as new"
+  - [x] Skip upload if user chooses existing
+- [x] Upload progress indicator
+  - [x] Use XHR or fetch with progress events (via `uploadToBlob`)
+  - [x] Show progress bar during upload
+  - [x] Show finalisation state
+- [x] Proper hash verification
+  - [x] Pass computed sha256 to `finaliseUpload()` instead of empty string
+  - [ ] Backend verifies hash matches uploaded file — deferred
+- [x] Client-side file validation
+  - [x] Validate file type against allowed list (images, PDFs only)
+  - [x] Validate file size against limit (50MB)
+  - [x] Show clear error messages
+  - [x] Explicitly reject video uploads
 
 ### Server-side Validation
 - [ ] Magic byte detection
   - [ ] Verify file content matches declared MIME type
   - [ ] Reject files with mismatched extension/content
-- [ ] Video format rejection
-  - [ ] Explicitly reject video uploads with clear error
-- [ ] Size limit enforcement
+- [x] Video format rejection (done client-side)
+  - [x] Explicitly reject video uploads with clear error
+- [ ] Size limit enforcement (server-side)
   - [ ] Configurable max file size (e.g., 25MB or 50MB)
   - [ ] Return clear error when exceeded
 
