@@ -73,7 +73,29 @@ Public-facing frontend:
 
 ## Quick Start (for Development)
 
-### 1. Clone and Set Up
+### Option A: Automated Setup (Recommended)
+
+```bash
+git clone <this-repo> underlay-reference
+cd underlay-reference
+
+# Link to your underlay library
+ln -s /path/to/underlay ./underlay
+
+# Run automated setup (requires Docker)
+./scripts/setup.sh
+```
+
+The setup script will:
+- Start PostgreSQL, MinIO, and MailHog via Docker
+- Create environment files from templates
+- Run database migrations
+- Generate JWT keys
+- Install frontend dependencies
+
+### Option B: Manual Setup
+
+#### 1. Clone and Set Up
 
 ```bash
 git clone <this-repo> underlay-reference
@@ -83,11 +105,21 @@ cd underlay-reference
 ln -s /path/to/underlay ./underlay
 ```
 
-### 2. Set Up Database
+#### 2. Start Services (Docker)
 
 ```bash
-createdb acme
+# Start all development services
+docker compose up -d
 
+# Or start individually
+docker compose up -d postgres    # PostgreSQL only
+docker compose up -d minio       # MinIO (S3) only
+docker compose up -d mailhog     # MailHog (email) only
+```
+
+#### 3. Set Up Database
+
+```bash
 # Configure connection
 cp acme-api/.env.example acme-api/.env
 # Edit acme-api/.env with your DATABASE_URL
@@ -97,14 +129,14 @@ cd acme-api
 cargo run -p acme-db --bin migrate_dev_db
 ```
 
-### 3. Generate Auth Keys
+#### 4. Generate Auth Keys
 
 ```bash
 cd acme-api
 cargo run -p acme-auth --bin generate-jwt-env >> .env
 ```
 
-### 4. Install Dependencies
+#### 5. Install Dependencies
 
 ```bash
 # Use bun for all TypeScript projects
@@ -113,7 +145,7 @@ cd acme-admin && bun install
 cd acme-front && bun install
 ```
 
-### 5. Run Everything
+### Running the Application
 
 ```bash
 # Terminal 1: API server
@@ -125,6 +157,16 @@ cd acme-admin && bun dev
 # Terminal 3: Front dev server
 cd acme-front && bun dev
 ```
+
+### Development URLs
+
+| Service | URL |
+|---------|-----|
+| API | http://localhost:40011 |
+| Admin | http://localhost:40012 |
+| Front | http://localhost:40013 |
+| MailHog | http://localhost:8025 |
+| MinIO Console | http://localhost:9001 |
 
 ## Bootstrapping a New Project
 

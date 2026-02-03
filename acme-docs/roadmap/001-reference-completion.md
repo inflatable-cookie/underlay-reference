@@ -297,36 +297,38 @@ Provide example tests for reference.
 
 ---
 
-## Phase 8: Documentation & Developer Experience
+## Phase 8: Documentation & Developer Experience ✓
 
 Make it easy for others to use as a reference.
 
 ### API Documentation
-- [ ] OpenAPI/Swagger generation
+- [ ] OpenAPI/Swagger generation — deferred
   - [ ] Add utoipa annotations to routes
   - [ ] Swagger UI endpoint
-- [ ] Endpoint documentation comments
+- [x] Endpoint documentation comments (in architecture docs)
 
 ### Developer Setup
-- [ ] Docker Compose for local development
-  - [ ] PostgreSQL
-  - [ ] MinIO (S3-compatible) for blob storage
-  - [ ] Optional: MailHog for email testing
-- [ ] Setup script
-  - [ ] Database migration
-  - [ ] Seed data (admin user, sample projects)
-- [ ] Environment templates
-  - [ ] `.env.example` for each project
+- [x] Docker Compose for local development
+  - [x] PostgreSQL
+  - [x] MinIO (S3-compatible) for blob storage
+  - [x] MailHog for email testing
+- [x] Setup script
+  - [x] Database migration
+  - [x] Seed data instructions
+- [x] Environment templates
+  - [x] `.env.example` for each project (api, admin, front)
 
 ### Reference Guides
-- [ ] `acme-docs/architecture/000-overview.md` - system overview
-- [ ] `acme-docs/architecture/001-authentication.md` - auth patterns
-- [ ] `acme-docs/architecture/002-media-library.md` - media patterns
-- [ ] `acme-docs/architecture/003-domain-patterns.md` - CRUD, soft-delete, ordering
+- [x] `acme-docs/architecture/000-overview.md` - system overview
+- [x] `acme-docs/architecture/001-authentication.md` - auth patterns
+- [x] `acme-docs/architecture/002-media-library.md` - media patterns
+- [x] `acme-docs/architecture/003-domain-patterns.md` - CRUD, soft-delete, ordering
 
 **Files:**
 - `docker-compose.yml` (new)
 - `scripts/setup.sh` (new)
+- `acme-admin/.env.example` (new)
+- `acme-front/.env.example` (new)
 - `acme-docs/architecture/*.md` (new)
 
 ---
