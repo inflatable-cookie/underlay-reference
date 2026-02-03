@@ -265,12 +265,27 @@ pub async fn get_media(
                 None
             };
 
+            // Get renditions for the current version
+            let renditions = if let Some(version_id) = row.current_version_id {
+                media::list_media_renditions(pool, version_id)
+                    .await
+                    .unwrap_or_default()
+            } else {
+                vec![]
+            };
+
             // Get usage count
             let usage_count = media::get_media_usage_count(pool, media_id)
                 .await
                 .unwrap_or(0);
 
-            let detail = MediaDetailDto::from_media(row, current_version, usage_count);
+            let detail = MediaDetailDto::from_media_with_urls(
+                row,
+                current_version,
+                renditions,
+                usage_count,
+                |key| state.blob_adapter.public_url(key),
+            );
             Json(json!({ "data": detail })).into_response()
         }
         Ok(None) => StatusCode::NOT_FOUND.into_response(),

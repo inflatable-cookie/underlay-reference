@@ -203,10 +203,18 @@
   <div class="detail-grid">
     <!-- Preview -->
     <section class="preview-section">
-      <div class="preview-placeholder">
-        <KindIcon size={48} />
-        <span>{getMediaKindLabel(item.kind)}</span>
-      </div>
+      {#if currentVersion?.url && item.kind === MediaKind.Image}
+        <img
+          src={currentVersion.url}
+          alt={item.title ?? item.originalFilename ?? "Media preview"}
+          class="preview-image"
+        />
+      {:else}
+        <div class="preview-placeholder">
+          <KindIcon size={48} />
+          <span>{getMediaKindLabel(item.kind)}</span>
+        </div>
+      {/if}
     </section>
 
     <!-- Details -->
@@ -267,6 +275,34 @@
       {/if}
     </section>
 
+    <!-- Renditions -->
+    {#if currentVersion?.renditions && currentVersion.renditions.length > 0}
+      <section class="detail-section">
+        <h2>Renditions</h2>
+        <div class="renditions-grid">
+          {#each currentVersion.renditions as rendition}
+            <div class="rendition-card">
+              {#if rendition.url && rendition.mimeType?.startsWith("image/")}
+                <img src={rendition.url} alt={rendition.kind} class="rendition-preview" />
+              {:else}
+                <div class="rendition-placeholder">
+                  <FileIcon size={24} />
+                </div>
+              {/if}
+              <div class="rendition-info">
+                <span class="rendition-kind">{rendition.kind}</span>
+                <span class="rendition-size">
+                  {rendition.width && rendition.height
+                    ? `${rendition.width}×${rendition.height}`
+                    : formatFileSize(rendition.byteSize)}
+                </span>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </section>
+    {/if}
+
     <!-- Metadata -->
     <section class="detail-section">
       <h2>Metadata</h2>
@@ -313,12 +349,67 @@
     justify-content: center;
   }
 
+  .preview-image {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 0.25rem;
+  }
+
   .preview-placeholder {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
     padding: 3rem;
+    color: var(--text-secondary, #6b7280);
+  }
+
+  .renditions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+  }
+
+  .rendition-card {
+    background: var(--bg-muted, #f3f4f6);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .rendition-preview {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+  }
+
+  .rendition-placeholder {
+    width: 100%;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary, #6b7280);
+  }
+
+  .rendition-info {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .rendition-kind {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-primary, #111827);
+    text-transform: capitalize;
+  }
+
+  .rendition-size {
+    font-size: 0.7rem;
     color: var(--text-secondary, #6b7280);
   }
 

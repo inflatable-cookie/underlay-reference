@@ -136,6 +136,37 @@ impl MediaDetailDto {
             usage_count,
         }
     }
+
+    /// Create a detail DTO with URL generation for version and renditions.
+    pub fn from_media_with_urls<F>(
+        m: MediaRow,
+        current_version: Option<MediaVersionRow>,
+        renditions: Vec<MediaRenditionRow>,
+        usage_count: i64,
+        url_fn: F,
+    ) -> Self
+    where
+        F: Fn(&str) -> String,
+    {
+        let current_version_dto = current_version.map(|v| {
+            MediaVersionDto::from_row_with_urls(v, renditions, &url_fn)
+        });
+
+        Self {
+            id: m.id,
+            kind: m.kind,
+            visibility: m.visibility,
+            title: m.title,
+            original_filename: m.original_filename,
+            current_version_id: m.current_version_id,
+            created_at: m.created_at,
+            created_by: m.created_by,
+            updated_at: m.updated_at,
+            deleted_at: m.deleted_at,
+            current_version: current_version_dto,
+            usage_count,
+        }
+    }
 }
 
 // ============================================================================
@@ -157,6 +188,44 @@ pub struct MediaVersionDto {
     pub object_key: Option<String>,
     pub created_at: DateTime<Utc>,
     pub created_by: Option<Uuid>,
+    /// URL to the original file (if available).
+    pub url: Option<String>,
+    /// Renditions for this version.
+    pub renditions: Vec<MediaRenditionDto>,
+}
+
+impl MediaVersionDto {
+    /// Create a version DTO with URL generation and renditions.
+    pub fn from_row_with_urls<F>(
+        v: MediaVersionRow,
+        renditions: Vec<MediaRenditionRow>,
+        url_fn: F,
+    ) -> Self
+    where
+        F: Fn(&str) -> String,
+    {
+        let url = v.object_key.as_ref().map(|key| url_fn(key));
+        let renditions_dto: Vec<MediaRenditionDto> = renditions
+            .into_iter()
+            .map(|r| MediaRenditionDto::from_row_with_url(r, &url_fn))
+            .collect();
+
+        Self {
+            id: v.id,
+            media_id: v.media_id,
+            state: v.state,
+            byte_size: v.byte_size,
+            mime_type: v.mime_type,
+            sha256: v.sha256,
+            storage_provider: v.storage_provider,
+            bucket: v.bucket,
+            object_key: v.object_key,
+            created_at: v.created_at,
+            created_by: v.created_by,
+            url,
+            renditions: renditions_dto,
+        }
+    }
 }
 
 impl From<MediaVersionRow> for MediaVersionDto {
@@ -173,6 +242,8 @@ impl From<MediaVersionRow> for MediaVersionDto {
             object_key: v.object_key,
             created_at: v.created_at,
             created_by: v.created_by,
+            url: None,
+            renditions: vec![],
         }
     }
 }
@@ -222,6 +293,29 @@ pub struct MediaRenditionDto {
     pub width: Option<i32>,
     pub height: Option<i32>,
     pub created_at: DateTime<Utc>,
+    /// URL to the rendition (if available).
+    pub url: Option<String>,
+}
+
+impl MediaRenditionDto {
+    /// Create a rendition DTO with URL generation.
+    pub fn from_row_with_url<F>(r: MediaRenditionRow, url_fn: F) -> Self
+    where
+        F: Fn(&str) -> String,
+    {
+        let url = Some(url_fn(&r.object_key));
+        Self {
+            id: r.id,
+            media_version_id: r.media_version_id,
+            kind: r.kind,
+            byte_size: r.byte_size,
+            mime_type: r.mime_type,
+            width: r.width,
+            height: r.height,
+            created_at: r.created_at,
+            url,
+        }
+    }
 }
 
 impl From<MediaRenditionRow> for MediaRenditionDto {
@@ -235,6 +329,7 @@ impl From<MediaRenditionRow> for MediaRenditionDto {
             width: r.width,
             height: r.height,
             created_at: r.created_at,
+            url: None,
         }
     }
 }
