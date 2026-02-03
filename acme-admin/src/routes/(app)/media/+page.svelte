@@ -22,7 +22,7 @@
     TextInput,
     type OrderByValue
   } from "@decodelabs/underlay/components";
-  import { gotoWithContext } from "@decodelabs/underlay/client";
+  import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { mediaCommands, type MediaSummary } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import Plus from "lucide-svelte/icons/plus";
@@ -35,15 +35,22 @@
 
   const toastStore = useToasts();
 
+  // Track URL for refetching when filters change
+  let previousUrl = $state<string | null>(null);
+
   // Fetch media using authenticated data pattern
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const items = await mediaCommands.listMediaAdmin(fetch, token);
+      const query = parseQueryParams($page.url.searchParams);
+      const items = await mediaCommands.listMediaAdmin(fetch, token, query);
       return { items };
     },
     {
       getToken: () => auth.getToken(),
-      defaultValue: { items: [] as MediaSummary[] }
+      defaultValue: { items: [] as MediaSummary[] },
+      onSuccess: () => {
+        previousUrl = $page.url.search;
+      }
     }
   );
 
@@ -51,6 +58,109 @@
   $effect(() => {
     pageData.tryFetch($authLoading, $currentUser);
   });
+
+  // Refetch when URL changes (for sorting/filtering)
+  $effect(() => {
+    const currentUrl = $page.url.search;
+    if (previousUrl !== null && previousUrl !== currentUrl) {
+      previousUrl = currentUrl;
+      pageData.refetch();
+    }
+  });
+
+  // Parse current state from URL
+  const currentQuery = $derived(parseQueryParams($page.url.searchParams));
+
+  // Convert URL sort to OrderByValue format
+  const orderBy: OrderByValue = $derived(
+    (currentQuery.sort ?? []).map((s) => ({ key: s.field, direction: s.direction }))
+  );
+
+  // Get filter values from URL
+  const selectedTitle = $derived(
+    currentQuery.filters?.find((f) => f.field === "title")?.value ?? ""
+  );
+  const selectedKind = $derived(
+    currentQuery.filters?.find((f) => f.field === "kind")?.value ?? "All"
+  );
+  const selectedVisibility = $derived(
+    currentQuery.filters?.find((f) => f.field === "visibility")?.value ?? "All"
+  );
+
+  const sortFields = [
+    { key: "title", label: "Title" },
+    { key: "kind", label: "Kind" },
+    { key: "updatedAt", label: "Updated", defaultDirection: "desc" as const },
+    { key: "createdAt", label: "Created", defaultDirection: "desc" as const }
+  ];
+
+  const kindItems = [
+    { value: "All", label: "All types" },
+    { value: MediaKind.Image, label: "Image" },
+    { value: MediaKind.Pdf, label: "PDF" },
+    { value: MediaKind.Document, label: "Document" },
+    { value: MediaKind.Video, label: "Video" },
+    { value: MediaKind.Audio, label: "Audio" }
+  ];
+
+  const visibilityItems = [
+    { value: "All", label: "All visibility" },
+    { value: "public", label: "Public" },
+    { value: "restricted", label: "Restricted" }
+  ];
+
+  // Update URL when sort changes
+  function handleSortChange(newOrderBy: OrderByValue) {
+    const url = new URL($page.url);
+
+    if (newOrderBy.length > 0) {
+      const sortString = newOrderBy.map((s) => `${s.key}:${s.direction}`).join(",");
+      url.searchParams.set("sort", sortString);
+    } else {
+      url.searchParams.delete("sort");
+    }
+
+    goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  // Update URL when title filter changes
+  function handleTitleChange(title: string) {
+    const url = new URL($page.url);
+
+    if (title && title.trim()) {
+      url.searchParams.set("filter[title][like]", `%${title.trim()}%`);
+    } else {
+      url.searchParams.delete("filter[title][like]");
+    }
+
+    goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  // Update URL when kind filter changes
+  function handleKindChange(value: string) {
+    const url = new URL($page.url);
+
+    if (value && value !== "All") {
+      url.searchParams.set("filter[kind]", value);
+    } else {
+      url.searchParams.delete("filter[kind]");
+    }
+
+    goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  // Update URL when visibility filter changes
+  function handleVisibilityChange(value: string) {
+    const url = new URL($page.url);
+
+    if (value && value !== "All") {
+      url.searchParams.set("filter[visibility]", value);
+    } else {
+      url.searchParams.delete("filter[visibility]");
+    }
+
+    goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
 
   async function handleDeleteMedia(mediaId: string) {
     const token = auth.getToken();
@@ -139,6 +249,44 @@
     </Button>
   {/snippet}
 </PageHeader>
+
+<FilterBar title="Filters" onRefresh={() => pageData.refetch()}>
+  <Field label="Title" forId="title">
+    <TextInput
+      id="title"
+      value={selectedTitle.replace(/%/g, "")}
+      onchange={handleTitleChange}
+      debounce={500}
+      search
+      placeholder="Search by title..."
+    />
+  </Field>
+  <Field label="Type" forId="kind">
+    <Select
+      id="kind"
+      value={selectedKind}
+      onchange={handleKindChange}
+      items={kindItems}
+      placeholder="All types"
+      clearable
+      defaultValue="All"
+    />
+  </Field>
+  <Field label="Visibility" forId="visibility">
+    <Select
+      id="visibility"
+      value={selectedVisibility}
+      onchange={handleVisibilityChange}
+      items={visibilityItems}
+      placeholder="All visibility"
+      clearable
+      defaultValue="All"
+    />
+  </Field>
+  <Field label="Sort" forId="sort">
+    <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
+  </Field>
+</FilterBar>
 
 {#if pageData.loading}
   <PageLoading message="Loading media..." />

@@ -66,27 +66,27 @@ Flesh out the admin experience with essential features.
 
 ---
 
-## Phase 2: Search & Filtering
+## Phase 2: Search & Filtering ✓
 
 Demonstrate search patterns across the application.
 
 ### API Search Patterns
-- [ ] Projects search
-  - [ ] `GET /v1/admin/projects?q=search&status=active&sortBy=title`
-  - [ ] Full-text search on title/description
-- [ ] Tasks search
-  - [ ] `GET /v1/admin/projects/{projectId}/tasks?q=search&status=pending&priority=high`
-  - [ ] Filter by status, priority, due date range
-- [ ] Media search
-  - [ ] `GET /v1/admin/media?q=search&kind=image&unusedOnly=true`
-  - [ ] Already partially implemented, wire to UI
+- [x] Projects search
+  - [x] `GET /v1/admin/projects?q=search&status=active&sortBy=title`
+  - [ ] Full-text search on title/description — deferred
+- [x] Tasks search
+  - [x] `GET /v1/admin/projects/{projectId}/tasks?q=search&status=pending&priority=high`
+  - [x] Filter by status, priority, due date range
+- [x] Media search
+  - [x] `GET /v1/admin/media?q=search&kind=image&unusedOnly=true`
+  - [x] Wired to UI with FilterBar
 
 ### Admin UI Search
-- [ ] Projects list: Add search input and filters
-- [ ] Tasks list: Add search input and status/priority filters
-- [ ] Media list: Add search input and kind filter
-- [ ] Demonstrate debounced search pattern
-- [ ] Demonstrate URL-based filter state (shareable filter URLs)
+- [x] Projects list: Search input and filters (already implemented)
+- [x] Tasks list: Status/priority filters and sorting
+- [x] Media list: Search input and kind/visibility filter
+- [x] Demonstrate debounced search pattern (TextInput with debounce prop)
+- [x] Demonstrate URL-based filter state (shareable filter URLs)
 
 **Files:**
 - `acme-api/crates/api/src/routes/admin/projects.rs` (update)

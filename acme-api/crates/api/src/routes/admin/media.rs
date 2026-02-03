@@ -11,6 +11,7 @@ use axum::{
 use serde_json::json;
 use underlay_blob::UploadRequest;
 use underlay_db::pagination::PaginationParams;
+use underlay_http::query::QueryParams;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -20,7 +21,7 @@ use acme_db::media;
 use crate::dto::media::{
     CheckDuplicateRequest, CheckDuplicateResponse, CreateMediaRequest, FinaliseUploadRequest,
     FinaliseUploadResponse, InitiateUploadRequest, InitiateUploadResponse, MediaDetailDto,
-    MediaListQuery, MediaSummaryDto, MediaUsageDto, MediaVersionDto, UpdateMediaRequest,
+    MediaSummaryDto, MediaUsageDto, MediaVersionDto, UpdateMediaRequest,
 };
 use crate::state::{AdminUser, AppState};
 
@@ -129,17 +130,23 @@ pub async fn create_media(
     }
 }
 
-/// List all media items (admin).
+/// List all media items with filtering and sorting (admin).
 ///
 /// GET /v1/admin/media
+///
+/// Supports filtering and sorting via query parameters:
+/// - `sort=title:asc,updatedAt:desc`
+/// - `filter[kind]=image`
+/// - `filter[visibility]=public`
+/// - `filter[title][like]=%search%`
 pub async fn list_media(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
-    Query(_query): Query<MediaListQuery>,
+    Query(query): Query<QueryParams>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
 
-    match media::list_media_admin(pool).await {
+    match media::list_media_admin(pool, &query).await {
         Ok(rows) => {
             let items: Vec<MediaSummaryDto> = rows.into_iter().map(Into::into).collect();
             Json(json!({ "data": items })).into_response()

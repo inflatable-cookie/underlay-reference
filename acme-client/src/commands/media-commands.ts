@@ -14,7 +14,6 @@ import type {
   InitiateUploadResponse,
   FinaliseUploadRequest,
   FinaliseUploadResponse,
-  MediaListQuery,
 } from "../types/media-types.js";
 import { getAdminHttpClient } from "../utils/client-factory.js";
 import {
@@ -55,34 +54,39 @@ export async function checkDuplicate(
 
 /**
  * List all media items (admin view).
+ *
+ * Supports filtering and sorting via QueryParams:
+ * - `filter[kind]` - Filter by kind (image, pdf, etc.)
+ * - `filter[visibility]` - Filter by visibility (public, restricted)
+ * - `filter[title][like]` - Search by title (use %value% for contains)
+ * - `sort` - Sort order (e.g., "title:asc,updatedAt:desc")
  */
 export async function listMediaAdmin(
   fetchFn: typeof fetch,
   accessToken: string,
-  query?: MediaListQuery
+  query?: QueryParams
 ): Promise<MediaSummary[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const path = appendQueryParams(
-    "/v1/admin/media",
-    (query as QueryParams) ?? {}
-  );
+  const path = appendQueryParams("/v1/admin/media", query ?? {});
   const response = await http.get<ListResponse<MediaSummary>>(path);
   return response.data;
 }
 
 /**
  * List media items with pagination (admin view).
+ *
+ * Supports the same filtering and sorting as listMediaAdmin, plus pagination.
  */
 export async function listMediaPaginatedAdmin(
   fetchFn: typeof fetch,
   accessToken: string,
   pagination?: PaginationParams,
-  query?: MediaListQuery
+  query?: QueryParams
 ): Promise<PaginatedResponse<MediaSummary>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   let path = "/v1/admin/media/paginated";
   if (query) {
-    path = appendQueryParams(path, query as QueryParams);
+    path = appendQueryParams(path, query);
   }
   path = appendPaginationParams(path, pagination ?? {});
   return await http.get<PaginatedResponse<MediaSummary>>(path);

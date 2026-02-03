@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { PageData } from "./$types";
+  import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { adminCommands, type Project, type TaskWithLabels } from "acme-client";
+  import { adminCommands, type Project, type TaskWithLabels, TaskStatus, TaskPriority } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { useAuthenticatedData, PageHeader, useToasts, Banner, ReorderableList, createReorderController } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, ProgressBar } from "@decodelabs/underlay/components";
-  import { gotoWithContext } from "@decodelabs/underlay/client";
+  import { useAuthenticatedData, PageHeader, useToasts, Banner, ReorderableList, createReorderController, FilterBar } from "@decodelabs/underlay/patterns";
+  import { Button, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, ProgressBar, Field, Select, OrderBy, type OrderByValue } from "@decodelabs/underlay/components";
+  import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import Pencil from "lucide-svelte/icons/pencil";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
@@ -19,18 +20,25 @@
 
   const toastStore = useToasts();
 
+  // Track URL for refetching when filters change
+  let previousUrl = $state<string | null>(null);
+
   // Fetch project and tasks data
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
+      const query = parseQueryParams($page.url.searchParams);
       const [project, tasks] = await Promise.all([
         adminCommands.getProject(data.projectId, fetch, token),
-        adminCommands.listTasks(data.projectId, fetch, token)
+        adminCommands.listTasks(data.projectId, fetch, token, query)
       ]);
       return { project, tasks };
     },
     {
       getToken: () => auth.getToken(),
-      defaultValue: { project: null as Project | null, tasks: [] as TaskWithLabels[] }
+      defaultValue: { project: null as Project | null, tasks: [] as TaskWithLabels[] },
+      onSuccess: () => {
+        previousUrl = $page.url.search;
+      }
     }
   );
 
@@ -38,6 +46,95 @@
   $effect(() => {
     pageData.tryFetch($authLoading, $currentUser);
   });
+
+  // Refetch when URL changes (for sorting/filtering)
+  $effect(() => {
+    const currentUrl = $page.url.search;
+    if (previousUrl !== null && previousUrl !== currentUrl) {
+      previousUrl = currentUrl;
+      pageData.refetch();
+    }
+  });
+
+  // Parse current state from URL
+  const currentQuery = $derived(parseQueryParams($page.url.searchParams));
+
+  // Convert URL sort to OrderByValue format
+  const orderBy: OrderByValue = $derived(
+    (currentQuery.sort ?? []).map((s) => ({ key: s.field, direction: s.direction }))
+  );
+
+  // Get filter values from URL
+  const selectedStatus = $derived(
+    currentQuery.filters?.find((f) => f.field === "status")?.value ?? "All"
+  );
+  const selectedPriority = $derived(
+    currentQuery.filters?.find((f) => f.field === "priority")?.value ?? "All"
+  );
+
+  const sortFields = [
+    { key: "title", label: "Title" },
+    { key: "status", label: "Status" },
+    { key: "priority", label: "Priority" },
+    { key: "dueDate", label: "Due Date", defaultDirection: "asc" as const },
+    { key: "position", label: "Position" },
+    { key: "createdAt", label: "Created", defaultDirection: "desc" as const }
+  ];
+
+  const statusItems = [
+    { value: "All", label: "All statuses" },
+    { value: TaskStatus.Pending, label: "Pending" },
+    { value: TaskStatus.InProgress, label: "In Progress" },
+    { value: TaskStatus.Completed, label: "Completed" }
+  ];
+
+  const priorityItems = [
+    { value: "All", label: "All priorities" },
+    { value: TaskPriority.Low, label: "Low" },
+    { value: TaskPriority.Medium, label: "Medium" },
+    { value: TaskPriority.High, label: "High" },
+    { value: TaskPriority.Urgent, label: "Urgent" }
+  ];
+
+  // Update URL when sort changes
+  function handleSortChange(newOrderBy: OrderByValue) {
+    const url = new URL($page.url);
+
+    if (newOrderBy.length > 0) {
+      const sortString = newOrderBy.map((s) => `${s.key}:${s.direction}`).join(",");
+      url.searchParams.set("sort", sortString);
+    } else {
+      url.searchParams.delete("sort");
+    }
+
+    goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  // Update URL when status filter changes
+  function handleStatusChange(value: string) {
+    const url = new URL($page.url);
+
+    if (value && value !== "All") {
+      url.searchParams.set("filter[status]", value);
+    } else {
+      url.searchParams.delete("filter[status]");
+    }
+
+    goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  // Update URL when priority filter changes
+  function handlePriorityChange(value: string) {
+    const url = new URL($page.url);
+
+    if (value && value !== "All") {
+      url.searchParams.set("filter[priority]", value);
+    } else {
+      url.searchParams.delete("filter[priority]");
+    }
+
+    goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
 
   const project = $derived(pageData.data?.project);
   const tasks = $derived(pageData.data?.tasks ?? []);
@@ -249,6 +346,36 @@
         </Button>
       </div>
     </div>
+
+    {#if !isTaskReorderMode}
+      <FilterBar title="Filter tasks" onRefresh={() => pageData.refetch()}>
+        <Field label="Status" forId="taskStatus">
+          <Select
+            id="taskStatus"
+            value={selectedStatus}
+            onchange={handleStatusChange}
+            items={statusItems}
+            placeholder="All statuses"
+            clearable
+            defaultValue="All"
+          />
+        </Field>
+        <Field label="Priority" forId="taskPriority">
+          <Select
+            id="taskPriority"
+            value={selectedPriority}
+            onchange={handlePriorityChange}
+            items={priorityItems}
+            placeholder="All priorities"
+            clearable
+            defaultValue="All"
+          />
+        </Field>
+        <Field label="Sort" forId="taskSort">
+          <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
+        </Field>
+      </FilterBar>
+    {/if}
 
     {#if tasks.length === 0}
       <p class="empty-state">No tasks yet. Add your first task to get started.</p>

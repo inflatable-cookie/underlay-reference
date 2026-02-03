@@ -5,6 +5,7 @@
 use crate::DbPool;
 use sqlx::FromRow;
 use underlay_db::pagination::{Cursor, PaginatedResponse, PaginationBuilder, PaginationParams};
+use underlay_http::query::{FieldMapping, QueryParams, WhereBuilder};
 use uuid::Uuid;
 
 // ============================================================================
@@ -89,6 +90,23 @@ pub struct MediaWithVersionRow {
 }
 
 // ============================================================================
+// Field Mapping
+// ============================================================================
+
+/// Get field mapping for media queries.
+///
+/// Supports filtering by kind, visibility, and title (search).
+/// Supports sorting by title, kind, updatedAt, createdAt.
+pub fn media_field_mapping() -> FieldMapping {
+    FieldMapping::new()
+        .map("title", "m.title")
+        .map("kind", "m.kind")
+        .map("visibility", "m.visibility")
+        .sort_only("updatedAt", "m.updated_at")
+        .sort_only("createdAt", "m.created_at")
+}
+
+// ============================================================================
 // Media Queries
 // ============================================================================
 
@@ -150,22 +168,44 @@ pub async fn get_media_admin(pool: &DbPool, id: Uuid) -> Result<Option<MediaRow>
     .await
 }
 
-/// List all media items (admin, excluding deleted and incomplete uploads).
-pub async fn list_media_admin(pool: &DbPool) -> Result<Vec<MediaWithVersionRow>, sqlx::Error> {
-    sqlx::query_as::<_, MediaWithVersionRow>(
+/// List all media items with filtering and sorting (admin, excluding deleted and incomplete uploads).
+pub async fn list_media_admin(
+    pool: &DbPool,
+    query: &QueryParams,
+) -> Result<Vec<MediaWithVersionRow>, sqlx::Error> {
+    let mapping = media_field_mapping();
+    let filters = query.filter_fields();
+
+    let mut where_builder = WhereBuilder::new(1);
+    where_builder.add_condition("m.deleted_at IS NULL");
+    where_builder.add_condition("m.current_version_id IS NOT NULL");
+
+    for filter in &filters {
+        where_builder.add_filter(filter, &mapping.filter_map());
+    }
+
+    let (where_clause, filter_values) = where_builder.build();
+    let order_by = query.sql_order_by_or(&mapping.sort_map(), "m.updated_at DESC");
+
+    let sql = format!(
         r#"
         SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
                m.created_at, m.updated_at, m.deleted_at,
                v.byte_size, v.mime_type
         FROM media.media m
         LEFT JOIN media.media_version v ON m.current_version_id = v.id
-        WHERE m.deleted_at IS NULL
-          AND m.current_version_id IS NOT NULL
-        ORDER BY m.updated_at DESC
+        WHERE {}
+        ORDER BY {}
         "#,
-    )
-    .fetch_all(pool)
-    .await
+        where_clause, order_by
+    );
+
+    let mut query_builder = sqlx::query_as::<_, MediaWithVersionRow>(&sql);
+    for value in filter_values {
+        query_builder = query_builder.bind(value);
+    }
+
+    query_builder.fetch_all(pool).await
 }
 
 /// List media items with pagination (admin, excluding deleted and incomplete uploads).
