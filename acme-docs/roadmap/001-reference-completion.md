@@ -347,6 +347,160 @@ Lower priority items for comprehensive coverage.
 
 ---
 
+## Phase 10: Underlay Configuration Audit
+
+Review all Underlay Rust crates and expose configurable parameters through standardized config structs (like `MediaConfig` in `underlay-blob`).
+
+### Goals
+- Identify all hardcoded values that should be configurable
+- Create config structs with sensible defaults
+- Use builder pattern for easy customization
+- Allow consuming apps to override only what they need
+
+### Crates to Audit
+
+#### underlay-blob ✓
+- [x] `MediaConfig` - file size limits, thumbnail dimensions
+- [ ] S3 config - timeouts, retry settings
+- [ ] Local adapter - temp file handling
+
+#### underlay-auth
+- [ ] Session config
+  - [ ] Session duration / TTL
+  - [ ] Max concurrent sessions per user
+  - [ ] Session token length
+- [ ] JWT config
+  - [ ] Access token expiry
+  - [ ] Refresh token expiry
+  - [ ] Token issuer/audience
+- [ ] Rate limiting
+  - [ ] Login attempt limits
+  - [ ] Lockout duration
+  - [ ] Failed attempt threshold
+
+#### underlay-auth-email-totp
+- [ ] TOTP config
+  - [ ] Code validity period
+  - [ ] Code length (digits)
+  - [ ] Max verification attempts
+  - [ ] Cooldown between sends
+
+#### underlay-auth-totp
+- [ ] Authenticator config
+  - [ ] TOTP period (default 30s)
+  - [ ] TOTP digits (default 6)
+  - [ ] Algorithm selection
+  - [ ] Issuer name for QR codes
+
+#### underlay-auth-webauthn
+- [ ] WebAuthn config
+  - [ ] Relying party ID/name
+  - [ ] Attestation preference
+  - [ ] User verification preference
+  - [ ] Timeout for ceremonies
+
+#### underlay-http
+- [ ] Cookie config
+  - [x] Domain, secure flag, max age (already in `AuthCookieConfig`)
+  - [ ] SameSite policy
+  - [ ] Cookie name prefixes
+- [ ] CORS config
+  - [ ] Allowed origins
+  - [ ] Allowed headers
+  - [ ] Max age
+- [ ] Request limits
+  - [ ] Body size limits
+  - [ ] Request timeout
+
+#### underlay-jobs
+- [ ] Job runner config
+  - [ ] Poll interval
+  - [ ] Max concurrent jobs
+  - [ ] Default timeout
+  - [ ] Retry backoff settings
+- [ ] Scheduler config
+  - [ ] Tick interval
+  - [ ] Timezone handling
+- [ ] History retention
+  - [ ] Days to keep completed jobs
+  - [ ] Days to keep failed jobs
+
+#### underlay-email
+- [ ] Email config
+  - [ ] Default from address
+  - [ ] Reply-to handling
+  - [ ] Rate limiting per recipient
+- [ ] Template config
+  - [ ] Template directory
+  - [ ] Default locale
+
+#### underlay-db
+- [ ] Pool config
+  - [ ] Min/max connections
+  - [ ] Connection timeout
+  - [ ] Idle timeout
+- [ ] Pagination config
+  - [ ] Default page size
+  - [ ] Max page size
+
+#### underlay-observability
+- [ ] Tracing config
+  - [ ] Log level
+  - [ ] Sampling rate
+  - [ ] Span attributes to include
+- [ ] Request ID config
+  - [ ] Header name
+  - [ ] ID format/length
+
+### Implementation Pattern
+
+Each config struct should follow this pattern:
+
+```rust
+/// Configuration for [feature] with sensible defaults.
+#[derive(Debug, Clone)]
+pub struct FeatureConfig {
+    /// Description of field.
+    /// Default: X
+    pub field_name: Type,
+}
+
+impl Default for FeatureConfig {
+    fn default() -> Self {
+        Self {
+            field_name: sensible_default,
+        }
+    }
+}
+
+impl FeatureConfig {
+    pub fn new() -> Self { Self::default() }
+
+    // Builder methods
+    pub fn field_name(mut self, value: Type) -> Self {
+        self.field_name = value;
+        self
+    }
+}
+```
+
+### Deliverables
+- [ ] Audit each crate and document current hardcoded values
+- [ ] Create config structs for each crate
+- [ ] Update Acme to use the new configs (demonstrating usage)
+- [ ] Document config options in crate-level docs
+
+**Files (Underlay):**
+- `underlay-auth/src/config.rs` (new)
+- `underlay-auth-*/src/config.rs` (new for each)
+- `underlay-http/src/config.rs` (extend)
+- `underlay-jobs/src/config.rs` (new)
+- `underlay-email/src/config.rs` (new)
+- `underlay-db/src/config.rs` (new)
+- `underlay-observability/src/config.rs` (new)
+
+---
+
 ## Success Criteria
 
 The reference implementation is complete when:
@@ -361,12 +515,13 @@ The reference implementation is complete when:
 
 ## Priority Order
 
-1. **Phase 1** - Admin dashboard & user management (most requested feature)
-2. **Phase 2** - Search & filtering (common pattern)
-3. **Phase 6** - Media library enhancements (complete existing feature)
-4. **Phase 3** - Activity logging (admin essential)
-5. **Phase 8** - Documentation (helps others learn)
-6. **Phase 4** - Batch operations (nice to have)
-7. **Phase 5** - Background jobs (already partially done)
-8. **Phase 7** - Testing (important but can be added incrementally)
-9. **Phase 9** - Advanced features (future work)
+1. **Phase 1** - Admin dashboard & user management (most requested feature) ✓
+2. **Phase 2** - Search & filtering (common pattern) ✓
+3. **Phase 6** - Media library enhancements (complete existing feature) — in progress
+4. **Phase 3** - Activity logging (admin essential) ✓
+5. **Phase 4** - Batch operations (nice to have) ✓
+6. **Phase 10** - Underlay configuration audit (infrastructure improvement)
+7. **Phase 8** - Documentation (helps others learn)
+8. **Phase 5** - Background jobs (already partially done)
+9. **Phase 7** - Testing (important but can be added incrementally)
+10. **Phase 9** - Advanced features (future work)
