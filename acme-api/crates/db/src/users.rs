@@ -279,3 +279,84 @@ pub async fn revoke_all_user_sessions(
 
     Ok(result.rows_affected())
 }
+
+// ============================================================================
+// Admin Session Management
+// ============================================================================
+
+/// Row type for session listing (admin view).
+#[derive(Debug, Clone, FromRow)]
+pub struct SessionRow {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub status: String,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub last_used_at: DateTime<Utc>,
+    pub access_token_expires_at: DateTime<Utc>,
+    pub refresh_token_expires_at: DateTime<Utc>,
+    pub revoked_at: Option<DateTime<Utc>>,
+    pub revocation_reason: Option<String>,
+}
+
+/// List all sessions for a user (admin view).
+///
+/// Returns all sessions (active, expired, revoked) for administrative purposes.
+pub async fn list_sessions_for_user(
+    pool: &DbPool,
+    user_id: Uuid,
+) -> Result<Vec<SessionRow>, sqlx::Error> {
+    sqlx::query_as::<_, SessionRow>(
+        r#"
+        SELECT
+            id,
+            user_id,
+            status,
+            ip_address,
+            user_agent,
+            created_at,
+            last_used_at,
+            access_token_expires_at,
+            refresh_token_expires_at,
+            revoked_at,
+            revocation_reason
+        FROM auth.sessions
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+}
+
+/// Revoke a specific session (admin action).
+///
+/// Returns true if the session was found and revoked, false if not found or already revoked.
+pub async fn revoke_session_admin(
+    pool: &DbPool,
+    user_id: Uuid,
+    session_id: Uuid,
+    reason: &str,
+) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query(
+        r#"
+        UPDATE auth.sessions
+        SET status = 'revoked',
+            revoked_at = NOW(),
+            revocation_reason = $3,
+            is_active = false
+        WHERE id = $2
+          AND user_id = $1
+          AND status = 'active'
+        "#,
+    )
+    .bind(user_id)
+    .bind(session_id)
+    .bind(reason)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
+}

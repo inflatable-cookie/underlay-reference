@@ -2,6 +2,7 @@
 
 use acme_db::account::UserProfileRow;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use validator::Validate;
 
 // ============================================================================
@@ -13,7 +14,7 @@ use validator::Validate;
 /// Name fields follow the Underlay pattern for culturally-inclusive identity:
 /// - `fullName`: User's full name as they wish to be known
 /// - `displayName`: Short name for UI display
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserProfileDto {
     pub user_id: String,
@@ -56,7 +57,7 @@ impl From<UserProfileRow> for UserProfileDto {
 /// Request to update user profile.
 ///
 /// All fields are optional - only provided fields will be updated.
-#[derive(Debug, Clone, Deserialize, Validate)]
+#[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateProfileRequest {
     #[validate(length(max = 256, message = "Full name must be 256 characters or less"))]

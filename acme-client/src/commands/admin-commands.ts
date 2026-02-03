@@ -3,7 +3,7 @@
  *
  * Provides CRUD operations for admin routes with filtering/sorting support.
  */
-import type { ListResponse, SingleResponse } from "../types/common-types.js";
+import type { ListResponse, SingleResponse, Session } from "../types/common-types.js";
 import type {
   Category,
   CategoryWithCounts,
@@ -670,6 +670,41 @@ export async function unsuspendUser(
     {}
   );
   return response.data;
+}
+
+/**
+ * List all sessions for a user (admin).
+ *
+ * Returns all sessions (active, expired, revoked) for administrative purposes.
+ */
+export async function listUserSessions(
+  userId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<Session[]> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.get<ListResponse<Session>>(
+    `/v1/admin/users/${encodeURIComponent(userId)}/sessions`
+  );
+  return response.data;
+}
+
+/**
+ * Revoke a specific session for a user (admin).
+ *
+ * Terminates the session and logs out the user from that device.
+ */
+export async function revokeUserSession(
+  userId: string,
+  sessionId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<void> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  await http.post(
+    `/v1/admin/users/${encodeURIComponent(userId)}/sessions/${encodeURIComponent(sessionId)}/revoke`,
+    {}
+  );
 }
 
 // ============================================================================

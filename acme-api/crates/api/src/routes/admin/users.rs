@@ -9,6 +9,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -21,7 +22,7 @@ use crate::state::{AdminUser, AppState};
 // ============================================================================
 
 /// User response for list view.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserResponse {
     pub id: String,
@@ -48,7 +49,7 @@ impl From<users::UserRow> for UserResponse {
 }
 
 /// User detail response with session info.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDetailResponse {
     pub id: String,
@@ -81,7 +82,7 @@ impl From<users::UserWithSessionCountRow> for UserDetailResponse {
 }
 
 /// Query parameters for user listing.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct ListUsersQuery {
     /// Filter by role
@@ -97,7 +98,7 @@ pub struct ListUsersQuery {
 }
 
 /// Request to update user role.
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserRoleRequest {
     #[validate(length(min = 1))]
@@ -194,7 +195,15 @@ pub async fn update_user_role(
     }
 
     // Validate role value
-    let valid_roles = ["student", "tester", "tutor", "editor", "admin", "support", "superadmin"];
+    let valid_roles = [
+        "student",
+        "tester",
+        "tutor",
+        "editor",
+        "admin",
+        "support",
+        "superadmin",
+    ];
     if !valid_roles.contains(&req.role.as_str()) {
         return (
             StatusCode::BAD_REQUEST,
@@ -318,6 +327,127 @@ pub async fn unsuspend_user(
         Ok(None) => StatusCode::NOT_FOUND.into_response(),
         Err(e) => {
             tracing::error!("Failed to unsuspend user: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+// ============================================================================
+// Session Management
+// ============================================================================
+
+/// Session response for admin view.
+///
+/// Matches the common Session type from the TypeScript client.
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionResponse {
+    pub id: String,
+    pub user_id: String,
+    pub status: String,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub created_at: String,
+    pub last_used_at: String,
+    pub access_token_expires_at: String,
+    pub refresh_token_expires_at: String,
+    pub revoked_at: Option<String>,
+    pub revocation_reason: Option<String>,
+}
+
+impl From<users::SessionRow> for SessionResponse {
+    fn from(row: users::SessionRow) -> Self {
+        Self {
+            id: row.id.to_string(),
+            user_id: row.user_id.to_string(),
+            status: row.status,
+            ip_address: row.ip_address,
+            user_agent: row.user_agent,
+            created_at: row.created_at.to_rfc3339(),
+            last_used_at: row.last_used_at.to_rfc3339(),
+            access_token_expires_at: row.access_token_expires_at.to_rfc3339(),
+            refresh_token_expires_at: row.refresh_token_expires_at.to_rfc3339(),
+            revoked_at: row.revoked_at.map(|dt| dt.to_rfc3339()),
+            revocation_reason: row.revocation_reason,
+        }
+    }
+}
+
+/// Path parameters for session operations.
+#[derive(Debug, Deserialize)]
+pub struct UserSessionPath {
+    pub user_id: Uuid,
+    pub session_id: Uuid,
+}
+
+/// List all sessions for a user (admin).
+///
+/// GET /v1/admin/users/:user_id/sessions
+pub async fn list_user_sessions(
+    AdminUser(_admin): AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let pool = state.local_auth.pool();
+
+    match users::list_sessions_for_user(pool, user_id).await {
+        Ok(sessions) => {
+            let items: Vec<SessionResponse> = sessions.into_iter().map(Into::into).collect();
+            Json(serde_json::json!({ "data": items })).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to list sessions for user: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// Revoke a specific session for a user (admin).
+///
+/// POST /v1/admin/users/:user_id/sessions/:session_id/revoke
+pub async fn revoke_user_session(
+    AdminUser(admin): AdminUser,
+    State(state): State<AppState>,
+    Path(path): Path<UserSessionPath>,
+) -> impl IntoResponse {
+    let pool = state.local_auth.pool();
+
+    match users::revoke_session_admin(pool, path.user_id, path.session_id, "Revoked by admin").await
+    {
+        Ok(true) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(admin.user_id.0.into_inner()),
+                    action: "revoke_session",
+                    resource_type: "user",
+                    resource_id: path.user_id,
+                    details: Some(serde_json::json!({ "sessionId": path.session_id.to_string() })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Json(serde_json::json!({ "ok": true })).into_response()
+        }
+        Ok(false) => {
+            // Session not found or already revoked
+            (
+                StatusCode::NOT_FOUND,
+                Json(serde_json::json!({
+                    "ok": false,
+                    "error": {
+                        "code": "session.not_found",
+                        "message": "Session not found or already revoked"
+                    }
+                })),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to revoke session: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }

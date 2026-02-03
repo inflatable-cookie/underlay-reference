@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { adminCommands, type UserDetail, type UserRole, UserRole as UserRoleConst, type ActivityEntry } from "@api-client";
-	import { Card, Pill, Button } from "@decodelabs/underlay/components";
+	import { adminCommands, type UserDetail, type UserRole, UserRole as UserRoleConst, type ActivityEntry, type Session } from "@api-client";
+	import { Card, Pill, Button, AlertDialog } from "@decodelabs/underlay/components";
 	import { useToasts } from "@decodelabs/underlay/patterns";
 	import ArrowLeft from "lucide-svelte/icons/arrow-left";
 	import Shield from "lucide-svelte/icons/shield";
 	import Ban from "lucide-svelte/icons/ban";
 	import CheckCircle from "lucide-svelte/icons/check-circle";
+	import X from "lucide-svelte/icons/x";
 	import { auth } from "$lib/stores/auth";
 	import ActivityFeed from "$lib/components/ActivityFeed.svelte";
 
@@ -26,6 +27,18 @@
 	let activityLoading = $state(true);
 	let activityError = $state<string | null>(null);
 
+	let userSessions = $state<Session[]>([]);
+	let sessionsLoading = $state(true);
+	let sessionsError = $state<string | null>(null);
+	let sessionToRevoke = $state<Session | null>(null);
+	let revokingSession = $state(false);
+	let showRevokeDialog = $state(false);
+
+	// Keep showRevokeDialog in sync with sessionToRevoke
+	$effect(() => {
+		showRevokeDialog = sessionToRevoke !== null;
+	});
+
 	let showRoleModal = $state(false);
 	let selectedRole = $state<UserRole>("student");
 
@@ -35,6 +48,7 @@
 			error = "Not authenticated";
 			loading = false;
 			activityLoading = false;
+			sessionsLoading = false;
 			return;
 		}
 
@@ -48,6 +62,16 @@
 			error = err instanceof Error ? err.message : "Failed to load user";
 		}
 		loading = false;
+
+		// Load user sessions
+		sessionsLoading = true;
+		sessionsError = null;
+		try {
+			userSessions = await adminCommands.listUserSessions(data.userId, fetch, token);
+		} catch (err) {
+			sessionsError = err instanceof Error ? err.message : "Failed to load sessions";
+		}
+		sessionsLoading = false;
 
 		// Load user activity
 		activityLoading = true;
@@ -111,6 +135,39 @@
 			toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to update role" });
 		}
 		actionLoading = false;
+	}
+
+	async function handleRevokeSession() {
+		if (!sessionToRevoke) return;
+
+		const token = auth.getToken();
+		if (!token) return;
+
+		revokingSession = true;
+		try {
+			await adminCommands.revokeUserSession(data.userId, sessionToRevoke.id, fetch, token);
+			toastStore.push({ variant: "success", message: "Session revoked" });
+			sessionToRevoke = null;
+			// Reload sessions
+			userSessions = await adminCommands.listUserSessions(data.userId, fetch, token);
+		} catch (err) {
+			toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to revoke session" });
+		}
+		revokingSession = false;
+	}
+
+	function getSessionStatusAccent(status: string): string {
+		switch (status) {
+			case "active": return "#22c55e";
+			case "expired": return "#f59e0b";
+			case "revoked": return "#dc2626";
+			default: return "#64748b";
+		}
+	}
+
+	function truncateUserAgent(ua: string | null | undefined, max = 50): string {
+		if (!ua) return "-";
+		return ua.length > max ? ua.substring(0, max) + "..." : ua;
 	}
 
 	function getRoleAccent(role: string): string {
@@ -212,6 +269,59 @@
 						<dd>{user.lockoutUntil ? formatDate(user.lockoutUntil) : "-"}</dd>
 					</div>
 				</dl>
+
+				<h4 class="user-detail__section-title">Sessions</h4>
+				{#if sessionsLoading}
+					<p class="user-detail__muted">Loading sessions...</p>
+				{:else if sessionsError}
+					<p class="user-detail__error-text">{sessionsError}</p>
+				{:else if userSessions.length === 0}
+					<p class="user-detail__muted">No sessions found</p>
+				{:else}
+					<div class="sessions-table-wrapper">
+						<table class="sessions-table">
+							<thead>
+								<tr>
+									<th>Status</th>
+									<th>IP Address</th>
+									<th>User Agent</th>
+									<th>Created</th>
+									<th>Last Used</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each userSessions as session}
+									<tr class:revoked={session.status === "revoked"} class:expired={session.status === "expired"}>
+										<td>
+											<Pill accent={getSessionStatusAccent(session.status)}>{session.status}</Pill>
+										</td>
+										<td class="sessions-table__mono">{session.ipAddress || "-"}</td>
+										<td title={session.userAgent || undefined}>{truncateUserAgent(session.userAgent)}</td>
+										<td>{formatDate(session.createdAt)}</td>
+										<td>{formatDate(session.lastUsedAt)}</td>
+										<td>
+											{#if session.status === "active"}
+												<Button
+													variant="danger"
+													size="sm"
+													onclick={() => (sessionToRevoke = session)}
+												>
+													<X />
+													<span>Revoke</span>
+												</Button>
+											{:else if session.revocationReason}
+												<span class="sessions-table__reason" title={session.revocationReason}>
+													{session.revocationReason}
+												</span>
+											{/if}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{/if}
 			</Card>
 		</div>
 
@@ -277,6 +387,16 @@
 		</div>
 	</div>
 {/if}
+
+<AlertDialog
+	bind:open={showRevokeDialog}
+	title="Revoke session"
+	description="This will immediately log the user out of this session. They will need to log in again."
+	confirmLabel="Revoke"
+	showTrigger={false}
+	onConfirm={handleRevokeSession}
+	onCancel={() => (sessionToRevoke = null)}
+/>
 
 <style>
 	.user-detail__back {
@@ -372,6 +492,76 @@
 	.user-detail__mono {
 		font-family: monospace;
 		font-size: 0.85rem;
+	}
+
+	.user-detail__section-title {
+		margin: 1.5rem 0 0.75rem;
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--admin-color-text);
+	}
+
+	.user-detail__muted {
+		color: var(--admin-color-text-muted);
+		font-size: 0.9rem;
+		margin: 0;
+	}
+
+	.user-detail__error-text {
+		color: #fca5a5;
+		font-size: 0.9rem;
+		margin: 0;
+	}
+
+	.sessions-table-wrapper {
+		overflow-x: auto;
+		margin-top: 0.5rem;
+	}
+
+	.sessions-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.85rem;
+	}
+
+	.sessions-table th {
+		text-align: left;
+		padding: 0.6rem 0.75rem;
+		border-bottom: 1px solid var(--admin-color-border-subtle);
+		color: var(--admin-color-text-muted);
+		font-weight: 500;
+		white-space: nowrap;
+	}
+
+	.sessions-table td {
+		padding: 0.6rem 0.75rem;
+		border-bottom: 1px solid var(--admin-color-border-subtle);
+		vertical-align: middle;
+	}
+
+	.sessions-table tr:last-child td {
+		border-bottom: none;
+	}
+
+	.sessions-table tr.revoked,
+	.sessions-table tr.expired {
+		opacity: 0.6;
+	}
+
+	.sessions-table__mono {
+		font-family: monospace;
+		font-size: 0.8rem;
+	}
+
+	.sessions-table__reason {
+		color: var(--admin-color-text-muted);
+		font-size: 0.8rem;
+		font-style: italic;
+	}
+
+	:global(.sessions-table button svg) {
+		width: 0.875rem;
+		height: 0.875rem;
 	}
 
 	.user-detail__actions {

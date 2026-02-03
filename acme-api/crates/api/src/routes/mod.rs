@@ -9,7 +9,10 @@ use axum::http::header::HeaderName;
 use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 use underlay_http::{cors_layer, CorsConfig};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
+use crate::openapi::ApiDoc;
 use crate::state::AppState;
 
 mod admin;
@@ -21,6 +24,8 @@ pub fn build_router() -> Router<AppState> {
     let cors = build_cors_layer();
 
     Router::new()
+        // OpenAPI / Swagger UI
+        .merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
         // Health
         .route("/v1/health", get(shared::health::health))
         // Auth routes
@@ -147,10 +152,7 @@ pub fn build_router() -> Router<AppState> {
         )
         // User management
         .route("/v1/admin/users", get(admin::users::list_users))
-        .route(
-            "/v1/admin/users/:user_id",
-            get(admin::users::get_user),
-        )
+        .route("/v1/admin/users/:user_id", get(admin::users::get_user))
         .route(
             "/v1/admin/users/:user_id/role",
             put(admin::users::update_user_role),
@@ -166,6 +168,14 @@ pub fn build_router() -> Router<AppState> {
         .route(
             "/v1/admin/users/:user_id/activity",
             get(admin::activity::list_activity_for_user),
+        )
+        .route(
+            "/v1/admin/users/:user_id/sessions",
+            get(admin::users::list_user_sessions),
+        )
+        .route(
+            "/v1/admin/users/:user_id/sessions/:session_id/revoke",
+            post(admin::users::revoke_user_session),
         )
         // Activity/audit log
         .route("/v1/admin/activity", get(admin::activity::list_activity))

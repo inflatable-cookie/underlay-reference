@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use underlay_blob::UploadPlan;
 use underlay_db::{MediaKind, MediaVisibility};
+use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -19,7 +20,7 @@ use acme_db::media::{
 // ============================================================================
 
 /// Media item summary for list views.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaSummaryDto {
     pub id: Uuid,
@@ -96,7 +97,7 @@ impl From<MediaRow> for MediaSummaryDto {
 }
 
 /// Full media item detail.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaDetailDto {
     pub id: Uuid,
@@ -148,9 +149,8 @@ impl MediaDetailDto {
     where
         F: Fn(&str) -> String,
     {
-        let current_version_dto = current_version.map(|v| {
-            MediaVersionDto::from_row_with_urls(v, renditions, &url_fn)
-        });
+        let current_version_dto =
+            current_version.map(|v| MediaVersionDto::from_row_with_urls(v, renditions, &url_fn));
 
         Self {
             id: m.id,
@@ -174,7 +174,7 @@ impl MediaDetailDto {
 // ============================================================================
 
 /// Media version DTO.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaVersionDto {
     pub id: Uuid,
@@ -253,7 +253,7 @@ impl From<MediaVersionRow> for MediaVersionDto {
 // ============================================================================
 
 /// Media usage record DTO.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaUsageDto {
     pub id: Uuid,
@@ -282,7 +282,7 @@ impl From<MediaUsageRow> for MediaUsageDto {
 // ============================================================================
 
 /// Media rendition DTO.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaRenditionDto {
     pub id: Uuid,
@@ -339,7 +339,7 @@ impl From<MediaRenditionRow> for MediaRenditionDto {
 // ============================================================================
 
 /// Request to create a new media item.
-#[derive(Debug, Clone, Deserialize, Validate)]
+#[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateMediaRequest {
     /// Media kind: "image" or "pdf".
@@ -372,7 +372,7 @@ impl CreateMediaRequest {
 }
 
 /// Request to update a media item.
-#[derive(Debug, Clone, Deserialize, Validate)]
+#[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMediaRequest {
     /// Human-readable title.
@@ -396,7 +396,7 @@ impl UpdateMediaRequest {
 }
 
 /// Request to check for duplicate media by hash.
-#[derive(Debug, Clone, Deserialize, Validate)]
+#[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckDuplicateRequest {
     /// SHA-256 hash of the file (hex-encoded, 64 characters).
@@ -405,7 +405,7 @@ pub struct CheckDuplicateRequest {
 }
 
 /// Response for duplicate check.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct CheckDuplicateResponse {
     /// Whether a duplicate was found.
@@ -415,7 +415,7 @@ pub struct CheckDuplicateResponse {
 }
 
 /// Request to initiate an upload.
-#[derive(Debug, Clone, Deserialize, Validate)]
+#[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct InitiateUploadRequest {
     /// Expected content type (MIME type).
@@ -437,7 +437,7 @@ pub struct InitiateUploadResponse {
 }
 
 /// Request to finalise an upload.
-#[derive(Debug, Clone, Deserialize, Validate)]
+#[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct FinaliseUploadRequest {
     /// SHA-256 hash of the uploaded file (hex-encoded, 64 characters).
@@ -446,7 +446,7 @@ pub struct FinaliseUploadRequest {
 }
 
 /// Response for upload finalisation.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct FinaliseUploadResponse {
     /// The finalised media item.
@@ -460,7 +460,7 @@ pub struct FinaliseUploadResponse {
 // ============================================================================
 
 /// Query parameters for listing media.
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize, Default, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaListQuery {
     /// Filter by kind ("image", "pdf").
