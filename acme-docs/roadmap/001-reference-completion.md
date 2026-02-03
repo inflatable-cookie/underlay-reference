@@ -198,7 +198,63 @@ Demonstrate background job patterns beyond media.
 
 ---
 
-## Phase 6: Testing Patterns
+## Phase 6: Media Library Enhancements
+
+Complete the media library implementation with missing features.
+
+### Upload Flow Improvements
+- [ ] Deduplication check before upload
+  - [ ] Compute sha256 hash client-side using `computeFileHash()` from Underlay
+  - [ ] Call `checkDuplicate()` before creating media record
+  - [ ] Show prompt if duplicate found: "Use existing" or "Upload as new"
+  - [ ] Skip upload if user chooses existing
+- [ ] Upload progress indicator
+  - [ ] Use XHR or fetch with progress events
+  - [ ] Show progress bar during upload
+  - [ ] Show finalisation state
+- [ ] Proper hash verification
+  - [ ] Pass computed sha256 to `finaliseUpload()` instead of empty string
+  - [ ] Backend verifies hash matches uploaded file
+- [ ] Client-side file validation
+  - [ ] Validate file type against allowed list
+  - [ ] Validate file size against limit
+  - [ ] Show clear error messages
+
+### Server-side Validation
+- [ ] Magic byte detection
+  - [ ] Verify file content matches declared MIME type
+  - [ ] Reject files with mismatched extension/content
+- [ ] Video format rejection
+  - [ ] Explicitly reject video uploads with clear error
+- [ ] Size limit enforcement
+  - [ ] Configurable max file size (e.g., 25MB or 50MB)
+  - [ ] Return clear error when exceeded
+
+### Rendition Generation
+- [ ] Thumbnail generation for images
+  - [ ] Generate on upload finalisation
+  - [ ] Store in media_rendition table
+  - [ ] Display in media list/detail views
+- [ ] PDF first-page thumbnail (future)
+  - [ ] Extract first page as image
+  - [ ] Requires PDF rendering library
+
+### UI Enhancements
+- [ ] Display thumbnails in media list grid
+- [ ] Show renditions in media detail view
+- [ ] Bulk upload support
+  - [ ] Multiple file selection
+  - [ ] Queue and progress for each file
+
+**Files:**
+- `acme-admin/src/routes/(app)/media/upload/+page.svelte` (update)
+- `acme-admin/src/routes/(app)/media/+page.svelte` (update for thumbnails)
+- `acme-api/crates/api/src/routes/admin/media.rs` (update for validation)
+- `acme-api/crates/jobs/src/tasks/media.rs` (rendition generation)
+
+---
+
+## Phase 7: Testing Patterns
 
 Provide example tests for reference.
 
@@ -228,7 +284,7 @@ Provide example tests for reference.
 
 ---
 
-## Phase 7: Documentation & Developer Experience
+## Phase 8: Documentation & Developer Experience
 
 Make it easy for others to use as a reference.
 
@@ -262,7 +318,7 @@ Make it easy for others to use as a reference.
 
 ---
 
-## Phase 8: Advanced Features (Future)
+## Phase 9: Advanced Features (Future)
 
 Lower priority items for comprehensive coverage.
 
@@ -282,11 +338,10 @@ Lower priority items for comprehensive coverage.
 - [ ] Tenant isolation patterns
 - [ ] Permission inheritance
 
-### Advanced Media
-- [ ] Bulk upload UI
-- [ ] Image cropping/editing
-- [ ] Video upload support
-- [ ] Rendition preview in UI
+### Advanced Media (beyond Phase 6)
+- [ ] Image cropping/editing tools
+- [ ] Video upload support (if decided to allow)
+- [ ] Drag-and-drop media reordering
 
 ---
 
@@ -297,6 +352,7 @@ The reference implementation is complete when:
 - [ ] New developers can understand Underlay patterns by reading the code
 - [ ] All common admin features are demonstrated (users, activity, batch ops)
 - [ ] Search and filtering patterns are clear
+- [ ] Media library is fully featured (deduplication, validation, thumbnails)
 - [ ] Testing patterns are provided
 - [ ] Setup is straightforward (single command)
 - [ ] Architecture is documented
@@ -305,9 +361,10 @@ The reference implementation is complete when:
 
 1. **Phase 1** - Admin dashboard & user management (most requested feature)
 2. **Phase 2** - Search & filtering (common pattern)
-3. **Phase 3** - Activity logging (admin essential)
-4. **Phase 7** - Documentation (helps others learn)
-5. **Phase 4** - Batch operations (nice to have)
-6. **Phase 5** - Background jobs (already partially done)
-7. **Phase 6** - Testing (important but can be added incrementally)
-8. **Phase 8** - Advanced features (future work)
+3. **Phase 6** - Media library enhancements (complete existing feature)
+4. **Phase 3** - Activity logging (admin essential)
+5. **Phase 8** - Documentation (helps others learn)
+6. **Phase 4** - Batch operations (nice to have)
+7. **Phase 5** - Background jobs (already partially done)
+8. **Phase 7** - Testing (important but can be added incrementally)
+9. **Phase 9** - Advanced features (future work)
