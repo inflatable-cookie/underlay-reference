@@ -333,30 +333,11 @@ Make it easy for others to use as a reference.
 
 ---
 
-## Phase 9: Advanced Features (Future)
+## Phase 9: Advanced Features → Backlog
 
-Lower priority items for comprehensive coverage.
+*Moved to backlog: See [backlog/advanced-features.md](./backlog/advanced-features.md)*
 
-### OAuth/SSO
-- [ ] Google OAuth provider
-- [ ] GitHub OAuth provider
-- [ ] OAuth callback handling
-- [ ] Account linking
-
-### Real-time Features
-- [ ] WebSocket infrastructure
-- [ ] Live task updates
-- [ ] Presence indicators
-
-### Multi-tenancy Example
-- [ ] Organization/workspace model
-- [ ] Tenant isolation patterns
-- [ ] Permission inheritance
-
-### Advanced Media (beyond Phase 6)
-- [ ] Image cropping/editing tools
-- [ ] Video upload support (if decided to allow)
-- [ ] Drag-and-drop media reordering
+Lower priority items (OAuth/SSO, Real-time, Multi-tenancy, Advanced Media) have been deferred to allow focus on core patterns and infrastructure.
 
 ---
 
