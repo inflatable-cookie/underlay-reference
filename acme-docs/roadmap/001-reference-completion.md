@@ -101,30 +101,29 @@ Demonstrate search patterns across the application.
 Track and display changes for admin visibility.
 
 ### Activity Log Infrastructure
-- [ ] Database: Create `platform.activity_log` table
-  - [ ] Fields: id, actor_id, action, entity_type, entity_id, metadata, created_at
-  - [ ] Index on entity, actor, created_at
-- [ ] Backend: Activity logging helper
-  - [ ] `log_activity(actor, action, entity_type, entity_id, metadata)`
-  - [ ] Call from relevant endpoints (create, update, delete)
-- [ ] Backend: Activity endpoints
-  - [ ] `GET /v1/admin/activity` - global activity feed
-  - [ ] `GET /v1/admin/activity?entityType=project&entityId=xxx` - entity-specific
-  - [ ] `GET /v1/admin/users/{userId}/activity` - user's actions
+- [x] Database: `platform.audit_log` table (already exists in baseline)
+  - [x] Fields: id, user_id, action, resource_type, resource_id, details, occurred_at
+  - [x] Index on entity, actor, created_at
+- [x] Backend: Activity logging helper
+  - [x] `log_activity(actor, action, entity_type, entity_id, metadata)`
+  - [ ] Call from relevant endpoints (create, update, delete) — wiring deferred
+- [x] Backend: Activity endpoints
+  - [x] `GET /v1/admin/activity` - global activity feed
+  - [x] `GET /v1/admin/activity/entity/:type/:id` - entity-specific
+  - [x] `GET /v1/admin/users/{userId}/activity` - user's actions
 
 ### Admin UI
-- [ ] Activity feed component (reusable)
-  - [ ] Action icon, actor, description, timestamp
-  - [ ] Relative time display
-- [ ] Dashboard: Recent activity section
-- [ ] Entity detail pages: Activity tab/section
-- [ ] User detail: User's activity history
+- [x] Activity feed component (reusable)
+  - [x] Action icon, actor, description, timestamp
+  - [x] Relative time display
+- [x] Dashboard: Recent activity section
+- [ ] Entity detail pages: Activity tab/section — deferred
+- [x] User detail: User's activity history
 
 **Files:**
-- `acme-api/migrations/YYYYMMDD__activity_log.sql` (new)
 - `acme-api/crates/db/src/activity.rs` (new)
 - `acme-api/crates/api/src/routes/admin/activity.rs` (new)
-- `acme-client/src/commands/activity-commands.ts` (new)
+- `acme-client/src/commands/admin-commands.ts` (updated with activity commands)
 - `acme-admin/src/lib/components/ActivityFeed.svelte` (new)
 
 ---

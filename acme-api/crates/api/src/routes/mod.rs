@@ -163,6 +163,16 @@ pub fn build_router() -> Router<AppState> {
             "/v1/admin/users/:user_id/unsuspend",
             post(admin::users::unsuspend_user),
         )
+        .route(
+            "/v1/admin/users/:user_id/activity",
+            get(admin::activity::list_activity_for_user),
+        )
+        // Activity/audit log
+        .route("/v1/admin/activity", get(admin::activity::list_activity))
+        .route(
+            "/v1/admin/activity/entity/:entity_type/:entity_id",
+            get(admin::activity::list_activity_for_entity),
+        )
         // Validation endpoint (for async form validation)
         .route(
             "/v1/admin/validate-field",

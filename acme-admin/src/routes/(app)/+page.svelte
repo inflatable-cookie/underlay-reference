@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { healthCommands, adminCommands, type DashboardStats } from "@api-client";
+	import { healthCommands, adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
 	import { Card, Pill } from "@decodelabs/underlay/components";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
 	import UserPlus from "lucide-svelte/icons/user-plus";
 	import Activity from "lucide-svelte/icons/activity";
 	import { auth } from "$lib/stores/auth";
+	import ActivityFeed from "$lib/components/ActivityFeed.svelte";
 
 	let healthStatus = $state<string | null>(null);
 	let healthError = $state<string | null>(null);
@@ -15,6 +16,10 @@
 	let stats = $state<DashboardStats | null>(null);
 	let statsError = $state<string | null>(null);
 	let statsLoading = $state(true);
+
+	let recentActivity = $state<ActivityEntry[]>([]);
+	let activityError = $state<string | null>(null);
+	let activityLoading = $state(true);
 
 	onMount(async () => {
 		// Fetch health status
@@ -26,18 +31,28 @@
 			healthError = err instanceof Error ? err.message : "Failed to fetch health";
 		}
 
-		// Fetch dashboard stats
 		const token = auth.getToken();
 		if (token) {
+			// Fetch dashboard stats
 			try {
 				stats = await adminCommands.getDashboardStats(fetch, token);
 			} catch (err) {
 				statsError = err instanceof Error ? err.message : "Failed to fetch stats";
 			}
+
+			// Fetch recent activity
+			try {
+				const activityResponse = await adminCommands.listActivity(fetch, token, { limit: 10 });
+				recentActivity = activityResponse.data;
+			} catch (err) {
+				activityError = err instanceof Error ? err.message : "Failed to fetch activity";
+			}
 		} else {
 			statsError = "Not authenticated";
+			activityError = "Not authenticated";
 		}
 		statsLoading = false;
+		activityLoading = false;
 	});
 </script>
 
@@ -145,6 +160,18 @@
 			{/if}
 		</Card>
 	</div>
+
+	<section class="dashboard__section">
+		<h2 class="dashboard__section-title">Recent Activity</h2>
+		<div class="dashboard__activity">
+			<ActivityFeed
+				activities={recentActivity}
+				loading={activityLoading}
+				error={activityError}
+				emptyMessage="No recent activity"
+			/>
+		</div>
+	</section>
 </div>
 
 <style>
@@ -263,6 +290,23 @@
 		gap: 0.4rem;
 		font-size: 0.85rem;
 		color: var(--admin-color-text-muted);
+	}
+
+	.dashboard__section {
+		margin-top: 2rem;
+	}
+
+	.dashboard__section-title {
+		margin: 0 0 1rem;
+		font-size: 1.1rem;
+		font-weight: 600;
+	}
+
+	.dashboard__activity {
+		background: var(--admin-color-surface);
+		border: 1px solid var(--admin-color-border-subtle);
+		border-radius: 0.5rem;
+		padding: 1rem;
 	}
 
 	@media (max-width: 900px) {

@@ -275,3 +275,34 @@ export interface DashboardStats {
   recentRegistrations: number;
   activeSessions: number;
 }
+
+// ============================================================================
+// Activity/Audit Log
+// ============================================================================
+
+export interface ActivityActor {
+  id: string;
+  email: string;
+  displayName?: string | null;
+}
+
+export interface ActivityEntry {
+  id: string;
+  occurredAt: string;
+  actor?: ActivityActor | null;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  details: Record<string, unknown>;
+}
+
+export interface ActivityListResponse {
+  data: ActivityEntry[];
+  hasMore: boolean;
+  total: number;
+}
+
+export interface ListActivityQuery {
+  limit?: number;
+  offset?: number;
+}

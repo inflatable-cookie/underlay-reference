@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { adminCommands, type UserDetail, type UserRole, UserRole as UserRoleConst } from "@api-client";
+	import { adminCommands, type UserDetail, type UserRole, UserRole as UserRoleConst, type ActivityEntry } from "@api-client";
 	import { Card, Pill, Button } from "@decodelabs/underlay/components";
 	import { useToasts } from "@decodelabs/underlay/patterns";
 	import ArrowLeft from "lucide-svelte/icons/arrow-left";
@@ -8,6 +8,7 @@
 	import Ban from "lucide-svelte/icons/ban";
 	import CheckCircle from "lucide-svelte/icons/check-circle";
 	import { auth } from "$lib/stores/auth";
+	import ActivityFeed from "$lib/components/ActivityFeed.svelte";
 
 	interface Props {
 		data: { userId: string };
@@ -21,6 +22,10 @@
 	let error = $state<string | null>(null);
 	let actionLoading = $state(false);
 
+	let userActivity = $state<ActivityEntry[]>([]);
+	let activityLoading = $state(true);
+	let activityError = $state<string | null>(null);
+
 	let showRoleModal = $state(false);
 	let selectedRole = $state<UserRole>("student");
 
@@ -29,6 +34,7 @@
 		if (!token) {
 			error = "Not authenticated";
 			loading = false;
+			activityLoading = false;
 			return;
 		}
 
@@ -42,6 +48,17 @@
 			error = err instanceof Error ? err.message : "Failed to load user";
 		}
 		loading = false;
+
+		// Load user activity
+		activityLoading = true;
+		activityError = null;
+		try {
+			const activityResponse = await adminCommands.listActivityForUser(data.userId, fetch, token, { limit: 10 });
+			userActivity = activityResponse.data;
+		} catch (err) {
+			activityError = err instanceof Error ? err.message : "Failed to load activity";
+		}
+		activityLoading = false;
 	}
 
 	async function handleSuspend() {
@@ -217,6 +234,15 @@
 					</Button>
 				{/if}
 			</div>
+		</Card>
+
+		<Card title="User Activity" variant="muted">
+			<ActivityFeed
+				activities={userActivity}
+				loading={activityLoading}
+				error={activityError}
+				emptyMessage="No activity recorded for this user"
+			/>
 		</Card>
 	{/if}
 </div>

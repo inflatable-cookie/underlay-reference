@@ -79,6 +79,11 @@ export type {
   // Dashboard types
   UserCounts,
   DashboardStats,
+  // Activity/Audit types
+  ActivityActor,
+  ActivityEntry,
+  ActivityListResponse,
+  ListActivityQuery,
 } from "./types/admin-types.js";
 
 export {

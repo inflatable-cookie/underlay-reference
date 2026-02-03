@@ -3,6 +3,7 @@
 //! This crate owns the Postgres connection pool and migration helpers.
 
 pub mod account;
+pub mod activity;
 pub mod auth;
 pub mod categories;
 pub mod infra;

@@ -7,6 +7,7 @@
 //! - Reordering endpoints
 //! - Field validation endpoints
 
+pub mod activity;
 pub mod categories;
 pub mod dashboard;
 pub mod media;
