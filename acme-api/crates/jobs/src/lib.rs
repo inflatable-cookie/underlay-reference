@@ -18,8 +18,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::io::Cursor;
 use std::sync::Arc;
-use tracing::{error, info, warn};
-use underlay_blob::BlobAdapter;
+use tracing::{info, warn};
+use underlay_blob::{BlobAdapter, MediaConfig};
 
 // Re-export everything from underlay-jobs.
 pub use underlay_jobs::{
@@ -370,26 +370,24 @@ impl JobHandler for GenerateProjectReportHandler {
 // Job Handler: media.generate_thumbnail
 // ============================================================================
 
-/// Thumbnail size (max width or height in pixels).
-const THUMBNAIL_SIZE: u32 = 300;
-
 /// Generate a thumbnail for an uploaded image.
 ///
 /// Payload: `{ "media_id": "uuid", "version_id": "uuid" }`
 ///
 /// This handler:
 /// 1. Fetches the original image from blob storage
-/// 2. Resizes it to a thumbnail
+/// 2. Resizes it to a thumbnail (size from MediaConfig)
 /// 3. Stores the thumbnail in blob storage
 /// 4. Creates a rendition record in the database
 pub struct GenerateThumbnailHandler {
     pool: Arc<PgPool>,
     blob_adapter: Arc<dyn BlobAdapter>,
+    media_config: MediaConfig,
 }
 
 impl GenerateThumbnailHandler {
-    pub fn new(pool: Arc<PgPool>, blob_adapter: Arc<dyn BlobAdapter>) -> Self {
-        Self { pool, blob_adapter }
+    pub fn new(pool: Arc<PgPool>, blob_adapter: Arc<dyn BlobAdapter>, media_config: MediaConfig) -> Self {
+        Self { pool, blob_adapter, media_config }
     }
 }
 
@@ -470,7 +468,8 @@ impl JobHandler for GenerateThumbnailHandler {
         let img = image::load_from_memory(&original_bytes)
             .map_err(|e| JobHandlerError::permanent(format!("failed to decode image: {}", e)))?;
 
-        let thumbnail = img.thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+        let thumb_size = self.media_config.thumbnail_max_dimension;
+        let thumbnail = img.thumbnail(thumb_size, thumb_size);
         let (width, height) = (thumbnail.width(), thumbnail.height());
 
         // Encode as WebP for efficient storage
@@ -535,11 +534,20 @@ impl JobHandler for GenerateThumbnailHandler {
 /// The `blob_adapter` is optional for backwards compatibility; if not provided,
 /// the media thumbnail handler will not be registered.
 pub fn create_registry(pool: Arc<PgPool>) -> JobRegistry {
-    create_registry_with_blob(pool, None)
+    create_registry_with_media(pool, None, MediaConfig::default())
 }
 
 /// Create a job registry with blob adapter for media processing jobs.
 pub fn create_registry_with_blob(pool: Arc<PgPool>, blob_adapter: Option<Arc<dyn BlobAdapter>>) -> JobRegistry {
+    create_registry_with_media(pool, blob_adapter, MediaConfig::default())
+}
+
+/// Create a job registry with blob adapter and media config for media processing jobs.
+pub fn create_registry_with_media(
+    pool: Arc<PgPool>,
+    blob_adapter: Option<Arc<dyn BlobAdapter>>,
+    media_config: MediaConfig,
+) -> JobRegistry {
     let mut registry = JobRegistry::new();
 
     // Platform handlers
@@ -552,7 +560,7 @@ pub fn create_registry_with_blob(pool: Arc<PgPool>, blob_adapter: Option<Arc<dyn
 
     // Media handlers (require blob adapter)
     if let Some(blob) = blob_adapter {
-        registry.register(GenerateThumbnailHandler::new(pool, blob));
+        registry.register(GenerateThumbnailHandler::new(pool, blob, media_config));
     }
 
     registry

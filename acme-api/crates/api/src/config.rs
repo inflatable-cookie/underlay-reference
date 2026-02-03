@@ -1,45 +1,44 @@
 //! Application configuration with sensible defaults.
 //!
-//! This module provides a centralized configuration structure that consuming
-//! apps can customize by overriding specific values.
+//! This module provides a centralized configuration structure for Acme,
+//! combining reusable Underlay components with app-specific settings.
 
-/// Application configuration.
+// Re-export MediaConfig from underlay-blob for convenience
+pub use underlay_blob::MediaConfig;
+
+/// Acme application configuration.
 ///
-/// Provides sensible defaults for all settings. Consuming apps can override
-/// specific values as needed.
+/// Combines Underlay's `MediaConfig` with any app-specific settings.
+/// Provides sensible defaults that apps can override as needed.
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore
 /// use acme_api::config::AcmeConfig;
 ///
 /// // Use all defaults
 /// let config = AcmeConfig::default();
 ///
-/// // Override specific values
+/// // Override media settings
+/// let config = AcmeConfig::default()
+///     .with_media(|m| m.max_file_size_mb(100));
+///
+/// // Or replace media config entirely
+/// use acme_api::config::MediaConfig;
 /// let config = AcmeConfig {
-///     max_file_size_bytes: 100 * 1024 * 1024, // 100 MB
-///     ..Default::default()
+///     media: MediaConfig::default().max_file_size_mb(100),
 /// };
 /// ```
 #[derive(Debug, Clone)]
 pub struct AcmeConfig {
-    /// Maximum allowed file size for media uploads in bytes.
-    ///
-    /// Default: 50 MB
-    pub max_file_size_bytes: u64,
-
-    /// Maximum thumbnail dimension (width or height) in pixels.
-    ///
-    /// Default: 300 px
-    pub thumbnail_max_dimension: u32,
+    /// Media handling configuration (file size limits, thumbnail dimensions).
+    pub media: MediaConfig,
 }
 
 impl Default for AcmeConfig {
     fn default() -> Self {
         Self {
-            max_file_size_bytes: 50 * 1024 * 1024, // 50 MB
-            thumbnail_max_dimension: 300,
+            media: MediaConfig::default(),
         }
     }
 }
@@ -50,15 +49,19 @@ impl AcmeConfig {
         Self::default()
     }
 
-    /// Set the maximum file size for uploads.
-    pub fn max_file_size_mb(mut self, mb: u64) -> Self {
-        self.max_file_size_bytes = mb * 1024 * 1024;
-        self
-    }
-
-    /// Set the maximum thumbnail dimension.
-    pub fn thumbnail_dimension(mut self, pixels: u32) -> Self {
-        self.thumbnail_max_dimension = pixels;
+    /// Modify the media configuration.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let config = AcmeConfig::default()
+    ///     .with_media(|m| m.max_file_size_mb(100).thumbnail_dimension(400));
+    /// ```
+    pub fn with_media<F>(mut self, f: F) -> Self
+    where
+        F: FnOnce(MediaConfig) -> MediaConfig,
+    {
+        self.media = f(self.media);
         self
     }
 }
