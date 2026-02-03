@@ -133,27 +133,27 @@ Track and display changes for admin visibility.
 Demonstrate bulk action patterns.
 
 ### Backend
-- [ ] Batch delete projects
-  - [ ] `POST /v1/admin/projects:batch-delete`
-  - [ ] Request: `{ ids: string[] }`
-- [ ] Batch update task status
-  - [ ] `POST /v1/admin/tasks:batch-update`
-  - [ ] Request: `{ ids: string[], status: string }`
-- [ ] Batch delete media
-  - [ ] `POST /v1/admin/media:batch-delete`
-  - [ ] Request: `{ ids: string[] }`
+- [x] Batch delete projects
+  - [x] `POST /v1/admin/projects:batch-delete`
+  - [x] Request: `{ ids: string[] }`
+- [x] Batch update task status
+  - [x] `POST /v1/admin/tasks:batch-update`
+  - [x] Request: `{ ids: string[], status: string }`
+- [x] Batch delete media
+  - [x] `POST /v1/admin/media:batch-delete`
+  - [x] Request: `{ ids: string[] }`
 
 ### Admin UI
-- [ ] Selection mode for list views
-  - [ ] Checkbox column
+- [x] Selection mode for list views (projects done, tasks/media pending)
+  - [x] Checkbox column
   - [ ] Select all / deselect all
-  - [ ] Selection count indicator
-- [ ] Batch action toolbar
-  - [ ] Appears when items selected
-  - [ ] Delete, change status, etc.
-- [ ] Confirmation dialog for batch operations
-  - [ ] Show count of affected items
-  - [ ] Require explicit confirmation
+  - [x] Selection count indicator
+- [x] Batch action toolbar
+  - [x] Appears when items selected
+  - [x] Delete, change status, etc.
+- [x] Confirmation dialog for batch operations
+  - [x] Show count of affected items
+  - [x] Require explicit confirmation
 
 **Files:**
 - `acme-api/crates/api/src/routes/admin/projects.rs` (update)
