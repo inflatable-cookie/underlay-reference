@@ -372,46 +372,47 @@ Review all Underlay Rust crates and expose configurable parameters through stand
   - [ ] Lockout duration
   - [ ] Failed attempt threshold
 
-#### underlay-auth-email-totp
-- [ ] TOTP config
-  - [ ] Code validity period
-  - [ ] Code length (digits)
-  - [ ] Max verification attempts
-  - [ ] Cooldown between sends
+#### underlay-auth-email-totp ✓
+- [x] TOTP config (already has `EmailTotpConfig` with builder pattern)
+  - [x] Code validity period (`code_expiry_minutes`)
+  - [x] Code length (`code_length`)
+  - [x] Max verification attempts (`max_attempts`)
+  - [x] Cooldown between sends (`max_codes_per_hour`)
 
-#### underlay-auth-totp
-- [ ] Authenticator config
-  - [ ] TOTP period (default 30s)
-  - [ ] TOTP digits (default 6)
-  - [ ] Algorithm selection
-  - [ ] Issuer name for QR codes
+#### underlay-auth-totp ✓
+- [x] Authenticator config (now has builder pattern)
+  - [x] TOTP period (`with_period_seconds`)
+  - [x] TOTP digits (`with_digits`)
+  - [x] Algorithm selection (`with_algorithm`)
+  - [x] Issuer name for QR codes (`with_issuer`)
+  - [x] Skew tolerance (`with_skew_steps`)
 
-#### underlay-auth-webauthn
-- [ ] WebAuthn config
-  - [ ] Relying party ID/name
-  - [ ] Attestation preference
-  - [ ] User verification preference
-  - [ ] Timeout for ceremonies
+#### underlay-auth-webauthn ✓
+- [x] WebAuthn config (already fully configurable via `WebAuthnConfig`)
+  - [x] Relying party ID/name (`rp_id`, `rp_name`)
+  - [x] Origin (`rp_origin`)
 
-#### underlay-http
-- [ ] Cookie config
-  - [x] Domain, secure flag, max age (already in `AuthCookieConfig`)
-  - [ ] SameSite policy
-  - [ ] Cookie name prefixes
-- [ ] CORS config
-  - [ ] Allowed origins
-  - [ ] Allowed headers
+#### underlay-http ✓
+- [x] Cookie config (now has full builder pattern)
+  - [x] Domain, secure flag, max age
+  - [x] SameSite policy (`with_same_site`)
+  - [x] Cookie name prefixes (`with_cookie_prefix`)
+  - [x] Refresh token path (`with_refresh_token_path`)
+- [ ] CORS config (already configurable via `CorsConfig`)
+  - [x] Allowed origins
+  - [x] Allowed headers
   - [ ] Max age
 - [ ] Request limits
   - [ ] Body size limits
   - [ ] Request timeout
 
-#### underlay-jobs
-- [ ] Job runner config
-  - [ ] Poll interval
-  - [ ] Max concurrent jobs
-  - [ ] Default timeout
-  - [ ] Retry backoff settings
+#### underlay-jobs ✓
+- [x] Job runner config (already configurable via `JobRunnerConfig`)
+  - [x] Poll interval
+  - [x] Batch size
+- [x] Job config backoff (now has builder methods)
+  - [x] Retry backoff settings (`with_backoff`, `with_exponential_backoff`, `with_fixed_backoff`)
+  - [x] Default constants exported (`DEFAULT_BACKOFF_BASE_SECS`, `DEFAULT_BACKOFF_MAX_SECS`)
 - [ ] Scheduler config
   - [ ] Tick interval
   - [ ] Timezone handling
