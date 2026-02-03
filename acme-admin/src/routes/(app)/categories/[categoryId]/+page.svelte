@@ -7,7 +7,6 @@
   import { Button, PageLoading, FormError, ConfirmAction, Badge } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import Pencil from "lucide-svelte/icons/pencil";
-  import Trash2 from "lucide-svelte/icons/trash-2";
 
   interface Props {
     data: PageData;
@@ -82,24 +81,17 @@
       </Button>
       <ConfirmAction
         title="Delete Category"
-        message={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
+        description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
         confirmLabel="Delete"
+        triggerLabel="Delete"
+        triggerVariant="danger"
         onConfirm={handleDelete}
-      >
-        {#snippet trigger(triggerFn)}
-          <Button type="button" variant="danger" onclick={triggerFn}>
-            <Trash2 size={16} />
-            Delete
-          </Button>
-        {/snippet}
-      </ConfirmAction>
+      />
     {/snippet}
   </PageHeader>
 
   {#if !category.isActive}
-    <Banner variant="warning">
-      This category is inactive and won't appear in selection lists.
-    </Banner>
+    <Banner variant="warning" message="This category is inactive and won't appear in selection lists." />
   {/if}
 
   <div class="detail-grid">

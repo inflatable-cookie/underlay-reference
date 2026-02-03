@@ -7,7 +7,6 @@
   import { Button, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, ProgressBar } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import Pencil from "lucide-svelte/icons/pencil";
-  import Trash2 from "lucide-svelte/icons/trash-2";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
@@ -84,11 +83,12 @@
     on_hold: "On Hold"
   }[project.status] ?? project.status : "");
 
-  const statusVariant = $derived(project ? {
+  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
+  const statusVariant = $derived<BadgeVariant>(project ? ({
     active: "success",
     archived: "muted",
     on_hold: "warning"
-  }[project.status] ?? "default" : "default");
+  } as Record<string, BadgeVariant>)[project.status] ?? "default" : "default");
 
   function handleEdit() {
     if (!project) return;
@@ -162,28 +162,19 @@
       </Button>
       <ConfirmAction
         title="Delete Project"
-        message={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
+        description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
         confirmLabel="Delete"
+        triggerLabel="Delete"
+        triggerVariant="danger"
         onConfirm={handleDelete}
-      >
-        {#snippet trigger(triggerFn)}
-          <Button type="button" variant="danger" onclick={triggerFn}>
-            <Trash2 size={16} />
-            Delete
-          </Button>
-        {/snippet}
-      </ConfirmAction>
+      />
     {/snippet}
   </PageHeader>
 
   {#if project.status === "archived"}
-    <Banner variant="warning">
-      This project is archived and tasks cannot be modified.
-    </Banner>
+    <Banner variant="warning" message="This project is archived and tasks cannot be modified." />
   {:else if project.status === "on_hold"}
-    <Banner variant="info">
-      This project is on hold.
-    </Banner>
+    <Banner variant="info" message="This project is on hold." />
   {/if}
 
   <div class="detail-grid">
@@ -272,7 +263,7 @@
             {#snippet media()}
               <CheckSquare size={16} />
             {/snippet}
-            {#snippet badges()}
+            {#snippet titleSuffix()}
               <Badge variant={task.status === "completed" ? "success" : task.status === "in_progress" ? "info" : "muted"} size="sm">
                 {task.status === "completed" ? "Done" : task.status === "in_progress" ? "In Progress" : "Pending"}
               </Badge>
@@ -291,11 +282,11 @@
             {#snippet media()}
               <CheckSquare size={16} />
             {/snippet}
-            {#snippet badges()}
+            {#snippet titleSuffix()}
               <Badge variant={task.status === "completed" ? "success" : task.status === "in_progress" ? "info" : "muted"} size="sm">
                 {task.status === "completed" ? "Done" : task.status === "in_progress" ? "In Progress" : "Pending"}
               </Badge>
-              <Badge variant={task.priority === "urgent" ? "danger" : task.priority === "high" ? "warning" : "subtle"} size="sm">
+              <Badge variant={task.priority === "urgent" ? "danger" : task.priority === "high" ? "warning" : "muted"} size="sm">
                 {task.priority}
               </Badge>
             {/snippet}

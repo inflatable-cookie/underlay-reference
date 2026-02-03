@@ -40,7 +40,7 @@
 
 import type { TokenStore } from './token-store.js';
 import { createTokenStore } from './token-store.js';
-import type { LoginRequest, LoginResponse, LoginUser, LoginStartRequest, LoginStartResponse } from '../types/common-types.js';
+import type { LoginRequest, LoginResponse, LoginUser, LoginStartRequest, LoginStartResponse, RegisterRequest } from '../types/common-types.js';
 import * as authCommands from '../commands/auth-commands.js';
 
 /** Configuration for the auth manager. */
@@ -92,6 +92,13 @@ export interface AuthManager {
 	 * @throws {Error} On login failure
 	 */
 	login(payload: LoginRequest, fetchFn: typeof fetch): Promise<LoginUser>;
+
+	/**
+	 * Register a new user.
+	 * Returns the user on success.
+	 * @throws {Error} On registration failure
+	 */
+	register(payload: RegisterRequest, fetchFn: typeof fetch): Promise<LoginUser>;
 
 	/**
 	 * Start two-factor login flow.
@@ -285,6 +292,19 @@ export function createAuthManager(config: AuthManagerConfig = {}): AuthManager {
 				return handleLoginResponse(response);
 			} catch (error) {
 				const message = error instanceof Error ? error.message : 'Login failed';
+				state = { ...state, loading: false, error: message };
+				throw error;
+			}
+		},
+
+		async register(payload: RegisterRequest, fetchFn: typeof fetch): Promise<LoginUser> {
+			state = { ...state, loading: true, error: null };
+
+			try {
+				const response = await authCommands.register(payload, fetchFn);
+				return handleLoginResponse(response);
+			} catch (error) {
+				const message = error instanceof Error ? error.message : 'Registration failed';
 				state = { ...state, loading: false, error: message };
 				throw error;
 			}

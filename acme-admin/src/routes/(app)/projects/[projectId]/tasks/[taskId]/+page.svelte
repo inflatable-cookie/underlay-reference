@@ -7,7 +7,6 @@
   import { Button, PageLoading, FormError, ConfirmAction, Badge } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import Pencil from "lucide-svelte/icons/pencil";
-  import Trash2 from "lucide-svelte/icons/trash-2";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
   import Calendar from "lucide-svelte/icons/calendar";
 
@@ -51,12 +50,13 @@
     cancelled: "Cancelled"
   }[task.status] ?? task.status : "");
 
-  const statusVariant = $derived(task ? {
+  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
+  const statusVariant = $derived<BadgeVariant>(task ? ({
     pending: "muted",
     in_progress: "info",
     completed: "success",
     cancelled: "danger"
-  }[task.status] ?? "default" : "default");
+  } as Record<string, BadgeVariant>)[task.status] ?? "default" : "default");
 
   const priorityLabel = $derived(task ? {
     low: "Low",
@@ -65,12 +65,12 @@
     urgent: "Urgent"
   }[task.priority] ?? task.priority : "");
 
-  const priorityVariant = $derived(task ? {
-    low: "subtle",
+  const priorityVariant = $derived<BadgeVariant>(task ? ({
+    low: "muted",
     medium: "default",
     high: "warning",
     urgent: "danger"
-  }[task.priority] ?? "default" : "default");
+  } as Record<string, BadgeVariant>)[task.priority] ?? "default" : "default");
 
   function handleEdit() {
     if (!task || !project) return;
@@ -128,28 +128,19 @@
       </Button>
       <ConfirmAction
         title="Delete Task"
-        message={`Are you sure you want to delete "${task.title}"?`}
+        description={`Are you sure you want to delete "${task.title}"?`}
         confirmLabel="Delete"
+        triggerLabel="Delete"
+        triggerVariant="danger"
         onConfirm={handleDelete}
-      >
-        {#snippet trigger(triggerFn)}
-          <Button type="button" variant="danger" onclick={triggerFn}>
-            <Trash2 size={16} />
-            Delete
-          </Button>
-        {/snippet}
-      </ConfirmAction>
+      />
     {/snippet}
   </PageHeader>
 
   {#if task.status === "completed"}
-    <Banner variant="success">
-      This task was completed on {formatDate(task.completedAt)}.
-    </Banner>
+    <Banner variant="success" message={`This task was completed on ${formatDate(task.completedAt)}.`} />
   {:else if task.status === "cancelled"}
-    <Banner variant="warning">
-      This task has been cancelled.
-    </Banner>
+    <Banner variant="warning" message="This task has been cancelled." />
   {/if}
 
   <div class="detail-grid">
@@ -180,7 +171,7 @@
             <dt>Labels</dt>
             <dd class="labels">
               {#each labels as label}
-                <Badge variant="subtle" style="--badge-color: {label.color}">{label.name}</Badge>
+                <Badge variant="muted" style="--badge-color: {label.color}">{label.name}</Badge>
               {/each}
             </dd>
           </div>

@@ -3,7 +3,7 @@
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { userCommands, type UserProject } from "@api-client";
   import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, FormField, Input, ListCard, ListGrid } from "@decodelabs/underlay/components";
+  import { Button, PageLoading, FormError, Field, TextInput, ListCard, ListGrid } from "@decodelabs/underlay/components";
   import { AlertDialog } from "@decodelabs/underlay/components";
   import Plus from "lucide-svelte/icons/plus";
   import FolderOpen from "lucide-svelte/icons/folder-open";
@@ -100,12 +100,10 @@
         title={project.name}
         href={`/projects/${project.id}`}
         variant="default"
+        subtitle={project.description || "No description"}
       >
         {#snippet media()}
           <FolderOpen size={20} />
-        {/snippet}
-        {#snippet description()}
-          {project.description || "No description"}
         {/snippet}
       </ListCard>
     {/each}
@@ -123,12 +121,12 @@
   onCancel={() => { showCreateDialog = false; }}
 >
   <div class="dialog-fields">
-    <FormField label="Project Name" required>
-      <Input bind:value={newProjectName} placeholder="My Project" disabled={creating} />
-    </FormField>
-    <FormField label="Description">
-      <Input bind:value={newProjectDescription} placeholder="Optional description" disabled={creating} />
-    </FormField>
+    <Field label="Project Name" required>
+      <TextInput bind:value={newProjectName} placeholder="My Project" disabled={creating} />
+    </Field>
+    <Field label="Description">
+      <TextInput bind:value={newProjectDescription} placeholder="Optional description" disabled={creating} />
+    </Field>
   </div>
 </AlertDialog>
 

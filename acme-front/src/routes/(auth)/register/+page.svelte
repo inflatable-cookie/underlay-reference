@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { auth } from "$lib/stores/auth";
-  import { Button, Input, FormField, FormError } from "@decodelabs/underlay/components";
+  import { Button, TextInput, Field, FormError } from "@decodelabs/underlay/components";
 
   let displayName = $state("");
   let email = $state("");
@@ -34,34 +34,34 @@
     <FormError message={error} />
   {/if}
 
-  <FormField label="Name" required>
-    <Input
+  <Field label="Name" required>
+    <TextInput
       bind:value={displayName}
       placeholder="Your name"
       disabled={submitting}
       autocomplete="name"
     />
-  </FormField>
+  </Field>
 
-  <FormField label="Email" required>
-    <Input
+  <Field label="Email" required>
+    <TextInput
       type="email"
       bind:value={email}
       placeholder="you@example.com"
       disabled={submitting}
       autocomplete="email"
     />
-  </FormField>
+  </Field>
 
-  <FormField label="Password" required>
-    <Input
+  <Field label="Password" required>
+    <TextInput
       type="password"
       bind:value={password}
       placeholder="Choose a password"
       disabled={submitting}
       autocomplete="new-password"
     />
-  </FormField>
+  </Field>
 
   <div class="form-actions">
     <Button type="submit" variant="primary" disabled={submitting}>

@@ -201,7 +201,6 @@
         placeholder="Select a category…"
         allowCreate={!!createCategory}
         createLabel="Add new category"
-        clearable
       >
         {#snippet createForm(onSuccess, onCancel)}
           <form

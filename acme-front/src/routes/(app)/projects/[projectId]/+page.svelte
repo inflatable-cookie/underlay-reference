@@ -4,7 +4,7 @@
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { userCommands, type UserProject, type UserTask } from "@api-client";
   import { useAuthenticatedData, useToasts, PageHeader } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, FormField, Input, Textarea, Select, Badge, ListCard, ListGrid, ConfirmAction, AlertDialog } from "@decodelabs/underlay/components";
+  import { Button, PageLoading, FormError, Field, TextInput, TextArea, Select, Badge, ListCard, ListGrid, ConfirmAction, AlertDialog } from "@decodelabs/underlay/components";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -154,17 +154,12 @@
     {#snippet actions()}
       <ConfirmAction
         title="Delete Project"
-        message={`Are you sure you want to delete "${project.name}"? All tasks will be deleted.`}
+        description={`Are you sure you want to delete "${project.name}"? All tasks will be deleted.`}
         confirmLabel="Delete"
+        triggerLabel="Delete"
+        triggerVariant="danger"
         onConfirm={handleDeleteProject}
-      >
-        {#snippet trigger(triggerFn)}
-          <Button type="button" variant="danger" onclick={triggerFn}>
-            <Trash2 size={16} />
-            Delete
-          </Button>
-        {/snippet}
-      </ConfirmAction>
+      />
     {/snippet}
   </PageHeader>
 
@@ -205,7 +200,7 @@
             </div>
             <div class="task-meta">
               <Badge
-                variant={task.priority === "urgent" ? "danger" : task.priority === "high" ? "warning" : "subtle"}
+                variant={task.priority === "urgent" ? "danger" : task.priority === "high" ? "warning" : "muted"}
                 size="sm"
               >
                 {task.priority}
@@ -233,15 +228,15 @@
   onCancel={() => { showCreateDialog = false; }}
 >
   <div class="dialog-fields">
-    <FormField label="Task Title" required>
-      <Input bind:value={newTaskTitle} placeholder="What needs to be done?" disabled={creating} />
-    </FormField>
-    <FormField label="Description">
-      <Textarea bind:value={newTaskDescription} placeholder="Optional details" rows={3} disabled={creating} />
-    </FormField>
-    <FormField label="Priority">
-      <Select bind:value={newTaskPriority} options={priorityOptions} disabled={creating} />
-    </FormField>
+    <Field label="Task Title" required>
+      <TextInput bind:value={newTaskTitle} placeholder="What needs to be done?" disabled={creating} />
+    </Field>
+    <Field label="Description">
+      <TextArea bind:value={newTaskDescription} placeholder="Optional details" rows={3} disabled={creating} />
+    </Field>
+    <Field label="Priority">
+      <Select value={newTaskPriority} onchange={(val) => { newTaskPriority = val; }} items={priorityOptions} disabled={creating} />
+    </Field>
   </div>
 </AlertDialog>
 

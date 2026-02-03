@@ -168,7 +168,7 @@ export interface ValidateFieldPayload {
 
 export interface ValidationResult {
   valid: boolean;
-  message?: string | null;
+  message?: string;
 }
 
 // ============================================================================
