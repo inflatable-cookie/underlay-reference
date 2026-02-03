@@ -33,6 +33,9 @@ uuid = { version = "1", features = ["v7", "serde"] }
 # Database (optional for now)
 sqlx = { version = "0.8.6", default-features = true, features = ["runtime-tokio-rustls", "postgres", "uuid", "migrate", "chrono", "json", "macros"] }
 
+# Image processing
+image = "0.25"
+
 # Underlay crates (via symlink at repo root)
 underlay-core = { path = "../underlay/rust/crates/underlay-core" }
 underlay-http = { path = "../underlay/rust/crates/underlay-http" }

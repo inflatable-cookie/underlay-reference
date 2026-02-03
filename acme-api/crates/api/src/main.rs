@@ -146,6 +146,9 @@ async fn main() -> anyhow::Result<()> {
         Arc::new(NoopAdapter::new())
     };
 
+    // Create job repository for enqueueing jobs
+    let job_repository = Some(Arc::new(underlay_jobs::JobRepository::new(pool.clone())));
+
     let state = AppState {
         local_auth,
         auth_provider,
@@ -155,6 +158,7 @@ async fn main() -> anyhow::Result<()> {
         email_totp,
         email_config,
         blob_adapter,
+        job_repository,
     };
 
     // Set global DB pool for middleware

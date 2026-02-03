@@ -13,10 +13,13 @@
 //! - `projects.generate_report` - Generate project report (long-running with progress)
 
 use async_trait::async_trait;
+use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::io::Cursor;
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
+use underlay_blob::BlobAdapter;
 
 // Re-export everything from underlay-jobs.
 pub use underlay_jobs::{
@@ -364,11 +367,179 @@ impl JobHandler for GenerateProjectReportHandler {
 }
 
 // ============================================================================
+// Job Handler: media.generate_thumbnail
+// ============================================================================
+
+/// Thumbnail size (max width or height in pixels).
+const THUMBNAIL_SIZE: u32 = 300;
+
+/// Generate a thumbnail for an uploaded image.
+///
+/// Payload: `{ "media_id": "uuid", "version_id": "uuid" }`
+///
+/// This handler:
+/// 1. Fetches the original image from blob storage
+/// 2. Resizes it to a thumbnail
+/// 3. Stores the thumbnail in blob storage
+/// 4. Creates a rendition record in the database
+pub struct GenerateThumbnailHandler {
+    pool: Arc<PgPool>,
+    blob_adapter: Arc<dyn BlobAdapter>,
+}
+
+impl GenerateThumbnailHandler {
+    pub fn new(pool: Arc<PgPool>, blob_adapter: Arc<dyn BlobAdapter>) -> Self {
+        Self { pool, blob_adapter }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct GenerateThumbnailPayload {
+    media_id: uuid::Uuid,
+    version_id: uuid::Uuid,
+}
+
+#[async_trait]
+impl JobHandler for GenerateThumbnailHandler {
+    fn job_type(&self) -> &'static str {
+        "media.generate_thumbnail"
+    }
+
+    fn config(&self) -> JobConfig {
+        JobConfig {
+            max_attempts: 3,
+            timeout_seconds: Some(60), // 1 minute timeout
+            ..Default::default()
+        }
+    }
+
+    async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
+        let payload: GenerateThumbnailPayload = serde_json::from_value(job.payload)
+            .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
+
+        // Get version info
+        let version: Option<(String, Option<String>)> = sqlx::query_as(
+            r#"
+            SELECT object_key, mime_type
+            FROM media.media_version
+            WHERE id = $1 AND state = 'ready'
+            "#,
+        )
+        .bind(payload.version_id)
+        .fetch_optional(self.pool.as_ref())
+        .await
+        .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+
+        let Some((object_key, mime_type)) = version else {
+            warn!(version_id = %payload.version_id, "version not found or not ready");
+            return Ok(()); // Nothing to do
+        };
+
+        // Only process images
+        let mime = mime_type.as_deref().unwrap_or("");
+        if !mime.starts_with("image/") || mime == "image/svg+xml" {
+            info!(version_id = %payload.version_id, mime_type = mime, "skipping non-raster image");
+            return Ok(());
+        }
+
+        // Check if thumbnail already exists
+        let existing: Option<uuid::Uuid> = sqlx::query_scalar(
+            r#"
+            SELECT id FROM media.media_rendition
+            WHERE media_version_id = $1 AND kind = 'thumbnail'
+            "#,
+        )
+        .bind(payload.version_id)
+        .fetch_optional(self.pool.as_ref())
+        .await
+        .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+
+        if existing.is_some() {
+            info!(version_id = %payload.version_id, "thumbnail already exists");
+            return Ok(());
+        }
+
+        // Download original image
+        let original_bytes = self
+            .blob_adapter
+            .get_bytes(&object_key)
+            .await
+            .map_err(|e| JobHandlerError::new(format!("failed to download original: {}", e)))?;
+
+        // Decode and resize image
+        let img = image::load_from_memory(&original_bytes)
+            .map_err(|e| JobHandlerError::permanent(format!("failed to decode image: {}", e)))?;
+
+        let thumbnail = img.thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+        let (width, height) = (thumbnail.width(), thumbnail.height());
+
+        // Encode as WebP for efficient storage
+        let mut thumbnail_bytes = Vec::new();
+        let mut cursor = Cursor::new(&mut thumbnail_bytes);
+        thumbnail
+            .write_to(&mut cursor, ImageFormat::WebP)
+            .map_err(|e| JobHandlerError::new(format!("failed to encode thumbnail: {}", e)))?;
+
+        // Generate thumbnail object key
+        let thumb_object_key = format!(
+            "media/{}/versions/{}/thumbnail.webp",
+            payload.media_id, payload.version_id
+        );
+
+        // Upload thumbnail
+        self.blob_adapter
+            .put_bytes(&thumb_object_key, &thumbnail_bytes, "image/webp")
+            .await
+            .map_err(|e| JobHandlerError::new(format!("failed to upload thumbnail: {}", e)))?;
+
+        // Create rendition record
+        let rendition_id = uuid::Uuid::now_v7();
+        sqlx::query(
+            r#"
+            INSERT INTO media.media_rendition
+                (id, media_version_id, kind, byte_size, mime_type, width, height,
+                 storage_provider, bucket, object_key)
+            VALUES ($1, $2, 'thumbnail', $3, 'image/webp', $4, $5, 'local', 'media', $6)
+            "#,
+        )
+        .bind(rendition_id)
+        .bind(payload.version_id)
+        .bind(thumbnail_bytes.len() as i64)
+        .bind(width as i32)
+        .bind(height as i32)
+        .bind(&thumb_object_key)
+        .execute(self.pool.as_ref())
+        .await
+        .map_err(|e| JobHandlerError::new(format!("failed to create rendition: {}", e)))?;
+
+        info!(
+            job_id = %job.id,
+            media_id = %payload.media_id,
+            version_id = %payload.version_id,
+            width = width,
+            height = height,
+            size = thumbnail_bytes.len(),
+            "generated thumbnail"
+        );
+
+        Ok(())
+    }
+}
+
+// ============================================================================
 // Registry Builder
 // ============================================================================
 
 /// Create a job registry with all Acme job handlers registered.
+///
+/// The `blob_adapter` is optional for backwards compatibility; if not provided,
+/// the media thumbnail handler will not be registered.
 pub fn create_registry(pool: Arc<PgPool>) -> JobRegistry {
+    create_registry_with_blob(pool, None)
+}
+
+/// Create a job registry with blob adapter for media processing jobs.
+pub fn create_registry_with_blob(pool: Arc<PgPool>, blob_adapter: Option<Arc<dyn BlobAdapter>>) -> JobRegistry {
     let mut registry = JobRegistry::new();
 
     // Platform handlers
@@ -377,7 +548,12 @@ pub fn create_registry(pool: Arc<PgPool>) -> JobRegistry {
     // Domain handlers
     registry.register(CleanupCompletedTasksHandler::new(pool.clone()));
     registry.register(SendTaskReminderHandler::new(pool.clone()));
-    registry.register(GenerateProjectReportHandler::new(pool));
+    registry.register(GenerateProjectReportHandler::new(pool.clone()));
+
+    // Media handlers (require blob adapter)
+    if let Some(blob) = blob_adapter {
+        registry.register(GenerateThumbnailHandler::new(pool, blob));
+    }
 
     registry
 }

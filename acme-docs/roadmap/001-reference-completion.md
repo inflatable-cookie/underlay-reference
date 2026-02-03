@@ -233,9 +233,9 @@ Complete the media library implementation with missing features.
   - [x] Return clear error with file size details
 
 ### Rendition Generation
-- [ ] Thumbnail generation for images
-  - [ ] Generate on upload finalisation
-  - [ ] Store in media_rendition table
+- [x] Thumbnail generation for images
+  - [x] Generate on upload finalisation (via job queue)
+  - [x] Store in media_rendition table
   - [ ] Display in media list/detail views
 - [ ] PDF first-page thumbnail (future)
   - [ ] Extract first page as image

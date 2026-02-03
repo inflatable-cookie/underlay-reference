@@ -16,6 +16,7 @@ use underlay_auth::Authenticated;
 use underlay_blob::BlobAdapter;
 use underlay_email::{EmailManager, EmailTemplateEngine};
 use underlay_http::AuthCookieConfig;
+use underlay_jobs::JobRepository;
 
 /// Global database pool for use in middleware (e.g., error logging).
 pub static DB_POOL: OnceCell<DbPool> = OnceCell::new();
@@ -31,6 +32,7 @@ pub struct AppState {
     pub email_totp: Arc<EmailTotpService>,
     pub email_config: EmailConfig,
     pub blob_adapter: Arc<dyn BlobAdapter>,
+    pub job_repository: Option<Arc<JobRepository>>,
 }
 
 impl underlay_auth::HasAuthProvider for AppState {

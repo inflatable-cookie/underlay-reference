@@ -15,6 +15,7 @@ use serde_json::json;
 use underlay_blob::UploadRequest;
 use underlay_db::pagination::PaginationParams;
 use underlay_http::query::QueryParams;
+use underlay_jobs::JobConfig;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -689,6 +690,30 @@ pub async fn finalise_upload(
     if let Err(e) = media::set_current_version(pool, media_id, version_id).await {
         tracing::error!("Failed to set current version: {}", e);
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+
+    // Enqueue thumbnail generation job for images
+    if stored.content_type.starts_with("image/") && stored.content_type != "image/svg+xml" {
+        if let Some(job_repo) = &state.job_repository {
+            let payload = json!({
+                "media_id": media_id,
+                "version_id": version_id
+            });
+            let config = JobConfig {
+                max_attempts: 3,
+                ..Default::default()
+            };
+            if let Err(e) = job_repo.create("media.generate_thumbnail", payload, &config).await {
+                // Log but don't fail the request - thumbnail is not critical
+                tracing::warn!("Failed to enqueue thumbnail job: {}", e);
+            } else {
+                tracing::info!(
+                    media_id = %media_id,
+                    version_id = %version_id,
+                    "Enqueued thumbnail generation job"
+                );
+            }
+        }
     }
 
     // Get updated media
