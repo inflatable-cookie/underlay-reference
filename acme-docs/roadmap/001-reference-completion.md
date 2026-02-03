@@ -96,7 +96,7 @@ Demonstrate search patterns across the application.
 
 ---
 
-## Phase 3: Activity & Audit Logging
+## Phase 3: Activity & Audit Logging ✓
 
 Track and display changes for admin visibility.
 
@@ -106,7 +106,7 @@ Track and display changes for admin visibility.
   - [x] Index on entity, actor, created_at
 - [x] Backend: Activity logging helper
   - [x] `log_activity(actor, action, entity_type, entity_id, metadata)`
-  - [ ] Call from relevant endpoints (create, update, delete) — wiring deferred
+  - [x] Call from relevant endpoints (create, update, delete)
 - [x] Backend: Activity endpoints
   - [x] `GET /v1/admin/activity` - global activity feed
   - [x] `GET /v1/admin/activity/entity/:type/:id` - entity-specific
