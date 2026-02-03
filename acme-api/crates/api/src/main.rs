@@ -2,7 +2,7 @@
 
 use acme_db::infra::DbEmailStore;
 use acme_db::{create_pool, run_dev_seeds, run_migrations};
-use acme_infra::{create_email_manager, create_template_engine, EmailAdapterType, EmailConfig};
+use acme_infra::{create_email_manager, create_template_engine, AppConfig, EmailAdapterType, EmailConfig};
 use std::sync::Arc;
 use tracing::info;
 use underlay_blob::{BlobAdapter, LocalAdapter, LocalConfig, NoopAdapter};
@@ -149,6 +149,9 @@ async fn main() -> anyhow::Result<()> {
     // Create job repository for enqueueing jobs
     let job_repository = Some(Arc::new(underlay_jobs::JobRepository::new(pool.clone())));
 
+    // Load app config for media settings
+    let app_config = AppConfig::from_env();
+
     let state = AppState {
         local_auth,
         auth_provider,
@@ -159,6 +162,7 @@ async fn main() -> anyhow::Result<()> {
         email_config,
         blob_adapter,
         job_repository,
+        max_file_size_bytes: app_config.media.max_file_size_bytes,
     };
 
     // Set global DB pool for middleware

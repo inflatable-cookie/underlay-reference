@@ -33,6 +33,8 @@ pub struct AppState {
     pub email_config: EmailConfig,
     pub blob_adapter: Arc<dyn BlobAdapter>,
     pub job_repository: Option<Arc<JobRepository>>,
+    /// Maximum allowed file size for media uploads in bytes.
+    pub max_file_size_bytes: u64,
 }
 
 impl underlay_auth::HasAuthProvider for AppState {

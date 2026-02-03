@@ -155,6 +155,22 @@ pub struct EmailConfig {
     pub dev_capture: Option<DevCaptureEmailConfig>,
 }
 
+/// Media configuration.
+#[derive(Debug, Clone)]
+pub struct MediaConfig {
+    /// Maximum allowed file size for uploads in bytes.
+    /// Default: 50 MB (52,428,800 bytes)
+    pub max_file_size_bytes: u64,
+}
+
+impl Default for MediaConfig {
+    fn default() -> Self {
+        Self {
+            max_file_size_bytes: 50 * 1024 * 1024, // 50 MB
+        }
+    }
+}
+
 /// Top-level application configuration.
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -164,6 +180,7 @@ pub struct AppConfig {
     pub logging: LoggingConfig,
     pub cors: CorsConfig,
     pub email: EmailConfig,
+    pub media: MediaConfig,
 }
 
 impl AppConfig {
@@ -288,6 +305,15 @@ impl AppConfig {
             dev_capture: dev_capture_config,
         };
 
+        // Media configuration
+        let max_file_size_bytes = env::var("MEDIA_MAX_FILE_SIZE_MB")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .map(|mb| mb * 1024 * 1024)
+            .unwrap_or(50 * 1024 * 1024); // Default: 50 MB
+
+        let media = MediaConfig { max_file_size_bytes };
+
         AppConfig {
             env,
             http: HttpConfig { bind_addr, port },
@@ -301,6 +327,7 @@ impl AppConfig {
                 cookie_secure,
             },
             email,
+            media,
         }
     }
 }
