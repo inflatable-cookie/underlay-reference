@@ -164,7 +164,7 @@ Demonstrate bulk action patterns.
 
 ---
 
-## Phase 5: Background Jobs Example
+## Phase 5: Background Jobs Example ✓
 
 Demonstrate background job patterns beyond media.
 
@@ -193,10 +193,11 @@ Demonstrate background job patterns beyond media.
   - [x] `POST /v1/admin/jobs/:jobId/cancel` - cancel job
   - [x] `POST /v1/admin/jobs/:jobId/retry` - retry failed job
 - [x] TypeScript client commands
-- [ ] Jobs dashboard page (frontend)
-  - [ ] Recent job runs
-  - [ ] Failed jobs with error details
-  - [ ] Manual retry button
+- [x] Jobs dashboard page (frontend)
+  - [x] Job queue statistics (pending, running, failed, succeeded)
+  - [x] Recent job runs with status filtering
+  - [x] Failed jobs with error details
+  - [x] Manual retry and cancel buttons
 
 **Files:**
 - `acme-api/crates/jobs/src/lib.rs` (updated with new handlers)

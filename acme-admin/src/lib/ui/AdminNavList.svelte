@@ -6,6 +6,7 @@
 	import CheckSquare from "lucide-svelte/icons/check-square";
 	import Settings from "lucide-svelte/icons/settings";
 	import Users from "lucide-svelte/icons/users";
+	import Image from "lucide-svelte/icons/image";
 
 	interface Props {
 		currentSection?: string | null;
@@ -164,6 +165,15 @@
 	</li>
 
 	<li>
+		<a href="/media" class="{linkClass} admin-nav__root" class:admin-nav__link--active={isActive("/media")} onclick={handleChildClick}>
+			<span class="admin-nav__badge admin-nav__badge--media" aria-hidden="true">
+				<Image class="admin-nav__badge-icon" />
+			</span>
+			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Media</span>
+		</a>
+	</li>
+
+	<li>
 		<button
 			type="button"
 			class="{linkClass} {sectionClass} admin-nav__section-toggle"
@@ -178,6 +188,11 @@
 		</button>
 		{#if expandedSection === "system"}
 			<ul class={childrenClass}>
+				<li>
+					<a href="/system/jobs" class:admin-nav__link--active={isActive("/system/jobs")} onclick={handleChildClick}>
+						Background Jobs
+					</a>
+				</li>
 				<li>
 					<a href="/account" class:admin-nav__link--active={isActive("/account")} onclick={handleChildClick}>
 						Account
@@ -314,6 +329,10 @@
 
 	:global(.admin-nav__badge--tasks) {
 		background: linear-gradient(135deg, #14b8a6, #22c55e);
+	}
+
+	:global(.admin-nav__badge--media) {
+		background: linear-gradient(135deg, #f59e0b, #f97316);
 	}
 
 	:global(.admin-nav__badge--system) {

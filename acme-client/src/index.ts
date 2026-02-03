@@ -89,7 +89,15 @@ export type {
   BatchDeleteResult,
   BatchUpdateTaskStatusPayload,
   BatchUpdateResult,
+  // Job types
+  JobProgress,
+  JobSummary,
+  JobDetail,
+  JobStats,
+  ListJobsQuery,
 } from "./types/admin-types.js";
+
+export type { JobStatus } from "./types/admin-types.js";
 
 export {
   ProjectStatus,
