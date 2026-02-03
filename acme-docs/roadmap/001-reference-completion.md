@@ -22,40 +22,40 @@ Make this a **complete reference** that demonstrates:
 
 ---
 
-## Phase 1: Admin Dashboard & User Management
+## Phase 1: Admin Dashboard & User Management ✓
 
 Flesh out the admin experience with essential features.
 
 ### Admin Dashboard
-- [ ] Dashboard overview page
-  - [ ] User count statistic
-  - [ ] Media count/storage used
-  - [ ] Recent activity feed (last 10 changes)
-  - [ ] System health indicators
+- [x] Dashboard overview page
+  - [x] User count statistic
+  - [x] Media count/storage used
+  - [ ] Recent activity feed (last 10 changes) — deferred to Phase 3
+  - [x] System health indicators
 
 ### User Management (Admin)
-- [ ] Backend: User listing endpoint
-  - [ ] `GET /v1/admin/users` with pagination
-  - [ ] Filters: role, status, search by email
-- [ ] Backend: User detail endpoint
-  - [ ] `GET /v1/admin/users/{userId}`
-  - [ ] Include sessions, 2FA status, created date
-- [ ] Backend: User role management
-  - [ ] `PUT /v1/admin/users/{userId}/role`
-  - [ ] Update user's role (user → admin, etc.)
-- [ ] Backend: User suspension
-  - [ ] `POST /v1/admin/users/{userId}/suspend`
-  - [ ] `POST /v1/admin/users/{userId}/unsuspend`
-- [ ] Client: Add user admin commands
-  - [ ] `listUsersAdmin()`, `getUser()`, `updateUserRole()`, `suspendUser()`
-- [ ] Admin UI: Users list page
-  - [ ] Table with email, role, status, created date
-  - [ ] Pagination
-  - [ ] Role/status filters
-- [ ] Admin UI: User detail page
-  - [ ] Profile info, role badge
-  - [ ] Session list with revoke action
-  - [ ] Suspend/unsuspend action
+- [x] Backend: User listing endpoint
+  - [x] `GET /v1/admin/users` with pagination
+  - [x] Filters: role, status, search by email
+- [x] Backend: User detail endpoint
+  - [x] `GET /v1/admin/users/{userId}`
+  - [x] Include sessions, 2FA status, created date
+- [x] Backend: User role management
+  - [x] `PUT /v1/admin/users/{userId}/role`
+  - [x] Update user's role (user → admin, etc.)
+- [x] Backend: User suspension
+  - [x] `POST /v1/admin/users/{userId}/suspend`
+  - [x] `POST /v1/admin/users/{userId}/unsuspend`
+- [x] Client: Add user admin commands
+  - [x] `listUsersAdmin()`, `getUser()`, `updateUserRole()`, `suspendUser()`
+- [x] Admin UI: Users list page
+  - [x] Table with email, role, status, created date
+  - [x] Pagination
+  - [x] Role/status filters
+- [x] Admin UI: User detail page
+  - [x] Profile info, role badge
+  - [ ] Session list with revoke action — deferred to Phase 3
+  - [x] Suspend/unsuspend action
 
 **Files:**
 - `acme-api/crates/api/src/routes/admin/users.rs` (new)
