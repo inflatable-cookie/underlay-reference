@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use underlay_http::query::QueryParams;
 
 use acme_core::Uuid;
-use acme_db::tasks;
+use acme_db::{activity, tasks};
 
 use crate::state::{AdminUser, AppState};
 
@@ -217,7 +217,7 @@ pub async fn get_task(
 
 /// Create a task (admin).
 pub async fn create_task(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<CreateTaskRequest>,
@@ -248,6 +248,21 @@ pub async fn create_task(
                 }
             }
 
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "create",
+                    resource_type: "task",
+                    resource_id: task_id,
+                    details: Some(serde_json::json!({ "title": req.title, "projectId": project_id.to_string() })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: TaskResponse = task.into();
             (
                 StatusCode::CREATED,
@@ -264,7 +279,7 @@ pub async fn create_task(
 
 /// Update a task (admin).
 pub async fn update_task(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateTaskRequest>,
@@ -292,6 +307,21 @@ pub async fn update_task(
                 }
             }
 
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "update",
+                    resource_type: "task",
+                    resource_id: task_id_inner,
+                    details: Some(serde_json::json!({ "title": task.title })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: TaskResponse = task.into();
             Json(serde_json::json!({ "data": response })).into_response()
         }
@@ -305,15 +335,33 @@ pub async fn update_task(
 
 /// Soft delete a task (admin).
 pub async fn soft_delete_task(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
     let batch_id = Uuid::new_v7().into_inner();
+    let tid = task_id.into_inner();
 
-    match tasks::soft_delete_task(pool, task_id.into_inner(), batch_id).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+    match tasks::soft_delete_task(pool, tid, batch_id).await {
+        Ok(true) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "delete",
+                    resource_type: "task",
+                    resource_id: tid,
+                    details: None,
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            StatusCode::NO_CONTENT.into_response()
+        }
         Ok(false) => StatusCode::NOT_FOUND.into_response(),
         Err(e) => {
             tracing::error!("Failed to soft delete task: {}", e);

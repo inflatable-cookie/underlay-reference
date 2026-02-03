@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use underlay_http::query::QueryParams;
 
 use acme_core::Uuid;
-use acme_db::tasks;
+use acme_db::{activity, tasks};
 
 use crate::state::{AdminUser, AppState};
 
@@ -193,6 +193,21 @@ pub async fn create_project(
     .await
     {
         Ok(project) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "create",
+                    resource_type: "project",
+                    resource_id: project_id,
+                    details: Some(serde_json::json!({ "name": req.name })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: ProjectResponse = project.into();
             (
                 StatusCode::CREATED,
@@ -209,16 +224,17 @@ pub async fn create_project(
 
 /// Update a project (admin).
 pub async fn update_project(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<UpdateProjectRequest>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
+    let pid = project_id.into_inner();
 
     match tasks::update_project(
         pool,
-        project_id.into_inner(),
+        pid,
         req.name.as_deref(),
         req.description.as_ref().map(|d| d.as_deref()),
         req.status.as_deref(),
@@ -229,6 +245,21 @@ pub async fn update_project(
     .await
     {
         Ok(Some(project)) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "update",
+                    resource_type: "project",
+                    resource_id: pid,
+                    details: Some(serde_json::json!({ "name": project.name })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: ProjectResponse = project.into();
             Json(serde_json::json!({ "data": response })).into_response()
         }
@@ -242,15 +273,33 @@ pub async fn update_project(
 
 /// Soft delete a project (admin).
 pub async fn soft_delete_project(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
     let batch_id = Uuid::new_v7().into_inner();
+    let pid = project_id.into_inner();
 
-    match tasks::soft_delete_project(pool, project_id.into_inner(), batch_id).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+    match tasks::soft_delete_project(pool, pid, batch_id).await {
+        Ok(true) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "delete",
+                    resource_type: "project",
+                    resource_id: pid,
+                    details: None,
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            StatusCode::NO_CONTENT.into_response()
+        }
         Ok(false) => StatusCode::NOT_FOUND.into_response(),
         Err(e) => {
             tracing::error!("Failed to soft delete project: {}", e);
@@ -261,14 +310,30 @@ pub async fn soft_delete_project(
 
 /// Restore a soft-deleted project (admin).
 pub async fn restore_project(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
+    let pid = project_id.into_inner();
 
-    match tasks::restore_project(pool, project_id.into_inner()).await {
+    match tasks::restore_project(pool, pid).await {
         Ok(Some(project)) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "restore",
+                    resource_type: "project",
+                    resource_id: pid,
+                    details: Some(serde_json::json!({ "name": project.name })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: ProjectResponse = project.into();
             Json(serde_json::json!({ "data": response })).into_response()
         }

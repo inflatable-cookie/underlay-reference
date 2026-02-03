@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use acme_db::users;
+use acme_db::{activity, users};
 
 use crate::state::{AdminUser, AppState};
 
@@ -174,7 +174,7 @@ pub async fn get_user(
 ///
 /// PUT /v1/admin/users/:user_id/role
 pub async fn update_user_role(
-    AdminUser(_admin): AdminUser,
+    AdminUser(admin): AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(req): Json<UpdateUserRoleRequest>,
@@ -213,6 +213,21 @@ pub async fn update_user_role(
 
     match users::update_user_role(pool, user_id, &req.role).await {
         Ok(Some(user)) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(admin.user_id.0.into_inner()),
+                    action: "role_change",
+                    resource_type: "user",
+                    resource_id: user_id,
+                    details: Some(serde_json::json!({ "newRole": req.role })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: UserResponse = user.into();
             Json(serde_json::json!({ "data": response })).into_response()
         }
@@ -228,7 +243,7 @@ pub async fn update_user_role(
 ///
 /// POST /v1/admin/users/:user_id/suspend
 pub async fn suspend_user(
-    AdminUser(_admin): AdminUser,
+    AdminUser(admin): AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> impl IntoResponse {
@@ -243,6 +258,21 @@ pub async fn suspend_user(
             {
                 tracing::warn!("Failed to revoke sessions for suspended user: {}", e);
             }
+
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(admin.user_id.0.into_inner()),
+                    action: "suspend",
+                    resource_type: "user",
+                    resource_id: user_id,
+                    details: None,
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
 
             let response: UserResponse = user.into();
             Json(serde_json::json!({ "data": response })).into_response()
@@ -259,7 +289,7 @@ pub async fn suspend_user(
 ///
 /// POST /v1/admin/users/:user_id/unsuspend
 pub async fn unsuspend_user(
-    AdminUser(_admin): AdminUser,
+    AdminUser(admin): AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> impl IntoResponse {
@@ -267,6 +297,21 @@ pub async fn unsuspend_user(
 
     match users::update_user_status(pool, user_id, "active").await {
         Ok(Some(user)) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(admin.user_id.0.into_inner()),
+                    action: "unsuspend",
+                    resource_type: "user",
+                    resource_id: user_id,
+                    details: None,
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: UserResponse = user.into();
             Json(serde_json::json!({ "data": response })).into_response()
         }

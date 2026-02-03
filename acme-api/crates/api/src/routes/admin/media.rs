@@ -16,7 +16,7 @@ use uuid::Uuid;
 use validator::Validate;
 
 use acme_core::Uuid as AcmeUuid;
-use acme_db::media;
+use acme_db::{activity, media};
 
 use crate::dto::media::{
     CheckDuplicateRequest, CheckDuplicateResponse, CreateMediaRequest, FinaliseUploadRequest,
@@ -120,6 +120,21 @@ pub async fn create_media(
     .await
     {
         Ok(row) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "create",
+                    resource_type: "media",
+                    resource_id: media_id,
+                    details: Some(json!({ "title": req.title, "kind": req.kind })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let detail = MediaDetailDto::from_media(row, None, 0);
             (StatusCode::CREATED, Json(json!({ "data": detail }))).into_response()
         }
@@ -281,6 +296,21 @@ pub async fn update_media(
     .await
     {
         Ok(row) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "update",
+                    resource_type: "media",
+                    resource_id: media_id,
+                    details: Some(json!({ "title": req.title })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             // Get current version if set
             let current_version = if let Some(version_id) = row.current_version_id {
                 media::get_media_version(pool, version_id).await.ok().flatten()
@@ -315,7 +345,24 @@ pub async fn soft_delete_media(
     let pool = state.local_auth.pool();
 
     match media::soft_delete_media(pool, media_id, Some(user.user_id.0.into_inner())).await {
-        Ok(()) => Json(json!({ "ok": true })).into_response(),
+        Ok(()) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "delete",
+                    resource_type: "media",
+                    resource_id: media_id,
+                    details: None,
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Json(json!({ "ok": true })).into_response()
+        }
         Err(e) => {
             tracing::error!("Failed to soft delete media: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -327,14 +374,31 @@ pub async fn soft_delete_media(
 ///
 /// POST /v1/admin/media/:media_id/restore
 pub async fn restore_media(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
 
     match media::restore_media(pool, media_id).await {
-        Ok(()) => Json(json!({ "ok": true })).into_response(),
+        Ok(()) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "restore",
+                    resource_type: "media",
+                    resource_id: media_id,
+                    details: None,
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Json(json!({ "ok": true })).into_response()
+        }
         Err(e) => {
             tracing::error!("Failed to restore media: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()

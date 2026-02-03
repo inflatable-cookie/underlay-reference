@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use underlay_http::query::QueryParams;
 
 use acme_core::Uuid;
-use acme_db::categories;
+use acme_db::{activity, categories};
 
 use crate::state::{AdminUser, AppState};
 
@@ -163,7 +163,7 @@ pub async fn get_category(
 
 /// Create a new category.
 pub async fn create_category(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<CreateCategoryRequest>,
 ) -> impl IntoResponse {
@@ -181,6 +181,21 @@ pub async fn create_category(
     .await
     {
         Ok(category) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "create",
+                    resource_type: "category",
+                    resource_id: category_id,
+                    details: Some(serde_json::json!({ "name": req.name, "slug": req.slug })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: CategoryResponse = category.into();
             (
                 StatusCode::CREATED,
@@ -215,16 +230,17 @@ pub async fn create_category(
 
 /// Update a category.
 pub async fn update_category(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(category_id): Path<Uuid>,
     Json(req): Json<UpdateCategoryRequest>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
+    let cid = category_id.into_inner();
 
     match categories::update_category(
         pool,
-        category_id.into_inner(),
+        cid,
         req.name.as_deref(),
         req.slug.as_deref(),
         req.description.as_ref().map(|d| d.as_deref()),
@@ -234,6 +250,21 @@ pub async fn update_category(
     .await
     {
         Ok(Some(category)) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "update",
+                    resource_type: "category",
+                    resource_id: cid,
+                    details: Some(serde_json::json!({ "name": category.name })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: CategoryResponse = category.into();
             Json(serde_json::json!({ "data": response })).into_response()
         }
@@ -247,15 +278,33 @@ pub async fn update_category(
 
 /// Soft delete a category.
 pub async fn soft_delete_category(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(category_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
     let batch_id = Uuid::new_v7().into_inner();
+    let cid = category_id.into_inner();
 
-    match categories::soft_delete_category(pool, category_id.into_inner(), batch_id).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+    match categories::soft_delete_category(pool, cid, batch_id).await {
+        Ok(true) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "delete",
+                    resource_type: "category",
+                    resource_id: cid,
+                    details: None,
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            StatusCode::NO_CONTENT.into_response()
+        }
         Ok(false) => StatusCode::NOT_FOUND.into_response(),
         Err(e) => {
             tracing::error!("Failed to soft delete category: {}", e);
@@ -266,14 +315,30 @@ pub async fn soft_delete_category(
 
 /// Restore a soft-deleted category.
 pub async fn restore_category(
-    AdminUser(_user): AdminUser,
+    AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(category_id): Path<Uuid>,
 ) -> impl IntoResponse {
     let pool = state.local_auth.pool();
+    let cid = category_id.into_inner();
 
-    match categories::restore_category(pool, category_id.into_inner()).await {
+    match categories::restore_category(pool, cid).await {
         Ok(Some(category)) => {
+            // Log activity
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "restore",
+                    resource_type: "category",
+                    resource_id: cid,
+                    details: Some(serde_json::json!({ "name": category.name })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: CategoryResponse = category.into();
             Json(serde_json::json!({ "data": response })).into_response()
         }
