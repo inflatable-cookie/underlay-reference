@@ -21,7 +21,7 @@
   import { navigateOnCancel } from "@decodelabs/underlay/client";
   import { categorySelectionHistory } from "$lib/stores/selection-history";
   import { untrack } from "svelte";
-  import type { Category, CategoryWithCounts } from "@acme/client";
+  import type { Category, CategoryWithCounts } from "acme-client";
   import CategoryForm from "./CategoryForm.svelte";
 
   type ProjectFormMode = "create" | "edit";
@@ -280,16 +280,12 @@
   {#if mode === "edit" && onDelete}
     <ConfirmAction
       title="Delete Project"
-      message="Are you sure you want to delete this project? This will also delete all tasks within it. This action can be undone from the trash."
+      description="Are you sure you want to delete this project? This will also delete all tasks within it. This action can be undone from the trash."
       confirmLabel="Delete"
+      triggerLabel="Delete"
+      triggerVariant="danger"
       onConfirm={confirmDelete}
-    >
-      {#snippet trigger(triggerFn)}
-        <TextButton type="button" onclick={triggerFn} variant="danger">
-          Delete
-        </TextButton>
-      {/snippet}
-    </ConfirmAction>
+    />
     <button
       type="submit"
       name="intent"

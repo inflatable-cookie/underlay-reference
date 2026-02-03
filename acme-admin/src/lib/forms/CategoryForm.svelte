@@ -160,16 +160,12 @@
   {#if mode === "edit" && onDelete}
     <ConfirmAction
       title="Delete Category"
-      message="Are you sure you want to delete this category? This action can be undone from the trash."
+      description="Are you sure you want to delete this category? This action can be undone from the trash."
       confirmLabel="Delete"
+      triggerLabel="Delete"
+      triggerVariant="danger"
       onConfirm={confirmDelete}
-    >
-      {#snippet trigger(triggerFn)}
-        <TextButton type="button" onclick={triggerFn} variant="danger">
-          Delete
-        </TextButton>
-      {/snippet}
-    </ConfirmAction>
+    />
     <button
       type="submit"
       name="intent"

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { adminCommands, type Category } from "@acme/client";
+  import { adminCommands, type Category } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
   import CategoryForm from "$lib/forms/CategoryForm.svelte";

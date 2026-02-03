@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@acme/client",
+      "name": "acme-client",
       "dependencies": {
         "@decodelabs/underlay": "file:../underlay",
       },

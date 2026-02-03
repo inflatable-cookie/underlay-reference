@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { adminCommands, type Category, type CategoryWithCounts } from "@acme/client";
+  import { adminCommands, type Category, type CategoryWithCounts } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
   import ProjectForm from "$lib/forms/ProjectForm.svelte";

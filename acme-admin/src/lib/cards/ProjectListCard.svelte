@@ -1,11 +1,8 @@
 <script lang="ts">
-  import { ListCard, Badge, DropdownMenu, DropdownItem, ConfirmAction, ProgressBar } from "@decodelabs/underlay/components";
+  import { ListCard, Badge, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
-  import type { ProjectWithCounts } from "@acme/client";
+  import type { ProjectWithCounts } from "acme-client";
   import Briefcase from "lucide-svelte/icons/briefcase";
-  import Pencil from "lucide-svelte/icons/pencil";
-  import Trash2 from "lucide-svelte/icons/trash-2";
-  import MoreVertical from "lucide-svelte/icons/more-vertical";
 
   interface Props {
     project: ProjectWithCounts;
@@ -14,23 +11,25 @@
 
   let { project, onDelete }: Props = $props();
 
+  let confirmDeleteOpen = $state(false);
+
   const progress = $derived(
     project.taskCount > 0
       ? Math.round((project.completedTaskCount / project.taskCount) * 100)
       : 0
   );
 
-  const statusLabel = $derived({
-    active: "Active",
-    archived: "Archived",
-    on_hold: "On Hold"
-  }[project.status] ?? project.status);
+  const statusLabel = $derived(
+    ({ active: "Active", archived: "Archived", on_hold: "On Hold" } as Record<string, string>)[
+      project.status
+    ] ?? project.status
+  );
 
-  const statusVariant = $derived({
-    active: "success",
-    archived: "muted",
-    on_hold: "warning"
-  }[project.status] ?? "default");
+  const statusVariant = $derived(
+    ({ active: "success", archived: "muted", on_hold: "warning" } as Record<string, string>)[
+      project.status
+    ] ?? "default"
+  ) as "success" | "muted" | "warning" | "default";
 
   function handleEdit() {
     void gotoWithContext(`/projects/${project.id}/edit`, {
@@ -42,65 +41,60 @@
 
   function handleDelete() {
     onDelete?.(project.id);
+    confirmDeleteOpen = false;
   }
+
+  const menuItems = $derived([
+    { label: "Edit", onSelect: handleEdit },
+    ...(onDelete
+      ? [
+          { separator: true },
+          {
+            label: "Delete",
+            destructive: true,
+            onSelect: () => (confirmDeleteOpen = true)
+          }
+        ]
+      : [])
+  ]);
 </script>
 
-<ListCard
-  title={project.name}
-  href={`/projects/${project.id}`}
-  variant="standard"
->
+<ListCard title={project.name} href={`/projects/${project.id}`}>
   {#snippet media()}
     <div class="icon">
       <Briefcase size={20} />
     </div>
   {/snippet}
 
-  {#snippet badges()}
+  {#snippet titleSuffix()}
     <Badge variant={statusVariant} size="sm">{statusLabel}</Badge>
     {#if project.categoryName}
-      <Badge variant="subtle" size="sm">{project.categoryName}</Badge>
+      <Badge variant="muted" size="sm">{project.categoryName}</Badge>
     {/if}
   {/snippet}
 
-  {#snippet meta()}
-    <div class="task-progress">
-      <span class="progress-label">{project.completedTaskCount}/{project.taskCount} tasks</span>
-      {#if project.taskCount > 0}
-        <ProgressBar value={progress} max={100} size="sm" />
-      {/if}
-    </div>
+  {#snippet actions({ trigger, align })}
+    <DropdownMenu {trigger} {align} items={menuItems} showTrigger={false} />
   {/snippet}
 
-  {#snippet actions()}
-    <DropdownMenu>
-      {#snippet trigger()}
-        <button type="button" class="action-btn" aria-label="More actions">
-          <MoreVertical size={16} />
-        </button>
-      {/snippet}
-      <DropdownItem onclick={handleEdit}>
-        <Pencil size={14} />
-        Edit
-      </DropdownItem>
-      {#if onDelete}
-        <ConfirmAction
-          title="Delete Project"
-          message={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
-          confirmLabel="Delete"
-          onConfirm={handleDelete}
-        >
-          {#snippet trigger(triggerFn)}
-            <DropdownItem onclick={triggerFn} variant="danger">
-              <Trash2 size={14} />
-              Delete
-            </DropdownItem>
-          {/snippet}
-        </ConfirmAction>
-      {/if}
-    </DropdownMenu>
-  {/snippet}
+  <div class="task-progress">
+    <span class="progress-label">{project.completedTaskCount}/{project.taskCount} tasks</span>
+    {#if project.taskCount > 0}
+      <div class="progress-bar">
+        <div class="progress-bar__fill" style:width="{progress}%"></div>
+      </div>
+    {/if}
+  </div>
 </ListCard>
+
+<AlertDialog
+  bind:open={confirmDeleteOpen}
+  showTrigger={false}
+  title="Delete Project"
+  description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
+  confirmLabel="Delete"
+  onConfirm={handleDelete}
+/>
 
 <style>
   .icon {
@@ -125,22 +119,17 @@
     color: var(--text-secondary, #6b7280);
   }
 
-  .action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0.375rem;
-    cursor: pointer;
-    color: var(--text-secondary, #6b7280);
+  .progress-bar {
+    height: 0.375rem;
+    background: var(--underlay-color-surface-hover, #e5e7eb);
+    border-radius: 0.25rem;
+    overflow: hidden;
   }
 
-  .action-btn:hover {
-    background: var(--bg-hover, #f3f4f6);
-    color: var(--text-primary, #111827);
+  .progress-bar__fill {
+    height: 100%;
+    background: var(--underlay-color-accent, #6366f1);
+    border-radius: 0.25rem;
+    transition: width 0.2s ease;
   }
 </style>

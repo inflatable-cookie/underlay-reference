@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
-  import { adminCommands, type Project, type TaskWithLabels } from "@acme/client";
+  import { adminCommands, type Project, type TaskWithLabels } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts, Banner, ReorderableList, createReorderController } from "@decodelabs/underlay/patterns";
   import { Button, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, ProgressBar } from "@decodelabs/underlay/components";

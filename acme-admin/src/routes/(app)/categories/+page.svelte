@@ -23,7 +23,7 @@
   } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { CategoryListCard } from "$lib/cards";
-  import { adminCommands, type CategoryWithCounts } from "@acme/client";
+  import { adminCommands, type CategoryWithCounts } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
   import Plus from "lucide-svelte/icons/plus";

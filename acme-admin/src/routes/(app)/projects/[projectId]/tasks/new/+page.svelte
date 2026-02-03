@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
-  import { adminCommands, type Project, type Label, TaskPriority } from "@acme/client";
+  import { adminCommands, type Project, type Label, TaskPriority } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Input, Textarea, Select, FormField } from "@decodelabs/underlay/components";
+  import { Button, PageLoading, FormError, TextInput, TextArea, Select, Field } from "@decodelabs/underlay/components";
 
   interface Props {
     data: PageData;
@@ -46,7 +46,7 @@
   const project = $derived(pageData.data?.project);
   const labels = $derived(pageData.data?.labels ?? []);
 
-  const priorityOptions = [
+  const priorityItems = [
     { value: TaskPriority.Low, label: "Low" },
     { value: TaskPriority.Medium, label: "Medium" },
     { value: TaskPriority.High, label: "High" },
@@ -120,43 +120,44 @@
         <FormError message={error} />
       {/if}
 
-      <FormField label="Title" required>
-        <Input
+      <Field label="Title" required>
+        <TextInput
           bind:value={title}
           placeholder="Enter task title"
           disabled={submitting}
         />
-      </FormField>
+      </Field>
 
-      <FormField label="Description">
-        <Textarea
+      <Field label="Description">
+        <TextArea
           bind:value={description}
           placeholder="Enter task description (optional)"
           rows={4}
           disabled={submitting}
         />
-      </FormField>
+      </Field>
 
       <div class="form-row">
-        <FormField label="Priority">
+        <Field label="Priority">
           <Select
-            bind:value={priority}
-            options={priorityOptions}
+            value={priority}
+            onchange={(val) => { priority = val; }}
+            items={priorityItems}
             disabled={submitting}
           />
-        </FormField>
+        </Field>
 
-        <FormField label="Due Date">
-          <Input
+        <Field label="Due Date">
+          <TextInput
             type="date"
             bind:value={dueDate}
             disabled={submitting}
           />
-        </FormField>
+        </Field>
       </div>
 
       {#if labels.length > 0}
-        <FormField label="Labels">
+        <Field label="Labels">
           <div class="labels-grid">
             {#each labels as label}
               <button
@@ -172,7 +173,7 @@
               </button>
             {/each}
           </div>
-        </FormField>
+        </Field>
       {/if}
 
       <div class="form-actions">
