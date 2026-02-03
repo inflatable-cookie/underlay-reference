@@ -51,16 +51,26 @@ async fn main() -> anyhow::Result<()> {
     );
 
     // Configure auth cookies
-    let cookie_domain = std::env::var("COOKIE_DOMAIN").ok();
     let cookie_secure = std::env::var("COOKIE_SECURE")
         .map(|v| v == "true" || v == "1")
         .unwrap_or(false);
 
-    let cookie_config = underlay_http::AuthCookieConfig {
-        domain: cookie_domain,
-        secure: cookie_secure,
-        refresh_token_max_age: 7 * 24 * 60 * 60, // 7 days
-    };
+    let mut cookie_config = underlay_http::AuthCookieConfig::new()
+        .with_secure(cookie_secure);
+
+    if let Ok(domain) = std::env::var("COOKIE_DOMAIN") {
+        cookie_config = cookie_config.with_domain(domain);
+    }
+
+    // Allow customizing cookie prefix (e.g., "acme_" for "acme_refresh_token")
+    if let Ok(prefix) = std::env::var("COOKIE_PREFIX") {
+        cookie_config = cookie_config.with_cookie_prefix(prefix);
+    }
+
+    // Allow customizing refresh token max age (in seconds)
+    if let Ok(max_age) = std::env::var("REFRESH_TOKEN_MAX_AGE").and_then(|v| v.parse::<u64>().map_err(|_| std::env::VarError::NotPresent)) {
+        cookie_config = cookie_config.with_refresh_token_max_age(max_age);
+    }
 
     // Initialize email system with DevCapture adapter (captures emails to database)
     let email_adapter = std::env::var("EMAIL_ADAPTER")

@@ -523,7 +523,7 @@ pub async fn refresh(
     // Accept refresh token from body (mobile) or cookie (browser)
     let refresh_token = if !payload.refresh_token.is_empty() {
         payload.refresh_token.clone()
-    } else if let Some(cookie_token) = extract_refresh_token(&headers) {
+    } else if let Some(cookie_token) = extract_refresh_token(&headers, &state.cookie_config) {
         cookie_token
     } else {
         return error_response(
@@ -569,7 +569,7 @@ pub async fn logout(
     // Accept refresh token from body (mobile) or cookie (browser)
     let refresh_token = if !payload.refresh_token.is_empty() {
         payload.refresh_token.clone()
-    } else if let Some(cookie_token) = extract_refresh_token(&headers) {
+    } else if let Some(cookie_token) = extract_refresh_token(&headers, &state.cookie_config) {
         cookie_token
     } else {
         // No token provided - just clear cookies and return success
