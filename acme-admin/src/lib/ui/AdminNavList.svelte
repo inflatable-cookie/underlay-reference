@@ -5,6 +5,7 @@
 	import Briefcase from "lucide-svelte/icons/briefcase";
 	import CheckSquare from "lucide-svelte/icons/check-square";
 	import Settings from "lucide-svelte/icons/settings";
+	import Users from "lucide-svelte/icons/users";
 
 	interface Props {
 		currentSection?: string | null;
@@ -56,6 +57,15 @@
 				<Gauge class="admin-nav__badge-icon" />
 			</span>
 			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Dashboard</span>
+		</a>
+	</li>
+
+	<li>
+		<a href="/users" class="{linkClass} admin-nav__root" class:admin-nav__link--active={isActive("/users")} onclick={handleChildClick}>
+			<span class="admin-nav__badge admin-nav__badge--users" aria-hidden="true">
+				<Users class="admin-nav__badge-icon" />
+			</span>
+			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Users</span>
 		</a>
 	</li>
 
@@ -288,6 +298,10 @@
 
 	:global(.admin-nav__badge--overview) {
 		background: linear-gradient(135deg, #22c55e, #14b8a6);
+	}
+
+	:global(.admin-nav__badge--users) {
+		background: linear-gradient(135deg, #3b82f6, #8b5cf6);
 	}
 
 	:global(.admin-nav__badge--categories) {

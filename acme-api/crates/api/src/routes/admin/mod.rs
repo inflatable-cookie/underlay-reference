@@ -8,7 +8,9 @@
 //! - Field validation endpoints
 
 pub mod categories;
+pub mod dashboard;
 pub mod media;
 pub mod projects;
 pub mod tasks;
+pub mod users;
 pub mod validation;

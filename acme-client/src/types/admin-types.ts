@@ -199,3 +199,79 @@ export const TaskPriority = {
 } as const;
 
 export type TaskPriority = (typeof TaskPriority)[keyof typeof TaskPriority];
+
+// ============================================================================
+// Users
+// ============================================================================
+
+export const UserRole = {
+  Student: "student",
+  Tester: "tester",
+  Tutor: "tutor",
+  Editor: "editor",
+  Admin: "admin",
+  Support: "support",
+  Superadmin: "superadmin",
+} as const;
+
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
+export const UserStatus = {
+  Active: "active",
+  Suspended: "suspended",
+  Deleted: "deleted",
+} as const;
+
+export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
+
+export interface User {
+  id: string;
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  displayName?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserDetail extends User {
+  activeSessionCount: number;
+  failedLoginCount: number;
+  lockoutUntil?: string | null;
+}
+
+export interface ListUsersQuery {
+  role?: UserRole;
+  status?: UserStatus;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface UpdateUserRolePayload {
+  role: UserRole;
+}
+
+export interface UserListResponse {
+  data: User[];
+  hasMore: boolean;
+  total: number;
+}
+
+// ============================================================================
+// Dashboard
+// ============================================================================
+
+export interface UserCounts {
+  active: number;
+  suspended: number;
+  deleted: number;
+  total: number;
+}
+
+export interface DashboardStats {
+  userCounts: UserCounts;
+  mediaCount: number;
+  recentRegistrations: number;
+  activeSessions: number;
+}

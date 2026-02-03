@@ -7,7 +7,9 @@ pub mod auth;
 pub mod categories;
 pub mod infra;
 pub mod media;
+pub mod stats;
 pub mod tasks;
+pub mod users;
 
 use underlay_db::DbConfig;
 

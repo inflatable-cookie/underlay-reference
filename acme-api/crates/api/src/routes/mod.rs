@@ -140,6 +140,29 @@ pub fn build_router() -> Router<AppState> {
         // ====================================================================
         // Admin routes (require Admin role)
         // ====================================================================
+        // Dashboard stats
+        .route(
+            "/v1/admin/dashboard/stats",
+            get(admin::dashboard::get_dashboard_stats),
+        )
+        // User management
+        .route("/v1/admin/users", get(admin::users::list_users))
+        .route(
+            "/v1/admin/users/:user_id",
+            get(admin::users::get_user),
+        )
+        .route(
+            "/v1/admin/users/:user_id/role",
+            put(admin::users::update_user_role),
+        )
+        .route(
+            "/v1/admin/users/:user_id/suspend",
+            post(admin::users::suspend_user),
+        )
+        .route(
+            "/v1/admin/users/:user_id/unsuspend",
+            post(admin::users::unsuspend_user),
+        )
         // Validation endpoint (for async form validation)
         .route(
             "/v1/admin/validate-field",

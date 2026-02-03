@@ -70,12 +70,23 @@ export type {
   ReorderResult,
   ValidateFieldPayload,
   ValidationResult,
+  // User management types
+  User,
+  UserDetail,
+  ListUsersQuery,
+  UpdateUserRolePayload,
+  UserListResponse,
+  // Dashboard types
+  UserCounts,
+  DashboardStats,
 } from "./types/admin-types.js";
 
 export {
   ProjectStatus,
   TaskStatus,
   TaskPriority,
+  UserRole,
+  UserStatus,
 } from "./types/admin-types.js";
 
 // Utilities - re-export from Underlay

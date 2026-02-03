@@ -24,6 +24,12 @@ import type {
   ReorderResult,
   ValidateFieldPayload,
   ValidationResult,
+  User,
+  UserDetail,
+  ListUsersQuery,
+  UpdateUserRolePayload,
+  UserListResponse,
+  DashboardStats,
 } from "../types/admin-types.js";
 import { getAdminHttpClient } from "../utils/client-factory.js";
 import {
@@ -495,4 +501,116 @@ export async function validateField(
     "/v1/admin/validate-field",
     payload
   );
+}
+
+// ============================================================================
+// Dashboard
+// ============================================================================
+
+/**
+ * Get dashboard statistics.
+ */
+export async function getDashboardStats(
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<DashboardStats> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.get<SingleResponse<DashboardStats>>(
+    "/v1/admin/dashboard/stats"
+  );
+  return response.data;
+}
+
+// ============================================================================
+// Users
+// ============================================================================
+
+/**
+ * List users (admin).
+ *
+ * Supports filtering by role, status, and email search.
+ */
+export async function listUsers(
+  fetchFn: typeof fetch,
+  accessToken: string,
+  query?: ListUsersQuery
+): Promise<UserListResponse> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+
+  // Build query params
+  const params = new URLSearchParams();
+  if (query?.role) params.set("role", query.role);
+  if (query?.status) params.set("status", query.status);
+  if (query?.search) params.set("search", query.search);
+  if (query?.limit !== undefined) params.set("limit", String(query.limit));
+  if (query?.offset !== undefined) params.set("offset", String(query.offset));
+
+  const queryString = params.toString();
+  const path = queryString ? `/v1/admin/users?${queryString}` : "/v1/admin/users";
+
+  return await http.get<UserListResponse>(path);
+}
+
+/**
+ * Get a single user by ID.
+ */
+export async function getUser(
+  userId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<UserDetail> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.get<SingleResponse<UserDetail>>(
+    `/v1/admin/users/${encodeURIComponent(userId)}`
+  );
+  return response.data;
+}
+
+/**
+ * Update a user's role.
+ */
+export async function updateUserRole(
+  userId: string,
+  payload: UpdateUserRolePayload,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<User> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.put<SingleResponse<User>>(
+    `/v1/admin/users/${encodeURIComponent(userId)}/role`,
+    payload
+  );
+  return response.data;
+}
+
+/**
+ * Suspend a user.
+ */
+export async function suspendUser(
+  userId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<User> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.post<SingleResponse<User>>(
+    `/v1/admin/users/${encodeURIComponent(userId)}/suspend`,
+    {}
+  );
+  return response.data;
+}
+
+/**
+ * Unsuspend (reactivate) a user.
+ */
+export async function unsuspendUser(
+  userId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<User> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.post<SingleResponse<User>>(
+    `/v1/admin/users/${encodeURIComponent(userId)}/unsuspend`,
+    {}
+  );
+  return response.data;
 }
