@@ -244,9 +244,9 @@ Complete the media library implementation with missing features.
 ### UI Enhancements
 - [x] Display thumbnails in media list grid
 - [x] Show renditions in media detail view
-- [ ] Bulk upload support
-  - [ ] Multiple file selection
-  - [ ] Queue and progress for each file
+- [x] Bulk upload support
+  - [x] Multiple file selection
+  - [x] Queue and progress for each file
 
 **Files:**
 - `acme-admin/src/routes/(app)/media/upload/+page.svelte` (update)
