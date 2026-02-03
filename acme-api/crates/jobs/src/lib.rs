@@ -701,6 +701,7 @@ struct CheckDueRemindersPayload {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+#[allow(dead_code)] // Fields used by sqlx::FromRow derive
 struct DueTask {
     id: uuid::Uuid,
     title: String,

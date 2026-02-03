@@ -1,0 +1,32 @@
+[package]
+name = "acme-test-utils"
+version.workspace = true
+edition.workspace = true
+
+# Only used for tests
+[lib]
+doctest = false
+
+[dependencies]
+# Core dependencies
+acme-core = { path = "../core" }
+acme-domain = { path = "../domain" }
+acme-db = { path = "../db" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Random data generation
+rand = { workspace = true }
+
+# Time
+chrono = { workspace = true }
+
+# JSON
+serde_json = { workspace = true }
+
+# UUID
+uuid = { workspace = true }

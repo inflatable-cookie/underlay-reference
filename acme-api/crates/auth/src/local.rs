@@ -11,6 +11,7 @@ use acme_db::auth::{
 };
 
 use crate::config::AuthConfig;
+#[allow(unused_imports)] // These will be used when email TOTP is integrated
 use crate::email_totp::{EmailTotpService, VerificationSession};
 
 use underlay_auth::{
@@ -18,6 +19,7 @@ use underlay_auth::{
     SessionStatus, User, UserStatus,
 };
 use underlay_auth_jwt::{token_fingerprint, JwtConfig, JwtService};
+#[allow(unused_imports)] // Prepared for future OAuth implementation
 use underlay_auth_oauth::{
     GoogleOAuthAppService, GoogleOAuthService, OAuthCallbackRequest, OAuthLoginState, OAuthStart,
     OAuthTokenCipher, TokenSet,
@@ -172,7 +174,9 @@ pub struct AcmeLocalAuthService {
     webauthn: WebAuthnService,
     webauthn_rp_id: String,
     webauthn_rp_origin: String,
+    #[allow(dead_code)] // Prepared for future OAuth implementation
     google_oauth: Option<GoogleOAuthAppService>,
+    #[allow(dead_code)] // Prepared for future OAuth implementation
     oauth_cipher: Option<OAuthTokenCipher>,
     rate_limiter: InMemoryBackend,
     config: AuthConfig,
@@ -1982,7 +1986,6 @@ impl AcmeLocalAuthService {
         Ok(session)
     }
 
-    /// Change password using a verification session (2FA-gated flow).
     // ========================================================================
     // Password Reset (Forgot Password) Flow
     // ========================================================================

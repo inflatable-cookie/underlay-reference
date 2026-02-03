@@ -724,8 +724,8 @@ pub async fn finalise_upload(
                 ("image/jpeg", "image/jpg") | ("image/jpg", "image/jpeg") => true,
                 // SVG is XML-based, infer might detect as text/xml
                 ("text/xml", "image/svg+xml") | ("application/xml", "image/svg+xml") => true,
-                // PDF check
-                ("application/pdf", s) if s == "application/pdf" => true,
+                // PDF check (exact match already handled above, but keep for explicitness)
+                ("application/pdf", "application/pdf") => true,
                 // Generic image type checks (same category is OK)
                 (d, s) if d.starts_with("image/") && s.starts_with("image/") => {
                     // Log mismatch but allow - some formats are flexible

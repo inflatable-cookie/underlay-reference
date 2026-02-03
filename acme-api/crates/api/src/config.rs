@@ -29,18 +29,10 @@ pub use underlay_blob::MediaConfig;
 ///     media: MediaConfig::default().max_file_size_mb(100),
 /// };
 /// ```
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AcmeConfig {
     /// Media handling configuration (file size limits, thumbnail dimensions).
     pub media: MediaConfig,
-}
-
-impl Default for AcmeConfig {
-    fn default() -> Self {
-        Self {
-            media: MediaConfig::default(),
-        }
-    }
 }
 
 impl AcmeConfig {

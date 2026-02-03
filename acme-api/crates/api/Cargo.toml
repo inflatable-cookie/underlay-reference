@@ -38,3 +38,10 @@ sha2 = "0.10"
 hex = "0.4"
 uuid = { workspace = true }
 infer = { workspace = true }
+
+[dev-dependencies]
+acme-test-utils = { path = "../test-utils" }
+axum-test = "16"
+tower = "0.5"
+http-body-util = "0.1"
+sqlx = { workspace = true }
