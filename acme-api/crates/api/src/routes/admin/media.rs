@@ -490,7 +490,7 @@ pub async fn initiate_upload(
     }
 
     // Check declared file size before initiating upload
-    if req.content_length > state.max_file_size_bytes {
+    if req.content_length > state.config.max_file_size_bytes {
         return (
             StatusCode::PAYLOAD_TOO_LARGE,
             Json(json!({
@@ -500,7 +500,7 @@ pub async fn initiate_upload(
                     "message": format!(
                         "File size ({:.1} MB) exceeds maximum allowed size ({:.0} MB)",
                         req.content_length as f64 / (1024.0 * 1024.0),
-                        state.max_file_size_bytes as f64 / (1024.0 * 1024.0)
+                        state.config.max_file_size_bytes as f64 / (1024.0 * 1024.0)
                     )
                 }
             })),
@@ -637,11 +637,11 @@ pub async fn finalise_upload(
     };
 
     // Check file size limit
-    if stored.size > state.max_file_size_bytes {
+    if stored.size > state.config.max_file_size_bytes {
         tracing::warn!(
             "Upload rejected: file size {} exceeds limit {}",
             stored.size,
-            state.max_file_size_bytes
+            state.config.max_file_size_bytes
         );
         // Clean up: delete the uploaded blob and fail the version
         let _ = state.blob_adapter.delete(&object_key).await;
@@ -655,7 +655,7 @@ pub async fn finalise_upload(
                     "message": format!(
                         "File size ({:.1} MB) exceeds maximum allowed size ({:.0} MB)",
                         stored.size as f64 / (1024.0 * 1024.0),
-                        state.max_file_size_bytes as f64 / (1024.0 * 1024.0)
+                        state.config.max_file_size_bytes as f64 / (1024.0 * 1024.0)
                     )
                 }
             })),

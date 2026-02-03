@@ -18,6 +18,8 @@ use underlay_email::{EmailManager, EmailTemplateEngine};
 use underlay_http::AuthCookieConfig;
 use underlay_jobs::JobRepository;
 
+use crate::config::AcmeConfig;
+
 /// Global database pool for use in middleware (e.g., error logging).
 pub static DB_POOL: OnceCell<DbPool> = OnceCell::new();
 
@@ -33,8 +35,8 @@ pub struct AppState {
     pub email_config: EmailConfig,
     pub blob_adapter: Arc<dyn BlobAdapter>,
     pub job_repository: Option<Arc<JobRepository>>,
-    /// Maximum allowed file size for media uploads in bytes.
-    pub max_file_size_bytes: u64,
+    /// Application configuration.
+    pub config: AcmeConfig,
 }
 
 impl underlay_auth::HasAuthProvider for AppState {

@@ -2,6 +2,7 @@
 //!
 //! Keep handlers and router construction here so the binary entrypoint stays thin.
 
+pub mod config;
 pub mod dto;
 pub mod error;
 pub mod routes;
