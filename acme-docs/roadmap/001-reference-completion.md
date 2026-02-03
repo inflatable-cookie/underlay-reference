@@ -398,11 +398,13 @@ Review all Underlay Rust crates and expose configurable parameters through stand
   - [x] SameSite policy (`with_same_site`)
   - [x] Cookie name prefixes (`with_cookie_prefix`)
   - [x] Refresh token path (`with_refresh_token_path`)
-- [ ] CORS config (already configurable via `CorsConfig`)
-  - [x] Allowed origins
-  - [x] Allowed headers
-  - [ ] Max age
-- [ ] Request limits
+- [x] CORS config (now has full builder pattern)
+  - [x] Allowed origins (`with_origins`)
+  - [x] Allowed headers (`with_header`, `with_headers`)
+  - [x] Max age (`with_max_age`)
+  - [x] Credentials (`with_credentials`)
+  - [x] Origin mirroring (`with_mirror_origin`)
+- [ ] Request limits — deferred (handled at reverse proxy level)
   - [ ] Body size limits
   - [ ] Request timeout
 
@@ -413,15 +415,15 @@ Review all Underlay Rust crates and expose configurable parameters through stand
 - [x] Job config backoff (now has builder methods)
   - [x] Retry backoff settings (`with_backoff`, `with_exponential_backoff`, `with_fixed_backoff`)
   - [x] Default constants exported (`DEFAULT_BACKOFF_BASE_SECS`, `DEFAULT_BACKOFF_MAX_SECS`)
-- [ ] Scheduler config
-  - [ ] Tick interval
-  - [ ] Timezone handling
+- [x] Scheduler config
+  - [x] Tick interval (`SchedulerConfig` with `with_tick_interval_secs`)
+  - [ ] Timezone handling — deferred (cron expressions handle this)
 - [ ] History retention
   - [ ] Days to keep completed jobs
   - [ ] Days to keep failed jobs
 
 #### underlay-email
-- [ ] Email config
+- [ ] Email config — deferred (handled at app level via `EmailConfig`)
   - [ ] Default from address
   - [ ] Reply-to handling
   - [ ] Rate limiting per recipient
@@ -429,23 +431,25 @@ Review all Underlay Rust crates and expose configurable parameters through stand
   - [ ] Template directory
   - [ ] Default locale
 
-#### underlay-db
-- [ ] Pool config
-  - [ ] Min/max connections
-  - [ ] Connection timeout
-  - [ ] Idle timeout
-- [ ] Pagination config
-  - [ ] Default page size
-  - [ ] Max page size
+#### underlay-db ✓
+- [x] Pool config (now has builder methods)
+  - [x] Min/max connections (`with_min_connections`, `with_max_connections`)
+  - [x] Connection timeout (`with_acquire_timeout_secs`)
+  - [x] Idle timeout (`with_idle_timeout_secs`)
+  - [x] Default constants exported
+- [x] Pagination config (already has constants)
+  - [x] Default page size (`DEFAULT_PAGE_SIZE`)
+  - [x] Max page size (`MAX_PAGE_SIZE`)
 
-#### underlay-observability
-- [ ] Tracing config
-  - [ ] Log level
-  - [ ] Sampling rate
-  - [ ] Span attributes to include
-- [ ] Request ID config
-  - [ ] Header name
-  - [ ] ID format/length
+#### underlay-observability ✓
+- [x] Tracing config (now has builder methods)
+  - [x] Log level (`with_level`)
+  - [x] Log format (`with_format`, `with_json`, `with_pretty`)
+  - [ ] Sampling rate — deferred (requires OpenTelemetry integration)
+  - [ ] Span attributes to include — deferred
+- [x] Request ID config (already configurable)
+  - [x] Header name (`RequestIdLayer::new(header_name)`)
+  - [x] ID format (uses UUIDv7)
 
 ### Implementation Pattern
 

@@ -341,16 +341,18 @@ fn build_cors_layer() -> tower_http::cors::CorsLayer {
 
     // NOTE: the browser will preflight if we send `X-Api-Version`.
     // Add it explicitly to allowed headers.
-    let mut allowed_headers = CorsConfig::default().allowed_headers;
-    allowed_headers.push(HeaderName::from_static("x-api-version"));
+    let mut config = CorsConfig::default()
+        .with_header(HeaderName::from_static("x-api-version"))
+        .with_credentials(true);
 
-    cors_layer(CorsConfig {
-        allow_any_origin: false,
-        mirror_origin,
-        allowed_origins: origins,
-        allowed_headers,
-        allow_credentials: true,
-    })
+    if mirror_origin {
+        config = config.with_mirror_origin();
+    } else if !origins.is_empty() {
+        config.allowed_origins = origins;
+        config.allow_any_origin = false;
+    }
+
+    cors_layer(config)
 }
 
 fn parse_cors_origins() -> Vec<axum::http::HeaderValue> {
