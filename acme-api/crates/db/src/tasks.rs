@@ -288,6 +288,33 @@ pub async fn reorder_projects(pool: &DbPool, project_ids: &[Uuid]) -> Result<(),
     Ok(())
 }
 
+/// Batch soft delete projects.
+///
+/// Returns the number of projects deleted.
+pub async fn batch_soft_delete_projects(
+    pool: &DbPool,
+    ids: &[Uuid],
+    batch_id: Uuid,
+) -> Result<u64, sqlx::Error> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    let result = sqlx::query(
+        r#"
+        UPDATE acme.projects
+        SET deleted_at = NOW(), delete_batch_id = $1, updated_at = NOW()
+        WHERE id = ANY($2) AND deleted_at IS NULL
+        "#,
+    )
+    .bind(batch_id)
+    .bind(ids)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
 // ============================================================================
 // Tasks
 // ============================================================================
@@ -570,6 +597,69 @@ pub async fn reorder_tasks(
         .await?;
     }
     Ok(())
+}
+
+/// Batch soft delete tasks.
+///
+/// Returns the number of tasks deleted.
+pub async fn batch_soft_delete_tasks(
+    pool: &DbPool,
+    ids: &[Uuid],
+    batch_id: Uuid,
+) -> Result<u64, sqlx::Error> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    let result = sqlx::query(
+        r#"
+        UPDATE acme.tasks
+        SET deleted_at = NOW(), delete_batch_id = $1, updated_at = NOW()
+        WHERE id = ANY($2) AND deleted_at IS NULL
+        "#,
+    )
+    .bind(batch_id)
+    .bind(ids)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
+/// Batch update task status.
+///
+/// Returns the number of tasks updated.
+pub async fn batch_update_task_status(
+    pool: &DbPool,
+    ids: &[Uuid],
+    status: &str,
+) -> Result<u64, sqlx::Error> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    // Handle completed_at based on status
+    let completed_at_expr = match status {
+        "completed" => "NOW()",
+        _ => "NULL",
+    };
+
+    let query = format!(
+        r#"
+        UPDATE acme.tasks
+        SET status = $1, completed_at = {}, updated_at = NOW()
+        WHERE id = ANY($2) AND deleted_at IS NULL
+        "#,
+        completed_at_expr
+    );
+
+    let result = sqlx::query(&query)
+        .bind(status)
+        .bind(ids)
+        .execute(pool)
+        .await?;
+
+    Ok(result.rows_affected())
 }
 
 // ============================================================================

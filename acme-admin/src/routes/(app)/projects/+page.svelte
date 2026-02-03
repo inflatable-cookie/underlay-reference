@@ -23,11 +23,13 @@
   } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { ProjectListCard } from "$lib/cards";
+  import { BatchActionBar } from "$lib/components";
   import { adminCommands, type ProjectWithCounts, type CategoryWithCounts } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
   import Plus from "lucide-svelte/icons/plus";
   import Briefcase from "lucide-svelte/icons/briefcase";
+  import CheckSquare from "lucide-svelte/icons/check-square";
 
   const toastStore = useToasts();
 
@@ -68,6 +70,68 @@
   });
 
   let isReorderMode = $state(false);
+  let isSelectionMode = $state(false);
+  let selectedIds = $state<Set<string>>(new Set());
+  let batchLoading = $state(false);
+
+  // Clear selection when exiting selection mode or when data changes
+  $effect(() => {
+    if (!isSelectionMode) {
+      selectedIds = new Set();
+    }
+  });
+
+  // Selection handlers
+  function toggleSelectionMode() {
+    isSelectionMode = !isSelectionMode;
+    if (!isSelectionMode) {
+      selectedIds = new Set();
+    }
+  }
+
+  function handleSelectionChange(projectId: string, selected: boolean) {
+    const newSet = new Set(selectedIds);
+    if (selected) {
+      newSet.add(projectId);
+    } else {
+      newSet.delete(projectId);
+    }
+    selectedIds = newSet;
+  }
+
+  function clearSelection() {
+    selectedIds = new Set();
+    isSelectionMode = false;
+  }
+
+  async function handleBatchDelete() {
+    const token = auth.getToken();
+    if (!token) {
+      toastStore.push({ variant: "error", message: "Not authenticated" });
+      return;
+    }
+
+    batchLoading = true;
+    try {
+      const result = await adminCommands.batchDeleteProjects(
+        { ids: Array.from(selectedIds) },
+        fetch,
+        token
+      );
+      toastStore.push({
+        variant: "success",
+        message: `Deleted ${result.deleted} project${result.deleted === 1 ? "" : "s"}`
+      });
+      selectedIds = new Set();
+      isSelectionMode = false;
+      await pageData.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to delete projects";
+      toastStore.push({ variant: "error", message });
+    } finally {
+      batchLoading = false;
+    }
+  }
 
   // Parse current state from URL
   const currentQuery = $derived(parseQueryParams($page.url.searchParams));
@@ -214,7 +278,7 @@
 
 <PageHeader title="Projects" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
-    {#if (pageData.data?.projects ?? []).length > 1}
+    {#if (pageData.data?.projects ?? []).length > 1 && !isSelectionMode}
       <Button
         type="button"
         variant={isReorderMode ? "danger" : "subtle"}
@@ -224,19 +288,31 @@
         Reorder
       </Button>
     {/if}
-    <Button
-      type="button"
-      variant="primary"
-      onclick={() =>
-        void gotoWithContext("/projects/new", {
-          label: "Projects",
-          href: "/projects",
-          type: "list"
-        })}
-    >
-      <Plus size={16} />
-      Add Project
-    </Button>
+    {#if (pageData.data?.projects ?? []).length > 0 && !isReorderMode}
+      <Button
+        type="button"
+        variant={isSelectionMode ? "danger" : "subtle"}
+        onclick={toggleSelectionMode}
+      >
+        <CheckSquare size={16} />
+        {isSelectionMode ? "Cancel" : "Select"}
+      </Button>
+    {/if}
+    {#if !isSelectionMode && !isReorderMode}
+      <Button
+        type="button"
+        variant="primary"
+        onclick={() =>
+          void gotoWithContext("/projects/new", {
+            label: "Projects",
+            href: "/projects",
+            type: "list"
+          })}
+      >
+        <Plus size={16} />
+        Add Project
+      </Button>
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -303,10 +379,23 @@
 {:else}
   <ListGrid minItemWidth={26}>
     {#each pageData.data?.projects ?? [] as project}
-      <ProjectListCard {project} onDelete={handleDeleteProject} />
+      <ProjectListCard
+        {project}
+        onDelete={isSelectionMode ? undefined : handleDeleteProject}
+        selectionMode={isSelectionMode}
+        selected={selectedIds.has(project.id)}
+        onSelectionChange={handleSelectionChange}
+      />
     {/each}
   </ListGrid>
 {/if}
+
+<BatchActionBar
+  selectedCount={selectedIds.size}
+  loading={batchLoading}
+  onClearSelection={clearSelection}
+  onBatchDelete={handleBatchDelete}
+/>
 
 <style>
   .empty-state {

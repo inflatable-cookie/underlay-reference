@@ -163,6 +163,19 @@ pub struct SetLabelsRequest {
     pub label_ids: Vec<Uuid>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchDeleteTasksRequest {
+    pub ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchUpdateTaskStatusRequest {
+    pub ids: Vec<Uuid>,
+    pub status: String,
+}
+
 // ============================================================================
 // Task Handlers
 // ============================================================================
@@ -504,6 +517,140 @@ pub async fn set_task_labels(
         }
         Err(e) => {
             tracing::error!("Failed to set task labels: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+// ============================================================================
+// Batch Operations
+// ============================================================================
+
+/// Batch delete tasks.
+///
+/// POST /v1/admin/projects/:project_id/tasks:batch-delete
+pub async fn batch_delete_tasks(
+    AdminUser(user): AdminUser,
+    State(state): State<AppState>,
+    Path(project_id): Path<Uuid>,
+    Json(req): Json<BatchDeleteTasksRequest>,
+) -> impl IntoResponse {
+    if req.ids.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "ok": false,
+                "error": {
+                    "code": "validation.empty_ids",
+                    "message": "At least one ID is required"
+                }
+            })),
+        )
+            .into_response();
+    }
+
+    let pool = state.local_auth.pool();
+    let batch_id = Uuid::new_v7().into_inner();
+    let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
+
+    match tasks::batch_soft_delete_tasks(pool, &ids, batch_id).await {
+        Ok(count) => {
+            // Log activity for batch operation
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "batch_delete",
+                    resource_type: "task",
+                    resource_id: batch_id,
+                    details: Some(serde_json::json!({
+                        "count": count,
+                        "ids": req.ids,
+                        "projectId": project_id.to_string()
+                    })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Json(serde_json::json!({ "ok": true, "deleted": count })).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to batch delete tasks: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// Batch update task status.
+///
+/// POST /v1/admin/projects/:project_id/tasks:batch-update
+pub async fn batch_update_task_status(
+    AdminUser(user): AdminUser,
+    State(state): State<AppState>,
+    Path(project_id): Path<Uuid>,
+    Json(req): Json<BatchUpdateTaskStatusRequest>,
+) -> impl IntoResponse {
+    if req.ids.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "ok": false,
+                "error": {
+                    "code": "validation.empty_ids",
+                    "message": "At least one ID is required"
+                }
+            })),
+        )
+            .into_response();
+    }
+
+    // Validate status value
+    let valid_statuses = ["pending", "in_progress", "completed", "cancelled"];
+    if !valid_statuses.contains(&req.status.as_str()) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "ok": false,
+                "error": {
+                    "code": "validation.invalid_status",
+                    "message": "Invalid status value"
+                }
+            })),
+        )
+            .into_response();
+    }
+
+    let pool = state.local_auth.pool();
+    let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
+
+    match tasks::batch_update_task_status(pool, &ids, &req.status).await {
+        Ok(count) => {
+            // Log activity for batch operation
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "batch_update",
+                    resource_type: "task",
+                    resource_id: Uuid::new_v7().into_inner(),
+                    details: Some(serde_json::json!({
+                        "count": count,
+                        "ids": req.ids,
+                        "status": req.status,
+                        "projectId": project_id.to_string()
+                    })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Json(serde_json::json!({ "ok": true, "updated": count })).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to batch update task status: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }

@@ -394,6 +394,33 @@ pub async fn purge_media(pool: &DbPool, id: Uuid) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
+/// Batch soft delete media items.
+///
+/// Returns the number of items deleted.
+pub async fn batch_soft_delete_media(
+    pool: &DbPool,
+    ids: &[Uuid],
+    deleted_by: Option<Uuid>,
+) -> Result<u64, sqlx::Error> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    let result = sqlx::query(
+        r#"
+        UPDATE media.media
+        SET deleted_at = NOW(), deleted_by = $1
+        WHERE id = ANY($2) AND deleted_at IS NULL
+        "#,
+    )
+    .bind(deleted_by)
+    .bind(ids)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
+}
+
 // ============================================================================
 // Media Version Queries
 // ============================================================================

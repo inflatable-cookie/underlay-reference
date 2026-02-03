@@ -309,6 +309,36 @@ export async function listUsages(
 }
 
 // ============================================================================
+// Batch Operations
+// ============================================================================
+
+/** Batch delete request payload. */
+export interface BatchDeleteMediaRequest {
+  ids: string[];
+}
+
+/** Batch delete result. */
+export interface BatchDeleteMediaResult {
+  ok: boolean;
+  deleted: number;
+}
+
+/**
+ * Batch soft delete media items.
+ */
+export async function batchDeleteMedia(
+  request: BatchDeleteMediaRequest,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<BatchDeleteMediaResult> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  return await http.post<BatchDeleteMediaResult>(
+    "/v1/admin/media:batch-delete",
+    request
+  );
+}
+
+// ============================================================================
 // Download
 // ============================================================================
 

@@ -84,6 +84,11 @@ export type {
   ActivityEntry,
   ActivityListResponse,
   ListActivityQuery,
+  // Batch operation types
+  BatchDeletePayload,
+  BatchDeleteResult,
+  BatchUpdateTaskStatusPayload,
+  BatchUpdateResult,
 } from "./types/admin-types.js";
 
 export {
@@ -194,6 +199,10 @@ export * as accountCommands from "./commands/account-commands.js";
 export * as adminCommands from "./commands/admin-commands.js";
 export * as userCommands from "./commands/user-commands.js";
 export * as mediaCommands from "./commands/media-commands.js";
+export type {
+  BatchDeleteMediaRequest,
+  BatchDeleteMediaResult,
+} from "./commands/media-commands.js";
 
 // User types
 export type {

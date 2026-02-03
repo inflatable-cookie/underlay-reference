@@ -32,6 +32,10 @@ import type {
   DashboardStats,
   ActivityListResponse,
   ListActivityQuery,
+  BatchDeletePayload,
+  BatchDeleteResult,
+  BatchUpdateTaskStatusPayload,
+  BatchUpdateResult,
 } from "../types/admin-types.js";
 import { getAdminHttpClient } from "../utils/client-factory.js";
 import {
@@ -293,6 +297,21 @@ export async function reorderProjects(
   return await http.put<ReorderResult>("/v1/admin/projects/reorder", payload);
 }
 
+/**
+ * Batch delete projects.
+ */
+export async function batchDeleteProjects(
+  payload: BatchDeletePayload,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<BatchDeleteResult> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  return await http.post<BatchDeleteResult>(
+    "/v1/admin/projects:batch-delete",
+    payload
+  );
+}
+
 // ============================================================================
 // Tasks
 // ============================================================================
@@ -398,6 +417,38 @@ export async function reorderTasks(
   const http = getAdminHttpClient({ fetchFn, accessToken });
   return await http.put<ReorderResult>(
     `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks/reorder`,
+    payload
+  );
+}
+
+/**
+ * Batch delete tasks.
+ */
+export async function batchDeleteTasks(
+  projectId: string,
+  payload: BatchDeletePayload,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<BatchDeleteResult> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  return await http.post<BatchDeleteResult>(
+    `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks:batch-delete`,
+    payload
+  );
+}
+
+/**
+ * Batch update task status.
+ */
+export async function batchUpdateTaskStatus(
+  projectId: string,
+  payload: BatchUpdateTaskStatusPayload,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<BatchUpdateResult> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  return await http.post<BatchUpdateResult>(
+    `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks:batch-update`,
     payload
   );
 }

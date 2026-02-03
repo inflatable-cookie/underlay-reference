@@ -207,6 +207,10 @@ pub fn build_router() -> Router<AppState> {
             put(admin::projects::reorder_projects),
         )
         .route(
+            "/v1/admin/projects:batch-delete",
+            post(admin::projects::batch_delete_projects),
+        )
+        .route(
             "/v1/admin/projects/:project_id",
             get(admin::projects::get_project)
                 .patch(admin::projects::update_project)
@@ -224,6 +228,14 @@ pub fn build_router() -> Router<AppState> {
         .route(
             "/v1/admin/projects/:project_id/tasks/reorder",
             put(admin::tasks::reorder_tasks),
+        )
+        .route(
+            "/v1/admin/projects/:project_id/tasks:batch-delete",
+            post(admin::tasks::batch_delete_tasks),
+        )
+        .route(
+            "/v1/admin/projects/:project_id/tasks:batch-update",
+            post(admin::tasks::batch_update_task_status),
         )
         .route(
             "/v1/admin/projects/:project_id/tasks/:task_id",
@@ -246,6 +258,10 @@ pub fn build_router() -> Router<AppState> {
         .route(
             "/v1/admin/media/check-duplicate",
             post(admin::media::check_duplicate),
+        )
+        .route(
+            "/v1/admin/media:batch-delete",
+            post(admin::media::batch_delete_media),
         )
         .route(
             "/v1/admin/media",

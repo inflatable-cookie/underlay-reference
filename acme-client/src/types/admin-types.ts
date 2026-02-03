@@ -306,3 +306,26 @@ export interface ListActivityQuery {
   limit?: number;
   offset?: number;
 }
+
+// ============================================================================
+// Batch Operations
+// ============================================================================
+
+export interface BatchDeletePayload {
+  ids: string[];
+}
+
+export interface BatchDeleteResult {
+  ok: boolean;
+  deleted: number;
+}
+
+export interface BatchUpdateTaskStatusPayload {
+  ids: string[];
+  status: TaskStatus;
+}
+
+export interface BatchUpdateResult {
+  ok: boolean;
+  updated: number;
+}

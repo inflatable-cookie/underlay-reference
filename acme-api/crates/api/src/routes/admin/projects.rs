@@ -17,6 +17,7 @@ use underlay_http::query::QueryParams;
 
 use acme_core::Uuid;
 use acme_db::{activity, tasks};
+use serde_json::json;
 
 use crate::state::{AdminUser, AppState};
 
@@ -111,6 +112,12 @@ pub struct UpdateProjectRequest {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ReorderRequest {
+    pub ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchDeleteRequest {
     pub ids: Vec<Uuid>,
 }
 
@@ -358,6 +365,58 @@ pub async fn reorder_projects(
         Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
         Err(e) => {
             tracing::error!("Failed to reorder projects: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// Batch delete projects.
+///
+/// POST /v1/admin/projects:batch-delete
+pub async fn batch_delete_projects(
+    AdminUser(user): AdminUser,
+    State(state): State<AppState>,
+    Json(req): Json<BatchDeleteRequest>,
+) -> impl IntoResponse {
+    if req.ids.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "ok": false,
+                "error": {
+                    "code": "validation.empty_ids",
+                    "message": "At least one ID is required"
+                }
+            })),
+        )
+            .into_response();
+    }
+
+    let pool = state.local_auth.pool();
+    let batch_id = Uuid::new_v7().into_inner();
+    let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
+
+    match tasks::batch_soft_delete_projects(pool, &ids, batch_id).await {
+        Ok(count) => {
+            // Log activity for batch operation
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "batch_delete",
+                    resource_type: "project",
+                    resource_id: batch_id,
+                    details: Some(json!({ "count": count, "ids": req.ids })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Json(json!({ "ok": true, "deleted": count })).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to batch delete projects: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }

@@ -7,9 +7,20 @@
   interface Props {
     project: ProjectWithCounts;
     onDelete?: (projectId: string) => void;
+    /** Whether selection mode is active */
+    selectionMode?: boolean;
+    /** Whether this item is selected */
+    selected?: boolean;
+    /** Callback when selection changes */
+    onSelectionChange?: (projectId: string, selected: boolean) => void;
   }
 
-  let { project, onDelete }: Props = $props();
+  let { project, onDelete, selectionMode = false, selected = false, onSelectionChange }: Props = $props();
+
+  function handleCheckboxChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    onSelectionChange?.(project.id, target.checked);
+  }
 
   let confirmDeleteOpen = $state(false);
 
@@ -59,11 +70,21 @@
   ]);
 </script>
 
-<ListCard title={project.name} href={`/projects/${project.id}`}>
+<ListCard title={project.name} href={selectionMode ? undefined : `/projects/${project.id}`}>
   {#snippet media()}
-    <div class="icon">
-      <Briefcase size={20} />
-    </div>
+    {#if selectionMode}
+      <label class="selection-checkbox">
+        <input
+          type="checkbox"
+          checked={selected}
+          onchange={handleCheckboxChange}
+        />
+      </label>
+    {:else}
+      <div class="icon">
+        <Briefcase size={20} />
+      </div>
+    {/if}
   {/snippet}
 
   {#snippet titleSuffix()}
@@ -106,6 +127,22 @@
     border-radius: 0.5rem;
     background: var(--color-primary, #6366f1);
     color: white;
+  }
+
+  .selection-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    cursor: pointer;
+  }
+
+  .selection-checkbox input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--accent-color, #6366f1);
+    cursor: pointer;
   }
 
   .task-progress {

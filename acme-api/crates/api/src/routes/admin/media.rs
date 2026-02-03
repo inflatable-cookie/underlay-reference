@@ -840,3 +840,66 @@ pub async fn list_usage(
         }
     }
 }
+
+// ============================================================================
+// Batch Operations
+// ============================================================================
+
+/// Request for batch delete operation.
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatchDeleteMediaRequest {
+    pub ids: Vec<Uuid>,
+}
+
+/// Batch delete media items.
+///
+/// POST /v1/admin/media:batch-delete
+pub async fn batch_delete_media(
+    AdminUser(user): AdminUser,
+    State(state): State<AppState>,
+    Json(req): Json<BatchDeleteMediaRequest>,
+) -> impl IntoResponse {
+    if req.ids.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "ok": false,
+                "error": {
+                    "code": "validation.empty_ids",
+                    "message": "At least one ID is required"
+                }
+            })),
+        )
+            .into_response();
+    }
+
+    let pool = state.local_auth.pool();
+    let actor_id = user.user_id.0.into_inner();
+
+    match media::batch_soft_delete_media(pool, &req.ids, Some(actor_id)).await {
+        Ok(count) => {
+            // Log activity for batch operation
+            let batch_id = AcmeUuid::new_v7().into_inner();
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(actor_id),
+                    action: "batch_delete",
+                    resource_type: "media",
+                    resource_id: batch_id,
+                    details: Some(json!({ "count": count, "ids": req.ids })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Json(json!({ "ok": true, "deleted": count })).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to batch delete media: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
