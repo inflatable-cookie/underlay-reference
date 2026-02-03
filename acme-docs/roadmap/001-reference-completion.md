@@ -144,9 +144,9 @@ Demonstrate bulk action patterns.
   - [x] Request: `{ ids: string[] }`
 
 ### Admin UI
-- [x] Selection mode for list views (projects done, tasks/media pending)
+- [x] Selection mode for list views
   - [x] Checkbox column
-  - [ ] Select all / deselect all
+  - [x] Select all / deselect all
   - [x] Selection count indicator
 - [x] Batch action toolbar
   - [x] Appears when items selected

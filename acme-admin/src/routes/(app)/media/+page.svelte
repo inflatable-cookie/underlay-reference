@@ -24,6 +24,7 @@
   } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { mediaCommands, type MediaSummary } from "acme-client";
+  import { BatchActionBar } from "$lib/components";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import Plus from "lucide-svelte/icons/plus";
   import Image from "lucide-svelte/icons/image";
@@ -32,6 +33,7 @@
   import Music from "lucide-svelte/icons/music";
   import FileIcon from "lucide-svelte/icons/file";
   import Trash2 from "lucide-svelte/icons/trash-2";
+  import CheckSquare from "lucide-svelte/icons/check-square";
 
   const toastStore = useToasts();
 
@@ -222,31 +224,113 @@
     }
     return `${size.toFixed(unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
   }
+
+  // Selection mode state
+  let isSelectionMode = $state(false);
+  let selectedIds = $state<Set<string>>(new Set());
+  let batchLoading = $state(false);
+
+  // Clear selection when exiting selection mode
+  $effect(() => {
+    if (!isSelectionMode) {
+      selectedIds = new Set();
+    }
+  });
+
+  function toggleSelectionMode() {
+    isSelectionMode = !isSelectionMode;
+    if (!isSelectionMode) {
+      selectedIds = new Set();
+    }
+  }
+
+  function handleSelectionChange(mediaId: string, selected: boolean) {
+    const newSet = new Set(selectedIds);
+    if (selected) {
+      newSet.add(mediaId);
+    } else {
+      newSet.delete(mediaId);
+    }
+    selectedIds = newSet;
+  }
+
+  function clearSelection() {
+    selectedIds = new Set();
+    isSelectionMode = false;
+  }
+
+  function selectAll() {
+    const allIds = (pageData.data?.items ?? []).map(m => m.id);
+    selectedIds = new Set(allIds);
+  }
+
+  async function handleBatchDelete() {
+    const token = auth.getToken();
+    if (!token) {
+      toastStore.push({ variant: "error", message: "Not authenticated" });
+      return;
+    }
+
+    batchLoading = true;
+    try {
+      const result = await mediaCommands.batchDeleteMedia(
+        { ids: Array.from(selectedIds) },
+        fetch,
+        token
+      );
+      toastStore.push({
+        variant: "success",
+        message: `Moved ${result.deleted} ${result.deleted === 1 ? "item" : "items"} to trash`
+      });
+      selectedIds = new Set();
+      isSelectionMode = false;
+      await pageData.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to delete media";
+      toastStore.push({ variant: "error", message });
+    } finally {
+      batchLoading = false;
+    }
+  }
 </script>
 
 <PageHeader title="Media Library" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
-    <Button
-      type="button"
-      variant="subtle"
-      onclick={() => goto("/media/trash")}
-    >
-      <Trash2 size={16} />
-      Trash
-    </Button>
-    <Button
-      type="button"
-      variant="primary"
-      onclick={() =>
-        void gotoWithContext("/media/upload", {
-          label: "Media",
-          href: "/media",
-          type: "list"
-        })}
-    >
-      <Plus size={16} />
-      Upload
-    </Button>
+    {#if !isSelectionMode}
+      <Button
+        type="button"
+        variant="subtle"
+        onclick={() => goto("/media/trash")}
+      >
+        <Trash2 size={16} />
+        Trash
+      </Button>
+    {/if}
+    {#if (pageData.data?.items ?? []).length > 0}
+      <Button
+        type="button"
+        variant={isSelectionMode ? "danger" : "subtle"}
+        onclick={toggleSelectionMode}
+      >
+        <CheckSquare size={16} />
+        {isSelectionMode ? "Cancel" : "Select"}
+      </Button>
+    {/if}
+    {#if !isSelectionMode}
+      <Button
+        type="button"
+        variant="primary"
+        onclick={() =>
+          void gotoWithContext("/media/upload", {
+            label: "Media",
+            href: "/media",
+            type: "list"
+          })}
+      >
+        <Plus size={16} />
+        Upload
+      </Button>
+    {/if}
   {/snippet}
 </PageHeader>
 
@@ -298,28 +382,89 @@
   <ListGrid minItemWidth={20}>
     {#each pageData.data?.items ?? [] as item}
       {@const KindIcon = getKindIcon(item.kind)}
-      <ListCard
-        title={item.title ?? item.originalFilename ?? "Untitled"}
-        subtitle={formatFileSize(item.byteSize)}
-        href={`/media/${item.id}`}
-      >
-        {#snippet media()}
-          <KindIcon size={20} />
-        {/snippet}
-        {#snippet titleSuffix()}
-          <Badge variant={getKindVariant(item.kind)} size="sm">
-            {getMediaKindLabel(item.kind)}
-          </Badge>
-        {/snippet}
-      </ListCard>
+      {#if isSelectionMode}
+        <div class="selectable-card">
+          <label class="selection-checkbox">
+            <input
+              type="checkbox"
+              checked={selectedIds.has(item.id)}
+              onchange={(e) => handleSelectionChange(item.id, e.currentTarget.checked)}
+            />
+          </label>
+          <ListCard
+            title={item.title ?? item.originalFilename ?? "Untitled"}
+            subtitle={formatFileSize(item.byteSize)}
+            onclick={() => handleSelectionChange(item.id, !selectedIds.has(item.id))}
+          >
+            {#snippet media()}
+              <KindIcon size={20} />
+            {/snippet}
+            {#snippet titleSuffix()}
+              <Badge variant={getKindVariant(item.kind)} size="sm">
+                {getMediaKindLabel(item.kind)}
+              </Badge>
+            {/snippet}
+          </ListCard>
+        </div>
+      {:else}
+        <ListCard
+          title={item.title ?? item.originalFilename ?? "Untitled"}
+          subtitle={formatFileSize(item.byteSize)}
+          href={`/media/${item.id}`}
+        >
+          {#snippet media()}
+            <KindIcon size={20} />
+          {/snippet}
+          {#snippet titleSuffix()}
+            <Badge variant={getKindVariant(item.kind)} size="sm">
+              {getMediaKindLabel(item.kind)}
+            </Badge>
+          {/snippet}
+        </ListCard>
+      {/if}
     {/each}
   </ListGrid>
 {/if}
+
+<BatchActionBar
+  selectedCount={selectedIds.size}
+  totalCount={(pageData.data?.items ?? []).length}
+  loading={batchLoading}
+  onClearSelection={clearSelection}
+  onSelectAll={selectAll}
+  onBatchDelete={handleBatchDelete}
+/>
 
 <style>
   .empty-state {
     padding: 2rem;
     text-align: center;
     color: var(--text-secondary, #6b7280);
+  }
+
+  .selectable-card {
+    position: relative;
+  }
+
+  .selection-checkbox {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: var(--surface-elevated, #1f2937);
+    border-radius: 0.25rem;
+    cursor: pointer;
+  }
+
+  .selection-checkbox input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--accent-color, #3b82f6);
+    cursor: pointer;
   }
 </style>

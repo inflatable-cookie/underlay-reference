@@ -104,6 +104,11 @@
     isSelectionMode = false;
   }
 
+  function selectAll() {
+    const allIds = (pageData.data?.projects ?? []).map(p => p.id);
+    selectedIds = new Set(allIds);
+  }
+
   async function handleBatchDelete() {
     const token = auth.getToken();
     if (!token) {
@@ -392,8 +397,10 @@
 
 <BatchActionBar
   selectedCount={selectedIds.size}
+  totalCount={(pageData.data?.projects ?? []).length}
   loading={batchLoading}
   onClearSelection={clearSelection}
+  onSelectAll={selectAll}
   onBatchDelete={handleBatchDelete}
 />
 

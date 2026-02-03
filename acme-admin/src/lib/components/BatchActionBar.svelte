@@ -8,10 +8,14 @@
   import X from "lucide-svelte/icons/x";
   import Trash2 from "lucide-svelte/icons/trash-2";
   import CheckCheck from "lucide-svelte/icons/check-check";
+  import CheckSquare from "lucide-svelte/icons/check-square";
+  import Square from "lucide-svelte/icons/square";
 
   interface Props {
     /** Number of selected items */
     selectedCount: number;
+    /** Total number of items available for selection */
+    totalCount?: number;
     /** Whether a batch operation is in progress */
     loading?: boolean;
     /** Show batch delete action */
@@ -22,6 +26,8 @@
     statusOptions?: { value: string; label: string }[];
     /** Callback when clear selection is clicked */
     onClearSelection: () => void;
+    /** Callback when select all is clicked */
+    onSelectAll?: () => void;
     /** Callback when batch delete is confirmed */
     onBatchDelete?: () => void;
     /** Callback when batch status update is confirmed */
@@ -30,14 +36,18 @@
 
   let {
     selectedCount,
+    totalCount = 0,
     loading = false,
     showDelete = true,
     showStatusUpdate = false,
     statusOptions = [],
     onClearSelection,
+    onSelectAll,
     onBatchDelete,
     onBatchStatusUpdate
   }: Props = $props();
+
+  const allSelected = $derived(totalCount > 0 && selectedCount === totalCount);
 
   let showDeleteConfirm = $state(false);
   let showStatusModal = $state(false);
@@ -73,6 +83,24 @@
     </div>
 
     <div class="actions">
+      {#if onSelectAll && totalCount > 0}
+        <Button
+          type="button"
+          variant="subtle"
+          size="sm"
+          onclick={allSelected ? onClearSelection : onSelectAll}
+          disabled={loading}
+        >
+          {#if allSelected}
+            <Square size={16} />
+            Deselect All
+          {:else}
+            <CheckSquare size={16} />
+            Select All ({totalCount})
+          {/if}
+        </Button>
+      {/if}
+
       {#if showStatusUpdate && statusOptions.length > 0}
         <Button
           type="button"

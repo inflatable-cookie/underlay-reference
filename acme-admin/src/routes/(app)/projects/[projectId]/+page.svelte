@@ -7,10 +7,12 @@
   import { useAuthenticatedData, PageHeader, useToasts, Banner, ReorderableList, createReorderController, FilterBar } from "@decodelabs/underlay/patterns";
   import { Button, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, ProgressBar, Field, Select, OrderBy, type OrderByValue } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
+  import { BatchActionBar } from "$lib/components";
   import Pencil from "lucide-svelte/icons/pencil";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
+  import CheckSquare2 from "lucide-svelte/icons/square-check";
 
   interface Props {
     data: PageData;
@@ -140,6 +142,109 @@
   const tasks = $derived(pageData.data?.tasks ?? []);
 
   let isTaskReorderMode = $state(false);
+  let isTaskSelectionMode = $state(false);
+  let selectedTaskIds = $state<Set<string>>(new Set());
+  let batchLoading = $state(false);
+
+  // Clear selection when exiting selection mode
+  $effect(() => {
+    if (!isTaskSelectionMode) {
+      selectedTaskIds = new Set();
+    }
+  });
+
+  function toggleTaskSelectionMode() {
+    isTaskSelectionMode = !isTaskSelectionMode;
+    if (!isTaskSelectionMode) {
+      selectedTaskIds = new Set();
+    }
+  }
+
+  function handleTaskSelectionChange(taskId: string, selected: boolean) {
+    const newSet = new Set(selectedTaskIds);
+    if (selected) {
+      newSet.add(taskId);
+    } else {
+      newSet.delete(taskId);
+    }
+    selectedTaskIds = newSet;
+  }
+
+  function clearTaskSelection() {
+    selectedTaskIds = new Set();
+    isTaskSelectionMode = false;
+  }
+
+  function selectAllTasks() {
+    const allIds = tasks.map(t => t.id);
+    selectedTaskIds = new Set(allIds);
+  }
+
+  async function handleBatchDeleteTasks() {
+    const token = auth.getToken();
+    if (!token) {
+      toastStore.push({ variant: "error", message: "Not authenticated" });
+      return;
+    }
+
+    batchLoading = true;
+    try {
+      const result = await adminCommands.batchDeleteTasks(
+        data.projectId,
+        { ids: Array.from(selectedTaskIds) },
+        fetch,
+        token
+      );
+      toastStore.push({
+        variant: "success",
+        message: `Deleted ${result.deleted} task${result.deleted === 1 ? "" : "s"}`
+      });
+      selectedTaskIds = new Set();
+      isTaskSelectionMode = false;
+      await pageData.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to delete tasks";
+      toastStore.push({ variant: "error", message });
+    } finally {
+      batchLoading = false;
+    }
+  }
+
+  async function handleBatchUpdateTaskStatus(status: string) {
+    const token = auth.getToken();
+    if (!token) {
+      toastStore.push({ variant: "error", message: "Not authenticated" });
+      return;
+    }
+
+    batchLoading = true;
+    try {
+      const result = await adminCommands.batchUpdateTaskStatus(
+        data.projectId,
+        { ids: Array.from(selectedTaskIds), status: status as TaskStatus },
+        fetch,
+        token
+      );
+      toastStore.push({
+        variant: "success",
+        message: `Updated ${result.updated} task${result.updated === 1 ? "" : "s"}`
+      });
+      selectedTaskIds = new Set();
+      isTaskSelectionMode = false;
+      await pageData.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to update tasks";
+      toastStore.push({ variant: "error", message });
+    } finally {
+      batchLoading = false;
+    }
+  }
+
+  const taskStatusOptions = [
+    { value: TaskStatus.Pending, label: "Pending" },
+    { value: TaskStatus.InProgress, label: "In Progress" },
+    { value: TaskStatus.Completed, label: "Completed" }
+  ];
 
   // Map tasks to have 'id' field for reorder controller
   const reorderItems = $derived(
@@ -329,7 +434,7 @@
     <div class="tasks-header">
       <h2>Tasks</h2>
       <div class="tasks-header-actions">
-        {#if tasks.length > 1}
+        {#if tasks.length > 1 && !isTaskSelectionMode}
           <Button
             type="button"
             variant={isTaskReorderMode ? "danger" : "subtle"}
@@ -340,10 +445,23 @@
             Reorder
           </Button>
         {/if}
-        <Button type="button" variant="primary" size="sm" onclick={handleAddTask}>
-          <Plus size={14} />
-          Add Task
-        </Button>
+        {#if tasks.length > 0 && !isTaskReorderMode}
+          <Button
+            type="button"
+            variant={isTaskSelectionMode ? "danger" : "subtle"}
+            size="sm"
+            onclick={toggleTaskSelectionMode}
+          >
+            <CheckSquare2 size={14} />
+            {isTaskSelectionMode ? "Cancel" : "Select"}
+          </Button>
+        {/if}
+        {#if !isTaskSelectionMode && !isTaskReorderMode}
+          <Button type="button" variant="primary" size="sm" onclick={handleAddTask}>
+            <Plus size={14} />
+            Add Task
+          </Button>
+        {/if}
       </div>
     </div>
 
@@ -403,11 +521,21 @@
         {#each tasks as task}
           <ListCard
             title={task.title}
-            href={`/projects/${project.id}/tasks/${task.id}`}
+            href={isTaskSelectionMode ? undefined : `/projects/${project.id}/tasks/${task.id}`}
             variant="compact"
           >
             {#snippet media()}
-              <CheckSquare size={16} />
+              {#if isTaskSelectionMode}
+                <label class="task-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedTaskIds.has(task.id)}
+                    onchange={(e) => handleTaskSelectionChange(task.id, (e.target as HTMLInputElement).checked)}
+                  />
+                </label>
+              {:else}
+                <CheckSquare size={16} />
+              {/if}
             {/snippet}
             {#snippet titleSuffix()}
               <Badge variant={task.status === "completed" ? "success" : task.status === "in_progress" ? "info" : "muted"} size="sm">
@@ -421,6 +549,18 @@
         {/each}
       </ListGrid>
     {/if}
+
+    <BatchActionBar
+      selectedCount={selectedTaskIds.size}
+      totalCount={tasks.length}
+      loading={batchLoading}
+      showStatusUpdate={true}
+      statusOptions={taskStatusOptions}
+      onClearSelection={clearTaskSelection}
+      onSelectAll={selectAllTasks}
+      onBatchDelete={handleBatchDeleteTasks}
+      onBatchStatusUpdate={handleBatchUpdateTaskStatus}
+    />
   </section>
 {:else}
   <FormError message="Project not found" />
@@ -524,5 +664,19 @@
     padding: 2rem;
     text-align: center;
     color: var(--text-secondary, #6b7280);
+  }
+
+  .task-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .task-checkbox input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    accent-color: var(--accent-color, #6366f1);
+    cursor: pointer;
   }
 </style>
