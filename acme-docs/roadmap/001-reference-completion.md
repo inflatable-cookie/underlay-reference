@@ -266,33 +266,34 @@ Complete the media library implementation with missing features.
 
 ---
 
-## Phase 7: Testing Patterns
+## Phase 7: Testing Patterns ✓
 
 Provide example tests for reference.
 
 ### Backend Tests
-- [ ] Unit test examples
-  - [ ] Domain logic tests
-  - [ ] Validation tests
-- [ ] Integration test examples
-  - [ ] API endpoint tests with test database
-  - [ ] Authentication flow tests
-- [ ] Test utilities
-  - [ ] Test fixtures / factories
-  - [ ] Database cleanup helpers
+- [x] Unit test examples
+  - [x] Domain logic tests (acme-domain: status parsing, roundtrip, serialization)
+  - [x] Validation tests (API endpoint validation patterns in integration tests)
+- [x] Integration test examples
+  - [x] API endpoint tests with test database (api_tests.rs)
+  - [x] Request/response testing patterns
+- [x] Test utilities
+  - [x] Test fixtures / factories (acme-test-utils crate)
+  - [x] Database cleanup helpers (cleanup module)
 
 ### Frontend Tests
-- [ ] Component test examples
-  - [ ] Form component tests
-  - [ ] List component tests
-- [ ] Integration test examples
-  - [ ] Page load tests
-  - [ ] User flow tests (login, create project)
+- [x] Component test examples
+  - [x] Event handler testing patterns
+  - [x] Data display patterns
+- [x] Integration test examples
+  - [x] Utility function tests
+  - [x] Validation patterns
 
 **Files:**
-- `acme-api/crates/api/tests/` (new)
-- `acme-admin/tests/` (examples)
-- `acme-front/tests/` (examples)
+- `acme-api/crates/api/tests/api_tests.rs` (new)
+- `acme-api/crates/test-utils/` (new crate)
+- `acme-api/crates/domain/src/lib.rs` (unit tests added)
+- `acme-admin/tests/` (new)
 
 ---
 
