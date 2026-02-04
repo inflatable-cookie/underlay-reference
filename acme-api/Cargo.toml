@@ -42,7 +42,7 @@ infer = "0.19"
 
 # Underlay crates (via symlink at repo root)
 underlay-core = { path = "../underlay/rust/crates/underlay-core" }
-underlay-http = { path = "../underlay/rust/crates/underlay-http" }
+underlay-http = { path = "../underlay/rust/crates/underlay-http", features = ["error-logging"] }
 underlay-observability = { path = "../underlay/rust/crates/underlay-observability" }
 underlay-auth = { path = "../underlay/rust/crates/underlay-auth" }
 underlay-blob = { path = "../underlay/rust/crates/underlay-blob", features = ["local"] }

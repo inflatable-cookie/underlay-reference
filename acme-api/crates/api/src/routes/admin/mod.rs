@@ -10,6 +10,7 @@
 pub mod activity;
 pub mod categories;
 pub mod dashboard;
+pub mod error_logs;
 pub mod jobs;
 pub mod media;
 pub mod projects;

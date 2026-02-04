@@ -179,8 +179,18 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("DB pool already initialised for DB_POOL");
     }
 
+    // Configure error logging middleware
+    let error_logging_config = underlay_http::ErrorLoggingConfig::new(pool.clone())
+        .with_source("acme-api")
+        .with_client_errors(true)
+        .with_server_errors(true);
+
     let app = routes::build_router()
         .with_state(state)
+        .layer(axum::middleware::from_fn_with_state(
+            error_logging_config,
+            underlay_http::error_logging_middleware,
+        ))
         .layer(underlay_observability::trace_layer())
         .layer(underlay_observability::request_id_layer());
 

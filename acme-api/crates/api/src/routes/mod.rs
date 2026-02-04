@@ -331,6 +331,21 @@ pub fn build_router() -> Router<AppState> {
             post(admin::jobs::cancel_job),
         )
         .route("/v1/admin/jobs/:job_id/retry", post(admin::jobs::retry_job))
+        // ====================================================================
+        // Error Logs admin routes
+        // ====================================================================
+        .route(
+            "/v1/admin/error-logs",
+            get(admin::error_logs::list_error_logs_handler),
+        )
+        .route(
+            "/v1/admin/error-logs/stats",
+            get(admin::error_logs::get_error_log_stats),
+        )
+        .route(
+            "/v1/admin/error-logs/:id",
+            get(admin::error_logs::get_error_log_handler),
+        )
         .layer(cors)
 }
 

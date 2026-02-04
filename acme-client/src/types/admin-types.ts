@@ -373,3 +373,44 @@ export interface ListJobsQuery {
   jobType?: string;
   limit?: number;
 }
+
+// ============================================================================
+// Error Logs
+// ============================================================================
+
+export interface ErrorLogSummary {
+  id: string;
+  occurredAt: string;
+  endpoint: string;
+  method: string;
+  statusCode: number;
+  errorCode: string;
+  message: string;
+  correlationId: string;
+}
+
+export interface ErrorLogDetail extends ErrorLogSummary {
+  context: Record<string, unknown>;
+}
+
+export interface ErrorLogStats {
+  totalLast24h: number;
+  serverErrorsLast24h: number;
+  clientErrorsLast24h: number;
+}
+
+export interface ListErrorLogsQuery {
+  statusCode?: number;
+  errorCode?: string;
+  endpoint?: string;
+  since?: string;
+  until?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ErrorLogsListResponse {
+  data: ErrorLogSummary[];
+  total: number;
+  hasMore: boolean;
+}
