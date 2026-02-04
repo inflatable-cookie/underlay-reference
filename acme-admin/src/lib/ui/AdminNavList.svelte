@@ -283,8 +283,8 @@
 	}
 
 	:global(.admin-nav__children a.admin-nav__child-link--danger) {
-		color: #dc2626;
-		opacity: 0.5;
+		color: #f87171;
+		opacity: 0.7;
 	}
 
 	:global(.admin-nav__children a.admin-nav__child-link--danger:hover),
@@ -404,8 +404,8 @@
 	}
 
 	:global(.admin-mobile-overlay__children a.admin-nav__child-link--danger) {
-		color: #dc2626;
-		opacity: 0.5;
+		color: #f87171;
+		opacity: 0.7;
 	}
 
 	:global(.admin-mobile-overlay__children a.admin-nav__child-link--danger:hover),
