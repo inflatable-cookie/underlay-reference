@@ -1,9 +1,7 @@
 <script lang="ts">
 	import ChevronDown from "lucide-svelte/icons/chevron-down";
 	import Gauge from "lucide-svelte/icons/gauge";
-	import FolderOpen from "lucide-svelte/icons/folder-open";
-	import Briefcase from "lucide-svelte/icons/briefcase";
-	import CheckSquare from "lucide-svelte/icons/check-square";
+	import Box from "lucide-svelte/icons/box";
 	import Settings from "lucide-svelte/icons/settings";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
@@ -74,90 +72,25 @@
 		<button
 			type="button"
 			class="{linkClass} {sectionClass} admin-nav__section-toggle"
-			aria-expanded={expandedSection === "categories"}
-			onclick={() => toggleSection("categories")}
+			aria-expanded={expandedSection === "acme"}
+			onclick={() => toggleSection("acme")}
 		>
-			<span class="admin-nav__badge admin-nav__badge--categories" aria-hidden="true">
-				<FolderOpen class="admin-nav__badge-icon" />
+			<span class="admin-nav__badge admin-nav__badge--acme" aria-hidden="true">
+				<Box class="admin-nav__badge-icon" />
 			</span>
-			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Categories</span>
+			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Acme</span>
 			<ChevronDown class="admin-nav__chevron" />
 		</button>
-		{#if expandedSection === "categories"}
+		{#if expandedSection === "acme"}
 			<ul class={childrenClass}>
 				<li>
 					<a href="/categories" class:admin-nav__link--active={isActive("/categories")} onclick={handleChildClick}>
-						All categories
+						Categories
 					</a>
 				</li>
 				<li>
-					<a href="/categories/new" class:admin-nav__link--active={isActive("/categories/new")} onclick={handleChildClick}>
-						New category
-					</a>
-				</li>
-			</ul>
-		{/if}
-	</li>
-
-	<li>
-		<button
-			type="button"
-			class="{linkClass} {sectionClass} admin-nav__section-toggle"
-			aria-expanded={expandedSection === "projects"}
-			onclick={() => toggleSection("projects")}
-		>
-			<span class="admin-nav__badge admin-nav__badge--projects" aria-hidden="true">
-				<Briefcase class="admin-nav__badge-icon" />
-			</span>
-			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Projects</span>
-			<ChevronDown class="admin-nav__chevron" />
-		</button>
-		{#if expandedSection === "projects"}
-			<ul class={childrenClass}>
-				<li>
-					<a
-						href="/projects"
-						class:admin-nav__link--active={isActive("/projects")}
-						onclick={handleChildClick}
-					>
-						All projects
-					</a>
-				</li>
-				<li>
-					<a
-						href="/projects/new"
-						class:admin-nav__link--active={isActive("/projects/new")}
-						onclick={handleChildClick}
-					>
-						New project
-					</a>
-				</li>
-			</ul>
-		{/if}
-	</li>
-
-	<li>
-		<button
-			type="button"
-			class="{linkClass} {sectionClass} admin-nav__section-toggle"
-			aria-expanded={expandedSection === "tasks"}
-			onclick={() => toggleSection("tasks")}
-		>
-			<span class="admin-nav__badge admin-nav__badge--tasks" aria-hidden="true">
-				<CheckSquare class="admin-nav__badge-icon" />
-			</span>
-			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Tasks</span>
-			<ChevronDown class="admin-nav__chevron" />
-		</button>
-		{#if expandedSection === "tasks"}
-			<ul class={childrenClass}>
-				<li>
-					<a
-						href="/projects"
-						class:admin-nav__link--active={false}
-						onclick={handleChildClick}
-					>
-						View by project
+					<a href="/projects" class:admin-nav__link--active={isActive("/projects")} onclick={handleChildClick}>
+						Projects
 					</a>
 				</li>
 			</ul>
@@ -324,16 +257,8 @@
 		background: linear-gradient(135deg, #3b82f6, #8b5cf6);
 	}
 
-	:global(.admin-nav__badge--categories) {
+	:global(.admin-nav__badge--acme) {
 		background: linear-gradient(135deg, #8b5cf6, #6366f1);
-	}
-
-	:global(.admin-nav__badge--projects) {
-		background: linear-gradient(135deg, #60a5fa, #3b82f6);
-	}
-
-	:global(.admin-nav__badge--tasks) {
-		background: linear-gradient(135deg, #14b8a6, #22c55e);
 	}
 
 	:global(.admin-nav__badge--media) {
