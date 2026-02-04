@@ -21,13 +21,14 @@
     PageLoading,
     Select,
     TextInput,
+    Tooltip,
     type OrderByValue
   } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { mediaCommands, type MediaSummary } from "acme-client";
   import { BatchActionBar } from "$lib/components";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import Plus from "lucide-svelte/icons/plus";
+  import Upload from "lucide-svelte/icons/upload";
   import Image from "lucide-svelte/icons/image";
   import FileText from "lucide-svelte/icons/file-text";
   import Film from "lucide-svelte/icons/film";
@@ -285,39 +286,46 @@
 <PageHeader title="Media Library" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
     {#if !isSelectionMode}
-      <Button
-        type="button"
-        variant="subtle"
-        onclick={() => goto("/media/trash")}
-      >
-        <Trash2 size={16} />
-        Trash
-      </Button>
+      <Tooltip content="View Trash" inline>
+        {#snippet trigger()}
+          <Button type="button" variant="danger-subtle" size="icon" onclick={() => goto("/media/trash")}>
+            <Trash2 size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
     {/if}
     {#if (pageData.data?.items ?? []).length > 0}
-      <Button
-        type="button"
-        variant={isSelectionMode ? "danger" : "subtle"}
-        onclick={toggleSelectionMode}
-      >
-        <CheckSquare size={16} />
-        {isSelectionMode ? "Cancel" : "Select"}
-      </Button>
+      <Tooltip content={isSelectionMode ? "Cancel Selection" : "Select Items"} inline>
+        {#snippet trigger()}
+          <Button
+            type="button"
+            variant={isSelectionMode ? "danger" : "subtle"}
+            size="icon"
+            onclick={toggleSelectionMode}
+          >
+            <CheckSquare size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
     {/if}
     {#if !isSelectionMode}
-      <Button
-        type="button"
-        variant="primary"
-        onclick={() =>
-          void gotoWithContext("/media/upload", {
-            label: "Media",
-            href: "/media",
-            type: "list"
-          })}
-      >
-        <Plus size={16} />
-        Upload
-      </Button>
+      <Tooltip content="Upload Media" inline>
+        {#snippet trigger()}
+          <Button
+            type="button"
+            variant="primary"
+            size="icon"
+            onclick={() =>
+              void gotoWithContext("/media/upload", {
+                label: "Media",
+                href: "/media",
+                type: "list"
+              })}
+          >
+            <Upload size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
     {/if}
   {/snippet}
 </PageHeader>

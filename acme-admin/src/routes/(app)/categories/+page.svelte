@@ -19,6 +19,7 @@
     PageLoading,
     Select,
     TextInput,
+    Tooltip,
     type OrderByValue
   } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
@@ -186,28 +187,36 @@
 <PageHeader title="Categories" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
     {#if (pageData.data?.categories ?? []).length > 1}
-      <Button
-        type="button"
-        variant={isReorderMode ? "danger" : "subtle"}
-        onclick={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
-      >
-        <ArrowUpDown size={16} />
-        Reorder
-      </Button>
+      <Tooltip content={isReorderMode ? "Cancel Reorder" : "Reorder Categories"} inline>
+        {#snippet trigger()}
+          <Button
+            type="button"
+            variant={isReorderMode ? "danger" : "subtle"}
+            size="icon"
+            onclick={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
+          >
+            <ArrowUpDown size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
     {/if}
-    <Button
-      type="button"
-      variant="primary"
-      onclick={() =>
-        void gotoWithContext("/categories/new", {
-          label: "Categories",
-          href: "/categories",
-          type: "list"
-        })}
-    >
-      <Plus size={16} />
-      Add Category
-    </Button>
+    <Tooltip content="Add Category" inline>
+      {#snippet trigger()}
+        <Button
+          type="button"
+          variant="primary"
+          size="icon"
+          onclick={() =>
+            void gotoWithContext("/categories/new", {
+              label: "Categories",
+              href: "/categories",
+              type: "list"
+            })}
+        >
+          <Plus size={16} />
+        </Button>
+      {/snippet}
+    </Tooltip>
   {/snippet}
 </PageHeader>
 

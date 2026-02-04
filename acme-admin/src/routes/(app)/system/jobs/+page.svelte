@@ -9,6 +9,7 @@
     Badge,
     Card,
     DataTable,
+    Tooltip,
     type DataTableColumn,
     type DataTableAction,
     type DataTableFilters
@@ -199,10 +200,13 @@
 
 <PageHeader title="Job queue" backHref="/system" backLabel="Back to system">
   {#snippet actions()}
-    <Button type="button" variant="subtle" onclick={() => pageData.refetch()}>
-      <RefreshCw size={16} />
-      Refresh
-    </Button>
+    <Tooltip content="Refresh" inline>
+      {#snippet trigger()}
+        <Button type="button" variant="subtle" size="icon" onclick={() => pageData.refetch()}>
+          <RefreshCw size={16} />
+        </Button>
+      {/snippet}
+    </Tooltip>
   {/snippet}
 </PageHeader>
 

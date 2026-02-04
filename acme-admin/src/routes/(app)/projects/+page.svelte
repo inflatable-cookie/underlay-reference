@@ -20,6 +20,7 @@
     PageLoading,
     Select,
     TextInput,
+    Tooltip,
     type OrderByValue
   } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
@@ -272,39 +273,51 @@
 <PageHeader title="Projects" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
     {#if (pageData.data?.projects ?? []).length > 1 && !isSelectionMode}
-      <Button
-        type="button"
-        variant={isReorderMode ? "danger" : "subtle"}
-        onclick={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
-      >
-        <ArrowUpDown size={16} />
-        Reorder
-      </Button>
+      <Tooltip content={isReorderMode ? "Cancel Reorder" : "Reorder Projects"} inline>
+        {#snippet trigger()}
+          <Button
+            type="button"
+            variant={isReorderMode ? "danger" : "subtle"}
+            size="icon"
+            onclick={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
+          >
+            <ArrowUpDown size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
     {/if}
     {#if (pageData.data?.projects ?? []).length > 0 && !isReorderMode}
-      <Button
-        type="button"
-        variant={isSelectionMode ? "danger" : "subtle"}
-        onclick={toggleSelectionMode}
-      >
-        <CheckSquare size={16} />
-        {isSelectionMode ? "Cancel" : "Select"}
-      </Button>
+      <Tooltip content={isSelectionMode ? "Cancel Selection" : "Select Items"} inline>
+        {#snippet trigger()}
+          <Button
+            type="button"
+            variant={isSelectionMode ? "danger" : "subtle"}
+            size="icon"
+            onclick={toggleSelectionMode}
+          >
+            <CheckSquare size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
     {/if}
     {#if !isSelectionMode && !isReorderMode}
-      <Button
-        type="button"
-        variant="primary"
-        onclick={() =>
-          void gotoWithContext("/projects/new", {
-            label: "Projects",
-            href: "/projects",
-            type: "list"
-          })}
-      >
-        <Plus size={16} />
-        Add Project
-      </Button>
+      <Tooltip content="Add Project" inline>
+        {#snippet trigger()}
+          <Button
+            type="button"
+            variant="primary"
+            size="icon"
+            onclick={() =>
+              void gotoWithContext("/projects/new", {
+                label: "Projects",
+                href: "/projects",
+                type: "list"
+              })}
+          >
+            <Plus size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
     {/if}
   {/snippet}
 </PageHeader>
