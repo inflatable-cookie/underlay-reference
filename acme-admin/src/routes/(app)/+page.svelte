@@ -1,17 +1,13 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { healthCommands, adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
-	import { Card, Pill, StatCard, StatGrid } from "@decodelabs/underlay/components";
+	import { adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
+	import { Pill, StatCard, StatGrid } from "@decodelabs/underlay/components";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
 	import UserPlus from "lucide-svelte/icons/user-plus";
 	import Activity from "lucide-svelte/icons/activity";
 	import { auth } from "$lib/stores/auth";
 	import ActivityFeed from "$lib/components/ActivityFeed.svelte";
-
-	let healthStatus = $state<string | null>(null);
-	let healthError = $state<string | null>(null);
-	let checkedAt = $state<Date | null>(null);
 
 	let stats = $state<DashboardStats | null>(null);
 	let statsError = $state<string | null>(null);
@@ -22,15 +18,6 @@
 	let activityLoading = $state(true);
 
 	onMount(async () => {
-		// Fetch health status
-		try {
-			const res = await healthCommands.health(fetch);
-			healthStatus = res.status;
-			checkedAt = new Date();
-		} catch (err) {
-			healthError = err instanceof Error ? err.message : "Failed to fetch health";
-		}
-
 		const token = auth.getToken();
 		if (token) {
 			// Fetch dashboard stats
@@ -116,21 +103,6 @@
 		>
 			{#snippet icon()}<Activity />{/snippet}
 		</StatCard>
-
-		<Card title="API health" variant="muted">
-			{#if healthError}
-				<p class="dashboard__error">{healthError}</p>
-			{:else if healthStatus}
-				<p class="dashboard__row">
-					<Pill accent={healthStatus === "ok" ? "#22c55e" : "#f97316"}>{healthStatus}</Pill>
-					<span class="dashboard__meta">
-						{checkedAt ? checkedAt.toLocaleTimeString() : ""}
-					</span>
-				</p>
-			{:else}
-				<p class="dashboard__meta">Checking...</p>
-			{/if}
-		</Card>
 	</StatGrid>
 
 	<section class="dashboard__section">
@@ -165,24 +137,6 @@
 		margin: 0;
 		color: var(--admin-color-text-muted);
 		font-size: 0.95rem;
-	}
-
-	.dashboard__row {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		margin: 0;
-	}
-
-	.dashboard__meta {
-		color: var(--admin-color-text-muted);
-		opacity: 0.8;
-		font-size: 0.9rem;
-	}
-
-	.dashboard__error {
-		margin: 0;
-		color: #fca5a5;
 	}
 
 	.breakdown__item {
