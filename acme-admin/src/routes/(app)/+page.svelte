@@ -7,7 +7,7 @@
 	import UserPlus from "lucide-svelte/icons/user-plus";
 	import Activity from "lucide-svelte/icons/activity";
 	import { auth } from "$lib/stores/auth";
-	import ActivityFeed from "$lib/components/ActivityFeed.svelte";
+	import LogList from "$lib/components/LogList.svelte";
 
 	let stats = $state<DashboardStats | null>(null);
 	let statsError = $state<string | null>(null);
@@ -108,7 +108,7 @@
 	<section class="dashboard__section">
 		<h2 class="dashboard__section-title">Recent Activity</h2>
 		<div class="dashboard__activity">
-			<ActivityFeed
+			<LogList
 				activities={recentActivity}
 				loading={activityLoading}
 				error={activityError}

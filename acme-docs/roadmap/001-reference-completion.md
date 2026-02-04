@@ -128,7 +128,7 @@ Track and display changes for admin visibility.
 - `acme-api/crates/db/src/activity.rs` (new)
 - `acme-api/crates/api/src/routes/admin/activity.rs` (new)
 - `acme-client/src/commands/admin-commands.ts` (updated with activity commands)
-- `acme-admin/src/lib/components/ActivityFeed.svelte` (new)
+- `acme-admin/src/lib/components/LogList.svelte` (new)
 
 ---
 
