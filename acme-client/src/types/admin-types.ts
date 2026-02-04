@@ -239,10 +239,25 @@ export interface UserDetail extends User {
   lockoutUntil?: string | null;
 }
 
+export interface CreateUserPayload {
+  email: string;
+  role: UserRole;
+  status: UserStatus;
+  displayName?: string | null;
+  sendPasswordReset?: boolean;
+}
+
+export interface UpdateUserPayload {
+  role?: UserRole;
+  status?: UserStatus;
+  displayName?: string | null;
+}
+
 export interface ListUsersQuery {
   role?: UserRole;
   status?: UserStatus;
   search?: string;
+  displayName?: string;
   limit?: number;
   offset?: number;
 }
@@ -371,6 +386,88 @@ export interface ListJobsQuery {
   status?: JobStatus;
   jobType?: string;
   limit?: number;
+}
+
+// ============================================================================
+// Scheduled Tasks
+// ============================================================================
+
+export interface ScheduledTaskSummary {
+  id: string;
+  name: string;
+  jobType: string;
+  schedule: string;
+  enabled: boolean;
+  lastScheduledAt?: string | null;
+  lastCompletedAt?: string | null;
+  createdAt: string;
+}
+
+export interface ScheduledTaskDetail {
+  id: string;
+  name: string;
+  jobType: string;
+  schedule: string;
+  payload: unknown;
+  maxAttempts: number;
+  timeoutSeconds?: number | null;
+  allowOverlap: boolean;
+  priority: number;
+  enabled: boolean;
+  lastScheduledAt?: string | null;
+  lastCompletedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListScheduledTasksQuery {
+  enabled?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface TriggerScheduledTaskResult {
+  jobId: string;
+}
+
+// ============================================================================
+// Captured Emails
+// ============================================================================
+
+export interface CapturedEmailSummary {
+  id: string;
+  emailId: string;
+  toAddresses: string[];
+  fromAddress: string;
+  subject: string;
+  capturedAt: string;
+  wasDelivered: boolean;
+}
+
+export interface CapturedEmailDetail {
+  id: string;
+  emailId: string;
+  toAddresses: string[];
+  fromAddress: string;
+  replyTo?: string | null;
+  ccAddresses: string[];
+  bccAddresses: string[];
+  subject: string;
+  textBody?: string | null;
+  htmlBody?: string | null;
+  headersJson?: unknown;
+  capturedAt: string;
+  wasDelivered: boolean;
+  deliveryError?: string | null;
+}
+
+export interface ListCapturedEmailsQuery {
+  since?: string;
+  until?: string;
+  toAddress?: string;
+  fromAddress?: string;
+  limit?: number;
+  offset?: number;
 }
 
 // ============================================================================

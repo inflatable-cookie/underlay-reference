@@ -95,6 +95,13 @@ export type {
   JobDetail,
   JobStats,
   ListJobsQuery,
+  ScheduledTaskSummary,
+  ScheduledTaskDetail,
+  ListScheduledTasksQuery,
+  TriggerScheduledTaskResult,
+  CapturedEmailSummary,
+  CapturedEmailDetail,
+  ListCapturedEmailsQuery,
   // Error log types
   ErrorLogSummary,
   ErrorLogDetail,

@@ -13,8 +13,10 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
+use acme_core::{AppError, Uuid as UnderlayUuid};
 use acme_db::{activity, users};
 
+use crate::error::error_response;
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -91,6 +93,8 @@ pub struct ListUsersQuery {
     pub status: Option<String>,
     /// Search by email
     pub search: Option<String>,
+    /// Search by display name
+    pub display_name: Option<String>,
     /// Limit (default 50)
     pub limit: Option<i64>,
     /// Offset for pagination
@@ -105,9 +109,56 @@ pub struct UpdateUserRoleRequest {
     pub role: String,
 }
 
+/// Request to create a user (admin).
+#[derive(Debug, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateUserRequest {
+    #[validate(length(min = 3, max = 320), email)]
+    pub email: String,
+    #[validate(length(min = 1))]
+    pub role: String,
+    #[validate(length(min = 1))]
+    pub status: String,
+    #[validate(length(max = 100))]
+    pub display_name: Option<String>,
+    /// If true, send a password reset email so the user can set an initial password.
+    pub send_password_reset: Option<bool>,
+}
+
+/// Request to update a user (admin).
+#[derive(Debug, Deserialize, Validate, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateUserRequest {
+    #[validate(length(max = 100))]
+    pub display_name: Option<String>,
+    #[validate(length(min = 1))]
+    pub role: Option<String>,
+    #[validate(length(min = 1))]
+    pub status: Option<String>,
+}
+
 // ============================================================================
 // Handlers
 // ============================================================================
+
+fn is_valid_role(role: &str) -> bool {
+    matches!(
+        role,
+        "user" | "tester" | "editor" | "admin" | "support" | "superadmin"
+    )
+}
+
+fn is_valid_status(status: &str) -> bool {
+    matches!(status, "active" | "suspended" | "deleted")
+}
+
+fn field_name_for_errors(field: &str) -> &str {
+    match field {
+        "display_name" => "displayName",
+        "send_password_reset" => "sendPasswordReset",
+        other => other,
+    }
+}
 
 /// List users (admin).
 ///
@@ -129,6 +180,7 @@ pub async fn list_users(
         query.role.as_deref(),
         query.status.as_deref(),
         query.search.as_deref(),
+        query.display_name.as_deref(),
     )
     .await
     {
@@ -146,6 +198,115 @@ pub async fn list_users(
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
+}
+
+/// Create a user (admin).
+///
+/// POST /v1/admin/users
+pub async fn create_user(
+    AdminUser(_admin): AdminUser,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateUserRequest>,
+) -> impl IntoResponse {
+    if let Err(validation_err) = payload.validate() {
+        let mut field_errors = std::collections::HashMap::new();
+        for (field, errors) in validation_err.field_errors() {
+            if let Some(err) = errors.first() {
+                let msg = err
+                    .message
+                    .clone()
+                    .unwrap_or_else(|| "Invalid value".into());
+                field_errors.insert(
+                    field_name_for_errors(field.as_ref()).to_string(),
+                    msg.to_string(),
+                );
+            }
+        }
+        let err = AppError {
+            code: "admin.users.validation_failed",
+            message: "There is a problem with one or more fields.".to_string(),
+            field_errors: Some(field_errors),
+        };
+        return error_response(StatusCode::BAD_REQUEST, err).into_response();
+    }
+
+    let email = payload.email.trim().to_lowercase();
+    let role = payload.role.trim();
+    let status = payload.status.trim();
+
+    let mut field_errors = std::collections::HashMap::new();
+    if !is_valid_role(role) {
+        field_errors.insert("role".to_string(), "Invalid role".to_string());
+    }
+    if !is_valid_status(status) {
+        field_errors.insert("status".to_string(), "Invalid status".to_string());
+    }
+    if !field_errors.is_empty() {
+        let err = AppError {
+            code: "admin.users.validation_failed",
+            message: "There is a problem with one or more fields.".to_string(),
+            field_errors: Some(field_errors),
+        };
+        return error_response(StatusCode::BAD_REQUEST, err).into_response();
+    }
+
+    let display_name = payload
+        .display_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+
+    let send_password_reset = payload.send_password_reset.unwrap_or(true);
+
+    let pool = state.local_auth.pool();
+    let user_id = Uuid::now_v7();
+
+    let user = match users::create_user_admin(pool, user_id, &email, role, status, display_name)
+        .await
+    {
+        Ok(user) => user,
+        Err(e) => {
+            // Avoid coupling the API crate to sqlx just to match on error codes.
+            // This string match is intentionally defensive (schema/index names may differ).
+            let msg = e.to_string();
+            if msg.contains("duplicate key value violates unique constraint")
+                && (msg.contains("email") || msg.contains("users_email_key"))
+            {
+                let mut field_errors = std::collections::HashMap::new();
+                field_errors.insert("email".to_string(), "Email is already in use".to_string());
+                let err = AppError {
+                    code: "admin.users.email_not_unique",
+                    message: "Email is already in use.".to_string(),
+                    field_errors: Some(field_errors),
+                };
+                return error_response(StatusCode::CONFLICT, err).into_response();
+            }
+
+            tracing::error!("Failed to create user: {}", e);
+            return error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                AppError::new("admin.users.create_failed", "Failed to create user"),
+            )
+            .into_response();
+        }
+    };
+
+    if send_password_reset {
+        // Let the user set an initial password via the existing password reset flow.
+        if let Err(e) = state
+            .email_totp
+            .request_code(
+                UnderlayUuid(user_id),
+                &email,
+                acme_db::auth::EmailTotpPurpose::PasswordReset,
+            )
+            .await
+        {
+            tracing::warn!("Failed to send password reset email for new user: {}", e);
+        }
+    }
+
+    Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response()
 }
 
 /// Get a single user (admin).
@@ -167,6 +328,83 @@ pub async fn get_user(
         Err(e) => {
             tracing::error!("Failed to get user: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
+/// Update a user (admin).
+///
+/// PUT /v1/admin/users/:user_id
+pub async fn update_user(
+    AdminUser(_admin): AdminUser,
+    State(state): State<AppState>,
+    Path(user_id): Path<Uuid>,
+    Json(payload): Json<UpdateUserRequest>,
+) -> impl IntoResponse {
+    if let Err(validation_err) = payload.validate() {
+        let mut field_errors = std::collections::HashMap::new();
+        for (field, errors) in validation_err.field_errors() {
+            if let Some(err) = errors.first() {
+                let msg = err
+                    .message
+                    .clone()
+                    .unwrap_or_else(|| "Invalid value".into());
+                field_errors.insert(
+                    field_name_for_errors(field.as_ref()).to_string(),
+                    msg.to_string(),
+                );
+            }
+        }
+        let err = AppError {
+            code: "admin.users.validation_failed",
+            message: "There is a problem with one or more fields.".to_string(),
+            field_errors: Some(field_errors),
+        };
+        return error_response(StatusCode::BAD_REQUEST, err).into_response();
+    }
+
+    let role = payload.role.as_deref().map(str::trim);
+    let status = payload.status.as_deref().map(str::trim);
+
+    let mut field_errors = std::collections::HashMap::new();
+    if let Some(role) = role {
+        if !is_valid_role(role) {
+            field_errors.insert("role".to_string(), "Invalid role".to_string());
+        }
+    }
+    if let Some(status) = status {
+        if !is_valid_status(status) {
+            field_errors.insert("status".to_string(), "Invalid status".to_string());
+        }
+    }
+    if !field_errors.is_empty() {
+        let err = AppError {
+            code: "admin.users.validation_failed",
+            message: "There is a problem with one or more fields.".to_string(),
+            field_errors: Some(field_errors),
+        };
+        return error_response(StatusCode::BAD_REQUEST, err).into_response();
+    }
+
+    let display_name_update = payload.display_name.is_some();
+    let display_name = payload
+        .display_name
+        .as_deref()
+        .map(str::trim)
+        .and_then(|s| if s.is_empty() { None } else { Some(s) });
+
+    let pool = state.local_auth.pool();
+    match users::update_user_admin(pool, user_id, display_name_update, display_name, role, status).await
+    {
+        Ok(Some(user)) => Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response(),
+        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Err(e) => {
+            tracing::error!("Failed to update user: {}", e);
+            error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                AppError::new("admin.users.update_failed", "Failed to update user"),
+            )
+            .into_response()
         }
     }
 }

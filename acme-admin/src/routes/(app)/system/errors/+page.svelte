@@ -227,9 +227,11 @@
                   {log.statusCode}
                 </Badge>
               </td>
-              <td class="endpoint">
-                <code class="method">{log.method}</code>
-                <code class="path">{log.endpoint}</code>
+              <td>
+                <div class="endpoint">
+                  <code class="method">{log.method}</code>
+                  <code class="path">{log.endpoint}</code>
+                </div>
               </td>
               <td>
                 <code class="error-code">{log.errorCode}</code>

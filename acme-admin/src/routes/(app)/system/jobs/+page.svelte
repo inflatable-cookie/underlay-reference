@@ -7,8 +7,9 @@
     PageLoading,
     FormError,
     Badge,
-    Card,
     DataTable,
+    StatCard,
+    StatGrid,
     Tooltip,
     type DataTableColumn,
     type DataTableAction,
@@ -218,50 +219,28 @@
   <!-- Stats cards -->
   {#if stats}
     <div class="stats-grid">
-      <Card>
-        <div class="stat">
-          <span class="stat-icon stat-icon--warning">
+      <StatGrid columns={4} minItemWidth={180}>
+        <StatCard value={stats.pending} label="Pending" variant="warning" compact>
+          {#snippet icon()}
             <Clock size={24} />
-          </span>
-          <div class="stat-content">
-            <span class="stat-value">{stats.pending}</span>
-            <span class="stat-label">Pending</span>
-          </div>
-        </div>
-      </Card>
-      <Card>
-        <div class="stat">
-          <span class="stat-icon stat-icon--info">
+          {/snippet}
+        </StatCard>
+        <StatCard value={stats.running} label="Running" variant="info" compact>
+          {#snippet icon()}
             <Play size={24} />
-          </span>
-          <div class="stat-content">
-            <span class="stat-value">{stats.running}</span>
-            <span class="stat-label">Running</span>
-          </div>
-        </div>
-      </Card>
-      <Card>
-        <div class="stat">
-          <span class="stat-icon stat-icon--danger">
+          {/snippet}
+        </StatCard>
+        <StatCard value={stats.failed} label="Failed" variant="danger" compact>
+          {#snippet icon()}
             <XCircle size={24} />
-          </span>
-          <div class="stat-content">
-            <span class="stat-value">{stats.failed}</span>
-            <span class="stat-label">Failed</span>
-          </div>
-        </div>
-      </Card>
-      <Card>
-        <div class="stat">
-          <span class="stat-icon stat-icon--success">
+          {/snippet}
+        </StatCard>
+        <StatCard value={stats.succeededRecent} label="Recent Success" variant="success" compact>
+          {#snippet icon()}
             <CheckCircle size={24} />
-          </span>
-          <div class="stat-content">
-            <span class="stat-value">{stats.succeededRecent}</span>
-            <span class="stat-label">Recent Success</span>
-          </div>
-        </div>
-      </Card>
+          {/snippet}
+        </StatCard>
+      </StatGrid>
     </div>
   {/if}
 
@@ -273,22 +252,25 @@
     emptyMessage="No jobs found"
     compact
     onFilter={handleFilterChange}
+    extendedRowWhen={(row) => !!row.errorMessage}
   >
     {#snippet cell({ column, row, value })}
       {#if column.key === "jobType"}
         <code class="job-type">{value}</code>
-        {#if row.errorMessage}
-          <div class="error-message">
-            <AlertCircle size={14} />
-            {row.errorMessage}
-          </div>
-        {/if}
       {:else if column.key === "status"}
         <Badge variant={getStatusVariant(row.status)} size="sm">
           {getStatusLabel(row.status)}
         </Badge>
       {:else}
         {value}
+      {/if}
+    {/snippet}
+    {#snippet extendedRow({ row })}
+      {#if row.errorMessage}
+        <div class="error-message">
+          <AlertCircle size={14} />
+          {row.errorMessage}
+        </div>
       {/if}
     {/snippet}
     {#snippet empty()}
@@ -302,56 +284,7 @@
 
 <style>
   .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
     margin-bottom: 1.5rem;
-  }
-
-  .stat {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.5rem;
-  }
-
-  .stat-icon {
-    flex-shrink: 0;
-    display: flex;
-  }
-
-  .stat-icon--warning {
-    color: var(--admin-color-warning, #f59e0b);
-  }
-
-  .stat-icon--info {
-    color: var(--admin-color-info, #3b82f6);
-  }
-
-  .stat-icon--danger {
-    color: var(--admin-color-danger, #ef4444);
-  }
-
-  .stat-icon--success {
-    color: var(--admin-color-success, #10b981);
-  }
-
-  .stat-content {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .stat-value {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--admin-color-text);
-  }
-
-  .stat-label {
-    font-size: 0.75rem;
-    color: var(--admin-color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   .empty-state {
@@ -381,7 +314,7 @@
     background: var(--admin-color-danger-subtle, rgba(239, 68, 68, 0.15));
     padding: 0.5rem 0.75rem;
     border-radius: 0.25rem;
-    margin-top: 0.5rem;
+    word-break: break-word;
   }
 
   .error-message :global(svg) {

@@ -1,643 +1,548 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { adminCommands, type UserDetail, type UserRole, UserRole as UserRoleConst, type ActivityEntry, type Session } from "@api-client";
-	import { Card, Pill, Button, AlertDialog } from "@decodelabs/underlay/components";
-	import { useToasts } from "@decodelabs/underlay/patterns";
-	import ArrowLeft from "lucide-svelte/icons/arrow-left";
-	import Shield from "lucide-svelte/icons/shield";
-	import Ban from "lucide-svelte/icons/ban";
-	import CheckCircle from "lucide-svelte/icons/check-circle";
-	import X from "lucide-svelte/icons/x";
-	import { auth } from "$lib/stores/auth";
-	import ActivityFeed from "$lib/components/ActivityFeed.svelte";
+  import { goto } from "$app/navigation";
+  import {
+    AlertDialog,
+    Button,
+    Card,
+    DataTable,
+    DetailsCard,
+    DetailsItem,
+    DetailsSection,
+    Dialog,
+    DropdownMenu,
+    Field,
+    FormError,
+    PageLoading,
+    Pill,
+    Select,
+    TabsContent,
+    TabsList,
+    TabsRoot,
+    TabsTrigger,
+    type DataTableAction,
+    type DataTableColumn
+  } from "@decodelabs/underlay/components";
+  import {
+    PageHeader,
+    computeBackInfo,
+    consumeNavigationContext,
+    useAuthenticatedData,
+    useToasts
+  } from "@decodelabs/underlay/patterns";
+  import { gotoWithContext } from "@decodelabs/underlay/client";
+  import {
+    adminCommands,
+    type ActivityEntry,
+    type Session,
+    type UserDetail,
+    type UserRole,
+    UserRole as UserRoleConst
+  } from "@api-client";
+  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import MoreVertical from "lucide-svelte/icons/more-vertical";
 
-	interface Props {
-		data: { userId: string };
-	}
+  interface Props {
+    data: { userId: string };
+  }
 
-	let { data }: Props = $props();
-	const toastStore = useToasts();
+  let { data }: Props = $props();
+  const toastStore = useToasts();
 
-	let user = $state<UserDetail | null>(null);
-	let loading = $state(true);
-	let error = $state<string | null>(null);
-	let actionLoading = $state(false);
+  const defaultBackHref = "/users";
+  const { backInfo } = consumeNavigationContext("Back to users", defaultBackHref);
 
-	let userActivity = $state<ActivityEntry[]>([]);
-	let activityLoading = $state(true);
-	let activityError = $state<string | null>(null);
+  const pageData = useAuthenticatedData(
+    async (fetch, token) => {
+      const [user, sessions, activity] = await Promise.all([
+        adminCommands.getUser(data.userId, fetch, token),
+        adminCommands.listUserSessions(data.userId, fetch, token),
+        adminCommands.listActivityForUser(data.userId, fetch, token, { limit: 10 })
+      ]);
 
-	let userSessions = $state<Session[]>([]);
-	let sessionsLoading = $state(true);
-	let sessionsError = $state<string | null>(null);
-	let sessionToRevoke = $state<Session | null>(null);
-	let revokingSession = $state(false);
-	let showRevokeDialog = $state(false);
+      return {
+        user,
+        sessions,
+        activity: activity.data
+      };
+    },
+    {
+      getToken: () => auth.getToken(),
+      defaultValue: {
+        user: null as UserDetail | null,
+        sessions: [] as Session[],
+        activity: [] as ActivityEntry[]
+      }
+    }
+  );
 
-	// Keep showRevokeDialog in sync with sessionToRevoke
-	$effect(() => {
-		showRevokeDialog = sessionToRevoke !== null;
-	});
+  $effect(() => {
+    pageData.tryFetch($authLoading, $currentUser);
+  });
 
-	let showRoleModal = $state(false);
-	let selectedRole = $state<UserRole>("user");
+  const user = $derived(pageData.data?.user ?? null);
+  const sessions = $derived(pageData.data?.sessions ?? []);
+  const activity = $derived(pageData.data?.activity ?? []);
 
-	async function loadUser() {
-		const token = auth.getToken();
-		if (!token) {
-			error = "Not authenticated";
-			loading = false;
-			activityLoading = false;
-			sessionsLoading = false;
-			return;
-		}
+  const computedBackInfo = $derived(
+    computeBackInfo(
+      backInfo,
+      user
+        ? {
+            href: `/users/${user.id}`,
+            label: "Back to user"
+          }
+        : undefined
+    )
+  );
 
-		loading = true;
-		error = null;
+  let sessionToRevoke = $state<Session | null>(null);
+  let showRevokeDialog = $state(false);
+  let revokingSession = $state(false);
 
-		try {
-			user = await adminCommands.getUser(data.userId, fetch, token);
-			selectedRole = user.role;
-		} catch (err) {
-			error = err instanceof Error ? err.message : "Failed to load user";
-		}
-		loading = false;
+  $effect(() => {
+    showRevokeDialog = sessionToRevoke !== null;
+  });
 
-		// Load user sessions
-		sessionsLoading = true;
-		sessionsError = null;
-		try {
-			userSessions = await adminCommands.listUserSessions(data.userId, fetch, token);
-		} catch (err) {
-			sessionsError = err instanceof Error ? err.message : "Failed to load sessions";
-		}
-		sessionsLoading = false;
+  let showRoleDialog = $state(false);
+  let selectedRole = $state<UserRole>(UserRoleConst.User);
+  let updatingRole = $state(false);
+  let activeTab = $state("details");
 
-		// Load user activity
-		activityLoading = true;
-		activityError = null;
-		try {
-			const activityResponse = await adminCommands.listActivityForUser(data.userId, fetch, token, { limit: 10 });
-			userActivity = activityResponse.data;
-		} catch (err) {
-			activityError = err instanceof Error ? err.message : "Failed to load activity";
-		}
-		activityLoading = false;
-	}
+  $effect(() => {
+    if (user) {
+      selectedRole = user.role;
+    }
+  });
 
-	async function handleSuspend() {
-		if (!user) return;
+  function formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleString();
+  }
 
-		const token = auth.getToken();
-		if (!token) return;
+  function getRoleAccent(role: string): string {
+    switch (role) {
+      case "superadmin": return "#dc2626";
+      case "admin": return "#8b5cf6";
+      case "support": return "#3b82f6";
+      case "editor": return "#14b8a6";
+      case "tutor": return "#22c55e";
+      case "tester": return "#f97316";
+      default: return "#64748b";
+    }
+  }
 
-		actionLoading = true;
-		try {
-			await adminCommands.suspendUser(user.id, fetch, token);
-			toastStore.push({ variant: "success", message: "User suspended" });
-			await loadUser();
-		} catch (err) {
-			toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to suspend user" });
-		}
-		actionLoading = false;
-	}
+  function getStatusAccent(status: string): string {
+    switch (status) {
+      case "active": return "#22c55e";
+      case "suspended": return "#f97316";
+      case "deleted": return "#dc2626";
+      default: return "#64748b";
+    }
+  }
 
-	async function handleUnsuspend() {
-		if (!user) return;
+  function getSessionStatusAccent(status: string): string {
+    switch (status) {
+      case "active": return "#22c55e";
+      case "expired": return "#f59e0b";
+      case "revoked": return "#dc2626";
+      default: return "#64748b";
+    }
+  }
 
-		const token = auth.getToken();
-		if (!token) return;
+  function getActivityAccent(action: string): string {
+    switch (action) {
+      case "create":
+      case "created":
+      case "restore":
+      case "restored":
+      case "unsuspend":
+        return "#22c55e";
+      case "delete":
+      case "deleted":
+      case "soft_delete":
+      case "suspend":
+        return "#dc2626";
+      case "update":
+      case "updated":
+      case "upload":
+      case "uploaded":
+      case "role_change":
+        return "#3b82f6";
+      case "login":
+      case "logout":
+        return "#64748b";
+      default:
+        return "#8b5cf6";
+    }
+  }
 
-		actionLoading = true;
-		try {
-			await adminCommands.unsuspendUser(user.id, fetch, token);
-			toastStore.push({ variant: "success", message: "User reactivated" });
-			await loadUser();
-		} catch (err) {
-			toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to reactivate user" });
-		}
-		actionLoading = false;
-	}
+  function truncateUserAgent(ua: string | null | undefined, max = 70): string {
+    if (!ua) return "—";
+    return ua.length > max ? ua.substring(0, max) + "…" : ua;
+  }
 
-	async function handleRoleChange() {
-		if (!user) return;
+  async function copyToClipboard(text: string): Promise<void> {
+    try {
+      await globalThis.navigator?.clipboard?.writeText(text);
+      toastStore.push({ variant: "success", message: "Copied to clipboard" });
+      return;
+    } catch {
+      // Fall through to legacy approach
+    }
 
-		const token = auth.getToken();
-		if (!token) return;
+    try {
+      const doc = globalThis.document;
+      if (!doc) throw new Error("No document");
+      const textarea = doc.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      doc.body.appendChild(textarea);
+      textarea.select();
+      doc.execCommand("copy");
+      textarea.remove();
+      toastStore.push({ variant: "success", message: "Copied to clipboard" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to copy";
+      toastStore.push({ variant: "error", message });
+    }
+  }
 
-		actionLoading = true;
-		try {
-			await adminCommands.updateUserRole(user.id, { role: selectedRole }, fetch, token);
-			toastStore.push({ variant: "success", message: "Role updated" });
-			showRoleModal = false;
-			await loadUser();
-		} catch (err) {
-			toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to update role" });
-		}
-		actionLoading = false;
-	}
+  const sessionColumns: DataTableColumn<Session>[] = [
+    { key: "status", label: "Status", width: "110px" },
+    { key: "ipAddress", label: "IP", width: "140px", hideOnMobile: true, formatter: (v) => (v as string) || "—" },
+    {
+      key: "userAgent",
+      label: "User Agent",
+      width: "2fr",
+      hideOnMobile: true,
+      formatter: (v) => truncateUserAgent(v as string | null | undefined)
+    },
+    { key: "createdAt", label: "Created", width: "160px", formatter: (v) => formatDate(v as string) },
+    { key: "lastUsedAt", label: "Last Used", width: "160px", formatter: (v) => formatDate(v as string) }
+  ];
 
-	async function handleRevokeSession() {
-		if (!sessionToRevoke) return;
+  const activityColumns: DataTableColumn<ActivityEntry>[] = [
+    {
+      key: "occurredAt",
+      label: "When",
+      width: "180px",
+      formatter: (v) => formatDate(v as string)
+    },
+    {
+      key: "action",
+      label: "Action",
+      width: "140px"
+    },
+    {
+      key: "resourceType",
+      label: "Resource",
+      width: "140px"
+    },
+    {
+      key: "resourceId",
+      label: "Resource ID",
+      width: "1.5fr",
+      hideOnMobile: true
+    },
+    {
+      key: "actor.email",
+      label: "Actor",
+      width: "1.5fr",
+      formatter: (_v, row) => row.actor?.email ?? "—"
+    }
+  ];
 
-		const token = auth.getToken();
-		if (!token) return;
+  function activityActions(row: ActivityEntry): DataTableAction<ActivityEntry>[] {
+    return [
+      { label: "Copy Activity ID", onClick: () => void copyToClipboard(row.id) },
+      { label: "Copy Resource ID", onClick: () => void copyToClipboard(row.resourceId) }
+    ];
+  }
 
-		revokingSession = true;
-		try {
-			await adminCommands.revokeUserSession(data.userId, sessionToRevoke.id, fetch, token);
-			toastStore.push({ variant: "success", message: "Session revoked" });
-			sessionToRevoke = null;
-			// Reload sessions
-			userSessions = await adminCommands.listUserSessions(data.userId, fetch, token);
-		} catch (err) {
-			toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to revoke session" });
-		}
-		revokingSession = false;
-	}
+  function sessionActions(row: Session): DataTableAction<Session>[] {
+    const actions: DataTableAction<Session>[] = [
+      { label: "Copy Session ID", onClick: () => void copyToClipboard(row.id) }
+    ];
 
-	function getSessionStatusAccent(status: string): string {
-		switch (status) {
-			case "active": return "#22c55e";
-			case "expired": return "#f59e0b";
-			case "revoked": return "#dc2626";
-			default: return "#64748b";
-		}
-	}
+    if (row.status === "active") {
+      actions.unshift({
+        label: "Revoke",
+        variant: "danger",
+        onClick: () => (sessionToRevoke = row)
+      });
+    }
 
-	function truncateUserAgent(ua: string | null | undefined, max = 50): string {
-		if (!ua) return "-";
-		return ua.length > max ? ua.substring(0, max) + "..." : ua;
-	}
+    return actions;
+  }
 
-	function getRoleAccent(role: string): string {
-		switch (role) {
-			case "superadmin": return "#dc2626";
-			case "admin": return "#8b5cf6";
-			case "support": return "#3b82f6";
-			case "editor": return "#14b8a6";
-			case "tutor": return "#22c55e";
-			case "tester": return "#f97316";
-			default: return "#64748b";
-		}
-	}
+  async function handleRevokeSession() {
+    if (!user || !sessionToRevoke) return;
+    const token = auth.getToken();
+    if (!token) return;
 
-	function getStatusAccent(status: string): string {
-		switch (status) {
-			case "active": return "#22c55e";
-			case "suspended": return "#f97316";
-			case "deleted": return "#dc2626";
-			default: return "#64748b";
-		}
-	}
+    revokingSession = true;
+    try {
+      await adminCommands.revokeUserSession(user.id, sessionToRevoke.id, fetch, token);
+      toastStore.push({ variant: "success", message: "Session revoked" });
+      sessionToRevoke = null;
+      await pageData.refetch();
+    } catch (err) {
+      toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to revoke session" });
+    } finally {
+      revokingSession = false;
+    }
+  }
 
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleString();
-	}
+  async function handleSuspend() {
+    if (!user) return;
+    const token = auth.getToken();
+    if (!token) return;
 
-	onMount(() => {
-		loadUser();
-	});
+    try {
+      await adminCommands.suspendUser(user.id, fetch, token);
+      toastStore.push({ variant: "success", message: "User suspended" });
+      await pageData.refetch();
+    } catch (err) {
+      toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to suspend user" });
+    }
+  }
+
+  async function handleUnsuspend() {
+    if (!user) return;
+    const token = auth.getToken();
+    if (!token) return;
+
+    try {
+      await adminCommands.unsuspendUser(user.id, fetch, token);
+      toastStore.push({ variant: "success", message: "User reactivated" });
+      await pageData.refetch();
+    } catch (err) {
+      toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to reactivate user" });
+    }
+  }
+
+  async function handleRoleChange() {
+    if (!user) return;
+    const token = auth.getToken();
+    if (!token) return;
+
+    updatingRole = true;
+    try {
+      await adminCommands.updateUserRole(user.id, { role: selectedRole }, fetch, token);
+      toastStore.push({ variant: "success", message: "Role updated" });
+      showRoleDialog = false;
+      await pageData.refetch();
+    } catch (err) {
+      toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to update role" });
+    } finally {
+      updatingRole = false;
+    }
+  }
+
+  const roleItems = [
+    { value: UserRoleConst.User, label: "User" },
+    { value: UserRoleConst.Tester, label: "Tester" },
+    { value: UserRoleConst.Editor, label: "Editor" },
+    { value: UserRoleConst.Admin, label: "Admin" },
+    { value: UserRoleConst.Support, label: "Support" },
+    { value: UserRoleConst.Superadmin, label: "Superadmin" }
+  ];
+
+  const userMenuItems = $derived(() => {
+    if (!user) return [];
+
+    return [
+      {
+        label: "Edit",
+        onSelect: () =>
+          void gotoWithContext(`/users/${user.id}/edit`, {
+            label: "User",
+            href: `/users/${user.id}`,
+            type: "detail"
+          })
+      },
+      {
+        label: "Copy ID",
+        onSelect: () => void copyToClipboard(user.id)
+      },
+      {
+        label: "Copy Email",
+        onSelect: () => void copyToClipboard(user.email)
+      },
+      { separator: true },
+      {
+        label: "Change role…",
+        onSelect: () => {
+          showRoleDialog = true;
+        }
+      },
+      user.status === "active"
+        ? {
+            label: "Suspend user",
+            destructive: true,
+            onSelect: () => void handleSuspend()
+          }
+        : user.status === "suspended"
+          ? {
+              label: "Reactivate user",
+              onSelect: () => void handleUnsuspend()
+            }
+          : {
+              label: "User deleted",
+              disabled: true
+            }
+    ];
+  });
 </script>
 
-<div class="user-detail">
-	<a href="/users" class="user-detail__back">
-		<ArrowLeft />
-		<span>Back to users</span>
-	</a>
+{#if pageData.loading}
+  <PageLoading message="Loading user..." />
+{:else if pageData.error}
+  <FormError message={pageData.error} />
+{:else if user}
+  <PageHeader
+    title={user.email}
+    subtitle={user.displayName ?? undefined}
+    backHref={computedBackInfo.href}
+    backLabel={computedBackInfo.label}
+    backIsContextual={computedBackInfo.isContextual ?? false}
+    bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
+  >
+    {#snippet actions()}
+      <DropdownMenu items={userMenuItems}>
+        {#snippet trigger()}
+          <MoreVertical size={16} aria-hidden="true" />
+        {/snippet}
+      </DropdownMenu>
+    {/snippet}
 
-	{#if loading}
-		<Card variant="muted">
-			<div class="user-detail__loading">Loading...</div>
-		</Card>
-	{:else if error}
-		<Card variant="muted">
-			<div class="user-detail__error">{error}</div>
-		</Card>
-	{:else if user}
-		<header class="user-detail__header">
-			<div>
-				<h1 class="user-detail__title">{user.email}</h1>
-				{#if user.displayName}
-					<p class="user-detail__subtitle">{user.displayName}</p>
-				{/if}
-			</div>
-			<div class="user-detail__badges">
-				<Pill accent={getRoleAccent(user.role)}>{user.role}</Pill>
-				<Pill accent={getStatusAccent(user.status)}>{user.status}</Pill>
-			</div>
-		</header>
+    <p>
+      <strong>ID:</strong> <code>{user.id}</code>
+      <span class="header-separator">·</span>
+      <Pill accent={getRoleAccent(user.role)}>{user.role}</Pill>
+      <span class="header-separator">·</span>
+      <Pill accent={getStatusAccent(user.status)}>{user.status}</Pill>
+    </p>
+  </PageHeader>
 
-		<div class="user-detail__grid">
-			<Card title="User info" variant="muted">
-				<dl class="user-detail__info">
-					<div class="user-detail__info-row">
-						<dt>User ID</dt>
-						<dd class="user-detail__mono">{user.id}</dd>
-					</div>
-					<div class="user-detail__info-row">
-						<dt>Email</dt>
-						<dd>{user.email}</dd>
-					</div>
-					<div class="user-detail__info-row">
-						<dt>Display name</dt>
-						<dd>{user.displayName || "-"}</dd>
-					</div>
-					<div class="user-detail__info-row">
-						<dt>Created</dt>
-						<dd>{formatDate(user.createdAt)}</dd>
-					</div>
-					<div class="user-detail__info-row">
-						<dt>Last updated</dt>
-						<dd>{formatDate(user.updatedAt)}</dd>
-					</div>
-				</dl>
-			</Card>
+  <div class="user-view">
+    <TabsRoot bind:value={activeTab} variant="boxed" size="sm" historyKey="tab">
+      <TabsList>
+        <TabsTrigger value="details">Details</TabsTrigger>
+        <TabsTrigger value="sessions" count={sessions.length}>Sessions</TabsTrigger>
+        <TabsTrigger value="activity" count={activity.length}>Activity</TabsTrigger>
+      </TabsList>
 
-			<Card title="Security" variant="muted">
-				<dl class="user-detail__info">
-					<div class="user-detail__info-row">
-						<dt>Active sessions</dt>
-						<dd>{user.activeSessionCount}</dd>
-					</div>
-					<div class="user-detail__info-row">
-						<dt>Failed login attempts</dt>
-						<dd>{user.failedLoginCount}</dd>
-					</div>
-					<div class="user-detail__info-row">
-						<dt>Lockout until</dt>
-						<dd>{user.lockoutUntil ? formatDate(user.lockoutUntil) : "-"}</dd>
-					</div>
-				</dl>
+      <TabsContent value="details">
+        <DetailsCard>
+          <DetailsSection legend="Account">
+            <DetailsItem label="Created" value={formatDate(user.createdAt)} />
+            <DetailsItem label="Updated" value={formatDate(user.updatedAt)} />
+          </DetailsSection>
 
-				<h4 class="user-detail__section-title">Sessions</h4>
-				{#if sessionsLoading}
-					<p class="user-detail__muted">Loading sessions...</p>
-				{:else if sessionsError}
-					<p class="user-detail__error-text">{sessionsError}</p>
-				{:else if userSessions.length === 0}
-					<p class="user-detail__muted">No sessions found</p>
-				{:else}
-					<div class="sessions-table-wrapper">
-						<table class="sessions-table">
-							<thead>
-								<tr>
-									<th>Status</th>
-									<th>IP Address</th>
-									<th>User Agent</th>
-									<th>Created</th>
-									<th>Last Used</th>
-									<th></th>
-								</tr>
-							</thead>
-							<tbody>
-								{#each userSessions as session}
-									<tr class:revoked={session.status === "revoked"} class:expired={session.status === "expired"}>
-										<td>
-											<Pill accent={getSessionStatusAccent(session.status)}>{session.status}</Pill>
-										</td>
-										<td class="sessions-table__mono">{session.ipAddress || "-"}</td>
-										<td title={session.userAgent || undefined}>{truncateUserAgent(session.userAgent)}</td>
-										<td>{formatDate(session.createdAt)}</td>
-										<td>{formatDate(session.lastUsedAt)}</td>
-										<td>
-											{#if session.status === "active"}
-												<Button
-													variant="danger"
-													size="sm"
-													onclick={() => (sessionToRevoke = session)}
-												>
-													<X />
-													<span>Revoke</span>
-												</Button>
-											{:else if session.revocationReason}
-												<span class="sessions-table__reason" title={session.revocationReason}>
-													{session.revocationReason}
-												</span>
-											{/if}
-										</td>
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				{/if}
-			</Card>
-		</div>
+          <DetailsSection legend="Security">
+            <DetailsItem label="Active sessions" value={user.activeSessionCount} />
+            <DetailsItem label="Failed logins" value={user.failedLoginCount} />
+            <DetailsItem label="Lockout until" value={user.lockoutUntil ? formatDate(user.lockoutUntil) : null} />
+          </DetailsSection>
+        </DetailsCard>
+      </TabsContent>
 
-		<Card title="Actions" variant="muted">
-			<div class="user-detail__actions">
-				<Button variant="secondary" onclick={() => (showRoleModal = true)} disabled={actionLoading}>
-					<Shield />
-					<span>Change role</span>
-				</Button>
+      <TabsContent value="sessions">
+        <DataTable
+          data={sessions}
+          columns={sessionColumns}
+          actions={sessionActions}
+          emptyMessage="No sessions found"
+          showLimitSelector={false}
+        >
+          {#snippet cell({ column, value })}
+            {#if column.key === "status"}
+              <Pill accent={getSessionStatusAccent(value)}>{value}</Pill>
+            {:else if column.key === "ipAddress"}
+              <code>{value || "—"}</code>
+            {:else}
+              {value}
+            {/if}
+          {/snippet}
+        </DataTable>
+      </TabsContent>
 
-				{#if user.status === "active"}
-					<Button variant="danger" onclick={handleSuspend} disabled={actionLoading}>
-						<Ban />
-						<span>Suspend user</span>
-					</Button>
-				{:else if user.status === "suspended"}
-					<Button variant="secondary" onclick={handleUnsuspend} disabled={actionLoading}>
-						<CheckCircle />
-						<span>Reactivate user</span>
-					</Button>
-				{/if}
-			</div>
-		</Card>
-
-		<Card title="User Activity" variant="muted">
-			<ActivityFeed
-				activities={userActivity}
-				loading={activityLoading}
-				error={activityError}
-				emptyMessage="No activity recorded for this user"
-			/>
-		</Card>
-	{/if}
-</div>
-
-{#if showRoleModal}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<div class="modal-backdrop" onclick={() => (showRoleModal = false)} role="presentation">
-		<!-- svelte-ignore a11y_interactive_supports_focus -->
-		<div class="modal" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-			<h2 class="modal__title">Change user role</h2>
-			<p class="modal__subtitle">Select a new role for this user.</p>
-
-			<select
-				class="modal__select"
-				bind:value={selectedRole}
-			>
-				<option value={UserRoleConst.User}>User</option>
-				<option value={UserRoleConst.Tester}>Tester</option>
-				<option value={UserRoleConst.Editor}>Editor</option>
-				<option value={UserRoleConst.Admin}>Admin</option>
-				<option value={UserRoleConst.Support}>Support</option>
-				<option value={UserRoleConst.Superadmin}>Superadmin</option>
-			</select>
-
-			<div class="modal__actions">
-				<Button variant="secondary" onclick={() => (showRoleModal = false)}>Cancel</Button>
-				<Button variant="primary" onclick={handleRoleChange} disabled={actionLoading}>
-					Save
-				</Button>
-			</div>
-		</div>
-	</div>
+      <TabsContent value="activity">
+        <DataTable
+          data={activity}
+          columns={activityColumns}
+          actions={activityActions}
+          emptyMessage="No activity recorded for this user"
+          showLimitSelector={false}
+        >
+          {#snippet cell({ column, value })}
+            {#if column.key === "action"}
+              <Pill accent={getActivityAccent(value)}>{value}</Pill>
+            {:else if column.key === "resourceId"}
+              <code>{value}</code>
+            {:else}
+              {value}
+            {/if}
+          {/snippet}
+        </DataTable>
+      </TabsContent>
+    </TabsRoot>
+  </div>
 {/if}
 
+<Dialog
+  bind:open={showRoleDialog}
+  title="Change role"
+  description="Select a new role for this user."
+  showTrigger={false}
+>
+  <Field label="Role">
+    <Select
+      value={selectedRole}
+      onchange={(v) => { selectedRole = v as UserRole; }}
+      items={roleItems}
+      placeholder="Select role"
+    />
+  </Field>
+
+  {#snippet footer()}
+    <div class="user-view__dialog-footer">
+      <Button type="button" variant="secondary" onclick={() => (showRoleDialog = false)} disabled={updatingRole}>
+        Cancel
+      </Button>
+      <Button type="button" variant="primary" onclick={() => void handleRoleChange()} disabled={updatingRole}>
+        Save
+      </Button>
+    </div>
+  {/snippet}
+</Dialog>
+
 <AlertDialog
-	bind:open={showRevokeDialog}
-	title="Revoke session"
-	description="This will immediately log the user out of this session. They will need to log in again."
-	confirmLabel="Revoke"
-	showTrigger={false}
-	onConfirm={handleRevokeSession}
-	onCancel={() => (sessionToRevoke = null)}
+  bind:open={showRevokeDialog}
+  title="Revoke session"
+  description="This will immediately log the user out of this session. They will need to log in again."
+  confirmLabel={revokingSession ? "Revoking..." : "Revoke"}
+  showTrigger={false}
+  onConfirm={handleRevokeSession}
+  onCancel={() => (sessionToRevoke = null)}
 />
 
 <style>
-	.user-detail__back {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		color: var(--admin-color-text-muted);
-		text-decoration: none;
-		font-size: 0.9rem;
-		margin-bottom: 1rem;
-		transition: color 0.15s ease;
-	}
+  .user-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
-	.user-detail__back:hover {
-		color: var(--admin-color-text);
-	}
+  .header-separator {
+    color: var(--underlay-color-text-muted, #9ca3af);
+    margin: 0 0.5rem;
+  }
 
-	:global(.user-detail__back svg) {
-		width: 1rem;
-		height: 1rem;
-	}
-
-	.user-detail__loading,
-	.user-detail__error {
-		padding: 2rem;
-		text-align: center;
-		color: var(--admin-color-text-muted);
-	}
-
-	.user-detail__error {
-		color: #fca5a5;
-	}
-
-	.user-detail__header {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 1rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.user-detail__title {
-		margin: 0;
-		font-size: 1.8rem;
-		letter-spacing: -0.02em;
-		font-weight: 650;
-	}
-
-	.user-detail__subtitle {
-		margin: 0.35rem 0 0;
-		color: var(--admin-color-text-muted);
-		font-size: 0.95rem;
-	}
-
-	.user-detail__badges {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.user-detail__grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
-		margin-bottom: 1rem;
-	}
-
-	.user-detail__info {
-		margin: 0;
-	}
-
-	.user-detail__info-row {
-		display: flex;
-		justify-content: space-between;
-		padding: 0.6rem 0;
-		border-bottom: 1px solid var(--admin-color-border-subtle);
-	}
-
-	.user-detail__info-row:last-child {
-		border-bottom: none;
-	}
-
-	.user-detail__info-row dt {
-		color: var(--admin-color-text-muted);
-		font-size: 0.9rem;
-	}
-
-	.user-detail__info-row dd {
-		margin: 0;
-		text-align: right;
-		font-size: 0.9rem;
-	}
-
-	.user-detail__mono {
-		font-family: monospace;
-		font-size: 0.85rem;
-	}
-
-	.user-detail__section-title {
-		margin: 1.5rem 0 0.75rem;
-		font-size: 0.95rem;
-		font-weight: 600;
-		color: var(--admin-color-text);
-	}
-
-	.user-detail__muted {
-		color: var(--admin-color-text-muted);
-		font-size: 0.9rem;
-		margin: 0;
-	}
-
-	.user-detail__error-text {
-		color: #fca5a5;
-		font-size: 0.9rem;
-		margin: 0;
-	}
-
-	.sessions-table-wrapper {
-		overflow-x: auto;
-		margin-top: 0.5rem;
-	}
-
-	.sessions-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.85rem;
-	}
-
-	.sessions-table th {
-		text-align: left;
-		padding: 0.6rem 0.75rem;
-		border-bottom: 1px solid var(--admin-color-border-subtle);
-		color: var(--admin-color-text-muted);
-		font-weight: 500;
-		white-space: nowrap;
-	}
-
-	.sessions-table td {
-		padding: 0.6rem 0.75rem;
-		border-bottom: 1px solid var(--admin-color-border-subtle);
-		vertical-align: middle;
-	}
-
-	.sessions-table tr:last-child td {
-		border-bottom: none;
-	}
-
-	.sessions-table tr.revoked,
-	.sessions-table tr.expired {
-		opacity: 0.6;
-	}
-
-	.sessions-table__mono {
-		font-family: monospace;
-		font-size: 0.8rem;
-	}
-
-	.sessions-table__reason {
-		color: var(--admin-color-text-muted);
-		font-size: 0.8rem;
-		font-style: italic;
-	}
-
-	:global(.sessions-table button svg) {
-		width: 0.875rem;
-		height: 0.875rem;
-	}
-
-	.user-detail__actions {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	:global(.user-detail__actions button svg) {
-		width: 1rem;
-		height: 1rem;
-	}
-
-	.modal-backdrop {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.6);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 200;
-	}
-
-	.modal {
-		background: var(--admin-color-surface);
-		border: 1px solid var(--admin-color-border-subtle);
-		border-radius: 0.75rem;
-		padding: 1.5rem;
-		width: 100%;
-		max-width: 400px;
-		box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-	}
-
-	.modal__title {
-		margin: 0;
-		font-size: 1.25rem;
-		font-weight: 600;
-	}
-
-	.modal__subtitle {
-		margin: 0.5rem 0 1.25rem;
-		color: var(--admin-color-text-muted);
-		font-size: 0.9rem;
-	}
-
-	.modal__select {
-		width: 100%;
-		padding: 0.6rem 0.75rem;
-		background: var(--admin-color-surface-subtle);
-		border: 1px solid var(--admin-color-border-subtle);
-		border-radius: 0.5rem;
-		color: inherit;
-		font-size: 0.95rem;
-		margin-bottom: 1.25rem;
-	}
-
-	.modal__select:focus {
-		outline: none;
-		border-color: var(--admin-color-accent);
-	}
-
-	.modal__actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.75rem;
-	}
-
-	@media (max-width: 768px) {
-		.user-detail__header {
-			flex-direction: column;
-		}
-
-		.user-detail__grid {
-			grid-template-columns: 1fr;
-		}
-
-		.user-detail__actions {
-			flex-direction: column;
-		}
-	}
+  .user-view__dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
 </style>

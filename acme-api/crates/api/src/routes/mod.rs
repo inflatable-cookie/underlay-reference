@@ -153,8 +153,14 @@ pub fn build_router() -> Router<AppState> {
             get(admin::dashboard::get_dashboard_stats),
         )
         // User management
-        .route("/v1/admin/users", get(admin::users::list_users))
-        .route("/v1/admin/users/:user_id", get(admin::users::get_user))
+        .route(
+            "/v1/admin/users",
+            get(admin::users::list_users).post(admin::users::create_user),
+        )
+        .route(
+            "/v1/admin/users/:user_id",
+            get(admin::users::get_user).put(admin::users::update_user),
+        )
         .route(
             "/v1/admin/users/:user_id/role",
             put(admin::users::update_user_role),
@@ -189,6 +195,16 @@ pub fn build_router() -> Router<AppState> {
         .route(
             "/v1/admin/validate-field",
             post(admin::validation::validate_field),
+        )
+        // Captured email admin routes (dev-only)
+        .route(
+            "/v1/admin/captured-emails",
+            get(admin::captured_emails::list_captured_emails),
+        )
+        .route(
+            "/v1/admin/captured-emails/:id",
+            get(admin::captured_emails::get_captured_email)
+                .delete(admin::captured_emails::delete_captured_email),
         )
         // Category admin routes
         .route(
@@ -333,6 +349,25 @@ pub fn build_router() -> Router<AppState> {
             post(admin::jobs::cancel_job),
         )
         .route("/v1/admin/jobs/:job_id/retry", post(admin::jobs::retry_job))
+        // ====================================================================
+        // Scheduled Tasks admin routes
+        // ====================================================================
+        .route(
+            "/v1/admin/scheduled-tasks",
+            get(admin::scheduled_tasks::list_scheduled_tasks),
+        )
+        .route(
+            "/v1/admin/scheduled-tasks/:task_id",
+            get(admin::scheduled_tasks::get_scheduled_task),
+        )
+        .route(
+            "/v1/admin/scheduled-tasks/:task_id/toggle",
+            post(admin::scheduled_tasks::toggle_scheduled_task),
+        )
+        .route(
+            "/v1/admin/scheduled-tasks/:task_id/trigger",
+            post(admin::scheduled_tasks::trigger_scheduled_task),
+        )
         // ====================================================================
         // Error Logs admin routes
         // ====================================================================

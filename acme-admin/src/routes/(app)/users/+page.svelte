@@ -1,15 +1,18 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
 	import { adminCommands, type User, type UserRole, type UserStatus, UserRole as UserRoleConst, UserStatus as UserStatusConst } from "@api-client";
 	import {
+		Button,
 		DataTable,
 		Pill,
+		Tooltip,
 		type DataTableColumn,
 		type DataTablePagination,
 		type DataTableSort,
 		type DataTableFilters
 	} from "@decodelabs/underlay/components";
 	import { PageHeader, useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
+	import { gotoWithContext } from "@decodelabs/underlay/client";
+	import Plus from "lucide-svelte/icons/plus";
 	import { auth, authLoading, currentUser } from "$lib/stores/auth";
 
 	const PAGE_SIZE = 20;
@@ -21,6 +24,7 @@
 	let roleFilter = $state<UserRole | "">("");
 	let statusFilter = $state<UserStatus | "">("");
 	let searchQuery = $state("");
+	let displayNameQuery = $state("");
 	let sort = $state<DataTableSort | null>(null);
 
 	// Fetch users using authenticated data pattern
@@ -32,6 +36,7 @@
 				role: roleFilter || undefined,
 				status: statusFilter || undefined,
 				search: searchQuery || undefined,
+				displayName: displayNameQuery || undefined,
 			});
 			return result;
 		},
@@ -52,6 +57,7 @@
 		void roleFilter;
 		void statusFilter;
 		void searchQuery;
+		void displayNameQuery;
 		if ($currentUser) {
 			pageData.refetch();
 		}
@@ -105,6 +111,8 @@
 			key: "displayName",
 			label: "Display Name",
 			width: "1.5fr",
+			filterable: true,
+			filterType: "text",
 			formatter: (value) => (value as string) || "—"
 		},
 		{
@@ -148,6 +156,18 @@
 		{
 			label: "View",
 			href: (row: User) => `/users/${row.id}`
+		},
+		{
+			label: "Edit",
+			href: (row: User) => `/users/${row.id}/edit`
+		},
+		{
+			label: "Copy ID",
+			onClick: (row: User) => void copyToClipboard(row.id)
+		},
+		{
+			label: "Copy Email",
+			onClick: (row: User) => void copyToClipboard(row.email)
 		}
 	];
 
@@ -158,6 +178,9 @@
 	function handleFilterChange(filters: DataTableFilters) {
 		if (filters.email !== undefined) {
 			searchQuery = filters.email;
+		}
+		if (filters.displayName !== undefined) {
+			displayNameQuery = filters.displayName;
 		}
 		if (filters.role !== undefined) {
 			roleFilter = filters.role as UserRole | "";
@@ -171,11 +194,52 @@
 	function handleSortChange(newSort: DataTableSort) {
 		sort = newSort;
 	}
+
+	async function copyToClipboard(text: string): Promise<void> {
+		try {
+			await globalThis.navigator?.clipboard?.writeText(text);
+			toastStore.push({ variant: "success", message: "Copied to clipboard" });
+			return;
+		} catch {
+			// Fall through to legacy approach
+		}
+
+		try {
+			const doc = globalThis.document;
+			if (!doc) throw new Error("No document");
+			const textarea = doc.createElement("textarea");
+			textarea.value = text;
+			textarea.style.position = "fixed";
+			textarea.style.opacity = "0";
+			doc.body.appendChild(textarea);
+			textarea.select();
+			doc.execCommand("copy");
+			textarea.remove();
+			toastStore.push({ variant: "success", message: "Copied to clipboard" });
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Failed to copy";
+			toastStore.push({ variant: "error", message });
+		}
+	}
+
+	function handleAddUser() {
+		void gotoWithContext("/users/new", {
+			label: "Users",
+			href: "/users",
+			type: "list"
+		});
+	}
 </script>
 
-<PageHeader title="Users" backHref="/" backLabel="Back to dashboard">
-	{#snippet subtitleSuffix()}
-		<span class="user-count">{total} total</span>
+<PageHeader title="Users" count={total} backHref="/" backLabel="Back to dashboard">
+	{#snippet actions()}
+		<Tooltip content="Add User" inline>
+			{#snippet trigger()}
+				<Button type="button" variant="primary" size="icon" onclick={handleAddUser}>
+					<Plus size={16} />
+				</Button>
+			{/snippet}
+		</Tooltip>
 	{/snippet}
 </PageHeader>
 
@@ -206,11 +270,6 @@
 </DataTable>
 
 <style>
-	.user-count {
-		color: var(--admin-color-text-muted);
-		font-size: 0.95rem;
-	}
-
 	.email-link {
 		color: inherit;
 		text-decoration: none;

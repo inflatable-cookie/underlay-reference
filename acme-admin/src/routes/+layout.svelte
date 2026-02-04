@@ -24,7 +24,7 @@
 		--admin-color-border-subtle: rgba(255, 255, 255, 0.1);
 		--admin-color-border-strong: rgba(148, 163, 184, 0.6);
 		--admin-color-text: #d1d5db;
-		--admin-color-text-muted: #9ca3af;
+		--admin-color-text-muted: var(--underlay-color-text-muted);
 		--admin-color-accent: #14b8a6;
 
 		/* Status colors */
@@ -41,7 +41,6 @@
 		/* Underlay token mappings */
 		--underlay-color-bg-surface: var(--admin-color-surface);
 		--underlay-color-text: var(--admin-color-text);
-		--underlay-color-text-muted: var(--admin-color-text-muted);
 		--underlay-color-surface: var(--admin-color-surface-card);
 		--underlay-color-surface-muted: var(--admin-color-surface-card);
 		--underlay-color-surface-subtle: var(--admin-color-surface-subtle);
@@ -74,7 +73,7 @@
 		--color-surface: var(--admin-color-surface-card);
 		--color-border: var(--admin-color-border-subtle);
 		--color-text: var(--admin-color-text);
-		--color-text-muted: var(--admin-color-text-muted);
+		--color-text-muted: var(--underlay-color-text-muted);
 		--color-primary: var(--admin-color-accent);
 		--color-danger: var(--admin-color-danger);
 		--radius-lg: 0.5rem;

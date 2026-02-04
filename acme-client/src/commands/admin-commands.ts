@@ -26,7 +26,9 @@ import type {
   ValidationResult,
   User,
   UserDetail,
+  CreateUserPayload,
   ListUsersQuery,
+  UpdateUserPayload,
   UpdateUserRolePayload,
   UserListResponse,
   DashboardStats,
@@ -40,6 +42,13 @@ import type {
   JobDetail,
   JobStats,
   ListJobsQuery,
+  ScheduledTaskSummary,
+  ScheduledTaskDetail,
+  ListScheduledTasksQuery,
+  TriggerScheduledTaskResult,
+  CapturedEmailSummary,
+  CapturedEmailDetail,
+  ListCapturedEmailsQuery,
 } from "../types/admin-types.js";
 import { getAdminHttpClient } from "../utils/client-factory.js";
 import {
@@ -583,9 +592,31 @@ export async function getDashboardStats(
 // ============================================================================
 
 /**
+ * Create a user (admin).
+ *
+ * Creates a user record without logging the admin in as that user.
+ * Optionally sends a password reset email so the user can set an initial password.
+ */
+export async function createUser(
+  payload: CreateUserPayload,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<User> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.post<SingleResponse<User>>("/v1/admin/users", {
+    email: payload.email,
+    role: payload.role,
+    status: payload.status,
+    displayName: payload.displayName ?? null,
+    sendPasswordReset: payload.sendPasswordReset ?? true,
+  });
+  return response.data;
+}
+
+/**
  * List users (admin).
  *
- * Supports filtering by role, status, and email search.
+ * Supports filtering by role, status, and text search.
  */
 export async function listUsers(
   fetchFn: typeof fetch,
@@ -599,6 +630,7 @@ export async function listUsers(
   if (query?.role) params.set("role", query.role);
   if (query?.status) params.set("status", query.status);
   if (query?.search) params.set("search", query.search);
+  if (query?.displayName) params.set("displayName", query.displayName);
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
   if (query?.offset !== undefined) params.set("offset", String(query.offset));
 
@@ -619,6 +651,27 @@ export async function getUser(
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.get<SingleResponse<UserDetail>>(
     `/v1/admin/users/${encodeURIComponent(userId)}`
+  );
+  return response.data;
+}
+
+/**
+ * Update a user (admin).
+ */
+export async function updateUser(
+  userId: string,
+  payload: UpdateUserPayload,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<User> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.put<SingleResponse<User>>(
+    `/v1/admin/users/${encodeURIComponent(userId)}`,
+    {
+      role: payload.role,
+      status: payload.status,
+      displayName: payload.displayName ?? null,
+    }
   );
   return response.data;
 }
@@ -868,6 +921,114 @@ export async function retryJob(
 }
 
 // ============================================================================
+// Scheduled Tasks
+// ============================================================================
+
+export async function listScheduledTasks(
+  fetchFn: typeof fetch,
+  accessToken: string,
+  query?: ListScheduledTasksQuery
+): Promise<ScheduledTaskSummary[]> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+
+  const params = new URLSearchParams();
+  if (query?.enabled !== undefined) params.set("enabled", String(query.enabled));
+  if (query?.limit !== undefined) params.set("limit", String(query.limit));
+  if (query?.offset !== undefined) params.set("offset", String(query.offset));
+
+  const queryString = params.toString();
+  const path = queryString ? `/v1/admin/scheduled-tasks?${queryString}` : "/v1/admin/scheduled-tasks";
+
+  const response = await http.get<ListResponse<ScheduledTaskSummary>>(path);
+  return response.data;
+}
+
+export async function getScheduledTask(
+  taskId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<ScheduledTaskDetail> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.get<SingleResponse<ScheduledTaskDetail>>(
+    `/v1/admin/scheduled-tasks/${encodeURIComponent(taskId)}`
+  );
+  return response.data;
+}
+
+export async function toggleScheduledTask(
+  taskId: string,
+  enabled: boolean,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<void> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  await http.post(
+    `/v1/admin/scheduled-tasks/${encodeURIComponent(taskId)}/toggle`,
+    { enabled }
+  );
+}
+
+export async function triggerScheduledTask(
+  taskId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<TriggerScheduledTaskResult> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.post<SingleResponse<TriggerScheduledTaskResult>>(
+    `/v1/admin/scheduled-tasks/${encodeURIComponent(taskId)}/trigger`,
+    {}
+  );
+  return response.data;
+}
+
+// ============================================================================
+// Captured Emails
+// ============================================================================
+
+export async function listCapturedEmails(
+  fetchFn: typeof fetch,
+  accessToken: string,
+  query?: ListCapturedEmailsQuery
+): Promise<CapturedEmailSummary[]> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+
+  const params = new URLSearchParams();
+  if (query?.toAddress) params.set("toAddress", query.toAddress);
+  if (query?.fromAddress) params.set("fromAddress", query.fromAddress);
+  if (query?.since) params.set("since", query.since);
+  if (query?.until) params.set("until", query.until);
+  if (query?.limit !== undefined) params.set("limit", String(query.limit));
+  if (query?.offset !== undefined) params.set("offset", String(query.offset));
+
+  const queryString = params.toString();
+  const path = queryString ? `/v1/admin/captured-emails?${queryString}` : "/v1/admin/captured-emails";
+
+  const response = await http.get<ListResponse<CapturedEmailSummary>>(path);
+  return response.data;
+}
+
+export async function getCapturedEmail(
+  emailId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<CapturedEmailDetail> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const response = await http.get<SingleResponse<CapturedEmailDetail>>(
+    `/v1/admin/captured-emails/${encodeURIComponent(emailId)}`
+  );
+  return response.data;
+}
+
+export async function deleteCapturedEmail(
+  emailId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<void> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  await http.delete(`/v1/admin/captured-emails/${encodeURIComponent(emailId)}`);
+}
+
+// ============================================================================
 // Error Logs
 // ============================================================================
 
@@ -934,4 +1095,3 @@ export async function getErrorLogStats(
   );
   return response.data;
 }
-

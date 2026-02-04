@@ -120,6 +120,7 @@ pub async fn list_users_admin(
     role_filter: Option<&str>,
     status_filter: Option<&str>,
     search: Option<&str>,
+    display_name: Option<&str>,
 ) -> Result<UserListResponse, sqlx::Error> {
     // For dynamic WHERE clauses, we use a simpler approach with conditional SQL
     // This avoids complex parameter numbering
@@ -140,13 +141,15 @@ pub async fn list_users_admin(
         WHERE ($1::text IS NULL OR role = $1)
           AND ($2::text IS NULL OR status = $2)
           AND ($3::text IS NULL OR email ILIKE '%' || $3 || '%')
+          AND ($4::text IS NULL OR display_name ILIKE '%' || $4 || '%')
         ORDER BY created_at DESC
-        LIMIT $4 OFFSET $5
+        LIMIT $5 OFFSET $6
         "#,
     )
     .bind(role_filter)
     .bind(status_filter)
     .bind(search)
+    .bind(display_name)
     .bind(limit)
     .bind(offset)
     .fetch_all(pool)
@@ -159,11 +162,13 @@ pub async fn list_users_admin(
         WHERE ($1::text IS NULL OR role = $1)
           AND ($2::text IS NULL OR status = $2)
           AND ($3::text IS NULL OR email ILIKE '%' || $3 || '%')
+          AND ($4::text IS NULL OR display_name ILIKE '%' || $4 || '%')
         "#,
     )
     .bind(role_filter)
     .bind(status_filter)
     .bind(search)
+    .bind(display_name)
     .fetch_one(pool)
     .await?;
 
@@ -230,6 +235,84 @@ pub async fn update_user_status(
     )
     .bind(user_id)
     .bind(new_status)
+    .fetch_optional(pool)
+    .await
+}
+
+/// Create a user (admin).
+///
+/// Creates the auth.users row only (no credentials). Use password reset flow
+/// to let the user set an initial password.
+pub async fn create_user_admin(
+    pool: &DbPool,
+    user_id: Uuid,
+    email: &str,
+    role: &str,
+    status: &str,
+    display_name: Option<&str>,
+) -> Result<UserRow, sqlx::Error> {
+    sqlx::query_as::<_, UserRow>(
+        r#"
+        INSERT INTO auth.users (id, email, role, status, display_name)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING
+            id,
+            email,
+            role,
+            status,
+            display_name,
+            failed_login_count,
+            lockout_until,
+            created_at,
+            updated_at
+        "#,
+    )
+    .bind(user_id)
+    .bind(email)
+    .bind(role)
+    .bind(status)
+    .bind(display_name)
+    .fetch_one(pool)
+    .await
+}
+
+/// Update a user (admin).
+///
+/// Allows updating display name, role, and status.
+pub async fn update_user_admin(
+    pool: &DbPool,
+    user_id: Uuid,
+    display_name_update: bool,
+    display_name: Option<&str>,
+    role: Option<&str>,
+    status: Option<&str>,
+) -> Result<Option<UserRow>, sqlx::Error> {
+    sqlx::query_as::<_, UserRow>(
+        r#"
+        UPDATE auth.users
+        SET
+            display_name = CASE WHEN $2 THEN $3 ELSE display_name END,
+            role = COALESCE($4, role),
+            status = COALESCE($5, status),
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING
+            id,
+            email,
+            role,
+            status,
+            display_name,
+            failed_login_count,
+            lockout_until,
+            created_at,
+            updated_at
+        "#,
+    )
+    .bind(user_id)
+    .bind(display_name_update)
+    .bind(display_name)
+    .bind(role)
+    .bind(status)
     .fetch_optional(pool)
     .await
 }
