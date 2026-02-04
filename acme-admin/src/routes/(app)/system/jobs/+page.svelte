@@ -1,43 +1,40 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { adminCommands, type JobSummary, type JobStats, type JobStatus } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
   import {
     Button,
+    Card,
     PageLoading,
     FormError,
     Badge,
+    Select,
     DataTable,
-    StatCard,
-    StatGrid,
+    DropdownMenu,
     TimeAgo,
-    Tooltip,
-    type DataTableColumn,
-    type DataTableAction,
-    type DataTableFilters
+    type DataTableColumn
   } from "@decodelabs/underlay/components";
-  import Play from "lucide-svelte/icons/play";
-  import Pause from "lucide-svelte/icons/pause";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
+  import Clock from "lucide-svelte/icons/clock";
+  import Play from "lucide-svelte/icons/play";
   import CheckCircle from "lucide-svelte/icons/check-circle";
   import XCircle from "lucide-svelte/icons/x-circle";
-  import Clock from "lucide-svelte/icons/clock";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
+  import MoreHorizontal from "lucide-svelte/icons/more-horizontal";
 
   const toastStore = useToasts();
 
   // Filter state
-  let statusFilter = $state<JobStatus | "">("");
-  let jobTypeFilter = $state<string>("");
+  let statusFilter = $state<string>("");
 
   // Fetch jobs and stats
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
       const [jobs, stats] = await Promise.all([
         adminCommands.listJobs(fetch, token, {
-          status: statusFilter || undefined,
-          jobType: jobTypeFilter || undefined,
-          limit: 50
+          status: (statusFilter || undefined) as JobStatus | undefined,
+          limit: 100
         }),
         adminCommands.getJobStats(fetch, token)
       ]);
@@ -57,7 +54,6 @@
   // Refetch when filter changes
   $effect(() => {
     void statusFilter;
-    void jobTypeFilter;
     if ($currentUser) {
       pageData.refetch();
     }
@@ -65,6 +61,10 @@
 
   const jobs = $derived(pageData.data?.jobs ?? []);
   const stats = $derived(pageData.data?.stats);
+
+  function navigateToJob(job: JobSummary) {
+    goto(`/system/jobs/${encodeURIComponent(job.id)}`);
+  }
 
   async function handleRetry(job: JobSummary) {
     const token = auth.getToken();
@@ -75,7 +75,7 @@
 
     try {
       await adminCommands.retryJob(job.id, fetch, token);
-      toastStore.push({ variant: "success", message: "Job retried" });
+      toastStore.push({ variant: "success", message: "Job queued for retry" });
       await pageData.refetch();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to retry job";
@@ -117,88 +117,53 @@
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
-  // Column configuration
-  const columns: DataTableColumn<JobSummary>[] = [
-    {
-      key: "jobType",
-      label: "Job Type",
-      width: "2fr",
-      filterable: true
-    },
-    {
-      key: "status",
-      label: "Status",
-      width: "100px",
-      filterable: true,
-      filterType: "select",
-      filterOptions: [
-        { value: "pending", label: "Pending" },
-        { value: "running", label: "Running" },
-        { value: "succeeded", label: "Succeeded" },
-        { value: "failed", label: "Failed" },
-        { value: "cancelled", label: "Cancelled" }
-      ]
-    },
-    {
-      key: "attempts",
-      label: "Attempts",
-      width: "80px",
-      align: "center",
-      formatter: (_, row) => `${row.attempts}/${row.maxAttempts}`
-    },
-    {
-      key: "createdAt",
-      label: "Created",
-      width: "100px",
-      hideOnMobile: true
-    },
-    {
-      key: "finishedAt",
-      label: "Finished",
-      width: "100px",
-      hideOnMobile: true
-    }
-  ];
+  function formatJobType(jobType: string): string {
+    return jobType
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
 
-  // Dynamic row actions based on job status
-  function getRowActions(job: JobSummary): DataTableAction<JobSummary>[] {
-    const actions: DataTableAction<JobSummary>[] = [];
+  function getMenuItems(job: JobSummary) {
+    const items: Array<{ label: string; onSelect: () => void; destructive?: boolean }> = [
+      { label: "View details", onSelect: () => navigateToJob(job) }
+    ];
 
     if (job.status === "failed" || job.status === "cancelled") {
-      actions.push({
-        label: "Retry",
-        onClick: handleRetry
-      });
-    } else if (job.status === "pending" || job.status === "running") {
-      actions.push({
-        label: "Cancel",
-        onClick: handleCancel,
-        variant: "danger"
-      });
+      items.push({ label: "Retry", onSelect: () => handleRetry(job) });
     }
 
-    return actions;
+    if (job.status === "pending" || job.status === "running") {
+      items.push({ label: "Cancel", onSelect: () => handleCancel(job), destructive: true });
+    }
+
+    return items;
   }
 
-  function handleFilterChange(filters: DataTableFilters) {
-    if (filters.status !== undefined) {
-      statusFilter = filters.status as JobStatus | "";
-    }
-    if (filters.jobType !== undefined) {
-      jobTypeFilter = filters.jobType;
-    }
-  }
+  const statusOptions = [
+    { value: "", label: "All statuses" },
+    { value: "pending", label: "Pending" },
+    { value: "running", label: "Running" },
+    { value: "succeeded", label: "Succeeded" },
+    { value: "failed", label: "Failed" },
+    { value: "cancelled", label: "Cancelled" }
+  ];
+
+  const columns: DataTableColumn<JobSummary>[] = [
+    { key: "jobType", label: "Job Type", width: "minmax(200px, 2fr)" },
+    { key: "status", label: "Status", width: "100px" },
+    { key: "attempts", label: "Attempts", width: "80px", align: "center" },
+    { key: "createdAt", label: "Created", width: "120px", hideOnMobile: true },
+    { key: "finishedAt", label: "Finished", width: "120px", hideOnMobile: true },
+    { key: "actions", label: "", width: "60px", align: "center", hideable: false }
+  ];
 </script>
 
 <PageHeader title="Job queue" backHref="/system" backLabel="Back to system">
   {#snippet actions()}
-    <Tooltip content="Refresh" inline>
-      {#snippet trigger()}
-        <Button type="button" variant="subtle" size="icon" onclick={() => pageData.refetch()}>
-          <RefreshCw size={16} />
-        </Button>
-      {/snippet}
-    </Tooltip>
+    <Button type="button" variant="subtle" onclick={() => pageData.refetch()}>
+      <RefreshCw size={16} />
+      Refresh
+    </Button>
   {/snippet}
 </PageHeader>
 
@@ -210,98 +175,195 @@
   <!-- Stats cards -->
   {#if stats}
     <div class="stats-grid">
-      <StatGrid columns={4} minItemWidth={180}>
-        <StatCard value={stats.pending} label="Pending" variant="warning" compact>
-          {#snippet icon()}
+      <Card>
+        <div class="stat">
+          <span class="stat-icon" style="color: var(--admin-color-warning, #f59e0b);">
             <Clock size={24} />
-          {/snippet}
-        </StatCard>
-        <StatCard value={stats.running} label="Running" variant="info" compact>
-          {#snippet icon()}
+          </span>
+          <div class="stat-content">
+            <span class="stat-value">{stats.pending}</span>
+            <span class="stat-label">Pending</span>
+          </div>
+        </div>
+      </Card>
+      <Card>
+        <div class="stat">
+          <span class="stat-icon" style="color: var(--admin-color-info, #3b82f6);">
             <Play size={24} />
-          {/snippet}
-        </StatCard>
-        <StatCard value={stats.failed} label="Failed" variant="danger" compact>
-          {#snippet icon()}
+          </span>
+          <div class="stat-content">
+            <span class="stat-value">{stats.running}</span>
+            <span class="stat-label">Running</span>
+          </div>
+        </div>
+      </Card>
+      <Card>
+        <div class="stat">
+          <span class="stat-icon" style="color: var(--admin-color-danger, #ef4444);">
             <XCircle size={24} />
-          {/snippet}
-        </StatCard>
-        <StatCard value={stats.succeededRecent} label="Recent Success" variant="success" compact>
-          {#snippet icon()}
+          </span>
+          <div class="stat-content">
+            <span class="stat-value">{stats.failed}</span>
+            <span class="stat-label">Failed</span>
+          </div>
+        </div>
+      </Card>
+      <Card>
+        <div class="stat">
+          <span class="stat-icon" style="color: var(--admin-color-success, #10b981);">
             <CheckCircle size={24} />
-          {/snippet}
-        </StatCard>
-      </StatGrid>
+          </span>
+          <div class="stat-content">
+            <span class="stat-value">{stats.succeededRecent}</span>
+            <span class="stat-label">Recent Success</span>
+          </div>
+        </div>
+      </Card>
     </div>
   {/if}
 
-  <DataTable
-    data={jobs}
-    {columns}
-    actions={getRowActions}
-    loading={pageData.loading}
-    emptyMessage="No jobs found"
-    compact
-    onFilter={handleFilterChange}
-    extendedRowWhen={(row) => !!row.errorMessage}
-  >
-    {#snippet cell({ column, row, value })}
-      {#if column.key === "jobType"}
-        <code class="job-type">{value}</code>
-      {:else if column.key === "status"}
-        <Badge variant={getStatusVariant(row.status)} size="sm">
-          {getStatusLabel(row.status)}
-        </Badge>
-      {:else if column.key === "createdAt"}
-        <TimeAgo date={row.createdAt} tooltipFormat="datetime" short />
-      {:else if column.key === "finishedAt"}
-        {#if row.finishedAt}
-          <TimeAgo date={row.finishedAt} tooltipFormat="datetime" short />
+  <!-- Filter -->
+  <div class="filter-bar">
+    <Select
+      bind:value={statusFilter}
+      items={statusOptions}
+      placeholder="All statuses"
+    />
+  </div>
+
+  <!-- Jobs table -->
+  <div class="jobs-list">
+    <DataTable
+      data={jobs}
+      {columns}
+      loading={pageData.loading}
+      emptyMessage="No jobs found"
+      showLimitSelector={false}
+      onRowClick={navigateToJob}
+      extendedRowWhen={(row) => !!row.errorMessage}
+    >
+      {#snippet cell({ column, row })}
+        {#if column.key === "jobType"}
+          {formatJobType(row.jobType)}
+        {:else if column.key === "status"}
+          <Badge variant={getStatusVariant(row.status)} size="sm">
+            {getStatusLabel(row.status)}
+          </Badge>
+        {:else if column.key === "attempts"}
+          {row.attempts}/{row.maxAttempts}
+        {:else if column.key === "createdAt"}
+          <TimeAgo date={row.createdAt} tooltipFormat="datetime" short />
+        {:else if column.key === "finishedAt"}
+          {#if row.finishedAt}
+            <TimeAgo date={row.finishedAt} tooltipFormat="datetime" short />
+          {:else}
+            —
+          {/if}
+        {:else if column.key === "actions"}
+          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+          <div class="actions-cell" onclick={(e) => e.stopPropagation()}>
+            <DropdownMenu items={getMenuItems(row)} triggerAriaLabel="Job actions">
+              {#snippet trigger()}
+                <MoreHorizontal size={16} />
+              {/snippet}
+            </DropdownMenu>
+          </div>
         {:else}
           —
         {/if}
-      {:else}
-        {value}
-      {/if}
-    {/snippet}
-    {#snippet extendedRow({ row })}
-      {#if row.errorMessage}
-        <div class="error-message">
-          <AlertCircle size={14} />
-          {row.errorMessage}
-        </div>
-      {/if}
-    {/snippet}
-    {#snippet empty()}
-      <div class="empty-state">
-        <AlertCircle size={32} />
-        <p>No jobs found</p>
-      </div>
-    {/snippet}
-  </DataTable>
+      {/snippet}
+      {#snippet extendedRow({ row })}
+        {#if row.errorMessage}
+          <div class="error-message">
+            <AlertCircle size={14} />
+            {row.errorMessage}
+          </div>
+        {/if}
+      {/snippet}
+    </DataTable>
+  </div>
 {/if}
 
 <style>
   .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
     margin-bottom: 1.5rem;
   }
 
-  .empty-state {
+  .stat {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 3rem;
-    color: var(--admin-color-text-muted);
+    gap: 1rem;
+    padding: 0.5rem;
   }
 
-  .job-type {
-    font-family: monospace;
-    font-size: 0.8rem;
-    background: var(--admin-color-surface-subtle);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
+  .stat-icon {
+    flex-shrink: 0;
+    display: flex;
+  }
+
+  .stat-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
     color: var(--admin-color-text);
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--admin-color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .filter-bar {
+    margin-bottom: 1rem;
+    max-width: 200px;
+  }
+
+  .jobs-list {
+    background: var(--admin-color-surface-card);
+    border-radius: 0.5rem;
+  }
+
+  .jobs-list :global(.underlay-data-table) {
+    --underlay-table-border: 1px solid var(--admin-color-border-subtle);
+    --underlay-table-header-bg: var(--admin-color-surface-subtle);
+    --underlay-table-row-hover: var(--admin-color-surface-subtle);
+    --underlay-table-row-selected: var(--admin-color-surface-subtle);
+    color: var(--admin-color-text);
+  }
+
+  .jobs-list :global(.underlay-data-table-wrapper) {
+    border-radius: 0.5rem;
+  }
+
+  .jobs-list :global(.table-cell) {
+    padding: 0.75rem 1rem;
+  }
+
+  .jobs-list :global(.table-body > .table-row) {
+    cursor: pointer;
+  }
+
+  .jobs-list :global(.table-body > .table-row.has-extended > .table-cell) {
+    background: var(--admin-color-surface-subtle);
+  }
+
+  .jobs-list :global(.table-row--extended > .table-cell) {
+    padding: 0;
+    background: var(--admin-color-surface-subtle);
+  }
+
+  .actions-cell {
+    display: flex;
+    justify-content: center;
   }
 
   .error-message {

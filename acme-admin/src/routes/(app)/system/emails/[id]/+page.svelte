@@ -2,14 +2,14 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { PageHeader, useToasts, useAuthenticatedData } from "@decodelabs/underlay/patterns";
-  import { ConfirmAction, FormError, PageLoading, TabsRoot, TabsList, TabsTrigger, TabsContent, Pill } from "@decodelabs/underlay/components";
-  import Trash2 from "lucide-svelte/icons/trash-2";
+  import { AlertDialog, DropdownMenu, FormError, PageLoading, TabsRoot, TabsList, TabsTrigger, TabsContent, Pill } from "@decodelabs/underlay/components";
   import Copy from "lucide-svelte/icons/copy";
   import { adminCommands } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import type { CapturedEmailDetail } from "acme-client";
 
   const toastStore = useToasts();
+  let confirmDeleteOpen = $state(false);
 
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
@@ -57,11 +57,15 @@
   }
 
   function getStatusAccent() {
-    if (!email) return "var(--admin-color-info)";
-    if (email.wasDelivered) return "var(--admin-color-success)";
-    if (email.deliveryError) return "var(--admin-color-danger)";
-    return "var(--admin-color-info)";
+    if (!email) return "#3b82f6";
+    if (email.wasDelivered) return "#10b981";
+    if (email.deliveryError) return "#ef4444";
+    return "#3b82f6";
   }
+
+  const menuItems = $derived(email ? [
+    { label: "Delete email", onSelect: () => { confirmDeleteOpen = true; }, destructive: true }
+  ] : []);
 </script>
 
 {#if pageData.loading}
@@ -69,6 +73,15 @@
 {:else if pageData.error}
   <FormError message={pageData.error} />
 {:else if email}
+  <AlertDialog
+    bind:open={confirmDeleteOpen}
+    title="Delete email"
+    description="Are you sure you want to delete this captured email? This action cannot be undone."
+    confirmLabel="Delete"
+    showTrigger={false}
+    onConfirm={deleteEmail}
+  />
+
   <section class="email-detail">
     <PageHeader
       title="Captured Email"
@@ -77,14 +90,7 @@
       backLabel="Back to emails"
     >
       {#snippet actions()}
-        <ConfirmAction
-          title="Delete captured email"
-          description={`Are you sure you want to delete "${email.subject || "(no subject)"}"?`}
-          confirmLabel="Delete"
-          triggerLabel="Delete"
-          triggerVariant="danger"
-          onConfirm={deleteEmail}
-        />
+        <DropdownMenu items={menuItems} triggerAriaLabel="Email actions" />
       {/snippet}
 
       <p>
