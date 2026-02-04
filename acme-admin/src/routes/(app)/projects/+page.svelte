@@ -7,7 +7,8 @@
     ReorderableList,
     createReorderController,
     useToasts,
-    useAuthenticatedData
+    useAuthenticatedData,
+    useBatchSelection
   } from "@decodelabs/underlay/patterns";
   import {
     Button,
@@ -71,42 +72,29 @@
 
   let isReorderMode = $state(false);
   let isSelectionMode = $state(false);
-  let selectedIds = $state<Set<string>>(new Set());
+  const selection = useBatchSelection<string>();
   let batchLoading = $state(false);
 
-  // Clear selection when exiting selection mode or when data changes
+  // Clear selection when exiting selection mode
   $effect(() => {
     if (!isSelectionMode) {
-      selectedIds = new Set();
+      selection.clear();
     }
   });
 
   // Selection handlers
   function toggleSelectionMode() {
     isSelectionMode = !isSelectionMode;
-    if (!isSelectionMode) {
-      selectedIds = new Set();
-    }
   }
 
-  function handleSelectionChange(projectId: string, selected: boolean) {
-    const newSet = new Set(selectedIds);
-    if (selected) {
-      newSet.add(projectId);
-    } else {
-      newSet.delete(projectId);
-    }
-    selectedIds = newSet;
-  }
-
-  function clearSelection() {
-    selectedIds = new Set();
+  function handleClearSelection() {
+    selection.clear();
     isSelectionMode = false;
   }
 
-  function selectAll() {
+  function handleSelectAll() {
     const allIds = (pageData.data?.projects ?? []).map(p => p.id);
-    selectedIds = new Set(allIds);
+    selection.selectAll(allIds);
   }
 
   async function handleBatchDelete() {
@@ -119,7 +107,7 @@
     batchLoading = true;
     try {
       const result = await adminCommands.batchDeleteProjects(
-        { ids: Array.from(selectedIds) },
+        { ids: selection.selectedIds },
         fetch,
         token
       );
@@ -127,7 +115,7 @@
         variant: "success",
         message: `Deleted ${result.deleted} project${result.deleted === 1 ? "" : "s"}`
       });
-      selectedIds = new Set();
+      selection.clear();
       isSelectionMode = false;
       await pageData.refetch();
     } catch (e) {
@@ -388,19 +376,19 @@
         {project}
         onDelete={isSelectionMode ? undefined : handleDeleteProject}
         selectionMode={isSelectionMode}
-        selected={selectedIds.has(project.id)}
-        onSelectionChange={handleSelectionChange}
+        selected={selection.isSelected(project.id)}
+        onSelectionChange={(id, selected) => selection.toggle(id, selected)}
       />
     {/each}
   </ListGrid>
 {/if}
 
 <BatchActionBar
-  selectedCount={selectedIds.size}
+  selectedCount={selection.count}
   totalCount={(pageData.data?.projects ?? []).length}
   loading={batchLoading}
-  onClearSelection={clearSelection}
-  onSelectAll={selectAll}
+  onClearSelection={handleClearSelection}
+  onSelectAll={handleSelectAll}
   onBatchDelete={handleBatchDelete}
 />
 

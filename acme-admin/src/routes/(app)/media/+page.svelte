@@ -6,6 +6,7 @@
     PageHeader,
     useToasts,
     useAuthenticatedData,
+    useBatchSelection,
     getMediaKindLabel,
     MediaKind
   } from "@decodelabs/underlay/patterns";
@@ -227,41 +228,28 @@
 
   // Selection mode state
   let isSelectionMode = $state(false);
-  let selectedIds = $state<Set<string>>(new Set());
+  const selection = useBatchSelection<string>();
   let batchLoading = $state(false);
 
   // Clear selection when exiting selection mode
   $effect(() => {
     if (!isSelectionMode) {
-      selectedIds = new Set();
+      selection.clear();
     }
   });
 
   function toggleSelectionMode() {
     isSelectionMode = !isSelectionMode;
-    if (!isSelectionMode) {
-      selectedIds = new Set();
-    }
   }
 
-  function handleSelectionChange(mediaId: string, selected: boolean) {
-    const newSet = new Set(selectedIds);
-    if (selected) {
-      newSet.add(mediaId);
-    } else {
-      newSet.delete(mediaId);
-    }
-    selectedIds = newSet;
-  }
-
-  function clearSelection() {
-    selectedIds = new Set();
+  function handleClearSelection() {
+    selection.clear();
     isSelectionMode = false;
   }
 
-  function selectAll() {
+  function handleSelectAll() {
     const allIds = (pageData.data?.items ?? []).map(m => m.id);
-    selectedIds = new Set(allIds);
+    selection.selectAll(allIds);
   }
 
   async function handleBatchDelete() {
@@ -274,7 +262,7 @@
     batchLoading = true;
     try {
       const result = await mediaCommands.batchDeleteMedia(
-        { ids: Array.from(selectedIds) },
+        { ids: selection.selectedIds },
         fetch,
         token
       );
@@ -282,7 +270,7 @@
         variant: "success",
         message: `Moved ${result.deleted} ${result.deleted === 1 ? "item" : "items"} to trash`
       });
-      selectedIds = new Set();
+      selection.clear();
       isSelectionMode = false;
       await pageData.refetch();
     } catch (e) {
@@ -387,14 +375,14 @@
           <label class="selection-checkbox">
             <input
               type="checkbox"
-              checked={selectedIds.has(item.id)}
-              onchange={(e) => handleSelectionChange(item.id, e.currentTarget.checked)}
+              checked={selection.isSelected(item.id)}
+              onchange={(e) => selection.toggle(item.id, e.currentTarget.checked)}
             />
           </label>
           <ListCard
             title={item.title ?? item.originalFilename ?? "Untitled"}
             subtitle={formatFileSize(item.byteSize)}
-            onclick={() => handleSelectionChange(item.id, !selectedIds.has(item.id))}
+            onclick={() => selection.toggle(item.id, !selection.isSelected(item.id))}
           >
             {#snippet media()}
               {#if item.thumbnailUrl}
@@ -435,11 +423,11 @@
 {/if}
 
 <BatchActionBar
-  selectedCount={selectedIds.size}
+  selectedCount={selection.count}
   totalCount={(pageData.data?.items ?? []).length}
   loading={batchLoading}
-  onClearSelection={clearSelection}
-  onSelectAll={selectAll}
+  onClearSelection={handleClearSelection}
+  onSelectAll={handleSelectAll}
   onBatchDelete={handleBatchDelete}
 />
 
