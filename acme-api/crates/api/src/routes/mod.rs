@@ -240,11 +240,11 @@ pub fn build_router() -> Router<AppState> {
             put(admin::tasks::reorder_tasks),
         )
         .route(
-            "/v1/admin/projects/:project_id/tasks:batch-delete",
+            "/v1/admin/projects/:project_id/tasks/batch-delete",
             post(admin::tasks::batch_delete_tasks),
         )
         .route(
-            "/v1/admin/projects/:project_id/tasks:batch-update",
+            "/v1/admin/projects/:project_id/tasks/batch-update",
             post(admin::tasks::batch_update_task_status),
         )
         .route(
