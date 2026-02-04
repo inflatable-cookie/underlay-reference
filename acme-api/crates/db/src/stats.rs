@@ -44,7 +44,7 @@ pub async fn get_media_count(pool: &DbPool) -> Result<i64, sqlx::Error> {
     sqlx::query_scalar::<_, i64>(
         r#"
         SELECT COUNT(*)
-        FROM media.items
+        FROM media.media
         WHERE deleted_at IS NULL
         "#,
     )
