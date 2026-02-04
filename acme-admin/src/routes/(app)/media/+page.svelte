@@ -370,54 +370,26 @@
   <ListGrid minItemWidth={20}>
     {#each pageData.data?.items ?? [] as item}
       {@const KindIcon = getKindIcon(item.kind)}
-      {#if isSelectionMode}
-        <div class="selectable-card">
-          <label class="selection-checkbox">
-            <input
-              type="checkbox"
-              checked={selection.isSelected(item.id)}
-              onchange={(e) => selection.toggle(item.id, e.currentTarget.checked)}
-            />
-          </label>
-          <ListCard
-            title={item.title ?? item.originalFilename ?? "Untitled"}
-            subtitle={formatFileSize(item.byteSize)}
-            onclick={() => selection.toggle(item.id, !selection.isSelected(item.id))}
-          >
-            {#snippet media()}
-              {#if item.thumbnailUrl}
-                <img src={item.thumbnailUrl} alt="" class="thumbnail" />
-              {:else}
-                <KindIcon size={20} />
-              {/if}
-            {/snippet}
-            {#snippet titleSuffix()}
-              <Badge variant={getKindVariant(item.kind)} size="sm">
-                {getMediaKindLabel(item.kind)}
-              </Badge>
-            {/snippet}
-          </ListCard>
-        </div>
-      {:else}
-        <ListCard
-          title={item.title ?? item.originalFilename ?? "Untitled"}
-          subtitle={formatFileSize(item.byteSize)}
-          href={`/media/${item.id}`}
-        >
-          {#snippet media()}
-            {#if item.thumbnailUrl}
-              <img src={item.thumbnailUrl} alt="" class="thumbnail" />
-            {:else}
-              <KindIcon size={20} />
-            {/if}
-          {/snippet}
-          {#snippet titleSuffix()}
-            <Badge variant={getKindVariant(item.kind)} size="sm">
-              {getMediaKindLabel(item.kind)}
-            </Badge>
-          {/snippet}
-        </ListCard>
-      {/if}
+      <ListCard
+        title={item.title ?? item.originalFilename ?? "Untitled"}
+        subtitle={formatFileSize(item.byteSize)}
+        href={isSelectionMode ? undefined : `/media/${item.id}`}
+        selected={selection.isSelected(item.id)}
+        onSelectionChange={isSelectionMode ? (checked) => selection.toggle(item.id, checked) : undefined}
+      >
+        {#snippet media()}
+          {#if item.thumbnailUrl}
+            <img src={item.thumbnailUrl} alt="" class="thumbnail" />
+          {:else}
+            <KindIcon size={20} />
+          {/if}
+        {/snippet}
+        {#snippet titleSuffix()}
+          <Badge variant={getKindVariant(item.kind)} size="sm">
+            {getMediaKindLabel(item.kind)}
+          </Badge>
+        {/snippet}
+      </ListCard>
     {/each}
   </ListGrid>
 {/if}
@@ -436,32 +408,6 @@
     padding: 2rem;
     text-align: center;
     color: var(--text-secondary, #6b7280);
-  }
-
-  .selectable-card {
-    position: relative;
-  }
-
-  .selection-checkbox {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    background: var(--surface-elevated, #1f2937);
-    border-radius: 0.25rem;
-    cursor: pointer;
-  }
-
-  .selection-checkbox input {
-    width: 1rem;
-    height: 1rem;
-    accent-color: var(--accent-color, #3b82f6);
-    cursor: pointer;
   }
 
   .thumbnail {

@@ -1,92 +1,71 @@
 <script lang="ts">
-	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { adminCommands, type User, type UserRole, type UserStatus, UserRole as UserRoleConst, UserStatus as UserStatusConst } from "@api-client";
-	import { Card, Pill } from "@decodelabs/underlay/components";
-	import ChevronLeft from "lucide-svelte/icons/chevron-left";
-	import ChevronRight from "lucide-svelte/icons/chevron-right";
-	import Search from "lucide-svelte/icons/search";
-	import { auth } from "$lib/stores/auth";
+	import {
+		DataTable,
+		Pill,
+		type DataTableColumn,
+		type DataTablePagination,
+		type DataTableSort,
+		type DataTableFilters
+	} from "@decodelabs/underlay/components";
+	import { PageHeader, useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
+	import { auth, authLoading, currentUser } from "$lib/stores/auth";
 
 	const PAGE_SIZE = 20;
 
-	let users = $state<User[]>([]);
-	let total = $state(0);
-	let hasMore = $state(false);
-	let loading = $state(true);
-	let error = $state<string | null>(null);
+	const toastStore = useToasts();
 
-	let offset = $state(0);
+	// Filter state
+	let page = $state(1);
 	let roleFilter = $state<UserRole | "">("");
 	let statusFilter = $state<UserStatus | "">("");
 	let searchQuery = $state("");
-	let searchTimeout: ReturnType<typeof setTimeout>;
+	let sort = $state<DataTableSort | null>(null);
 
-	async function loadUsers() {
-		const token = auth.getToken();
-		if (!token) {
-			error = "Not authenticated";
-			loading = false;
-			return;
-		}
-
-		loading = true;
-		error = null;
-
-		try {
+	// Fetch users using authenticated data pattern
+	const pageData = useAuthenticatedData(
+		async (fetch, token) => {
 			const result = await adminCommands.listUsers(fetch, token, {
 				limit: PAGE_SIZE,
-				offset,
+				offset: (page - 1) * PAGE_SIZE,
 				role: roleFilter || undefined,
 				status: statusFilter || undefined,
 				search: searchQuery || undefined,
 			});
-			users = result.data;
-			total = result.total;
-			hasMore = result.hasMore;
-		} catch (err) {
-			error = err instanceof Error ? err.message : "Failed to load users";
+			return result;
+		},
+		{
+			getToken: () => auth.getToken(),
+			defaultValue: { data: [] as User[], total: 0, hasMore: false }
 		}
-		loading = false;
-	}
+	);
 
-	function handleSearch(e: Event) {
-		const target = e.target as HTMLInputElement;
-		clearTimeout(searchTimeout);
-		searchTimeout = setTimeout(() => {
-			searchQuery = target.value;
-			offset = 0;
-			loadUsers();
-		}, 300);
-	}
+	// Trigger fetch when auth is ready
+	$effect(() => {
+		pageData.tryFetch($authLoading, $currentUser);
+	});
 
-	function handleRoleChange(e: Event) {
-		const target = e.target as HTMLSelectElement;
-		roleFilter = target.value as UserRole | "";
-		offset = 0;
-		loadUsers();
-	}
-
-	function handleStatusChange(e: Event) {
-		const target = e.target as HTMLSelectElement;
-		statusFilter = target.value as UserStatus | "";
-		offset = 0;
-		loadUsers();
-	}
-
-	function prevPage() {
-		if (offset > 0) {
-			offset = Math.max(0, offset - PAGE_SIZE);
-			loadUsers();
+	// Refetch when filters change
+	$effect(() => {
+		void page;
+		void roleFilter;
+		void statusFilter;
+		void searchQuery;
+		if ($currentUser) {
+			pageData.refetch();
 		}
-	}
+	});
 
-	function nextPage() {
-		if (hasMore) {
-			offset += PAGE_SIZE;
-			loadUsers();
-		}
-	}
+	const users = $derived(pageData.data?.data ?? []);
+	const total = $derived(pageData.data?.total ?? 0);
+
+	// Pagination state for DataTable
+	const pagination = $derived<DataTablePagination>({
+		page,
+		limit: PAGE_SIZE,
+		total
+	});
 
 	function getRoleAccent(role: string): string {
 		switch (role) {
@@ -113,310 +92,133 @@
 		return new Date(dateStr).toLocaleDateString();
 	}
 
-	onMount(() => {
-		loadUsers();
-	});
+	// Column configuration
+	const columns: DataTableColumn<User>[] = [
+		{
+			key: "email",
+			label: "Email",
+			width: "2fr",
+			filterable: true,
+			filterType: "text"
+		},
+		{
+			key: "displayName",
+			label: "Display Name",
+			width: "1.5fr",
+			formatter: (value) => (value as string) || "—"
+		},
+		{
+			key: "role",
+			label: "Role",
+			width: "120px",
+			filterable: true,
+			filterType: "select",
+			filterOptions: [
+				{ value: UserRoleConst.Student, label: "Student" },
+				{ value: UserRoleConst.Tester, label: "Tester" },
+				{ value: UserRoleConst.Tutor, label: "Tutor" },
+				{ value: UserRoleConst.Editor, label: "Editor" },
+				{ value: UserRoleConst.Admin, label: "Admin" },
+				{ value: UserRoleConst.Support, label: "Support" },
+				{ value: UserRoleConst.Superadmin, label: "Superadmin" }
+			]
+		},
+		{
+			key: "status",
+			label: "Status",
+			width: "100px",
+			filterable: true,
+			filterType: "select",
+			filterOptions: [
+				{ value: UserStatusConst.Active, label: "Active" },
+				{ value: UserStatusConst.Suspended, label: "Suspended" },
+				{ value: UserStatusConst.Deleted, label: "Deleted" }
+			]
+		},
+		{
+			key: "createdAt",
+			label: "Created",
+			width: "100px",
+			hideOnMobile: true,
+			formatter: (value) => formatDate(value as string)
+		}
+	];
+
+	// Row actions
+	const actions = [
+		{
+			label: "View",
+			href: (row: User) => `/users/${row.id}`
+		}
+	];
+
+	function handlePageChange(newPage: number) {
+		page = newPage;
+	}
+
+	function handleFilterChange(filters: DataTableFilters) {
+		if (filters.email !== undefined) {
+			searchQuery = filters.email;
+		}
+		if (filters.role !== undefined) {
+			roleFilter = filters.role as UserRole | "";
+		}
+		if (filters.status !== undefined) {
+			statusFilter = filters.status as UserStatus | "";
+		}
+		page = 1;
+	}
+
+	function handleSortChange(newSort: DataTableSort) {
+		sort = newSort;
+	}
 </script>
 
-<div class="users-page">
-	<header class="users-page__header">
-		<div class="users-page__title-row">
-			<h1 class="users-page__title">Users</h1>
-			<span class="users-page__count">{total} total</span>
-		</div>
-		<p class="users-page__subtitle">Manage user accounts and roles</p>
-	</header>
+<PageHeader title="Users" backHref="/" backLabel="Back to dashboard">
+	{#snippet subtitle()}
+		<span class="user-count">{total} total</span>
+	{/snippet}
+</PageHeader>
 
-	<div class="users-page__filters">
-		<div class="users-page__search">
-			<Search class="users-page__search-icon" />
-			<input
-				type="text"
-				placeholder="Search by email..."
-				class="users-page__search-input"
-				oninput={handleSearch}
-			/>
-		</div>
-
-		<select class="users-page__select" onchange={handleRoleChange}>
-			<option value="">All roles</option>
-			<option value={UserRoleConst.Student}>Student</option>
-			<option value={UserRoleConst.Tester}>Tester</option>
-			<option value={UserRoleConst.Tutor}>Tutor</option>
-			<option value={UserRoleConst.Editor}>Editor</option>
-			<option value={UserRoleConst.Admin}>Admin</option>
-			<option value={UserRoleConst.Support}>Support</option>
-			<option value={UserRoleConst.Superadmin}>Superadmin</option>
-		</select>
-
-		<select class="users-page__select" onchange={handleStatusChange}>
-			<option value="">All statuses</option>
-			<option value={UserStatusConst.Active}>Active</option>
-			<option value={UserStatusConst.Suspended}>Suspended</option>
-			<option value={UserStatusConst.Deleted}>Deleted</option>
-		</select>
-	</div>
-
-	<Card variant="muted">
-		{#if loading}
-			<div class="users-page__loading">Loading...</div>
-		{:else if error}
-			<div class="users-page__error">{error}</div>
-		{:else if users.length === 0}
-			<div class="users-page__empty">No users found</div>
+<DataTable
+	data={users}
+	{columns}
+	{actions}
+	{pagination}
+	{sort}
+	loading={pageData.loading}
+	emptyMessage="No users found"
+	showLimitSelector={false}
+	onPage={handlePageChange}
+	onFilter={handleFilterChange}
+	onSort={handleSortChange}
+>
+	{#snippet cell({ column, row, value })}
+		{#if column.key === "email"}
+			<a href={`/users/${row.id}`} class="email-link">{value}</a>
+		{:else if column.key === "role"}
+			<Pill accent={getRoleAccent(row.role)}>{row.role}</Pill>
+		{:else if column.key === "status"}
+			<Pill accent={getStatusAccent(row.status)}>{row.status}</Pill>
 		{:else}
-			<table class="users-table">
-				<thead>
-					<tr>
-						<th>Email</th>
-						<th>Display name</th>
-						<th>Role</th>
-						<th>Status</th>
-						<th>Created</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each users as user}
-						<tr onclick={() => goto(`/users/${user.id}`)} class="users-table__row--clickable">
-							<td class="users-table__email">{user.email}</td>
-							<td class="users-table__name">{user.displayName || "-"}</td>
-							<td>
-								<Pill accent={getRoleAccent(user.role)}>{user.role}</Pill>
-							</td>
-							<td>
-								<Pill accent={getStatusAccent(user.status)}>{user.status}</Pill>
-							</td>
-							<td class="users-table__date">{formatDate(user.createdAt)}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-
-			<div class="users-page__pagination">
-				<span class="users-page__pagination-info">
-					Showing {offset + 1}-{Math.min(offset + users.length, total)} of {total}
-				</span>
-				<div class="users-page__pagination-controls">
-					<button
-						type="button"
-						class="users-page__pagination-btn"
-						disabled={offset === 0}
-						onclick={prevPage}
-					>
-						<ChevronLeft />
-					</button>
-					<button
-						type="button"
-						class="users-page__pagination-btn"
-						disabled={!hasMore}
-						onclick={nextPage}
-					>
-						<ChevronRight />
-					</button>
-				</div>
-			</div>
+			{value}
 		{/if}
-	</Card>
-</div>
+	{/snippet}
+</DataTable>
 
 <style>
-	.users-page__header {
-		margin-bottom: 1.5rem;
-	}
-
-	.users-page__title-row {
-		display: flex;
-		align-items: baseline;
-		gap: 0.75rem;
-	}
-
-	.users-page__title {
-		margin: 0;
-		font-size: 1.8rem;
-		letter-spacing: -0.02em;
-		font-weight: 650;
-	}
-
-	.users-page__count {
+	.user-count {
 		color: var(--admin-color-text-muted);
 		font-size: 0.95rem;
 	}
 
-	.users-page__subtitle {
-		margin: 0.35rem 0 0;
-		color: var(--admin-color-text-muted);
-		font-size: 0.95rem;
-	}
-
-	.users-page__filters {
-		display: flex;
-		gap: 0.75rem;
-		margin-bottom: 1rem;
-	}
-
-	.users-page__search {
-		flex: 1;
-		position: relative;
-	}
-
-	:global(.users-page__search-icon) {
-		position: absolute;
-		left: 0.75rem;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 1rem;
-		height: 1rem;
-		color: var(--admin-color-text-muted);
-		pointer-events: none;
-	}
-
-	.users-page__search-input {
-		width: 100%;
-		padding: 0.6rem 0.75rem 0.6rem 2.25rem;
-		background: var(--admin-color-surface-subtle);
-		border: 1px solid var(--admin-color-border-subtle);
-		border-radius: 0.5rem;
+	.email-link {
 		color: inherit;
-		font-size: 0.9rem;
-	}
-
-	.users-page__search-input:focus {
-		outline: none;
-		border-color: var(--admin-color-accent);
-	}
-
-	.users-page__select {
-		padding: 0.6rem 0.75rem;
-		background: var(--admin-color-surface-subtle);
-		border: 1px solid var(--admin-color-border-subtle);
-		border-radius: 0.5rem;
-		color: inherit;
-		font-size: 0.9rem;
-		min-width: 140px;
-	}
-
-	.users-page__select:focus {
-		outline: none;
-		border-color: var(--admin-color-accent);
-	}
-
-	.users-page__loading,
-	.users-page__error,
-	.users-page__empty {
-		padding: 2rem;
-		text-align: center;
-		color: var(--admin-color-text-muted);
-	}
-
-	.users-page__error {
-		color: #fca5a5;
-	}
-
-	.users-table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-
-	.users-table th {
-		text-align: left;
-		padding: 0.75rem 1rem;
-		font-size: 0.8rem;
-		font-weight: 500;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--admin-color-text-muted);
-		border-bottom: 1px solid var(--admin-color-border-subtle);
-	}
-
-	.users-table td {
-		padding: 0.75rem 1rem;
-		border-bottom: 1px solid var(--admin-color-border-subtle);
-	}
-
-	.users-table tbody tr:last-child td {
-		border-bottom: none;
-	}
-
-	.users-table__row--clickable {
-		cursor: pointer;
-		transition: background 0.15s ease;
-	}
-
-	.users-table__row--clickable:hover {
-		background: rgba(148, 163, 184, 0.08);
-	}
-
-	.users-table__email {
+		text-decoration: none;
 		font-weight: 500;
 	}
 
-	.users-table__name {
-		color: var(--admin-color-text-muted);
-	}
-
-	.users-table__date {
-		color: var(--admin-color-text-muted);
-		font-size: 0.9rem;
-	}
-
-	.users-page__pagination {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.75rem 1rem;
-		border-top: 1px solid var(--admin-color-border-subtle);
-	}
-
-	.users-page__pagination-info {
-		color: var(--admin-color-text-muted);
-		font-size: 0.85rem;
-	}
-
-	.users-page__pagination-controls {
-		display: flex;
-		gap: 0.5rem;
-	}
-
-	.users-page__pagination-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 2rem;
-		height: 2rem;
-		padding: 0;
-		background: transparent;
-		border: 1px solid var(--admin-color-border-subtle);
-		border-radius: 0.4rem;
-		color: var(--admin-color-text);
-		cursor: pointer;
-	}
-
-	.users-page__pagination-btn:hover:not(:disabled) {
-		background: rgba(148, 163, 184, 0.16);
-	}
-
-	.users-page__pagination-btn:disabled {
-		opacity: 0.3;
-		cursor: not-allowed;
-	}
-
-	:global(.users-page__pagination-btn svg) {
-		width: 1rem;
-		height: 1rem;
-	}
-
-	@media (max-width: 768px) {
-		.users-page__filters {
-			flex-direction: column;
-		}
-
-		.users-table {
-			font-size: 0.85rem;
-		}
-
-		.users-table th,
-		.users-table td {
-			padding: 0.5rem 0.75rem;
-		}
+	.email-link:hover {
+		text-decoration: underline;
 	}
 </style>

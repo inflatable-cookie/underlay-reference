@@ -2,7 +2,17 @@
   import { adminCommands, type JobSummary, type JobStats, type JobStatus } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Badge, Select, Card } from "@decodelabs/underlay/components";
+  import {
+    Button,
+    PageLoading,
+    FormError,
+    Badge,
+    Card,
+    DataTable,
+    type DataTableColumn,
+    type DataTableAction,
+    type DataTableFilters
+  } from "@decodelabs/underlay/components";
   import Play from "lucide-svelte/icons/play";
   import Pause from "lucide-svelte/icons/pause";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
@@ -41,7 +51,6 @@
 
   // Refetch when filter changes
   $effect(() => {
-    // Track the filter value
     void statusFilter;
     if ($currentUser) {
       pageData.refetch();
@@ -51,7 +60,7 @@
   const jobs = $derived(pageData.data?.jobs ?? []);
   const stats = $derived(pageData.data?.stats);
 
-  async function handleRetry(jobId: string) {
+  async function handleRetry(job: JobSummary) {
     const token = auth.getToken();
     if (!token) {
       toastStore.push({ variant: "error", message: "Not authenticated" });
@@ -59,7 +68,7 @@
     }
 
     try {
-      await adminCommands.retryJob(jobId, fetch, token);
+      await adminCommands.retryJob(job.id, fetch, token);
       toastStore.push({ variant: "success", message: "Job retried" });
       await pageData.refetch();
     } catch (e) {
@@ -68,7 +77,7 @@
     }
   }
 
-  async function handleCancel(jobId: string) {
+  async function handleCancel(job: JobSummary) {
     const token = auth.getToken();
     if (!token) {
       toastStore.push({ variant: "error", message: "Not authenticated" });
@@ -76,7 +85,7 @@
     }
 
     try {
-      await adminCommands.cancelJob(jobId, fetch, token);
+      await adminCommands.cancelJob(job.id, fetch, token);
       toastStore.push({ variant: "success", message: "Job cancelled" });
       await pageData.refetch();
     } catch (e) {
@@ -117,14 +126,75 @@
     return "just now";
   }
 
-  const statusOptions = [
-    { value: "", label: "All statuses" },
-    { value: "pending", label: "Pending" },
-    { value: "running", label: "Running" },
-    { value: "succeeded", label: "Succeeded" },
-    { value: "failed", label: "Failed" },
-    { value: "cancelled", label: "Cancelled" }
+  // Column configuration
+  const columns: DataTableColumn<JobSummary>[] = [
+    {
+      key: "jobType",
+      label: "Job Type",
+      width: "2fr"
+    },
+    {
+      key: "status",
+      label: "Status",
+      width: "100px",
+      filterable: true,
+      filterType: "select",
+      filterOptions: [
+        { value: "pending", label: "Pending" },
+        { value: "running", label: "Running" },
+        { value: "succeeded", label: "Succeeded" },
+        { value: "failed", label: "Failed" },
+        { value: "cancelled", label: "Cancelled" }
+      ]
+    },
+    {
+      key: "attempts",
+      label: "Attempts",
+      width: "80px",
+      align: "center",
+      formatter: (_, row) => `${row.attempts}/${row.maxAttempts}`
+    },
+    {
+      key: "createdAt",
+      label: "Created",
+      width: "100px",
+      hideOnMobile: true,
+      formatter: (value) => formatRelativeTime(value as string)
+    },
+    {
+      key: "finishedAt",
+      label: "Finished",
+      width: "100px",
+      hideOnMobile: true,
+      formatter: (value) => value ? formatRelativeTime(value as string) : "—"
+    }
   ];
+
+  // Dynamic row actions based on job status
+  function getRowActions(job: JobSummary): DataTableAction<JobSummary>[] {
+    const actions: DataTableAction<JobSummary>[] = [];
+
+    if (job.status === "failed" || job.status === "cancelled") {
+      actions.push({
+        label: "Retry",
+        onClick: handleRetry
+      });
+    } else if (job.status === "pending" || job.status === "running") {
+      actions.push({
+        label: "Cancel",
+        onClick: handleCancel,
+        variant: "danger"
+      });
+    }
+
+    return actions;
+  }
+
+  function handleFilterChange(filters: DataTableFilters) {
+    if (filters.status !== undefined) {
+      statusFilter = filters.status as JobStatus | "";
+    }
+  }
 </script>
 
 <PageHeader title="Job queue" backHref="/system" backLabel="Back to system">
@@ -146,7 +216,7 @@
     <div class="stats-grid">
       <Card>
         <div class="stat">
-          <span class="stat-icon" style="color: var(--warning, #f59e0b);">
+          <span class="stat-icon stat-icon--warning">
             <Clock size={24} />
           </span>
           <div class="stat-content">
@@ -157,7 +227,7 @@
       </Card>
       <Card>
         <div class="stat">
-          <span class="stat-icon" style="color: var(--info, #3b82f6);">
+          <span class="stat-icon stat-icon--info">
             <Play size={24} />
           </span>
           <div class="stat-content">
@@ -168,7 +238,7 @@
       </Card>
       <Card>
         <div class="stat">
-          <span class="stat-icon" style="color: var(--danger, #ef4444);">
+          <span class="stat-icon stat-icon--danger">
             <XCircle size={24} />
           </span>
           <div class="stat-content">
@@ -179,7 +249,7 @@
       </Card>
       <Card>
         <div class="stat">
-          <span class="stat-icon" style="color: var(--success, #10b981);">
+          <span class="stat-icon stat-icon--success">
             <CheckCircle size={24} />
           </span>
           <div class="stat-content">
@@ -191,97 +261,39 @@
     </div>
   {/if}
 
-  <!-- Filter -->
-  <div class="filter-bar">
-    <Select
-      bind:value={statusFilter}
-      items={statusOptions}
-      placeholder="All statuses"
-    />
-  </div>
-
-  <!-- Jobs list -->
-  <div class="jobs-list">
-    {#if jobs.length === 0}
+  <DataTable
+    data={jobs}
+    {columns}
+    actions={getRowActions}
+    loading={pageData.loading}
+    emptyMessage="No jobs found"
+    compact
+    onFilter={handleFilterChange}
+  >
+    {#snippet cell({ column, row, value })}
+      {#if column.key === "jobType"}
+        <code class="job-type">{value}</code>
+        {#if row.errorMessage}
+          <div class="error-message">
+            <AlertCircle size={14} />
+            {row.errorMessage}
+          </div>
+        {/if}
+      {:else if column.key === "status"}
+        <Badge variant={getStatusVariant(row.status)} size="sm">
+          {getStatusLabel(row.status)}
+        </Badge>
+      {:else}
+        {value}
+      {/if}
+    {/snippet}
+    {#snippet empty()}
       <div class="empty-state">
         <AlertCircle size={32} />
         <p>No jobs found</p>
       </div>
-    {:else}
-      <table class="jobs-table">
-        <thead>
-          <tr>
-            <th>Job Type</th>
-            <th>Status</th>
-            <th>Attempts</th>
-            <th>Created</th>
-            <th>Finished</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each jobs as job (job.id)}
-            <tr>
-              <td>
-                <code class="job-type">{job.jobType}</code>
-              </td>
-              <td>
-                <Badge variant={getStatusVariant(job.status)} size="sm">
-                  {getStatusLabel(job.status)}
-                </Badge>
-              </td>
-              <td class="attempts">
-                {job.attempts}/{job.maxAttempts}
-              </td>
-              <td class="time">
-                {formatRelativeTime(job.createdAt)}
-              </td>
-              <td class="time">
-                {#if job.finishedAt}
-                  {formatRelativeTime(job.finishedAt)}
-                {:else}
-                  —
-                {/if}
-              </td>
-              <td class="actions">
-                {#if job.status === "failed" || job.status === "cancelled"}
-                  <Button
-                    type="button"
-                    variant="subtle"
-                    size="sm"
-                    onclick={() => handleRetry(job.id)}
-                  >
-                    <RefreshCw size={14} />
-                    Retry
-                  </Button>
-                {:else if job.status === "pending" || job.status === "running"}
-                  <Button
-                    type="button"
-                    variant="subtle"
-                    size="sm"
-                    onclick={() => handleCancel(job.id)}
-                  >
-                    <Pause size={14} />
-                    Cancel
-                  </Button>
-                {/if}
-              </td>
-            </tr>
-            {#if job.errorMessage}
-              <tr class="error-row">
-                <td colspan="6">
-                  <div class="error-message">
-                    <AlertCircle size={14} />
-                    {job.errorMessage}
-                  </div>
-                </td>
-              </tr>
-            {/if}
-          {/each}
-        </tbody>
-      </table>
-    {/if}
-  </div>
+    {/snippet}
+  </DataTable>
 {/if}
 
 <style>
@@ -304,6 +316,22 @@
     display: flex;
   }
 
+  .stat-icon--warning {
+    color: var(--admin-color-warning, #f59e0b);
+  }
+
+  .stat-icon--info {
+    color: var(--admin-color-info, #3b82f6);
+  }
+
+  .stat-icon--danger {
+    color: var(--admin-color-danger, #ef4444);
+  }
+
+  .stat-icon--success {
+    color: var(--admin-color-success, #10b981);
+  }
+
   .stat-content {
     display: flex;
     flex-direction: column;
@@ -322,18 +350,6 @@
     letter-spacing: 0.05em;
   }
 
-  .filter-bar {
-    margin-bottom: 1rem;
-    max-width: 200px;
-  }
-
-  .jobs-list {
-    background: var(--admin-color-surface-card);
-    border: 1px solid var(--admin-color-border-subtle);
-    border-radius: 0.5rem;
-    overflow: hidden;
-  }
-
   .empty-state {
     display: flex;
     flex-direction: column;
@@ -341,27 +357,6 @@
     gap: 0.5rem;
     padding: 3rem;
     color: var(--admin-color-text-muted);
-  }
-
-  .jobs-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .jobs-table th,
-  .jobs-table td {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--admin-color-border-subtle);
-  }
-
-  .jobs-table th {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--admin-color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: var(--admin-color-surface-subtle);
   }
 
   .job-type {
@@ -373,34 +368,16 @@
     color: var(--admin-color-text);
   }
 
-  .attempts {
-    font-size: 0.875rem;
-    color: var(--admin-color-text-muted);
-  }
-
-  .time {
-    font-size: 0.875rem;
-    color: var(--admin-color-text-muted);
-  }
-
-  .actions {
-    white-space: nowrap;
-  }
-
-  .error-row td {
-    padding: 0 1rem 0.75rem;
-    border-bottom: 1px solid var(--admin-color-border-subtle);
-  }
-
   .error-message {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
     font-size: 0.8rem;
-    color: #fca5a5;
-    background: rgba(239, 68, 68, 0.15);
+    color: var(--admin-color-danger-text, #fca5a5);
+    background: var(--admin-color-danger-subtle, rgba(239, 68, 68, 0.15));
     padding: 0.5rem 0.75rem;
     border-radius: 0.25rem;
+    margin-top: 0.5rem;
   }
 
   .error-message :global(svg) {
