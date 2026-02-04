@@ -95,6 +95,12 @@ export type {
   JobDetail,
   JobStats,
   ListJobsQuery,
+  // Error log types
+  ErrorLogSummary,
+  ErrorLogDetail,
+  ErrorLogStats,
+  ListErrorLogsQuery,
+  ErrorLogsListResponse,
 } from "./types/admin-types.js";
 
 export type { JobStatus } from "./types/admin-types.js";

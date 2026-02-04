@@ -194,6 +194,11 @@
 					</a>
 				</li>
 				<li>
+					<a href="/system/error-logs" class:admin-nav__link--active={isActive("/system/error-logs")} onclick={handleChildClick}>
+						Error Logs
+					</a>
+				</li>
+				<li>
 					<a href="/account" class:admin-nav__link--active={isActive("/account")} onclick={handleChildClick}>
 						Account
 					</a>
