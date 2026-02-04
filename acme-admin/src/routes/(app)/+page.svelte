@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { healthCommands, adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
-	import { Card, Pill } from "@decodelabs/underlay/components";
+	import { Card, Pill, StatCard, StatGrid } from "@decodelabs/underlay/components";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
 	import UserPlus from "lucide-svelte/icons/user-plus";
@@ -62,88 +62,60 @@
 		<p class="dashboard__subtitle">Platform overview and key metrics</p>
 	</header>
 
-	<div class="dashboard__grid">
-		<Card title="Users" variant="muted">
-			{#if statsLoading}
-				<p class="dashboard__meta">Loading...</p>
-			{:else if statsError}
-				<p class="dashboard__error">{statsError}</p>
-			{:else if stats}
-				<div class="stat-card">
-					<div class="stat-card__icon stat-card__icon--users">
-						<Users />
-					</div>
-					<div class="stat-card__content">
-						<p class="stat-card__value">{stats.userCounts.total}</p>
-						<p class="stat-card__label">Total users</p>
-					</div>
-				</div>
-				<div class="stat-card__breakdown">
-					<span class="stat-card__item">
-						<Pill accent="#22c55e">{stats.userCounts.active}</Pill>
-						<span>active</span>
-					</span>
-					<span class="stat-card__item">
-						<Pill accent="#f97316">{stats.userCounts.suspended}</Pill>
-						<span>suspended</span>
-					</span>
-				</div>
-			{/if}
-		</Card>
+	<StatGrid columns={2} minItemWidth={280}>
+		<StatCard
+			title="Users"
+			value={stats?.userCounts.total ?? 0}
+			label="Total users"
+			variant="info"
+			loading={statsLoading}
+			error={statsError}
+		>
+			{#snippet icon()}<Users />{/snippet}
+			{#snippet breakdown()}
+				<span class="breakdown__item">
+					<Pill accent="#22c55e">{stats?.userCounts.active ?? 0}</Pill>
+					<span>active</span>
+				</span>
+				<span class="breakdown__item">
+					<Pill accent="#f97316">{stats?.userCounts.suspended ?? 0}</Pill>
+					<span>suspended</span>
+				</span>
+			{/snippet}
+		</StatCard>
 
-		<Card title="Media" variant="muted">
-			{#if statsLoading}
-				<p class="dashboard__meta">Loading...</p>
-			{:else if statsError}
-				<p class="dashboard__error">{statsError}</p>
-			{:else if stats}
-				<div class="stat-card">
-					<div class="stat-card__icon stat-card__icon--media">
-						<Image />
-					</div>
-					<div class="stat-card__content">
-						<p class="stat-card__value">{stats.mediaCount}</p>
-						<p class="stat-card__label">Media items</p>
-					</div>
-				</div>
-			{/if}
-		</Card>
+		<StatCard
+			title="Media"
+			value={stats?.mediaCount ?? 0}
+			label="Media items"
+			variant="warning"
+			loading={statsLoading}
+			error={statsError}
+		>
+			{#snippet icon()}<Image />{/snippet}
+		</StatCard>
 
-		<Card title="Recent registrations" variant="muted">
-			{#if statsLoading}
-				<p class="dashboard__meta">Loading...</p>
-			{:else if statsError}
-				<p class="dashboard__error">{statsError}</p>
-			{:else if stats}
-				<div class="stat-card">
-					<div class="stat-card__icon stat-card__icon--registrations">
-						<UserPlus />
-					</div>
-					<div class="stat-card__content">
-						<p class="stat-card__value">{stats.recentRegistrations}</p>
-						<p class="stat-card__label">Last 7 days</p>
-					</div>
-				</div>
-			{/if}
-		</Card>
+		<StatCard
+			title="Recent registrations"
+			value={stats?.recentRegistrations ?? 0}
+			label="Last 7 days"
+			variant="success"
+			loading={statsLoading}
+			error={statsError}
+		>
+			{#snippet icon()}<UserPlus />{/snippet}
+		</StatCard>
 
-		<Card title="Active sessions" variant="muted">
-			{#if statsLoading}
-				<p class="dashboard__meta">Loading...</p>
-			{:else if statsError}
-				<p class="dashboard__error">{statsError}</p>
-			{:else if stats}
-				<div class="stat-card">
-					<div class="stat-card__icon stat-card__icon--sessions">
-						<Activity />
-					</div>
-					<div class="stat-card__content">
-						<p class="stat-card__value">{stats.activeSessions}</p>
-						<p class="stat-card__label">Logged in now</p>
-					</div>
-				</div>
-			{/if}
-		</Card>
+		<StatCard
+			title="Active sessions"
+			value={stats?.activeSessions ?? 0}
+			label="Logged in now"
+			variant="danger"
+			loading={statsLoading}
+			error={statsError}
+		>
+			{#snippet icon()}<Activity />{/snippet}
+		</StatCard>
 
 		<Card title="API health" variant="muted">
 			{#if healthError}
@@ -159,7 +131,7 @@
 				<p class="dashboard__meta">Checking...</p>
 			{/if}
 		</Card>
-	</div>
+	</StatGrid>
 
 	<section class="dashboard__section">
 		<h2 class="dashboard__section-title">Recent Activity</h2>
@@ -195,12 +167,6 @@
 		font-size: 0.95rem;
 	}
 
-	.dashboard__grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
-	}
-
 	.dashboard__row {
 		display: flex;
 		align-items: center;
@@ -219,72 +185,7 @@
 		color: #fca5a5;
 	}
 
-	.stat-card {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
-
-	.stat-card__icon {
-		width: 3rem;
-		height: 3rem;
-		border-radius: 0.75rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.stat-card__icon--users {
-		background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-	}
-
-	.stat-card__icon--media {
-		background: linear-gradient(135deg, #f97316, #eab308);
-	}
-
-	.stat-card__icon--registrations {
-		background: linear-gradient(135deg, #22c55e, #14b8a6);
-	}
-
-	.stat-card__icon--sessions {
-		background: linear-gradient(135deg, #ec4899, #f43f5e);
-	}
-
-	:global(.stat-card__icon svg) {
-		width: 1.5rem;
-		height: 1.5rem;
-		color: white;
-	}
-
-	.stat-card__content {
-		display: flex;
-		flex-direction: column;
-		gap: 0.1rem;
-	}
-
-	.stat-card__value {
-		margin: 0;
-		font-size: 1.75rem;
-		font-weight: 650;
-		line-height: 1;
-	}
-
-	.stat-card__label {
-		margin: 0;
-		color: var(--admin-color-text-muted);
-		font-size: 0.85rem;
-	}
-
-	.stat-card__breakdown {
-		display: flex;
-		gap: 1rem;
-		margin-top: 0.75rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--admin-color-border-subtle);
-	}
-
-	.stat-card__item {
+	.breakdown__item {
 		display: flex;
 		align-items: center;
 		gap: 0.4rem;
@@ -307,11 +208,5 @@
 		border: 1px solid var(--admin-color-border-subtle);
 		border-radius: 0.5rem;
 		padding: 1rem;
-	}
-
-	@media (max-width: 900px) {
-		.dashboard__grid {
-			grid-template-columns: 1fr;
-		}
 	}
 </style>
