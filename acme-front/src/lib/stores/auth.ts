@@ -20,7 +20,7 @@ import { env } from '$env/dynamic/public';
 if (browser) {
   configureAcmeClient({
     baseUrl: env.PUBLIC_API_URL ?? 'http://localhost:40011',
-    apiVersion: env.PUBLIC_API_VERSION ?? 'v1'
+    apiVersion: env.PUBLIC_API_VERSION ?? '2025-01-01'
   });
 }
 
