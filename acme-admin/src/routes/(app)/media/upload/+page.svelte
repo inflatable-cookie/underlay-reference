@@ -743,6 +743,18 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+
+    /* Override FileUpload component tokens for dark theme */
+    --underlay-upload-border: 2px dashed var(--admin-color-border-strong);
+    --underlay-upload-border-active: 2px dashed var(--admin-color-accent);
+    --underlay-upload-bg: var(--admin-color-surface-card);
+    --underlay-upload-bg-hover: var(--admin-color-surface-subtle);
+    --color-border: var(--admin-color-border-subtle);
+    --color-surface: var(--admin-color-surface-card);
+    --color-surface-subtle: var(--admin-color-surface-subtle);
+    --color-surface-hover: var(--admin-color-surface-subtle);
+    --color-text-muted: var(--admin-color-text-muted);
+    --color-primary: var(--admin-color-accent);
   }
 
   .upload-section {
