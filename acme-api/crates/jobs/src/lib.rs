@@ -50,6 +50,12 @@ pub use underlay_jobs::{
     JobId, JobProgress, JobRegistry, JobRepository, JobResult, JobRunner, JobRunnerConfig,
     JobStatus, JobStore, PgJobNotifier, RepoError, ScheduledTask, ScheduledTaskDefinition,
     ScheduledTaskRepository, Scheduler, JOB_NOTIFY_CHANNEL, JOB_NOTIFY_SQL, JOB_TABLES_SQL,
+    DOMAIN_EVENT_NOTIFY_SQL,
+};
+
+// Re-export outbox components from underlay-jobs
+pub use underlay_jobs::outbox::{
+    OutboxConfig, OutboxEvent, OutboxNotifier, OutboxProcessor, DOMAIN_EVENT_NOTIFY_CHANNEL,
 };
 
 // Re-export standard platform maintenance tasks from underlay-jobs
