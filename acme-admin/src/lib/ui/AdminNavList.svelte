@@ -282,13 +282,13 @@
 		flex-shrink: 0;
 	}
 
-	:global(.admin-nav__child-link--danger) {
+	:global(.admin-nav__children a.admin-nav__child-link--danger) {
 		color: #dc2626;
 		opacity: 0.5;
 	}
 
-	:global(.admin-nav__child-link--danger:hover),
-	:global(.admin-nav__child-link--danger.admin-nav__link--active) {
+	:global(.admin-nav__children a.admin-nav__child-link--danger:hover),
+	:global(.admin-nav__children a.admin-nav__child-link--danger.admin-nav__link--active) {
 		color: #ef4444;
 		opacity: 1;
 		background-color: rgba(239, 68, 68, 0.12);
@@ -403,13 +403,13 @@
 		opacity: 1;
 	}
 
-	:global(.admin-mobile-overlay__children .admin-nav__child-link--danger) {
+	:global(.admin-mobile-overlay__children a.admin-nav__child-link--danger) {
 		color: #dc2626;
 		opacity: 0.5;
 	}
 
-	:global(.admin-mobile-overlay__children .admin-nav__child-link--danger:hover),
-	:global(.admin-mobile-overlay__children .admin-nav__child-link--danger.admin-nav__link--active) {
+	:global(.admin-mobile-overlay__children a.admin-nav__child-link--danger:hover),
+	:global(.admin-mobile-overlay__children a.admin-nav__child-link--danger.admin-nav__link--active) {
 		color: #ef4444;
 		opacity: 1;
 		background: rgba(239, 68, 68, 0.12);
