@@ -272,20 +272,6 @@
 
 <PageHeader title="Projects" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
-    {#if (pageData.data?.projects ?? []).length > 1 && !isSelectionMode}
-      <Tooltip content={isReorderMode ? "Cancel Reorder" : "Reorder Projects"} inline>
-        {#snippet trigger()}
-          <Button
-            type="button"
-            variant={isReorderMode ? "danger" : "subtle"}
-            size="icon"
-            onclick={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
-          >
-            <ArrowUpDown size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
-    {/if}
     {#if (pageData.data?.projects ?? []).length > 0 && !isReorderMode}
       <Tooltip content={isSelectionMode ? "Cancel Selection" : "Select Items"} inline>
         {#snippet trigger()}
@@ -296,6 +282,20 @@
             onclick={toggleSelectionMode}
           >
             <CheckSquare size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
+    {/if}
+    {#if (pageData.data?.projects ?? []).length > 1 && !isSelectionMode}
+      <Tooltip content={isReorderMode ? "Cancel Reorder" : "Reorder Projects"} inline>
+        {#snippet trigger()}
+          <Button
+            type="button"
+            variant={isReorderMode ? "danger" : "subtle"}
+            size="icon"
+            onclick={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
+          >
+            <ArrowUpDown size={16} />
           </Button>
         {/snippet}
       </Tooltip>

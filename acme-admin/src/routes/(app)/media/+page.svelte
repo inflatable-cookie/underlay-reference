@@ -285,15 +285,6 @@
 
 <PageHeader title="Media Library" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
-    {#if !isSelectionMode}
-      <Tooltip content="View Trash" inline>
-        {#snippet trigger()}
-          <Button type="button" variant="danger-subtle" size="icon" onclick={() => goto("/media/trash")}>
-            <Trash2 size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
-    {/if}
     {#if (pageData.data?.items ?? []).length > 0}
       <Tooltip content={isSelectionMode ? "Cancel Selection" : "Select Items"} inline>
         {#snippet trigger()}
@@ -304,6 +295,15 @@
             onclick={toggleSelectionMode}
           >
             <CheckSquare size={16} />
+          </Button>
+        {/snippet}
+      </Tooltip>
+    {/if}
+    {#if !isSelectionMode}
+      <Tooltip content="View Trash" inline>
+        {#snippet trigger()}
+          <Button type="button" variant="danger-subtle" size="icon" onclick={() => goto("/media/trash")}>
+            <Trash2 size={16} />
           </Button>
         {/snippet}
       </Tooltip>
