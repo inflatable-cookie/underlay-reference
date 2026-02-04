@@ -55,7 +55,7 @@ export default defineConfig({
 		noExternal: ["bits-ui", "svelte-toolbelt", "lucide-svelte"]
 	},
 	server: {
-		port: 40013,
+		port: 41003,
 		watch: {
 			ignored: [
 				"!**/node_modules/@decodelabs/underlay/**",

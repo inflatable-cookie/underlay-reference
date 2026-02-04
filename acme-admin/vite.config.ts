@@ -33,7 +33,7 @@ export default defineConfig({
         ],
     },
     server: {
-        port: 40012,
+        port: 41002,
         strictPort: true,
         watch: {
             // Watch changes in symlinked local dependencies
@@ -45,7 +45,7 @@ export default defineConfig({
         },
     },
     preview: {
-        port: 40012,
+        port: 41002,
         strictPort: true,
     },
 });
