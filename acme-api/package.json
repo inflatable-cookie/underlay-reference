@@ -14,7 +14,7 @@
     "jobs": "cargo run -p acme-jobs",
     "db:drop": "cargo run -p acme-db --bin reset_dev_db",
     "db:migrate": "cargo run -p acme-db --bin migrate_dev_db",
-    "db:reset": "pnpm db:drop && pnpm db:migrate"
+    "db:reset": "bun db:drop && bun db:migrate"
   },
   "devDependencies": {}
 }
