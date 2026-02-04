@@ -60,30 +60,30 @@ WHERE user_id IN (
 );
 
 -- Password credentials (all use: AcmeAdmin123!)
--- Hash generated with argon2id
+-- Hash generated with: cargo run -p acme-auth --bin generate-password-hash -- "AcmeAdmin123!"
 INSERT INTO auth.credentials (id, user_id, type, secret_encrypted, metadata, verified)
 VALUES
   (gen_random_uuid(),
    '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
    'password',
-   '$argon2id$v=19$m=65536,t=3,p=4$YWNtZURldlNlZWQyMDI2MDEzMA$7FpKqDr6d+UQHJ5wCLJBz8hNrM1r4K+InZBr7K5W42k',
+   '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
    '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE),
   (gen_random_uuid(),
    '018f2a3b-3c4d-7e8f-8a9b-00000000a002'::uuid,
    'password',
-   '$argon2id$v=19$m=65536,t=3,p=4$YWNtZURldlNlZWQyMDI2MDEzMA$7FpKqDr6d+UQHJ5wCLJBz8hNrM1r4K+InZBr7K5W42k',
+   '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
    '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE),
   (gen_random_uuid(),
    '018f2a3b-3c4d-7e8f-8a9b-00000000a003'::uuid,
    'password',
-   '$argon2id$v=19$m=65536,t=3,p=4$YWNtZURldlNlZWQyMDI2MDEzMA$7FpKqDr6d+UQHJ5wCLJBz8hNrM1r4K+InZBr7K5W42k',
+   '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
    '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE),
   (gen_random_uuid(),
    '018f2a3b-3c4d-7e8f-8a9b-00000000a004'::uuid,
    'password',
-   '$argon2id$v=19$m=65536,t=3,p=4$YWNtZURldlNlZWQyMDI2MDEzMA$7FpKqDr6d+UQHJ5wCLJBz8hNrM1r4K+InZBr7K5W42k',
+   '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
    '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE);
