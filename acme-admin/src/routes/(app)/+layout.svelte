@@ -44,9 +44,8 @@
 
 	const currentSection = $derived.by(() => {
 		const path = $page.url.pathname;
-		if (path.startsWith("/people")) return "people";
-		if (path.startsWith("/businesses")) return "businesses";
-		if (path.startsWith("/assessments")) return "assessments";
+		if (path.startsWith("/categories") || path.startsWith("/projects")) return "acme";
+		if (path.startsWith("/media")) return "media";
 		if (path.startsWith("/system")) return "system";
 		return "overview";
 	});
