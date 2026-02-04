@@ -2,6 +2,7 @@
   import { NavCard, NavCardGrid, PageHeader } from "@decodelabs/underlay/patterns";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import Calendar from "lucide-svelte/icons/calendar";
+  import ClipboardList from "lucide-svelte/icons/clipboard-list";
   import Layers from "lucide-svelte/icons/layers";
   import Mail from "lucide-svelte/icons/mail";
 </script>
@@ -29,6 +30,13 @@
     description="Manage cron-scheduled maintenance tasks."
     icon={Calendar}
     iconBackground="#10b981"
+  />
+  <NavCard
+    href="/system/audit"
+    title="Audit log"
+    description="Track changes made to content and configuration."
+    icon={ClipboardList}
+    iconBackground="#6366f1"
   />
   <NavCard
     href="/system/emails"

@@ -63,6 +63,9 @@
 		--underlay-color-danger: var(--admin-color-danger);
 		--underlay-color-error: var(--admin-color-danger);
 		--underlay-shadow-popover: 0 22px 60px rgba(0, 0, 0, 0.7);
+		--underlay-color-field-bg: rgba(255, 255, 255, 0.08);
+		--underlay-color-text-secondary: #cbd5e1;
+		--underlay-color-surface-raised: var(--admin-color-surface-subtle);
 
 		/* DataTable specific tokens */
 		--underlay-table-border: 1px solid var(--admin-color-border-subtle);

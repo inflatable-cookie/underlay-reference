@@ -10,6 +10,7 @@
     DataTable,
     StatCard,
     StatGrid,
+    TimeAgo,
     Tooltip,
     type DataTableColumn,
     type DataTableAction,
@@ -27,6 +28,7 @@
 
   // Filter state
   let statusFilter = $state<JobStatus | "">("");
+  let jobTypeFilter = $state<string>("");
 
   // Fetch jobs and stats
   const pageData = useAuthenticatedData(
@@ -34,6 +36,7 @@
       const [jobs, stats] = await Promise.all([
         adminCommands.listJobs(fetch, token, {
           status: statusFilter || undefined,
+          jobType: jobTypeFilter || undefined,
           limit: 50
         }),
         adminCommands.getJobStats(fetch, token)
@@ -54,6 +57,7 @@
   // Refetch when filter changes
   $effect(() => {
     void statusFilter;
+    void jobTypeFilter;
     if ($currentUser) {
       pageData.refetch();
     }
@@ -113,27 +117,13 @@
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
-  function formatRelativeTime(dateStr: string): string {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return "just now";
-  }
-
   // Column configuration
   const columns: DataTableColumn<JobSummary>[] = [
     {
       key: "jobType",
       label: "Job Type",
-      width: "2fr"
+      width: "2fr",
+      filterable: true
     },
     {
       key: "status",
@@ -160,15 +150,13 @@
       key: "createdAt",
       label: "Created",
       width: "100px",
-      hideOnMobile: true,
-      formatter: (value) => formatRelativeTime(value as string)
+      hideOnMobile: true
     },
     {
       key: "finishedAt",
       label: "Finished",
       width: "100px",
-      hideOnMobile: true,
-      formatter: (value) => value ? formatRelativeTime(value as string) : "—"
+      hideOnMobile: true
     }
   ];
 
@@ -195,6 +183,9 @@
   function handleFilterChange(filters: DataTableFilters) {
     if (filters.status !== undefined) {
       statusFilter = filters.status as JobStatus | "";
+    }
+    if (filters.jobType !== undefined) {
+      jobTypeFilter = filters.jobType;
     }
   }
 </script>
@@ -261,6 +252,14 @@
         <Badge variant={getStatusVariant(row.status)} size="sm">
           {getStatusLabel(row.status)}
         </Badge>
+      {:else if column.key === "createdAt"}
+        <TimeAgo date={row.createdAt} tooltipFormat="datetime" short />
+      {:else if column.key === "finishedAt"}
+        {#if row.finishedAt}
+          <TimeAgo date={row.finishedAt} tooltipFormat="datetime" short />
+        {:else}
+          —
+        {/if}
       {:else}
         {value}
       {/if}

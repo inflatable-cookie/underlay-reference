@@ -2,7 +2,7 @@
   import { adminCommands, type ErrorLogSummary, type ErrorLogStats, type ErrorLogDetail } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Badge, Select, Card } from "@decodelabs/underlay/components";
+  import { Button, PageLoading, FormError, Badge, Select, Card, DataTable, TimeAgo, type DataTableColumn } from "@decodelabs/underlay/components";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
@@ -87,21 +87,6 @@
     return "default";
   }
 
-  function formatRelativeTime(dateStr: string): string {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const seconds = Math.floor(diff / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return "just now";
-  }
-
   function formatDateTime(dateStr: string): string {
     const date = new Date(dateStr);
     return date.toLocaleString();
@@ -116,6 +101,15 @@
     { value: "500", label: "500 Server Error" },
     { value: "502", label: "502 Bad Gateway" },
     { value: "503", label: "503 Unavailable" }
+  ];
+
+  const columns: DataTableColumn<ErrorLogSummary>[] = [
+    { key: "expand", label: "", width: "64px", align: "center", hideable: false },
+    { key: "occurredAt", label: "Time", width: "minmax(120px, 160px)" },
+    { key: "statusCode", label: "Status", width: "minmax(90px, 110px)" },
+    { key: "endpoint", label: "Endpoint", width: "minmax(240px, 420px)" },
+    { key: "errorCode", label: "Error Code", width: "minmax(140px, 200px)" },
+    { key: "message", label: "Message", width: "minmax(220px, 420px)" }
   ];
 </script>
 
@@ -183,109 +177,96 @@
 
   <!-- Error logs list -->
   <div class="logs-list">
-    {#if logs.length === 0}
-      <div class="empty-state">
-        <AlertCircle size={32} />
-        <p>No error logs found</p>
-      </div>
-    {:else}
-      <table class="logs-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Endpoint</th>
-            <th>Error Code</th>
-            <th>Message</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each logs as log (log.id)}
-            <tr class="log-row" class:log-row--expanded={expandedLogId === log.id}>
-              <td class="expand-cell">
-                <button
-                  type="button"
-                  class="expand-btn"
-                  onclick={() => toggleDetail(log.id)}
-                  aria-expanded={expandedLogId === log.id}
-                >
-                  {#if expandedLogId === log.id}
-                    <ChevronUp size={16} />
-                  {:else}
-                    <ChevronDown size={16} />
-                  {/if}
-                </button>
-              </td>
-              <td class="time">
-                <span title={formatDateTime(log.occurredAt)}>
-                  {formatRelativeTime(log.occurredAt)}
-                </span>
-              </td>
-              <td>
-                <Badge variant={getStatusVariant(log.statusCode)} size="sm">
-                  {log.statusCode}
-                </Badge>
-              </td>
-              <td>
-                <div class="endpoint">
-                  <code class="method">{log.method}</code>
-                  <code class="path">{log.endpoint}</code>
-                </div>
-              </td>
-              <td>
-                <code class="error-code">{log.errorCode}</code>
-              </td>
-              <td class="message">
-                {log.message || "—"}
-              </td>
-            </tr>
-            {#if expandedLogId === log.id}
-              <tr class="detail-row">
-                <td colspan="6">
-                  {#if loadingDetail}
-                    <div class="detail-loading">Loading details...</div>
-                  {:else if expandedLogDetail}
-                    <div class="detail-content">
-                      <div class="detail-grid">
-                        <div class="detail-item">
-                          <span class="detail-label">Full Timestamp</span>
-                          <span class="detail-value">{formatDateTime(expandedLogDetail.occurredAt)}</span>
-                        </div>
-                        <div class="detail-item">
-                          <span class="detail-label">Correlation ID</span>
-                          <code class="detail-value correlation-id">{expandedLogDetail.correlationId}</code>
-                        </div>
-                        <div class="detail-item">
-                          <span class="detail-label">Full Endpoint</span>
-                          <code class="detail-value">{expandedLogDetail.method} {expandedLogDetail.endpoint}</code>
-                        </div>
-                        <div class="detail-item">
-                          <span class="detail-label">Error Code</span>
-                          <code class="detail-value">{expandedLogDetail.errorCode}</code>
-                        </div>
-                      </div>
-                      {#if expandedLogDetail.message}
-                        <div class="detail-item detail-item--full">
-                          <span class="detail-label">Message</span>
-                          <span class="detail-value">{expandedLogDetail.message}</span>
-                        </div>
-                      {/if}
-                      {#if expandedLogDetail.context && Object.keys(expandedLogDetail.context).length > 0}
-                        <div class="detail-item detail-item--full">
-                          <span class="detail-label">Context</span>
-                          <pre class="detail-context">{JSON.stringify(expandedLogDetail.context, null, 2)}</pre>
-                        </div>
-                      {/if}
-                    </div>
-                  {/if}
-                </td>
-              </tr>
+    <DataTable
+      data={logs}
+      {columns}
+      loading={pageData.loading}
+      emptyMessage="No error logs found"
+      showLimitSelector={false}
+      extendedRowWhen={(row) => expandedLogId === row.id}
+    >
+      {#snippet cell({ column, row })}
+        {#if column.key === "expand"}
+          <button
+            type="button"
+            class="expand-btn"
+            onclick={() => toggleDetail(row.id)}
+            aria-expanded={expandedLogId === row.id}
+          >
+            {#if expandedLogId === row.id}
+              <ChevronUp size={16} />
+            {:else}
+              <ChevronDown size={16} />
             {/if}
-          {/each}
-        </tbody>
-      </table>
-    {/if}
+          </button>
+        {:else if column.key === "occurredAt"}
+          <span class="time">
+            <TimeAgo date={row.occurredAt} tooltipFormat="datetime" short />
+          </span>
+        {:else if column.key === "statusCode"}
+          <Badge variant={getStatusVariant(row.statusCode)} size="sm">
+            {row.statusCode}
+          </Badge>
+        {:else if column.key === "endpoint"}
+          <div class="endpoint">
+            <code class="method">{row.method}</code>
+            <code class="path">{row.endpoint}</code>
+          </div>
+        {:else if column.key === "errorCode"}
+          <code class="error-code">{row.errorCode}</code>
+        {:else if column.key === "message"}
+          <span class="message">{row.message || "—"}</span>
+        {:else}
+          —
+        {/if}
+      {/snippet}
+      {#snippet extendedRow({ row })}
+        {#if expandedLogId === row.id}
+          {#if loadingDetail}
+            <div class="detail-loading">Loading details...</div>
+          {:else if expandedLogDetail}
+            <div class="detail-content">
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Full Timestamp</span>
+                  <span class="detail-value">{formatDateTime(expandedLogDetail.occurredAt)}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Correlation ID</span>
+                  <code class="detail-value correlation-id">{expandedLogDetail.correlationId}</code>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Full Endpoint</span>
+                  <code class="detail-value">{expandedLogDetail.method} {expandedLogDetail.endpoint}</code>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Error Code</span>
+                  <code class="detail-value">{expandedLogDetail.errorCode}</code>
+                </div>
+              </div>
+              {#if expandedLogDetail.message}
+                <div class="detail-item detail-item--full">
+                  <span class="detail-label">Message</span>
+                  <span class="detail-value">{expandedLogDetail.message}</span>
+                </div>
+              {/if}
+              {#if expandedLogDetail.context && Object.keys(expandedLogDetail.context).length > 0}
+                <div class="detail-item detail-item--full">
+                  <span class="detail-label">Context</span>
+                  <pre class="detail-context">{JSON.stringify(expandedLogDetail.context, null, 2)}</pre>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        {/if}
+      {/snippet}
+      {#snippet empty()}
+        <div class="empty-state">
+          <AlertCircle size={32} />
+          <p>No error logs found</p>
+        </div>
+      {/snippet}
+    </DataTable>
   </div>
 {/if}
 
@@ -334,12 +315,35 @@
 
   .logs-list {
     background: var(--admin-color-surface-card);
-    border: 1px solid var(--admin-color-border-subtle);
     border-radius: 0.5rem;
-    overflow: hidden;
   }
 
-  .empty-state {
+  .logs-list :global(.underlay-data-table) {
+    --underlay-table-border: 1px solid var(--admin-color-border-subtle);
+    --underlay-table-header-bg: var(--admin-color-surface-subtle);
+    --underlay-table-row-hover: var(--admin-color-surface-subtle);
+    --underlay-table-row-selected: var(--admin-color-surface-subtle);
+    color: var(--admin-color-text);
+  }
+
+  .logs-list :global(.underlay-data-table-wrapper) {
+    border-radius: 0.5rem;
+  }
+
+  .logs-list :global(.table-cell) {
+    padding: 0.75rem 1rem;
+  }
+
+  .logs-list :global(.table-body > .table-row.has-extended > .table-cell) {
+    background: var(--admin-color-surface-subtle);
+  }
+
+  .logs-list :global(.table-row--extended > .table-cell) {
+    padding: 0;
+    background: var(--admin-color-surface-subtle);
+  }
+
+  .logs-list :global(.empty-state) {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -348,49 +352,11 @@
     color: var(--admin-color-text-muted);
   }
 
-  .logs-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .logs-table th,
-  .logs-table td {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--admin-color-border-subtle);
-  }
-
-  .logs-table th {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--admin-color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: var(--admin-color-surface-subtle);
-  }
-
-  .log-row {
-    cursor: pointer;
-  }
-
-  .log-row:hover {
-    background: var(--admin-color-surface-subtle);
-  }
-
-  .log-row--expanded {
-    background: var(--admin-color-surface-subtle);
-  }
-
-  .expand-cell {
-    width: 40px;
-    padding: 0.5rem !important;
-  }
-
   .expand-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
+    width: 34px;
     height: 28px;
     padding: 0;
     background: transparent;
@@ -398,6 +364,7 @@
     border-radius: 4px;
     color: var(--admin-color-text-muted);
     cursor: pointer;
+    margin: 0 auto;
   }
 
   .expand-btn:hover {
@@ -448,12 +415,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  /* Detail row styles */
-  .detail-row td {
-    padding: 0 !important;
-    background: var(--admin-color-surface-subtle);
   }
 
   .detail-loading {

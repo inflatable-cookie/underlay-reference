@@ -13,6 +13,7 @@
 	import Trash2 from "lucide-svelte/icons/trash-2";
 	import Layers from "lucide-svelte/icons/layers";
 	import Calendar from "lucide-svelte/icons/calendar";
+	import ClipboardList from "lucide-svelte/icons/clipboard-list";
 	import AlertTriangle from "lucide-svelte/icons/alert-triangle";
 	import Mail from "lucide-svelte/icons/mail";
 
@@ -162,6 +163,12 @@
 		{#if expandedSection === "system"}
 			<ul class={childrenClass}>
 				<li>
+					<a href="/system/errors" class:admin-nav__link--active={isActive("/system/errors")} onclick={handleChildClick}>
+						<AlertTriangle class="admin-nav__child-icon" />
+						Errors
+					</a>
+				</li>
+				<li>
 					<a href="/system/jobs" class:admin-nav__link--active={isActive("/system/jobs")} onclick={handleChildClick}>
 						<Layers class="admin-nav__child-icon" />
 						Jobs
@@ -174,9 +181,9 @@
 					</a>
 				</li>
 				<li>
-					<a href="/system/errors" class:admin-nav__link--active={isActive("/system/errors")} onclick={handleChildClick}>
-						<AlertTriangle class="admin-nav__child-icon" />
-						Errors
+					<a href="/system/audit" class:admin-nav__link--active={isActive("/system/audit")} onclick={handleChildClick}>
+						<ClipboardList class="admin-nav__child-icon" />
+						Audit Log
 					</a>
 				</li>
 				<li>
