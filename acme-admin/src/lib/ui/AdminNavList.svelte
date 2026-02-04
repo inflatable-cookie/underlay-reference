@@ -89,12 +89,37 @@
 	</li>
 
 	<li>
-		<a href="/media" class="{linkClass} admin-nav__root" class:admin-nav__link--active={isActive("/media")} onclick={handleChildClick}>
+		<button
+			type="button"
+			class="{linkClass} {sectionClass} admin-nav__section-toggle"
+			aria-expanded={expandedSection === "media"}
+			onclick={() => toggleSection("media")}
+		>
 			<span class="admin-nav__badge admin-nav__badge--media" aria-hidden="true">
 				<Image class="admin-nav__badge-icon" />
 			</span>
 			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Media</span>
-		</a>
+			<ChevronDown class="admin-nav__chevron" />
+		</button>
+		{#if expandedSection === "media"}
+			<ul class={childrenClass}>
+				<li>
+					<a href="/media" class:admin-nav__link--active={isActive("/media") && !isActive("/media/upload") && !isActive("/media/trash")} onclick={handleChildClick}>
+						Library
+					</a>
+				</li>
+				<li>
+					<a href="/media/upload" class:admin-nav__link--active={isActive("/media/upload")} onclick={handleChildClick}>
+						Upload
+					</a>
+				</li>
+				<li>
+					<a href="/media/trash" class:admin-nav__link--active={isActive("/media/trash")} onclick={handleChildClick}>
+						Trash
+					</a>
+				</li>
+			</ul>
+		{/if}
 	</li>
 
 	<li>
