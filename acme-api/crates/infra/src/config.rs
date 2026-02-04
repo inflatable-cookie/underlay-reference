@@ -163,7 +163,7 @@ impl AppConfig {
             if should_bind_publicly {
                 "0.0.0.0".to_string()
             } else {
-                "127.0.0.1".to_string()
+                "localhost".to_string()
             }
         });
 

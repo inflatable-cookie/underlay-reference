@@ -13,7 +13,7 @@
     REJECTED_VIDEO_TYPES,
     type UploadProgress
   } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Field, TextInput, FileUpload, ProgressBar, type FileUploadItem } from "@decodelabs/underlay/components";
+  import { Button, PageLoading, FormError, Field, TextInput, TextButton, FileUpload, ProgressBar, type FileUploadItem } from "@decodelabs/underlay/components";
   import Upload from "lucide-svelte/icons/upload";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
   import CheckCircle from "lucide-svelte/icons/check-circle";
@@ -570,14 +570,6 @@
     <div class="actions">
       <Button
         type="button"
-        variant="subtle"
-        onclick={() => goto(`/media/${replaceMediaId}`)}
-        disabled={uploading}
-      >
-        Cancel
-      </Button>
-      <Button
-        type="button"
         variant="primary"
         onclick={handleSingleUpload}
         disabled={uploading || files.length === 0 || !!error}
@@ -585,6 +577,14 @@
         <Upload size={16} />
         {uploading ? "Uploading..." : "Replace File"}
       </Button>
+      <span class="actions-spacer"></span>
+      <TextButton
+        type="button"
+        onclick={() => goto(`/media/${replaceMediaId}`)}
+        disabled={uploading}
+      >
+        Cancel
+      </TextButton>
     </div>
   {:else}
     <!-- Bulk upload mode -->
@@ -705,14 +705,6 @@
     {/if}
 
     <div class="actions">
-      <Button
-        type="button"
-        variant="subtle"
-        onclick={() => goto("/media")}
-        disabled={uploading}
-      >
-        Cancel
-      </Button>
       {#if allDone}
         <Button
           type="button"
@@ -732,6 +724,14 @@
           {uploading ? "Uploading..." : `Upload ${pendingCount} file${pendingCount > 1 ? "s" : ""}`}
         </Button>
       {/if}
+      <span class="actions-spacer"></span>
+      <TextButton
+        type="button"
+        onclick={() => goto("/media")}
+        disabled={uploading}
+      >
+        Cancel
+      </TextButton>
     </div>
   {/if}
 </div>
@@ -740,6 +740,7 @@
   .upload-container {
     max-width: 48rem;
     margin-top: 1.5rem;
+    margin-inline: auto;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -935,7 +936,10 @@
 
   .actions {
     display: flex;
-    justify-content: flex-end;
     gap: 0.75rem;
+  }
+
+  .actions-spacer {
+    flex: 1;
   }
 </style>

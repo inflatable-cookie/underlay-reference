@@ -127,7 +127,7 @@
   ];
 </script>
 
-<PageHeader title="Background Jobs">
+<PageHeader title="Job queue" backHref="/system" backLabel="Back to system">
   {#snippet actions()}
     <Button type="button" variant="subtle" onclick={() => pageData.refetch()}>
       <RefreshCw size={16} />
@@ -312,12 +312,12 @@
   .stat-value {
     font-size: 1.5rem;
     font-weight: 600;
-    color: var(--text-primary, #111827);
+    color: var(--admin-color-text);
   }
 
   .stat-label {
     font-size: 0.75rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -328,8 +328,8 @@
   }
 
   .jobs-list {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--admin-color-surface-card);
+    border: 1px solid var(--admin-color-border-subtle);
     border-radius: 0.5rem;
     overflow: hidden;
   }
@@ -340,7 +340,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 3rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
   }
 
   .jobs-table {
@@ -352,34 +352,35 @@
   .jobs-table td {
     padding: 0.75rem 1rem;
     text-align: left;
-    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    border-bottom: 1px solid var(--admin-color-border-subtle);
   }
 
   .jobs-table th {
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background: var(--bg-muted, #f9fafb);
+    background: var(--admin-color-surface-subtle);
   }
 
   .job-type {
     font-family: monospace;
     font-size: 0.8rem;
-    background: var(--bg-muted, #f3f4f6);
+    background: var(--admin-color-surface-subtle);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
+    color: var(--admin-color-text);
   }
 
   .attempts {
     font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
   }
 
   .time {
     font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
   }
 
   .actions {
@@ -388,7 +389,7 @@
 
   .error-row td {
     padding: 0 1rem 0.75rem;
-    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    border-bottom: 1px solid var(--admin-color-border-subtle);
   }
 
   .error-message {
@@ -396,8 +397,8 @@
     align-items: flex-start;
     gap: 0.5rem;
     font-size: 0.8rem;
-    color: var(--danger, #ef4444);
-    background: var(--danger-bg, #fef2f2);
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.15);
     padding: 0.5rem 0.75rem;
     border-radius: 0.25rem;
   }

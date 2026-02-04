@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    ConfirmAction,
     Field,
     FieldSet,
     FormActions,
@@ -56,8 +55,6 @@
     errors?: Record<string, string> | null;
     cancelHref?: string;
     returnTo?: string;
-    /** Called when delete is confirmed (edit mode only) */
-    onDelete?: () => void;
     prepare?: (formData: FormData) => void;
   }
 
@@ -72,7 +69,6 @@
     errors = null,
     cancelHref = undefined,
     returnTo = undefined,
-    onDelete = undefined,
     prepare = $bindable(() => {})
   }: Props = $props();
 
@@ -164,26 +160,8 @@
     { value: "on_hold", label: "On Hold" }
   ];
 
-  let deleteSubmitter: HTMLButtonElement | null = $state(null);
-  let submitIntent: "save" | "save-close" | "delete" = $state(intent);
-
-  $effect(() => {
-    if (submitIntent !== "delete") {
-      submitIntent = intent;
-    }
-  });
-
   function handleCancel() {
     navigateOnCancel(cancelHref);
-  }
-
-  function confirmDelete() {
-    submitIntent = "delete";
-    if (onDelete) {
-      onDelete();
-    } else {
-      deleteSubmitter?.form?.requestSubmit(deleteSubmitter ?? undefined);
-    }
   }
 </script>
 
@@ -263,36 +241,20 @@
 </FormValidationProvider>
 
 <FormActions align="start">
-  {#if returnTo}
-    <input type="hidden" name="returnTo" value={returnTo} />
-  {/if}
+  {#snippet danger()}
+    {#if returnTo}
+      <input type="hidden" name="returnTo" value={returnTo} />
+    {/if}
+
+    <TextButton type="button" onclick={handleCancel}>
+      Cancel
+    </TextButton>
+  {/snippet}
 
   <SaveSplitButton
     disabled={!isFormValid}
     bind:intent
   />
-
-  <TextButton type="button" onclick={handleCancel}>
-    Cancel
-  </TextButton>
-
-  {#if mode === "edit" && onDelete}
-    <ConfirmAction
-      title="Delete Project"
-      description="Are you sure you want to delete this project? This will also delete all tasks within it. This action can be undone from the trash."
-      confirmLabel="Delete"
-      triggerLabel="Delete"
-      triggerVariant="danger"
-      onConfirm={confirmDelete}
-    />
-    <button
-      type="submit"
-      name="intent"
-      value="delete"
-      class="hidden"
-      bind:this={deleteSubmitter}
-    >Delete</button>
-  {/if}
 </FormActions>
 
 <style>
@@ -333,9 +295,5 @@
     border: 1px solid var(--border-color, #e5e7eb);
     border-radius: 0.375rem;
     cursor: pointer;
-  }
-
-  .hidden {
-    display: none;
   }
 </style>

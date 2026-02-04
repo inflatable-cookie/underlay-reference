@@ -11,7 +11,6 @@
     SpaFormShell,
     computeBackInfo,
     consumeNavigationContext,
-    submitFormWithIntent,
     useAuthenticatedData,
     type SpaFormResult
   } from "@decodelabs/underlay/patterns";
@@ -108,23 +107,7 @@
       intent: formIntent
     });
 
-    // Handle delete intent
-    if (formIntent === "delete") {
-      try {
-        await adminCommands.softDeleteCategory(data.categoryId, fetch, token);
-        return { success: true, redirectTo: "/categories" };
-      } catch (e) {
-        const { message, fieldErrors: apiFieldErrors } = extractApiError(e, "Failed to delete category");
-        return {
-          success: false,
-          error: message,
-          fieldErrors: apiFieldErrors,
-          values: buildValues()
-        };
-      }
-    }
-
-    // Validate required fields
+// Validate required fields
     const errors: Record<string, string> = {};
     if (!name) errors.name = "Name is required";
     if (!slug) errors.slug = "Slug is required";
@@ -174,13 +157,6 @@
     fieldErrors = result.fieldErrors ?? null;
     formValues = result.values as Record<string, unknown> | undefined;
   }
-
-  /**
-   * Handle delete action.
-   */
-  function handleDelete() {
-    submitFormWithIntent("delete");
-  }
 </script>
 
 {#if pageData.loading}
@@ -223,12 +199,6 @@
       cancelHref={computedBackInfo.href}
       {returnTo}
       bind:intent
-      onDelete={handleDelete}
     />
   </SpaFormShell>
-
-  <!-- Delete form for SPA mode -->
-  <form id="category-delete-form" style="display: none;" onsubmit={(e) => { e.preventDefault(); handleDelete(); }}>
-    <input type="hidden" name="intent" value="delete" />
-  </form>
 {/if}

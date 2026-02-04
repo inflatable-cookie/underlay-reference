@@ -5,6 +5,16 @@
 	import Settings from "lucide-svelte/icons/settings";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
+	// Sub-link icons
+	import Tags from "lucide-svelte/icons/tags";
+	import FolderKanban from "lucide-svelte/icons/folder-kanban";
+	import Images from "lucide-svelte/icons/images";
+	import Upload from "lucide-svelte/icons/upload";
+	import Trash2 from "lucide-svelte/icons/trash-2";
+	import Layers from "lucide-svelte/icons/layers";
+	import Calendar from "lucide-svelte/icons/calendar";
+	import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+	import Mail from "lucide-svelte/icons/mail";
 
 	interface Props {
 		currentSection?: string | null;
@@ -76,11 +86,13 @@
 			<ul class={childrenClass}>
 				<li>
 					<a href="/categories" class:admin-nav__link--active={isActive("/categories")} onclick={handleChildClick}>
+						<Tags class="admin-nav__child-icon" />
 						Categories
 					</a>
 				</li>
 				<li>
 					<a href="/projects" class:admin-nav__link--active={isActive("/projects")} onclick={handleChildClick}>
+						<FolderKanban class="admin-nav__child-icon" />
 						Projects
 					</a>
 				</li>
@@ -105,16 +117,19 @@
 			<ul class={childrenClass}>
 				<li>
 					<a href="/media" class:admin-nav__link--active={isActive("/media") && !isActive("/media/upload") && !isActive("/media/trash")} onclick={handleChildClick}>
+						<Images class="admin-nav__child-icon" />
 						Library
 					</a>
 				</li>
 				<li>
 					<a href="/media/upload" class:admin-nav__link--active={isActive("/media/upload")} onclick={handleChildClick}>
+						<Upload class="admin-nav__child-icon" />
 						Upload
 					</a>
 				</li>
 				<li>
-					<a href="/media/trash" class:admin-nav__link--active={isActive("/media/trash")} onclick={handleChildClick}>
+					<a href="/media/trash" class="admin-nav__child-link--danger" class:admin-nav__link--active={isActive("/media/trash")} onclick={handleChildClick}>
+						<Trash2 class="admin-nav__child-icon" />
 						Trash
 					</a>
 				</li>
@@ -148,17 +163,26 @@
 			<ul class={childrenClass}>
 				<li>
 					<a href="/system/jobs" class:admin-nav__link--active={isActive("/system/jobs")} onclick={handleChildClick}>
-						Background Jobs
+						<Layers class="admin-nav__child-icon" />
+						Jobs
 					</a>
 				</li>
 				<li>
-					<a href="/system/error-logs" class:admin-nav__link--active={isActive("/system/error-logs")} onclick={handleChildClick}>
-						Error Logs
+					<a href="/system/scheduled-tasks" class:admin-nav__link--active={isActive("/system/scheduled-tasks")} onclick={handleChildClick}>
+						<Calendar class="admin-nav__child-icon" />
+						Scheduled Tasks
 					</a>
 				</li>
 				<li>
-					<a href="/account" class:admin-nav__link--active={isActive("/account")} onclick={handleChildClick}>
-						Account
+					<a href="/system/errors" class:admin-nav__link--active={isActive("/system/errors")} onclick={handleChildClick}>
+						<AlertTriangle class="admin-nav__child-icon" />
+						Errors
+					</a>
+				</li>
+				<li>
+					<a href="/system/emails" class:admin-nav__link--active={isActive("/system/emails")} onclick={handleChildClick}>
+						<Mail class="admin-nav__child-icon" />
+						Emails
 					</a>
 				</li>
 			</ul>
@@ -236,6 +260,7 @@
 	:global(.admin-nav__children a) {
 		display: flex;
 		align-items: center;
+		gap: 0.5rem;
 		font-size: 0.85rem;
 		padding: 0.45rem 0.75rem;
 		border-radius: 0.4rem;
@@ -249,6 +274,22 @@
 	:global(.admin-nav__children a.admin-nav__link--active) {
 		opacity: 1;
 		background-color: rgba(148, 163, 184, 0.16);
+	}
+
+	:global(.admin-nav__child-icon) {
+		width: 0.9rem;
+		height: 0.9rem;
+		flex-shrink: 0;
+	}
+
+	:global(.admin-nav__child-link--danger) {
+		color: #f87171;
+	}
+
+	:global(.admin-nav__child-link--danger:hover),
+	:global(.admin-nav__child-link--danger.admin-nav__link--active) {
+		color: #ef4444;
+		background-color: rgba(239, 68, 68, 0.12);
 	}
 
 	:global(.admin-nav__link--active) {
@@ -344,6 +385,7 @@
 	:global(.admin-mobile-overlay__children a) {
 		display: flex;
 		align-items: center;
+		gap: 0.5rem;
 		padding: 0.5rem 0.75rem;
 		border-radius: 0.4rem;
 		color: inherit;
@@ -357,6 +399,16 @@
 	:global(.admin-mobile-overlay__children a.admin-nav__link--active) {
 		background: rgba(148, 163, 184, 0.16);
 		opacity: 1;
+	}
+
+	:global(.admin-mobile-overlay__children .admin-nav__child-link--danger) {
+		color: #f87171;
+	}
+
+	:global(.admin-mobile-overlay__children .admin-nav__child-link--danger:hover),
+	:global(.admin-mobile-overlay__children .admin-nav__child-link--danger.admin-nav__link--active) {
+		color: #ef4444;
+		background: rgba(239, 68, 68, 0.12);
 	}
 
 	:global(.admin-mobile-overlay__link .admin-nav__chevron) {

@@ -5,7 +5,7 @@
 //! - `tasks` - User-facing project/task routes
 //! - `admin/` - Admin-only routes with enhanced features
 
-use axum::http::header::HeaderName;
+use axum::http::{header::HeaderName, StatusCode};
 use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 use underlay_http::{cors_layer, CorsConfig};
@@ -16,7 +16,7 @@ use crate::openapi::ApiDoc;
 use crate::state::AppState;
 
 mod admin;
-mod shared;
+pub mod shared;
 mod tasks;
 
 /// Build the main API router with all routes configured.
@@ -26,6 +26,8 @@ pub fn build_router() -> Router<AppState> {
     Router::new()
         // OpenAPI / Swagger UI
         .merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
+        // Favicon (return 204 to stop browser 404s)
+        .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
         // Health
         .route("/v1/health", get(shared::health::health))
         // Auth routes

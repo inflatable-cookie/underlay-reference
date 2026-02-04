@@ -119,7 +119,7 @@
   ];
 </script>
 
-<PageHeader title="Error Logs">
+<PageHeader title="Error log" backHref="/system" backLabel="Back to system">
   {#snippet actions()}
     <Button type="button" variant="subtle" onclick={() => pageData.refetch()}>
       <RefreshCw size={16} />
@@ -315,12 +315,12 @@
   .stat-value {
     font-size: 1.5rem;
     font-weight: 600;
-    color: var(--text-primary, #111827);
+    color: var(--admin-color-text);
   }
 
   .stat-label {
     font-size: 0.75rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -331,8 +331,8 @@
   }
 
   .logs-list {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--admin-color-surface-card);
+    border: 1px solid var(--admin-color-border-subtle);
     border-radius: 0.5rem;
     overflow: hidden;
   }
@@ -343,7 +343,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 3rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
   }
 
   .logs-table {
@@ -355,16 +355,16 @@
   .logs-table td {
     padding: 0.75rem 1rem;
     text-align: left;
-    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    border-bottom: 1px solid var(--admin-color-border-subtle);
   }
 
   .logs-table th {
     font-size: 0.75rem;
     font-weight: 600;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    background: var(--bg-muted, #f9fafb);
+    background: var(--admin-color-surface-subtle);
   }
 
   .log-row {
@@ -372,11 +372,11 @@
   }
 
   .log-row:hover {
-    background: var(--bg-muted, #f9fafb);
+    background: var(--admin-color-surface-subtle);
   }
 
   .log-row--expanded {
-    background: var(--bg-muted, #f9fafb);
+    background: var(--admin-color-surface-subtle);
   }
 
   .expand-cell {
@@ -392,20 +392,20 @@
     height: 28px;
     padding: 0;
     background: transparent;
-    border: 1px solid var(--border-color, #e5e7eb);
+    border: 1px solid var(--admin-color-border-subtle);
     border-radius: 4px;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     cursor: pointer;
   }
 
   .expand-btn:hover {
-    background: var(--bg-muted, #f3f4f6);
-    color: var(--text-primary, #111827);
+    background: var(--admin-color-surface-subtle);
+    color: var(--admin-color-text);
   }
 
   .time {
     font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     white-space: nowrap;
   }
 
@@ -418,24 +418,26 @@
   .method {
     font-family: monospace;
     font-size: 0.7rem;
-    background: var(--bg-muted, #f3f4f6);
+    background: var(--admin-color-surface-subtle);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
     font-weight: 600;
+    color: var(--admin-color-text);
   }
 
   .path {
     font-family: monospace;
     font-size: 0.8rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
   }
 
   .error-code {
     font-family: monospace;
     font-size: 0.8rem;
-    background: var(--bg-muted, #f3f4f6);
+    background: var(--admin-color-surface-subtle);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
+    color: var(--admin-color-text);
   }
 
   .message {
@@ -449,13 +451,13 @@
   /* Detail row styles */
   .detail-row td {
     padding: 0 !important;
-    background: var(--bg-muted, #f9fafb);
+    background: var(--admin-color-surface-subtle);
   }
 
   .detail-loading {
     padding: 1.5rem;
     text-align: center;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
   }
 
   .detail-content {
@@ -484,23 +486,25 @@
   .detail-label {
     font-size: 0.7rem;
     font-weight: 600;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   .detail-value {
     font-size: 0.85rem;
+    color: var(--admin-color-text);
   }
 
   .detail-value code,
   code.detail-value {
     font-family: monospace;
     font-size: 0.8rem;
-    background: var(--bg-surface, #fff);
+    background: var(--admin-color-surface-card);
     padding: 0.125rem 0.375rem;
     border-radius: 0.25rem;
     display: inline-block;
+    color: var(--admin-color-text);
   }
 
   .correlation-id {
