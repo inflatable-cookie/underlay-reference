@@ -175,7 +175,7 @@
 </script>
 
 <PageHeader title="Users" backHref="/" backLabel="Back to dashboard">
-	{#snippet subtitle()}
+	{#snippet subtitleSuffix()}
 		<span class="user-count">{total} total</span>
 	{/snippet}
 </PageHeader>
