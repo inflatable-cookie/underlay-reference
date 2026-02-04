@@ -24,13 +24,12 @@
 //! - `media.cleanup_orphans` - Soft-delete unused media files
 
 use async_trait::async_trait;
-use image::ImageFormat;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use std::io::Cursor;
 use std::sync::Arc;
 use tracing::{info, warn};
 use underlay_blob::{BlobAdapter, MediaConfig};
+use underlay_image::{generate_thumbnail, ThumbnailConfig};
 
 // Re-export everything from underlay-jobs.
 pub use underlay_jobs::{
@@ -482,30 +481,22 @@ impl JobHandler for GenerateThumbnailHandler {
             .await
             .map_err(|e| JobHandlerError::new(format!("failed to download original: {}", e)))?;
 
-        // Decode and resize image
-        let img = image::load_from_memory(&original_bytes)
-            .map_err(|e| JobHandlerError::permanent(format!("failed to decode image: {}", e)))?;
-
+        // Generate thumbnail using underlay-image (Lanczos3 resampling for quality)
         let thumb_size = self.media_config.thumbnail_max_dimension;
-        let thumbnail = img.thumbnail(thumb_size, thumb_size);
-        let (width, height) = (thumbnail.width(), thumbnail.height());
+        let config = ThumbnailConfig::new(thumb_size, thumb_size).with_quality(85);
 
-        // Encode as WebP for efficient storage
-        let mut thumbnail_bytes = Vec::new();
-        let mut cursor = Cursor::new(&mut thumbnail_bytes);
-        thumbnail
-            .write_to(&mut cursor, ImageFormat::WebP)
-            .map_err(|e| JobHandlerError::new(format!("failed to encode thumbnail: {}", e)))?;
+        let result = generate_thumbnail(&original_bytes, &config)
+            .map_err(|e| JobHandlerError::permanent(format!("failed to generate thumbnail: {}", e)))?;
 
         // Generate thumbnail object key
         let thumb_object_key = format!(
-            "media/{}/versions/{}/thumbnail.webp",
+            "media/{}/versions/{}/thumbnail.jpg",
             payload.media_id, payload.version_id
         );
 
         // Upload thumbnail
         self.blob_adapter
-            .put_bytes(&thumb_object_key, &thumbnail_bytes, "image/webp")
+            .put_bytes(&thumb_object_key, &result.data, result.mime_type)
             .await
             .map_err(|e| JobHandlerError::new(format!("failed to upload thumbnail: {}", e)))?;
 
@@ -516,14 +507,15 @@ impl JobHandler for GenerateThumbnailHandler {
             INSERT INTO media.media_rendition
                 (id, media_version_id, kind, byte_size, mime_type, width, height,
                  storage_provider, bucket, object_key)
-            VALUES ($1, $2, 'thumbnail', $3, 'image/webp', $4, $5, 'local', 'media', $6)
+            VALUES ($1, $2, 'thumbnail', $3, $4, $5, $6, 'local', 'media', $7)
             "#,
         )
         .bind(rendition_id)
         .bind(payload.version_id)
-        .bind(thumbnail_bytes.len() as i64)
-        .bind(width as i32)
-        .bind(height as i32)
+        .bind(result.data.len() as i64)
+        .bind(result.mime_type)
+        .bind(result.width as i32)
+        .bind(result.height as i32)
         .bind(&thumb_object_key)
         .execute(self.pool.as_ref())
         .await
@@ -533,9 +525,9 @@ impl JobHandler for GenerateThumbnailHandler {
             job_id = %job.id,
             media_id = %payload.media_id,
             version_id = %payload.version_id,
-            width = width,
-            height = height,
-            size = thumbnail_bytes.len(),
+            width = result.width,
+            height = result.height,
+            size = result.data.len(),
             "generated thumbnail"
         );
 

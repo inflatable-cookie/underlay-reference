@@ -57,5 +57,6 @@ underlay-db = { path = "../underlay/rust/crates/underlay-db" }
 underlay-devtools = { path = "../underlay/rust/crates/underlay-devtools" }
 underlay-email = { path = "../underlay/rust/crates/underlay-email", features = ["templates"] }
 underlay-events = { path = "../underlay/rust/crates/underlay-events" }
+underlay-image = { path = "../underlay/rust/crates/underlay-image" }
 underlay-jobs = { path = "../underlay/rust/crates/underlay-jobs", features = ["full"] }
 underlay-ratelimit = { path = "../underlay/rust/crates/underlay-ratelimit" }
