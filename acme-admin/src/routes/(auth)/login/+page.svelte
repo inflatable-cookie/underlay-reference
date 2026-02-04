@@ -115,7 +115,7 @@
   onComplete={handleComplete}
   forgotPasswordHref="/forgot-password"
   showSetupPrompt={true}
-  setupHref="/account/settings?setup=totp"
+  setupHref="/account/2fa"
   onSkipSetup={handleSkipSetup}
   passkeyHint="Passkeys let you sign in using your device, a password manager, or a security key. If you have multiple accounts, you can optionally enter your email to narrow the choice."
 />
