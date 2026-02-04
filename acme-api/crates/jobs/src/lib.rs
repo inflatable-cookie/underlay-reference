@@ -4,22 +4,35 @@
 //!
 //! ## Job Handlers
 //!
-//! ### Platform (maintenance)
-//! - `platform.jobs_cleanup` - Purge old completed/failed jobs from history
-//! - `auth.cleanup_sessions` - Remove expired sessions and old refresh tokens
+//! ### Platform Maintenance (from underlay-jobs)
 //!
-//! ### Email
+//! Standard maintenance tasks are provided by `underlay_jobs::tasks`:
+//! - `purge_expired_sessions` - Remove expired sessions
+//! - `purge_auth_states` - Remove expired auth states
+//! - `purge_login_attempts` - Remove old login attempts
+//! - `purge_rate_limit_entries` - Remove old rate limit entries
+//! - `purge_email_totp_codes` - Remove expired/used TOTP codes
+//! - `purge_verification_sessions` - Remove expired/used verification sessions
+//! - `archive_completed_jobs` - Move old jobs to history table
+//! - `purge_job_history` - Remove old job history
+//! - `recover_abandoned_jobs` - Reset stalled jobs
+//! - `purge_error_logs` - Remove old error logs
+//! - `purge_captured_emails` - Remove old captured emails (dev/test)
+//!
+//! ### Acme-specific Handlers
+//!
+//! #### Email
 //! - `email.welcome` - Send welcome email to newly registered users
 //!
-//! ### Tasks (example business logic)
+//! #### Tasks (example business logic)
 //! - `tasks.cleanup_completed` - Cleanup old completed tasks (batch processing)
 //! - `tasks.send_reminder` - Send task reminder email (single-item processing)
 //! - `tasks.check_due_reminders` - Check for upcoming due dates and enqueue reminders
 //!
-//! ### Projects
+//! #### Projects
 //! - `projects.generate_report` - Generate project report (long-running with progress)
 //!
-//! ### Media
+//! #### Media
 //! - `media.generate_thumbnail` - Generate thumbnails for uploaded images
 //! - `media.cleanup_orphans` - Soft-delete unused media files
 
@@ -39,67 +52,16 @@ pub use underlay_jobs::{
     ScheduledTaskRepository, Scheduler, JOB_NOTIFY_CHANNEL, JOB_NOTIFY_SQL, JOB_TABLES_SQL,
 };
 
-// ============================================================================
-// Job Handler: platform.jobs_cleanup
-// ============================================================================
-
-/// Purge old job history (completed/failed jobs).
-///
-/// Payload: `{ "days_old": 30 }`
-///
-/// This handler is portable across all Underlay apps since it uses the
-/// JobRepository directly from underlay-jobs.
-pub struct JobsCleanupHandler {
-    pool: Arc<PgPool>,
-}
-
-impl JobsCleanupHandler {
-    pub fn new(pool: Arc<PgPool>) -> Self {
-        Self { pool }
-    }
-}
-
-#[derive(Debug, Deserialize)]
-struct JobsCleanupPayload {
-    /// Days to retain completed/failed jobs (default: 30)
-    days_old: Option<i32>,
-}
-
-#[async_trait]
-impl JobHandler for JobsCleanupHandler {
-    fn job_type(&self) -> &'static str {
-        "platform.jobs_cleanup"
-    }
-
-    fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 3,
-            ..Default::default()
-        }
-    }
-
-    async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
-        let payload: JobsCleanupPayload = serde_json::from_value(job.payload)
-            .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
-
-        let days_old = payload.days_old.unwrap_or(30);
-
-        let job_repo = JobRepository::new((*self.pool).clone());
-        let purged = job_repo
-            .purge_history(days_old)
-            .await
-            .map_err(|e| JobHandlerError::new(format!("job history purge failed: {}", e)))?;
-
-        info!(
-            job_id = %job.id,
-            purged = purged,
-            days_old = days_old,
-            "job history cleanup completed"
-        );
-
-        Ok(())
-    }
-}
+// Re-export standard platform maintenance tasks from underlay-jobs
+pub use underlay_jobs::tasks::{
+    // Auth cleanup
+    PurgeAuthStatesJob, PurgeEmailTotpCodesJob, PurgeExpiredSessionsJob, PurgeLoginAttemptsJob,
+    PurgeRateLimitEntriesJob, PurgeVerificationSessionsJob,
+    // Job maintenance
+    ArchiveCompletedJobsJob, PurgeJobHistoryJob, RecoverAbandonedJobsJob,
+    // Log cleanup
+    PurgeCapturedEmailsJob, PurgeErrorLogsJob,
+};
 
 // ============================================================================
 // Job Handler: tasks.cleanup_completed
@@ -591,87 +553,6 @@ impl JobHandler for WelcomeEmailHandler {
     }
 }
 
-// ============================================================================
-// Job Handler: auth.cleanup_sessions
-// ============================================================================
-
-/// Cleanup expired sessions and old refresh tokens.
-///
-/// Payload: `{ "expired_sessions_days": 7, "old_tokens_days": 30 }`
-pub struct SessionCleanupHandler {
-    pool: Arc<PgPool>,
-}
-
-impl SessionCleanupHandler {
-    pub fn new(pool: Arc<PgPool>) -> Self {
-        Self { pool }
-    }
-}
-
-#[derive(Debug, Deserialize)]
-struct SessionCleanupPayload {
-    /// Days after which expired sessions should be purged (default: 7)
-    expired_sessions_days: Option<i32>,
-    /// Days after which unused refresh tokens should be purged (default: 30)
-    old_tokens_days: Option<i32>,
-}
-
-#[async_trait]
-impl JobHandler for SessionCleanupHandler {
-    fn job_type(&self) -> &'static str {
-        "auth.cleanup_sessions"
-    }
-
-    fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 3,
-            ..Default::default()
-        }
-    }
-
-    async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
-        let payload: SessionCleanupPayload = serde_json::from_value(job.payload)
-            .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
-
-        let expired_days = payload.expired_sessions_days.unwrap_or(7);
-        let tokens_days = payload.old_tokens_days.unwrap_or(30);
-
-        // Delete sessions that expired more than N days ago
-        let session_cutoff = chrono::Utc::now() - chrono::Duration::days(expired_days as i64);
-        let sessions_result = sqlx::query(
-            r#"
-            DELETE FROM auth.session
-            WHERE expires_at < $1
-            "#,
-        )
-        .bind(session_cutoff)
-        .execute(self.pool.as_ref())
-        .await
-        .map_err(|e| JobHandlerError::new(format!("session cleanup failed: {}", e)))?;
-
-        // Delete refresh tokens not used for N days
-        let tokens_cutoff = chrono::Utc::now() - chrono::Duration::days(tokens_days as i64);
-        let tokens_result = sqlx::query(
-            r#"
-            DELETE FROM auth.refresh_token
-            WHERE last_used_at < $1 OR (last_used_at IS NULL AND created_at < $1)
-            "#,
-        )
-        .bind(tokens_cutoff)
-        .execute(self.pool.as_ref())
-        .await
-        .map_err(|e| JobHandlerError::new(format!("token cleanup failed: {}", e)))?;
-
-        info!(
-            job_id = %job.id,
-            sessions_deleted = sessions_result.rows_affected(),
-            tokens_deleted = tokens_result.rows_affected(),
-            "auth session cleanup completed"
-        );
-
-        Ok(())
-    }
-}
 
 // ============================================================================
 // Job Handler: tasks.check_due_reminders
@@ -900,9 +781,30 @@ pub fn create_registry_with_media(
 ) -> JobRegistry {
     let mut registry = JobRegistry::new();
 
-    // Platform handlers
-    registry.register(JobsCleanupHandler::new(pool.clone()));
-    registry.register(SessionCleanupHandler::new(pool.clone()));
+    // ========================================================================
+    // Standard platform maintenance tasks (from underlay-jobs)
+    // ========================================================================
+
+    // Auth cleanup
+    registry.register(PurgeExpiredSessionsJob::new((*pool).clone()));
+    registry.register(PurgeAuthStatesJob::new((*pool).clone()));
+    registry.register(PurgeLoginAttemptsJob::new((*pool).clone()));
+    registry.register(PurgeRateLimitEntriesJob::new((*pool).clone()));
+    registry.register(PurgeEmailTotpCodesJob::new((*pool).clone()));
+    registry.register(PurgeVerificationSessionsJob::new((*pool).clone()));
+
+    // Job system maintenance
+    registry.register(ArchiveCompletedJobsJob::new((*pool).clone()));
+    registry.register(PurgeJobHistoryJob::new((*pool).clone()));
+    registry.register(RecoverAbandonedJobsJob::new((*pool).clone()));
+
+    // Log cleanup
+    registry.register(PurgeErrorLogsJob::new((*pool).clone()));
+    registry.register(PurgeCapturedEmailsJob::new((*pool).clone()));
+
+    // ========================================================================
+    // Acme-specific handlers
+    // ========================================================================
 
     // Email handlers
     registry.register(WelcomeEmailHandler::new(pool.clone()));
@@ -952,36 +854,101 @@ pub fn create_registry_with_media(
 pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
     vec![
         // ====================================================================
-        // Platform maintenance tasks
+        // Platform maintenance tasks (from underlay-jobs)
         // ====================================================================
 
-        // Job history cleanup - daily at 2:30 AM
-        // Purges old completed/failed jobs
+        // Purge expired sessions - every 15 minutes
         ScheduledTaskDefinition {
-            name: "jobs_cleanup",
-            job_type: "platform.jobs_cleanup",
-            schedule: "0 30 2 * * *", // 2:30 AM daily
-            payload: serde_json::json!({ "days_old": 30 }),
-            config: JobConfig {
-                max_attempts: 3,
-                ..Default::default()
-            },
+            name: "purge_expired_sessions",
+            job_type: "purge_expired_sessions",
+            schedule: "0 */15 * * * *", // Every 15 minutes
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
         },
-        // Session cleanup - daily at 2:45 AM
-        // Removes expired sessions and old refresh tokens
+        // Purge expired auth states - hourly
         ScheduledTaskDefinition {
-            name: "session_cleanup",
-            job_type: "auth.cleanup_sessions",
-            schedule: "0 45 2 * * *", // 2:45 AM daily
-            payload: serde_json::json!({
-                "expired_sessions_days": 7,
-                "old_tokens_days": 30
-            }),
-            config: JobConfig {
-                max_attempts: 3,
-                ..Default::default()
-            },
+            name: "purge_auth_states",
+            job_type: "purge_auth_states",
+            schedule: "0 0 * * * *", // Hourly
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
         },
+        // Purge old login attempts - daily at 3 AM
+        ScheduledTaskDefinition {
+            name: "purge_login_attempts",
+            job_type: "purge_login_attempts",
+            schedule: "0 0 3 * * *", // 3:00 AM daily
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // Purge old rate limit entries - hourly
+        ScheduledTaskDefinition {
+            name: "purge_rate_limit_entries",
+            job_type: "purge_rate_limit_entries",
+            schedule: "0 5 * * * *", // 5 minutes past each hour
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // Purge expired email TOTP codes - hourly
+        ScheduledTaskDefinition {
+            name: "purge_email_totp_codes",
+            job_type: "purge_email_totp_codes",
+            schedule: "0 10 * * * *", // 10 minutes past each hour
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // Purge expired verification sessions - hourly
+        ScheduledTaskDefinition {
+            name: "purge_verification_sessions",
+            job_type: "purge_verification_sessions",
+            schedule: "0 15 * * * *", // 15 minutes past each hour
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // Archive completed jobs - daily at 5 AM
+        ScheduledTaskDefinition {
+            name: "archive_completed_jobs",
+            job_type: "archive_completed_jobs",
+            schedule: "0 0 5 * * *", // 5:00 AM daily
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // Purge old job history - weekly on Sunday at 5 AM
+        ScheduledTaskDefinition {
+            name: "purge_job_history",
+            job_type: "purge_job_history",
+            schedule: "0 0 5 * * SUN", // 5:00 AM every Sunday
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // Recover abandoned jobs - every 5 minutes
+        ScheduledTaskDefinition {
+            name: "recover_abandoned_jobs",
+            job_type: "recover_abandoned_jobs",
+            schedule: "0 */5 * * * *", // Every 5 minutes
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // Purge old error logs - daily at 4 AM
+        ScheduledTaskDefinition {
+            name: "purge_error_logs",
+            job_type: "purge_error_logs",
+            schedule: "0 0 4 * * *", // 4:00 AM daily
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // Purge old captured emails - daily at 4:30 AM
+        ScheduledTaskDefinition {
+            name: "purge_captured_emails",
+            job_type: "purge_captured_emails",
+            schedule: "0 30 4 * * *", // 4:30 AM daily
+            payload: serde_json::json!({}),
+            config: JobConfig::maintenance(),
+        },
+        // ====================================================================
+        // Acme-specific tasks
+        // ====================================================================
+
         // Orphan media cleanup - daily at 3:30 AM
         // Soft-deletes media that was never used
         ScheduledTaskDefinition {
@@ -994,10 +961,6 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
                 ..Default::default()
             },
         },
-        // ====================================================================
-        // Domain-specific tasks (examples)
-        // ====================================================================
-
         // Cleanup completed tasks - daily at 3 AM
         ScheduledTaskDefinition {
             name: "cleanup_completed_tasks",
