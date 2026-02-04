@@ -60,15 +60,6 @@
 	</li>
 
 	<li>
-		<a href="/users" class="{linkClass} admin-nav__root" class:admin-nav__link--active={isActive("/users")} onclick={handleChildClick}>
-			<span class="admin-nav__badge admin-nav__badge--users" aria-hidden="true">
-				<Users class="admin-nav__badge-icon" />
-			</span>
-			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Users</span>
-		</a>
-	</li>
-
-	<li>
 		<button
 			type="button"
 			class="{linkClass} {sectionClass} admin-nav__section-toggle"
@@ -103,6 +94,15 @@
 				<Image class="admin-nav__badge-icon" />
 			</span>
 			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Media</span>
+		</a>
+	</li>
+
+	<li>
+		<a href="/users" class="{linkClass} admin-nav__root" class:admin-nav__link--active={isActive("/users")} onclick={handleChildClick}>
+			<span class="admin-nav__badge admin-nav__badge--users" aria-hidden="true">
+				<Users class="admin-nav__badge-icon" />
+			</span>
+			<span class={variant === "desktop" ? "admin-nav__label" : ""}>Users</span>
 		</a>
 	</li>
 
