@@ -1,6 +1,9 @@
 //! Activity log database functions.
 //!
 //! Query and insertion functions for the platform.audit_log table.
+//!
+//! This module uses `underlay-audit` for base types and provides
+//! Acme-specific query functions that join with user tables for actor info.
 
 use chrono::{DateTime, Utc};
 use serde_json::Value as JsonValue;
@@ -8,6 +11,13 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::DbPool;
+
+// Re-export base audit types from underlay-audit for convenience.
+// Applications can use these for basic audit operations.
+pub use underlay_audit::{
+    append_audit_log, count_audit_logs, get_audit_log_by_id, list_audit_logs, AuditAction,
+    AuditEntry, AuditLogFilters, AuditLogRow,
+};
 
 // ============================================================================
 // Row Types

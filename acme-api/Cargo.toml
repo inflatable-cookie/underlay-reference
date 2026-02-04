@@ -53,6 +53,7 @@ underlay-auth-password = { path = "../underlay/rust/crates/underlay-auth-passwor
 underlay-auth-state = { path = "../underlay/rust/crates/underlay-auth-state" }
 underlay-auth-totp = { path = "../underlay/rust/crates/underlay-auth-totp" }
 underlay-auth-webauthn = { path = "../underlay/rust/crates/underlay-auth-webauthn" }
+underlay-audit = { path = "../underlay/rust/crates/underlay-audit" }
 underlay-db = { path = "../underlay/rust/crates/underlay-db" }
 underlay-devtools = { path = "../underlay/rust/crates/underlay-devtools" }
 underlay-email = { path = "../underlay/rust/crates/underlay-email", features = ["templates"] }

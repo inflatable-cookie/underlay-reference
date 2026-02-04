@@ -11,6 +11,7 @@ serde_json = { workspace = true }
 sqlx = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+underlay-audit = { workspace = true }
 underlay-db = { workspace = true }
 underlay-devtools = { workspace = true }
 underlay-email = { workspace = true }
