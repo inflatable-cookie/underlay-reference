@@ -1,35 +1,8 @@
 use std::env;
 
-/// Runtime environment the service is running in.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Environment {
-    Local,
-    Dev,
-    Staging,
-    Prod,
-    Test,
-}
-
-impl Environment {
-    pub fn parse(value: &str) -> Self {
-        match value.to_ascii_lowercase().as_str() {
-            "local" => Environment::Local,
-            "dev" | "development" => Environment::Dev,
-            "staging" | "stage" => Environment::Staging,
-            "prod" | "production" => Environment::Prod,
-            "test" => Environment::Test,
-            _ => Environment::Dev,
-        }
-    }
-}
-
-impl std::str::FromStr for Environment {
-    type Err = std::convert::Infallible;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        Ok(Self::parse(value))
-    }
-}
+// Re-export Environment from underlay-observability.
+// This provides consistent environment handling across all Underlay apps.
+pub use underlay_observability::Environment;
 
 /// HTTP server configuration.
 #[derive(Debug, Clone)]

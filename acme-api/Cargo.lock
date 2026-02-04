@@ -121,8 +121,8 @@ version = "0.1.0"
 dependencies = [
  "dotenvy",
  "tracing",
- "tracing-subscriber",
  "underlay-email",
+ "underlay-observability",
 ]
 
 [[package]]

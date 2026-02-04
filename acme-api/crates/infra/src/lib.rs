@@ -11,10 +11,20 @@ pub use email::{
     create_email_context, create_email_manager, create_template_engine, EmailInitError,
 };
 
-pub fn init_tracing() {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
-        )
-        .init();
+/// Initialise structured logging and tracing subscribers.
+///
+/// - In `Local` / `Dev`, logs are emitted as pretty text for readability.
+/// - In `Staging` / `Prod` / `Test`, logs are emitted as JSON.
+/// - `RUST_LOG` can override the default level from config.
+///
+/// This is a thin wrapper around `underlay_observability::init_tracing_for_env`.
+pub fn init_tracing(config: &AppConfig) {
+    underlay_observability::init_tracing_for_env(config.env, &config.logging.level);
+}
+
+/// Initialise tracing with defaults (for backwards compatibility).
+///
+/// Uses Local environment with "info" level. Prefer `init_tracing(&config)`.
+pub fn init_tracing_default() {
+    underlay_observability::init_tracing_for_env(Environment::Local, "info");
 }

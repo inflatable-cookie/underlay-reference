@@ -2,7 +2,9 @@
 
 use acme_db::infra::DbEmailStore;
 use acme_db::{create_pool, run_dev_seeds, run_migrations};
-use acme_infra::{create_email_manager, create_template_engine, EmailAdapterType, EmailConfig};
+use acme_infra::{
+    create_email_manager, create_template_engine, AppConfig, EmailAdapterType, EmailConfig,
+};
 use std::sync::Arc;
 use tracing::info;
 use underlay_blob::{BlobAdapter, LocalAdapter, LocalConfig, NoopAdapter};
@@ -14,8 +16,11 @@ use acme_api::state::{AppState, DB_POOL};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenvy::dotenv().ok();
-    acme_infra::init_tracing();
+    // Load config first (includes env vars and .env file)
+    let app_config = AppConfig::from_env();
+
+    // Initialize tracing with environment-appropriate format
+    acme_infra::init_tracing(&app_config);
 
     let db_url = std::env::var("DATABASE_URL")
         .or_else(|_| std::env::var("ACME_DATABASE_URL"))
@@ -24,11 +29,8 @@ async fn main() -> anyhow::Result<()> {
     let pool = create_pool(&db_url).await?;
     run_migrations(&pool).await?;
 
-    // Prefer standard Underlay env vars; accept ACME_* as legacy fallbacks.
-    let env = std::env::var("ENVIRONMENT")
-        .or_else(|_| std::env::var("ACME_ENV"))
-        .unwrap_or_else(|_| "local".to_string());
-    if env == "local" || env == "dev" {
+    // Run dev seeds in local/dev environments
+    if app_config.env.is_development() {
         if let Err(err) = run_dev_seeds(&pool).await {
             tracing::error!(%err, "failed to run dev seed SQL");
         }
@@ -75,7 +77,7 @@ async fn main() -> anyhow::Result<()> {
         .map(|s| EmailAdapterType::parse(&s))
         .unwrap_or_else(|_| {
             // Default to DevCapture in local/dev, Noop otherwise
-            if env == "local" || env == "dev" {
+            if app_config.env.is_development() {
                 EmailAdapterType::DevCapture
             } else {
                 EmailAdapterType::Noop
@@ -133,7 +135,7 @@ async fn main() -> anyhow::Result<()> {
     // Initialize blob storage adapter
     // In local/dev, use LocalAdapter with filesystem storage
     // In production, this should be configured to use S3Adapter
-    let blob_adapter: Arc<dyn BlobAdapter> = if env == "local" || env == "dev" {
+    let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
         let base_path =
             std::env::var("BLOB_STORAGE_DIR").unwrap_or_else(|_| "./.blob-storage".to_string());
         let serve_url_base = std::env::var("BLOB_SERVE_URL")

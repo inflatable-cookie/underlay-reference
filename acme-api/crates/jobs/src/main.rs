@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use acme_db::{create_pool, run_migrations};
-use acme_infra::init_tracing;
+use acme_infra::{init_tracing, AppConfig};
 use acme_jobs::{
     scheduled_task_definitions, JobRepository, JobRunner, JobRunnerConfig, PgJobNotifier,
     ScheduledTaskRepository, Scheduler,
@@ -14,8 +14,9 @@ use underlay_blob::{BlobAdapter, LocalAdapter, LocalConfig, MediaConfig, NoopAda
 
 #[tokio::main]
 async fn main() {
-    dotenvy::dotenv().ok();
-    init_tracing();
+    // Load config first (includes dotenvy loading)
+    let app_config = AppConfig::from_env();
+    init_tracing(&app_config);
 
     let db_url = match std::env::var("DATABASE_URL").or_else(|_| std::env::var("ACME_DATABASE_URL"))
     {
@@ -42,11 +43,7 @@ async fn main() {
     info!("starting acme job worker");
 
     // Initialize blob adapter for media processing
-    let env = std::env::var("ENVIRONMENT")
-        .or_else(|_| std::env::var("ACME_ENV"))
-        .unwrap_or_else(|_| "local".to_string());
-
-    let blob_adapter: Arc<dyn BlobAdapter> = if env == "local" || env == "dev" {
+    let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
         let base_path =
             std::env::var("BLOB_STORAGE_DIR").unwrap_or_else(|_| "./.blob-storage".to_string());
         // Worker doesn't need serve URLs since it only reads/writes blobs

@@ -6,5 +6,5 @@ edition.workspace = true
 [dependencies]
 dotenvy = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 underlay-email = { workspace = true }
+underlay-observability = { workspace = true }
