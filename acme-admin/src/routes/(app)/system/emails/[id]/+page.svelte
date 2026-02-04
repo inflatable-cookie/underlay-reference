@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { PageHeader, useToasts, useAuthenticatedData } from "@decodelabs/underlay/patterns";
-  import { Button, FormError, PageLoading, TabsRoot, TabsList, TabsTrigger, TabsContent, Pill } from "@decodelabs/underlay/components";
+  import { ConfirmAction, FormError, PageLoading, TabsRoot, TabsList, TabsTrigger, TabsContent, Pill } from "@decodelabs/underlay/components";
   import Trash2 from "lucide-svelte/icons/trash-2";
   import Copy from "lucide-svelte/icons/copy";
   import { adminCommands } from "acme-client";
@@ -77,9 +77,14 @@
       backLabel="Back to emails"
     >
       {#snippet actions()}
-        <Button variant="danger" onclick={deleteEmail}>
-          <Trash2 size={16} /> Delete
-        </Button>
+        <ConfirmAction
+          title="Delete captured email"
+          description={`Are you sure you want to delete "${email.subject || "(no subject)"}"?`}
+          confirmLabel="Delete"
+          triggerLabel="Delete"
+          triggerVariant="danger"
+          onConfirm={deleteEmail}
+        />
       {/snippet}
 
       <p>

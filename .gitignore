@@ -2,13 +2,8 @@
 underlay
 
 # Rust
-**/target/
 **/*.rs.bk
-
-# Node
-**/node_modules/
-**/dist/
-**/.svelte-kit/
+**/build/
 
 # Environment
 **/.env
