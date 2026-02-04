@@ -5,6 +5,7 @@
 -- Test credentials:
 --   Email: admin@example.com
 --   Password: AcmeAdmin123!
+--   TOTP: otpauth://totp/Acme:admin%40example.com?secret=3PBE4CUJZGNDQTEEU6ZKQ4FRIOWP7TJ2&issuer=Acme&algorithm=SHA1&digits=6&period=30
 --
 --   Email: user@example.com
 --   Password: AcmeAdmin123!
@@ -87,3 +88,18 @@ VALUES
    '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
    '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE);
+
+-- TOTP credential for admin user
+-- Secret: 3PBE4CUJZGNDQTEEU6ZKQ4FRIOWP7TJ2
+INSERT INTO auth.credentials (id, user_id, type, secret_encrypted, metadata, verified)
+VALUES
+  ('018f2a3b-3c4d-7e8f-8a9b-00000000c001'::uuid,
+   '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
+   'totp',
+   '3PBE4CUJZGNDQTEEU6ZKQ4FRIOWP7TJ2',
+   '{"type":"Totp","issuer":"Acme","algorithm":"SHA1","digits":6,"period":30}'::jsonb,
+   TRUE);
+
+INSERT INTO auth.totp_credential (credential_id, last_counter, backup_code_hashes)
+VALUES
+  ('018f2a3b-3c4d-7e8f-8a9b-00000000c001'::uuid, 0, '[]'::jsonb);
