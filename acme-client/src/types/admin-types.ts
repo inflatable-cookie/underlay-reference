@@ -205,9 +205,8 @@ export type TaskPriority = (typeof TaskPriority)[keyof typeof TaskPriority];
 // ============================================================================
 
 export const UserRole = {
-  Student: "student",
+  User: "user",
   Tester: "tester",
-  Tutor: "tutor",
   Editor: "editor",
   Admin: "admin",
   Support: "support",

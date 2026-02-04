@@ -196,9 +196,8 @@ pub async fn update_user_role(
 
     // Validate role value
     let valid_roles = [
-        "student",
+        "user",
         "tester",
-        "tutor",
         "editor",
         "admin",
         "support",

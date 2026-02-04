@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS auth.users (
     email TEXT NOT NULL UNIQUE,
 
     -- Coarse primary role (mirrors common Underlay Principal roles).
-    role TEXT NOT NULL DEFAULT 'student'
-        CHECK (role IN ('student', 'tester', 'tutor', 'editor', 'admin', 'support', 'superadmin')),
+    role TEXT NOT NULL DEFAULT 'user'
+        CHECK (role IN ('user', 'tester', 'editor', 'admin', 'support', 'superadmin')),
 
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended', 'deleted')),
 

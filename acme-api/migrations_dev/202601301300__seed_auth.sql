@@ -26,18 +26,18 @@ VALUES
   ('018f2a3b-3c4d-7e8f-8a9b-00000000a002'::uuid,
    'user@example.com',
    'Regular User',
-   'student',
+   'user',
    'active'),
   -- Another user for assignment testing
   ('018f2a3b-3c4d-7e8f-8a9b-00000000a003'::uuid,
    'alice@example.com',
    'Alice',
-   'student',
+   'user',
    'active'),
   ('018f2a3b-3c4d-7e8f-8a9b-00000000a004'::uuid,
    'bob@example.com',
    'Bob',
-   'student',
+   'user',
    'active')
 ON CONFLICT (email) DO UPDATE
   SET display_name = EXCLUDED.display_name,

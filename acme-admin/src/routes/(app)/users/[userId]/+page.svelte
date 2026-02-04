@@ -40,7 +40,7 @@
 	});
 
 	let showRoleModal = $state(false);
-	let selectedRole = $state<UserRole>("student");
+	let selectedRole = $state<UserRole>("user");
 
 	async function loadUser() {
 		const token = auth.getToken();
@@ -369,9 +369,8 @@
 				class="modal__select"
 				bind:value={selectedRole}
 			>
-				<option value={UserRoleConst.Student}>Student</option>
+				<option value={UserRoleConst.User}>User</option>
 				<option value={UserRoleConst.Tester}>Tester</option>
-				<option value={UserRoleConst.Tutor}>Tutor</option>
 				<option value={UserRoleConst.Editor}>Editor</option>
 				<option value={UserRoleConst.Admin}>Admin</option>
 				<option value={UserRoleConst.Support}>Support</option>

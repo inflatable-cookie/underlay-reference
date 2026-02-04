@@ -114,9 +114,8 @@
 			filterable: true,
 			filterType: "select",
 			filterOptions: [
-				{ value: UserRoleConst.Student, label: "Student" },
+				{ value: UserRoleConst.User, label: "User" },
 				{ value: UserRoleConst.Tester, label: "Tester" },
-				{ value: UserRoleConst.Tutor, label: "Tutor" },
 				{ value: UserRoleConst.Editor, label: "Editor" },
 				{ value: UserRoleConst.Admin, label: "Admin" },
 				{ value: UserRoleConst.Support, label: "Support" },
