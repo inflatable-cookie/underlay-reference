@@ -746,8 +746,8 @@
   }
 
   .upload-section {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--admin-color-surface-card);
+    border: 1px solid var(--admin-color-border-subtle);
     border-radius: 0.5rem;
     padding: 1.5rem;
   }
@@ -755,13 +755,13 @@
   .upload-hint {
     margin: 1rem 0 0;
     font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     line-height: 1.5;
   }
 
   .progress-section {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--admin-color-surface-card);
+    border: 1px solid var(--admin-color-border-subtle);
     border-radius: 0.5rem;
     padding: 1.5rem;
   }
@@ -775,13 +775,13 @@
 
   .progress-stage {
     font-size: 0.875rem;
-    color: var(--text-primary, #111827);
+    color: var(--admin-color-text);
   }
 
   .progress-percent {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-primary, #111827);
+    color: var(--admin-color-text);
   }
 
   .progress-done {
@@ -789,13 +789,13 @@
     align-items: center;
     gap: 0.5rem;
     margin-top: 1rem;
-    color: var(--success, #10b981);
+    color: #10b981;
     font-weight: 500;
   }
 
   .queue-section {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--admin-color-surface-card);
+    border: 1px solid var(--admin-color-border-subtle);
     border-radius: 0.5rem;
     padding: 1.5rem;
   }
@@ -811,7 +811,7 @@
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary, #111827);
+    color: var(--admin-color-text);
   }
 
   .queue-list {
@@ -825,37 +825,37 @@
     align-items: flex-start;
     gap: 0.75rem;
     padding: 0.75rem;
-    background: var(--bg-muted, #f3f4f6);
+    background: var(--admin-color-surface-subtle);
     border-radius: 0.5rem;
   }
 
   .queue-item.done {
-    background: var(--success-bg, #ecfdf5);
+    background: rgba(16, 185, 129, 0.1);
   }
 
   .queue-item.done .queue-item-icon {
-    color: var(--success, #10b981);
+    color: #10b981;
   }
 
   .queue-item.error {
-    background: var(--danger-bg, #fef2f2);
+    background: rgba(239, 68, 68, 0.1);
   }
 
   .queue-item.error .queue-item-icon {
-    color: var(--danger, #ef4444);
+    color: #ef4444;
   }
 
   .queue-item.duplicate {
-    background: var(--warning-bg, #fffbeb);
+    background: rgba(245, 158, 11, 0.1);
   }
 
   .queue-item.duplicate .queue-item-icon {
-    color: var(--warning, #f59e0b);
+    color: #f59e0b;
   }
 
   .queue-item-icon {
     flex-shrink: 0;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     padding-top: 0.125rem;
   }
 
@@ -867,7 +867,7 @@
   .queue-item-name {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-primary, #111827);
+    color: var(--admin-color-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -879,20 +879,20 @@
     gap: 0.5rem;
     margin-top: 0.25rem;
     font-size: 0.75rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
   }
 
   .queue-item-status {
-    color: var(--primary, #3b82f6);
+    color: var(--admin-color-accent);
     font-weight: 500;
   }
 
   .queue-item-error {
-    color: var(--danger, #ef4444);
+    color: #ef4444;
   }
 
   .queue-item-duplicate {
-    color: var(--warning-text, #b45309);
+    color: #fbbf24;
   }
 
   .queue-item-actions {
@@ -910,15 +910,15 @@
     height: 1.75rem;
     border: none;
     background: transparent;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted);
     border-radius: 0.25rem;
     cursor: pointer;
     transition: background-color 0.15s, color 0.15s;
   }
 
   .remove-btn:hover {
-    background: var(--bg-hover, #e5e7eb);
-    color: var(--danger, #ef4444);
+    background: var(--admin-color-surface-subtle);
+    color: #ef4444;
   }
 
   .actions {
