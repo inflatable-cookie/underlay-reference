@@ -263,9 +263,9 @@
     flex-direction: column;
     gap: 1rem;
     padding: 1rem;
-    border: 1px solid var(--border-color, #e5e7eb);
+    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
     border-radius: 0.5rem;
-    background: var(--bg-surface, #f9fafb);
+    background: var(--underlay-color-surface-subtle, #f9fafb);
   }
 
   .inline-form-actions {
@@ -292,7 +292,7 @@
     padding: 0.5rem 1rem;
     background: var(--bg-secondary, #f3f4f6);
     color: var(--text-primary, #111827);
-    border: 1px solid var(--border-color, #e5e7eb);
+    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
     border-radius: 0.375rem;
     cursor: pointer;
   }

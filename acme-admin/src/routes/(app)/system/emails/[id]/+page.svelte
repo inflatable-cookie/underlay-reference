@@ -1,8 +1,30 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { PageHeader, useToasts, useAuthenticatedData } from "@decodelabs/underlay/patterns";
-  import { AlertDialog, DropdownMenu, FormError, PageLoading, TabsRoot, TabsList, TabsTrigger, TabsContent, Pill } from "@decodelabs/underlay/components";
+  import {
+    PageHeader,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
+    PageHeaderMetaSeparator,
+    useToasts,
+    useAuthenticatedData
+  } from "@decodelabs/underlay/patterns";
+  import {
+    AlertDialog,
+    Code,
+    DetailsCard,
+    DetailsItem,
+    DetailsSection,
+    DropdownMenu,
+    FormError,
+    PageLoading,
+    TabsRoot,
+    TabsList,
+    TabsTrigger,
+    TabsContent,
+    Pill
+  } from "@decodelabs/underlay/components";
   import Copy from "lucide-svelte/icons/copy";
   import { adminCommands } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
@@ -93,66 +115,49 @@
         <DropdownMenu items={menuItems} triggerAriaLabel="Email actions" />
       {/snippet}
 
-      <p>
-        <strong>ID:</strong> <code>{email.emailId}</code>
-        <button class="copy-btn" onclick={() => copyToClipboard(email.emailId, "email ID")}>
-          <Copy size={14} />
-        </button>
-        <span class="header-separator">·</span>
-        <Pill accent={getStatusAccent()}>{getStatusLabel()}</Pill>
-      </p>
+      <PageHeaderMeta>
+        <PageHeaderMetaRow>
+          <PageHeaderMetaItem label="ID">
+            <Code copy>{email.emailId}</Code>
+          </PageHeaderMetaItem>
+          <PageHeaderMetaSeparator />
+          <Pill accent={getStatusAccent()}>{getStatusLabel()}</Pill>
+        </PageHeaderMetaRow>
+      </PageHeaderMeta>
     </PageHeader>
 
-    <div class="email-detail__meta">
-      <dl class="email-detail__fields">
-        <div class="email-detail__field">
-          <dt>From</dt>
-          <dd>
+    <DetailsCard>
+      <DetailsSection legend="Addresses">
+        <DetailsItem label="From">
+          <span class="email-detail__value">
             {email.fromAddress}
             <button class="copy-btn" onclick={() => copyToClipboard(email.fromAddress, "from address")}>
               <Copy size={14} />
             </button>
-          </dd>
-        </div>
-
-        <div class="email-detail__field">
-          <dt>To</dt>
-          <dd>
+          </span>
+        </DetailsItem>
+        <DetailsItem label="To">
+          <span class="email-detail__value">
             {email.toAddresses.join(", ")}
             <button class="copy-btn" onclick={() => copyToClipboard(email.toAddresses.join(", "), "to addresses")}>
               <Copy size={14} />
             </button>
-          </dd>
-        </div>
-
+          </span>
+        </DetailsItem>
         {#if email.replyTo}
-          <div class="email-detail__field">
-            <dt>Reply-To</dt>
-            <dd>{email.replyTo}</dd>
-          </div>
+          <DetailsItem label="Reply-To" value={email.replyTo} />
         {/if}
-
         {#if email.ccAddresses.length > 0}
-          <div class="email-detail__field">
-            <dt>CC</dt>
-            <dd>{email.ccAddresses.join(", ")}</dd>
-          </div>
+          <DetailsItem label="CC" value={email.ccAddresses.join(", ")} />
         {/if}
-
         {#if email.bccAddresses.length > 0}
-          <div class="email-detail__field">
-            <dt>BCC</dt>
-            <dd>{email.bccAddresses.join(", ")}</dd>
-          </div>
+          <DetailsItem label="BCC" value={email.bccAddresses.join(", ")} />
         {/if}
-
-        <div class="email-detail__field">
-          <dt>Captured</dt>
-          <dd>{new Date(email.capturedAt).toLocaleString()}</dd>
-        </div>
-
-      </dl>
-    </div>
+      </DetailsSection>
+      <DetailsSection legend="Metadata">
+        <DetailsItem label="Captured" value={new Date(email.capturedAt).toLocaleString()} />
+      </DetailsSection>
+    </DetailsCard>
 
     <TabsRoot class="email-detail__tabs" bind:value={activeTab}>
       <TabsList>
@@ -212,51 +217,11 @@
     gap: 1.5rem;
   }
 
-  .email-detail__meta {
-    background: var(--admin-color-surface-subtle);
-    border: 1px solid var(--admin-color-border-subtle);
-    border-radius: 0.5rem;
-    padding: 1rem;
-  }
-
-  .email-detail__fields {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 0.75rem 1.5rem;
-    margin: 0;
-  }
-
-  .email-detail__field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-
-  .email-detail__field dt {
-    font-size: 0.75rem;
-    color: var(--admin-color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .email-detail__field dd {
-    margin: 0;
-    display: flex;
+  .email-detail__value {
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     word-break: break-word;
-  }
-
-  .email-detail__field code {
-    font-size: 0.85em;
-    background: var(--admin-color-surface-card);
-    padding: 0.1rem 0.3rem;
-    border-radius: 0.2rem;
-  }
-
-  .header-separator {
-    color: var(--underlay-color-text-muted, #9ca3af);
-    margin: 0 0.5rem;
   }
 
   .copy-btn {

@@ -37,6 +37,7 @@
   import { BatchActionBar } from "$lib/components";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import Upload from "lucide-svelte/icons/upload";
+  import Image from "lucide-svelte/icons/image";
   import Trash2 from "lucide-svelte/icons/trash-2";
   import CheckSquare from "lucide-svelte/icons/check-square";
 
@@ -332,7 +333,14 @@
 {:else if pageData.error}
   <FormError message={pageData.error} />
 {:else if (pageData.data?.items ?? []).length === 0}
-  <p class="empty-state">No media found. Upload your first file to get started.</p>
+  <div class="media-list__empty">
+    <Image size={56} />
+    <p class="media-list__empty-text">No media found.</p>
+    <Button variant="primary" onclick={() => goto("/media/upload")}>
+      <Upload size={16} />
+      Upload your first media
+    </Button>
+  </div>
 {:else}
   <ListGrid minItemWidth={26}>
     {#each pageData.data?.items ?? [] as item}
@@ -419,10 +427,17 @@
 />
 
 <style>
-  .empty-state {
-    padding: 2rem;
+  .media-list__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem;
     text-align: center;
-    color: var(--text-secondary, #6b7280);
+  }
+
+  .media-list__empty-text {
+    color: var(--underlay-color-text-muted, #9ca3af);
   }
 
   .media-pills {

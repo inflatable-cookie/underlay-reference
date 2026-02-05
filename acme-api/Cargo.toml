@@ -45,7 +45,7 @@ underlay-core = { path = "../underlay/rust/crates/underlay-core" }
 underlay-http = { path = "../underlay/rust/crates/underlay-http", features = ["error-logging"] }
 underlay-observability = { path = "../underlay/rust/crates/underlay-observability" }
 underlay-auth = { path = "../underlay/rust/crates/underlay-auth" }
-underlay-blob = { path = "../underlay/rust/crates/underlay-blob", features = ["local"] }
+underlay-blob = { path = "../underlay/rust/crates/underlay-blob", features = ["dev-server"] }
 underlay-auth-email-totp = { path = "../underlay/rust/crates/underlay-auth-email-totp" }
 underlay-auth-jwt = { path = "../underlay/rust/crates/underlay-auth-jwt" }
 underlay-auth-oauth = { path = "../underlay/rust/crates/underlay-auth-oauth" }
@@ -60,4 +60,5 @@ underlay-email = { path = "../underlay/rust/crates/underlay-email", features = [
 underlay-events = { path = "../underlay/rust/crates/underlay-events" }
 underlay-image = { path = "../underlay/rust/crates/underlay-image" }
 underlay-jobs = { path = "../underlay/rust/crates/underlay-jobs", features = ["full"] }
+underlay-media = { path = "../underlay/rust/crates/underlay-media" }
 underlay-ratelimit = { path = "../underlay/rust/crates/underlay-ratelimit" }

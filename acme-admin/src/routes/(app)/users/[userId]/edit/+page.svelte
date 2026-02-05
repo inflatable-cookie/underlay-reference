@@ -8,12 +8,16 @@
   import UserForm from "$lib/forms/UserForm.svelte";
   import {
     SpaFormShell,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
+    PageHeaderMetaSeparator,
     computeBackInfo,
     consumeNavigationContext,
     useAuthenticatedData,
     type SpaFormResult
   } from "@decodelabs/underlay/patterns";
-  import { FormError, PageLoading } from "@decodelabs/underlay/components";
+  import { Code, FormError, PageLoading } from "@decodelabs/underlay/components";
 
   interface Props {
     data: PageData;
@@ -136,8 +140,17 @@
   <FormError message={pageData.error} />
 {:else if user}
   {#snippet headerMeta()}
-    <p><strong>ID:</strong> <code>{user.id}</code></p>
-    <p><strong>Email:</strong> <code>{user.email}</code></p>
+    <PageHeaderMeta>
+      <PageHeaderMetaRow>
+        <PageHeaderMetaItem label="ID">
+          <Code copy>{user.id}</Code>
+        </PageHeaderMetaItem>
+        <PageHeaderMetaSeparator />
+        <PageHeaderMetaItem label="Email">
+          <Code copy>{user.email}</Code>
+        </PageHeaderMetaItem>
+      </PageHeaderMetaRow>
+    </PageHeaderMeta>
   {/snippet}
 
   <SpaFormShell
@@ -171,4 +184,3 @@
     />
   </SpaFormShell>
 {/if}
-

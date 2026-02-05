@@ -23,6 +23,7 @@
     AlertDialog,
     Button,
     Code,
+    Dialog,
     DetailsCard,
     DetailsItem,
     DetailsSection,
@@ -155,6 +156,14 @@
   // Version actions state
   let activateDialogOpen = $state(false);
   let deleteDialogOpen = $state(false);
+  let previewDialogOpen = $state(false);
+  let previewVersion = $state<MediaVersion | null>(null);
+
+  $effect(() => {
+    if (!previewDialogOpen) {
+      previewVersion = null;
+    }
+  });
   let selectedVersion = $state<MediaVersion | null>(null);
 
   function requestActivate(version: MediaVersion) {
@@ -267,14 +276,37 @@
     return kind === MediaKind.Pdf;
   }
 
+  function getPreviewUrl(version: MediaVersion): string | null {
+    if (version.url) return version.url;
+    const imageRendition = version.renditions?.find((rendition) => rendition.url && rendition.mimeType?.startsWith("image/"));
+    return imageRendition?.url ?? null;
+  }
+
+  function canPreviewVersion(version: MediaVersion): boolean {
+    if (!media) return false;
+    if (version.state !== MediaVersionState.Ready) return false;
+    if (media.kind === MediaKind.Image) return Boolean(getPreviewUrl(version));
+    if (media.kind === MediaKind.Pdf) return Boolean(version.url);
+    return false;
+  }
+
+  function openVersionPreview(version: MediaVersion) {
+    if (!canPreviewVersion(version)) return;
+    previewVersion = version;
+    previewDialogOpen = true;
+  }
+
   // Derived media URL
-  const mediaUrl = $derived(
-    media ? getMediaUrl(media.id, media.visibility === MediaVisibility.Restricted) : null
-  );
+  const mediaPreviewUrl = $derived(() => {
+    if (!media?.currentVersion) return null;
+    return getPreviewUrl(media.currentVersion);
+  });
 
   const showPreviewTab = $derived(
-    media && media.currentVersion?.state === MediaVersionState.Ready &&
-    canPreview(media.kind, media.currentVersion?.mimeType ?? null)
+    media &&
+    media.currentVersion?.state === MediaVersionState.Ready &&
+    canPreview(media.kind, media.currentVersion?.mimeType ?? null) &&
+    !!mediaPreviewUrl
   );
 </script>
 
@@ -379,6 +411,7 @@
             <InlineListItem
               label={version.sha256 ?? "No hash"}
               accent={getMediaVersionStateAccent(version.state)}
+              onclick={canPreviewVersion(version) ? () => openVersionPreview(version) : undefined}
             >
               {#snippet sublabelContent()}
                 {formatFileSize(version.byteSize)} · <Code>{version.mimeType ?? "Unknown type"}</Code> · <TimeAgo date={version.createdAt} short />
@@ -446,20 +479,24 @@
     {#if showPreviewTab}
       <TabsContent value="preview">
         <div class="media-preview-container">
-          {#if mediaUrl}
+          {#if mediaPreviewUrl}
             {#if isImage(media.kind)}
               <img
-                src={mediaUrl}
+                src={mediaPreviewUrl}
                 alt={media.title || media.originalFilename || "Media preview"}
                 class="media-preview-image"
               />
             {:else if isPdf(media.kind)}
               <iframe
-                src={mediaUrl}
+                src={mediaPreviewUrl}
                 title={media.title || media.originalFilename || "PDF preview"}
                 class="media-preview-pdf"
               ></iframe>
             {/if}
+          {:else}
+            <div class="empty-state">
+              <p>Preview not available for this version.</p>
+            </div>
           {/if}
         </div>
       </TabsContent>
@@ -582,6 +619,28 @@
       </p>
     {/if}
   </AlertDialog>
+
+  <Dialog
+    bind:open={previewDialogOpen}
+    title="Version preview"
+    showTrigger={false}
+    contentClassName="version-preview-dialog"
+  >
+    {#if previewVersion}
+      {@const previewUrl = getPreviewUrl(previewVersion)}
+      {#if previewUrl}
+        {#if isImage(media.kind)}
+          <img class="version-preview-image" src={previewUrl} alt="Version preview" />
+        {:else if isPdf(media.kind)}
+          <iframe class="version-preview-frame" title="Version preview" src={previewUrl}></iframe>
+        {:else}
+          <p>Preview not available for this file type.</p>
+        {/if}
+      {:else}
+        <p>Preview not available for this version.</p>
+      {/if}
+    {/if}
+  </Dialog>
 {/if}
 
 <style>
@@ -601,6 +660,26 @@
 
   .usage-field {
     color: var(--admin-color-text-muted);
+  }
+
+  :global(.version-preview-dialog) {
+    width: min(900px, 90vw);
+  }
+
+  .version-preview-image {
+    display: block;
+    max-width: 100%;
+    max-height: 70vh;
+    margin: 0 auto;
+    border-radius: 0.5rem;
+  }
+
+  .version-preview-frame {
+    width: 100%;
+    height: 70vh;
+    border: 0;
+    border-radius: 0.5rem;
+    background: var(--admin-color-surface-subtle);
   }
 
   .form-fields {

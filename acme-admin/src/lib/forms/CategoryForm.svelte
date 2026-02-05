@@ -143,7 +143,7 @@
     width: 4rem;
     height: 2.5rem;
     padding: 0.25rem;
-    border: 1px solid var(--border-color, #e5e7eb);
+    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
     border-radius: 0.375rem;
     cursor: pointer;
   }

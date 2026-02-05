@@ -7,8 +7,13 @@ pub use underlay_observability::Environment;
 /// HTTP server configuration.
 #[derive(Debug, Clone)]
 pub struct HttpConfig {
+    /// Address to bind the server socket to (e.g., "127.0.0.1", "0.0.0.0").
     pub bind_addr: String,
+    /// Port to listen on.
     pub port: u16,
+    /// Public hostname for constructing URLs (e.g., "localhost", "api.example.com").
+    /// Used for things like blob storage URLs that need to be accessible from clients.
+    pub public_host: String,
 }
 
 /// Database configuration.
@@ -155,7 +160,7 @@ impl AppConfig {
             .and_then(|raw| raw.parse::<u16>().ok())
             .unwrap_or(3000);
 
-        // Bind address
+        // Bind address (must be a valid IP for socket binding)
         let bind_addr = env::var("HOST").unwrap_or_else(|_| {
             let should_bind_publicly =
                 !matches!(env, Environment::Local | Environment::Test) || env::var("PORT").is_ok();
@@ -163,7 +168,16 @@ impl AppConfig {
             if should_bind_publicly {
                 "0.0.0.0".to_string()
             } else {
+                "127.0.0.1".to_string()
+            }
+        });
+
+        // Public hostname for URLs (defaults to localhost for local/dev/test)
+        let public_host = env::var("PUBLIC_HOST").unwrap_or_else(|_| {
+            if matches!(env, Environment::Local | Environment::Dev | Environment::Test) {
                 "localhost".to_string()
+            } else {
+                bind_addr.clone()
             }
         });
 
@@ -263,7 +277,7 @@ impl AppConfig {
 
         AppConfig {
             env,
-            http: HttpConfig { bind_addr, port },
+            http: HttpConfig { bind_addr, port, public_host },
             database: DatabaseConfig { url: database_url },
             logging: LoggingConfig {
                 level: logging_level,

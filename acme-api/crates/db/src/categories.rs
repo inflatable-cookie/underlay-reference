@@ -109,7 +109,13 @@ pub async fn list_categories_with_counts(
     pool: &DbPool,
     query: &QueryParams,
 ) -> Result<Vec<CategoryWithCountsRow>, sqlx::Error> {
-    let mapping = category_field_mapping();
+    let mapping = FieldMapping::new()
+        .map("name", "c.name")
+        .map("slug", "c.slug")
+        .map("isActive", "c.is_active")
+        .sort_only("weight", "c.weight")
+        .sort_only("createdAt", "c.created_at")
+        .sort_only("projectCount", "project_count");
     let filters = query.filter_fields();
 
     let mut where_builder = WhereBuilder::new(1);
@@ -120,11 +126,7 @@ pub async fn list_categories_with_counts(
     }
 
     let (where_clause, filter_values) = where_builder.build();
-    let order_by = query
-        .sql_order_by_or(&mapping.sort_map(), "c.weight, c.name")
-        .replace("name", "c.name")
-        .replace("slug", "c.slug")
-        .replace("weight", "c.weight");
+    let order_by = query.sql_order_by_or(&mapping.sort_map(), "c.weight, c.name");
 
     let sql = format!(
         r#"

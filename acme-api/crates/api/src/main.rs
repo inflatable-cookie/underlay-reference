@@ -122,34 +122,22 @@ async fn main() -> anyhow::Result<()> {
         email_config.clone(),
     ));
 
-    // Parse host/port early so blob adapter can use them
-    let host = std::env::var("HOST")
-        .or_else(|_| std::env::var("ACME_BIND_ADDR"))
-        .unwrap_or_else(|_| "localhost".to_string());
-    let port = std::env::var("PORT")
-        .or_else(|_| std::env::var("ACME_PORT"))
-        .ok()
-        .and_then(|v| v.parse::<u16>().ok())
-        .unwrap_or(40011);
-
     // Initialize blob storage adapter
     // In local/dev, use LocalAdapter with filesystem storage
     // In production, this should be configured to use S3Adapter
     let (blob_adapter, local_adapter): (Arc<dyn BlobAdapter>, Option<Arc<LocalAdapter>>) =
         if app_config.env.is_development() {
-            let base_path =
-                std::env::var("BLOB_STORAGE_DIR").unwrap_or_else(|_| "./dev-uploads".to_string());
-            let serve_url_base = std::env::var("BLOB_SERVE_URL")
-                .unwrap_or_else(|_| format!("http://{}:{}/v1/dev-blobs", host, port));
+            let local_config = LocalConfig::new(
+                "./dev-uploads",
+                format!(
+                    "http://{}:{}/v1/dev-uploads",
+                    app_config.http.public_host, app_config.http.port
+                ),
+            );
 
-            let local = LocalAdapter::new(LocalConfig {
-                base_path: base_path.into(),
-                serve_url_base,
-                bucket: "media".to_string(),
-                upload_url_base: None,
-            })
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to create local blob adapter: {}", e))?;
+            let local = LocalAdapter::new(local_config)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to create local blob adapter: {}", e))?;
 
             let local = Arc::new(local);
             (local.clone(), Some(local))
@@ -198,37 +186,19 @@ async fn main() -> anyhow::Result<()> {
         .layer(underlay_observability::trace_layer())
         .layer(underlay_observability::request_id_layer());
 
-    // Add dev-blobs routes in development mode (for LocalAdapter uploads)
+    // Add dev-uploads routes in development mode (for LocalAdapter uploads)
     let app = if let Some(local_adapter) = local_adapter {
-        use acme_api::routes::shared::dev_blob::{download, upload, DevBlobState};
-        use axum::extract::DefaultBodyLimit;
-        use axum::routing::put;
-        use axum::Router;
-        use tower_http::cors::{Any, CorsLayer};
+        let dev_routes = underlay_blob::dev_server::DevBlobRoutes::new(local_adapter)
+            .route_path("/v1/dev-uploads")
+            .with_cors()
+            .build();
 
-        // Permissive CORS for dev-only blob uploads
-        let dev_cors = CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any);
-
-        let dev_blob_state = DevBlobState {
-            adapter: local_adapter,
-        };
-        let dev_routes: Router<()> = Router::new()
-            .route("/v1/dev-blobs/*key", put(upload).get(download))
-            // Allow up to 50MB uploads for dev
-            .layer(DefaultBodyLimit::max(50 * 1024 * 1024))
-            .layer(dev_cors)
-            .with_state(dev_blob_state);
-
-        info!("Dev blob upload/download endpoints enabled at /v1/dev-blobs/*");
         app.merge(dev_routes)
     } else {
         app
     };
 
-    let addr = format!("{host}:{port}");
+    let addr = format!("{}:{}", app_config.http.bind_addr, app_config.http.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     info!(%addr, "api listening");
 

@@ -44,20 +44,15 @@ async fn main() {
 
     // Initialize blob adapter for media processing
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
-        let base_path =
-            std::env::var("BLOB_STORAGE_DIR").unwrap_or_else(|_| "./.blob-storage".to_string());
-        // Worker doesn't need serve URLs since it only reads/writes blobs
-        let serve_url_base = std::env::var("BLOB_SERVE_URL")
-            .unwrap_or_else(|_| "http://localhost:40011/v1/dev-blobs".to_string());
+        let local_config = LocalConfig::new(
+            "./dev-uploads",
+            format!(
+                "http://{}:{}/v1/dev-uploads",
+                app_config.http.public_host, app_config.http.port
+            ),
+        );
 
-        match LocalAdapter::new(LocalConfig {
-            base_path: base_path.into(),
-            serve_url_base,
-            bucket: "media".to_string(),
-            upload_url_base: None,
-        })
-        .await
-        {
+        match LocalAdapter::new(local_config).await {
             Ok(adapter) => Arc::new(adapter),
             Err(err) => {
                 error!(%err, "failed to create local blob adapter; using noop");

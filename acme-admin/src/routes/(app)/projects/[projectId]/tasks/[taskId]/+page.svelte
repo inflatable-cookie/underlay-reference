@@ -13,7 +13,7 @@
     useToasts,
     Banner
   } from "@decodelabs/underlay/patterns";
-  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, Pill } from "@decodelabs/underlay/components";
+  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, Pill, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import Pencil from "lucide-svelte/icons/pencil";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
@@ -183,130 +183,49 @@
     <Banner variant="warning" message="This task has been cancelled." />
   {/if}
 
-  <div class="detail-grid">
-    <section class="detail-section">
-      <h2>Details</h2>
-      <dl class="detail-list">
-        <div class="detail-item">
-          <dt>Status</dt>
-          <dd>
-            <Badge variant={statusVariant}>{statusLabel}</Badge>
-          </dd>
-        </div>
-        <div class="detail-item">
-          <dt>Priority</dt>
-          <dd>
-            <Badge variant={priorityVariant}>{priorityLabel}</Badge>
-          </dd>
-        </div>
-        <div class="detail-item">
-          <dt>Due Date</dt>
-          <dd class="due-date">
-            <Calendar size={14} />
-            {formatDate(task.dueDate)}
-          </dd>
-        </div>
-        {#if labels.length > 0}
-          <div class="detail-item full">
-            <dt>Labels</dt>
-            <dd class="labels">
-              {#each labels as label}
-                <Badge variant="muted" style="--badge-color: {label.color}">{label.name}</Badge>
-              {/each}
-            </dd>
+  <DetailsCard>
+    <DetailsSection legend="Details">
+      <DetailsItem label="Priority">
+        <Badge variant={priorityVariant}>{priorityLabel}</Badge>
+      </DetailsItem>
+      <DetailsItem label="Due Date">
+        <span class="due-date">
+          <Calendar size={14} />
+          {formatDate(task.dueDate)}
+        </span>
+      </DetailsItem>
+      {#if labels.length > 0}
+        <DetailsItem label="Labels" span="full">
+          <div class="labels">
+            {#each labels as label}
+              <Badge variant="muted" style="--badge-color: {label.color}">{label.name}</Badge>
+            {/each}
           </div>
-        {/if}
-        {#if task.description}
-          <div class="detail-item full">
-            <dt>Description</dt>
-            <dd class="description">{task.description}</dd>
-          </div>
-        {/if}
-      </dl>
-    </section>
+        </DetailsItem>
+      {/if}
+      {#if task.description}
+        <DetailsItem label="Description" value={task.description} span="full" />
+      {/if}
+    </DetailsSection>
 
-    <section class="detail-section">
-      <h2>Metadata</h2>
-      <dl class="detail-list">
-        <div class="detail-item">
-          <dt>ID</dt>
-          <dd><code>{task.id}</code></dd>
-        </div>
-        <div class="detail-item">
-          <dt>Project</dt>
-          <dd><a href={`/projects/${project.id}`}>{project.name}</a></dd>
-        </div>
-        <div class="detail-item">
-          <dt>Position</dt>
-          <dd>{task.position}</dd>
-        </div>
-        <div class="detail-item">
-          <dt>Created</dt>
-          <dd>{new Date(task.createdAt).toLocaleString()}</dd>
-        </div>
-        <div class="detail-item">
-          <dt>Updated</dt>
-          <dd>{new Date(task.updatedAt).toLocaleString()}</dd>
-        </div>
-      </dl>
-    </section>
-  </div>
+    <DetailsSection legend="Metadata">
+      <DetailsItem label="Project">
+        <a href={`/projects/${project.id}`}>{project.name}</a>
+      </DetailsItem>
+      <DetailsItem label="Position" value={task.position} />
+      <DetailsItem label="Created">
+        <TimeAgo date={task.createdAt} tooltipFormat="datetime" />
+      </DetailsItem>
+      <DetailsItem label="Updated">
+        <TimeAgo date={task.updatedAt} tooltipFormat="datetime" />
+      </DetailsItem>
+    </DetailsSection>
+  </DetailsCard>
 {:else}
   <FormError message="Task not found" />
 {/if}
 
 <style>
-  .detail-grid {
-    display: grid;
-    gap: 2rem;
-    margin-top: 1.5rem;
-  }
-
-  .detail-section {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-  }
-
-  .detail-section h2 {
-    margin: 0 0 1rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary, #111827);
-  }
-
-  .detail-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin: 0;
-  }
-
-  .detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .detail-item.full {
-    grid-column: span 2;
-  }
-
-  .detail-item dt {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary, #6b7280);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .detail-item dd {
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--text-primary, #111827);
-  }
-
   .due-date {
     display: flex;
     align-items: center;
@@ -317,19 +236,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-  }
-
-  .description {
-    white-space: pre-wrap;
-    line-height: 1.6;
-  }
-
-  code {
-    font-family: monospace;
-    font-size: 0.8em;
-    background: var(--bg-muted, #f3f4f6);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
   }
 
   a {

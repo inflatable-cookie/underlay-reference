@@ -47,9 +47,7 @@
   accent={category.color ?? "#6366f1"}
 >
   {#snippet media()}
-    <div class="icon" style:background={category.color ?? "#6366f1"}>
-      <FolderOpen size={20} />
-    </div>
+    <FolderOpen size={30} />
   {/snippet}
 
   {#snippet titleSuffix()}
@@ -58,8 +56,12 @@
     {/if}
   {/snippet}
 
-  {#snippet actions({ trigger, align })}
-    <DropdownMenu {trigger} {align} items={menuItems} showTrigger={false} />
+  {#snippet actions({ trigger: mediaContent, align })}
+    <DropdownMenu items={menuItems} {align}>
+      {#snippet trigger()}
+        {@render mediaContent()}
+      {/snippet}
+    </DropdownMenu>
   {/snippet}
 
   <span class="meta">
@@ -80,16 +82,6 @@
 />
 
 <style>
-  .icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.5rem;
-    color: white;
-  }
-
   .meta {
     font-size: 0.875rem;
     color: var(--text-secondary, #6b7280);

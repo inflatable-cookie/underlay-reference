@@ -9,12 +9,15 @@
   import { goto } from "$app/navigation";
   import {
     SpaFormShell,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
     computeBackInfo,
     consumeNavigationContext,
     useAuthenticatedData,
     type SpaFormResult
   } from "@decodelabs/underlay/patterns";
-  import { FormError, PageLoading } from "@decodelabs/underlay/components";
+  import { Code, FormError, PageLoading } from "@decodelabs/underlay/components";
 
   interface Props {
     data: PageData;
@@ -170,7 +173,13 @@
   <FormError message={pageData.error} />
 {:else if project}
   {#snippet headerMeta()}
-    <p><strong>ID:</strong> <code>{project.id}</code></p>
+    <PageHeaderMeta>
+      <PageHeaderMetaRow>
+        <PageHeaderMetaItem label="ID">
+          <Code copy>{project.id}</Code>
+        </PageHeaderMetaItem>
+      </PageHeaderMetaRow>
+    </PageHeaderMeta>
   {/snippet}
 
   <SpaFormShell

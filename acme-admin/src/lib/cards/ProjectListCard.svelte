@@ -81,9 +81,7 @@
         />
       </label>
     {:else}
-      <div class="icon">
-        <Briefcase size={20} />
-      </div>
+      <Briefcase size={30} />
     {/if}
   {/snippet}
 
@@ -94,8 +92,12 @@
     {/if}
   {/snippet}
 
-  {#snippet actions({ trigger, align })}
-    <DropdownMenu {trigger} {align} items={menuItems} showTrigger={false} />
+  {#snippet actions({ trigger: mediaContent, align })}
+    <DropdownMenu items={menuItems} {align}>
+      {#snippet trigger()}
+        {@render mediaContent()}
+      {/snippet}
+    </DropdownMenu>
   {/snippet}
 
   <div class="task-progress">
@@ -118,17 +120,6 @@
 />
 
 <style>
-  .icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.5rem;
-    background: var(--color-primary, #6366f1);
-    color: white;
-  }
-
   .selection-checkbox {
     display: flex;
     align-items: center;

@@ -194,8 +194,8 @@
   .form-container {
     max-width: 40rem;
     margin-top: 1.5rem;
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--underlay-color-surface, #fff);
+    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
     border-radius: 0.5rem;
     padding: 1.5rem;
   }
@@ -225,7 +225,7 @@
     padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
     background: var(--bg-muted, #f3f4f6);
-    border: 1px solid var(--border-color, #e5e7eb);
+    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
     border-radius: 9999px;
     cursor: pointer;
     transition: all 0.15s ease;

@@ -13,7 +13,8 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use underlay_http::query::QueryParams;
+use underlay_core::AppError;
+use underlay_http::{error_response, query::QueryParams};
 
 use acme_core::Uuid;
 use acme_db::{activity, tasks};
@@ -147,7 +148,10 @@ pub async fn list_projects(
         }
         Err(e) => {
             tracing::error!("Failed to list projects: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                AppError::new("projects.list_failed", format!("Failed to list projects: {}", e)),
+            )
         }
     }
 }

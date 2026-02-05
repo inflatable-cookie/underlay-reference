@@ -4,6 +4,7 @@
     AlertDialog,
     Button,
     Card,
+    Code,
     DataTable,
     DetailsCard,
     DetailsItem,
@@ -24,6 +25,10 @@
   } from "@decodelabs/underlay/components";
   import {
     PageHeader,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
+    PageHeaderMetaSeparator,
     computeBackInfo,
     consumeNavigationContext,
     useAuthenticatedData,
@@ -416,13 +421,16 @@
       </DropdownMenu>
     {/snippet}
 
-    <p>
-      <strong>ID:</strong> <code>{user.id}</code>
-      <span class="header-separator">·</span>
-      <Pill accent={getRoleAccent(user.role)}>{user.role}</Pill>
-      <span class="header-separator">·</span>
-      <Pill accent={getStatusAccent(user.status)}>{user.status}</Pill>
-    </p>
+    <PageHeaderMeta>
+      <PageHeaderMetaRow>
+        <PageHeaderMetaItem label="ID">
+          <Code copy>{user.id}</Code>
+        </PageHeaderMetaItem>
+        <PageHeaderMetaSeparator />
+        <Pill accent={getRoleAccent(user.role)}>{user.role}</Pill>
+        <Pill accent={getStatusAccent(user.status)}>{user.status}</Pill>
+      </PageHeaderMetaRow>
+    </PageHeaderMeta>
   </PageHeader>
 
   <div class="user-view">
@@ -533,11 +541,6 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-  }
-
-  .header-separator {
-    color: var(--underlay-color-text-muted, #9ca3af);
-    margin: 0 0.5rem;
   }
 
   .user-view__dialog-footer {

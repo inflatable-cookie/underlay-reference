@@ -15,7 +15,9 @@
     Code,
     FormError,
     PageLoading,
-    Badge,
+    DetailsCard,
+    DetailsSection,
+    DetailsItem,
     Pill,
     Tooltip
   } from "@decodelabs/underlay/components";
@@ -47,19 +49,6 @@
   });
 
   const job = $derived(pageData.data?.job);
-
-  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
-
-  function getStatusVariant(status: string): BadgeVariant {
-    switch (status) {
-      case "succeeded": return "success";
-      case "failed": return "danger";
-      case "running": return "info";
-      case "pending": return "warning";
-      case "cancelled": return "muted";
-      default: return "default";
-    }
-  }
 
   function getStatusLabel(status: string): string {
     return status.charAt(0).toUpperCase() + status.slice(1);
@@ -164,47 +153,20 @@
   <FormError message={pageData.error} />
 {:else if job}
   <div class="job-detail">
-    <div class="job-detail__grid">
-      <Card>
-        <div class="job-detail__section">
-          <h3>Details</h3>
-          <dl class="job-detail__dl">
-            <dt>ID</dt>
-            <dd><code>{job.id}</code></dd>
-            <dt>Type</dt>
-            <dd>
-              <code class="job-type">{job.jobType}</code>
-            </dd>
-            <dt>Status</dt>
-            <dd>
-              <Badge variant={getStatusVariant(job.status)} size="sm">
-                {getStatusLabel(job.status)}
-              </Badge>
-            </dd>
-            <dt>Attempts</dt>
-            <dd>{job.attempts} / {job.maxAttempts}</dd>
-          </dl>
-        </div>
-      </Card>
-
-      <Card>
-        <div class="job-detail__section">
-          <h3>Timestamps</h3>
-          <dl class="job-detail__dl">
-            <dt>Created</dt>
-            <dd>{formatDate(job.createdAt)}</dd>
-            {#if job.scheduledFor}
-              <dt>Scheduled for</dt>
-              <dd>{formatDate(job.scheduledFor)}</dd>
-            {/if}
-            <dt>Started at</dt>
-            <dd>{formatDate(job.startedAt)}</dd>
-            <dt>Finished at</dt>
-            <dd>{formatDate(job.finishedAt)}</dd>
-          </dl>
-        </div>
-      </Card>
-    </div>
+  <DetailsCard>
+    <DetailsSection legend="Details">
+      <DetailsItem label="Type" value={job.jobType} code />
+      <DetailsItem label="Attempts" value={`${job.attempts} / ${job.maxAttempts}`} />
+    </DetailsSection>
+    <DetailsSection legend="Timestamps">
+      <DetailsItem label="Created" value={formatDate(job.createdAt)} />
+      {#if job.scheduledFor}
+        <DetailsItem label="Scheduled for" value={formatDate(job.scheduledFor)} />
+      {/if}
+      <DetailsItem label="Started at" value={formatDate(job.startedAt)} />
+      <DetailsItem label="Finished at" value={formatDate(job.finishedAt)} />
+    </DetailsSection>
+  </DetailsCard>
 
     {#if job.errorMessage}
       <Card>
@@ -240,12 +202,6 @@
     gap: 1.5rem;
   }
 
-  .job-detail__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
   .job-detail__section {
     padding: 0.5rem;
   }
@@ -262,39 +218,6 @@
   .job-detail__section--error {
     border-left: 3px solid var(--admin-color-danger);
     padding-left: 1rem;
-  }
-
-  .job-detail__dl {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.375rem 1rem;
-    margin: 0;
-    font-size: 0.875rem;
-  }
-
-  .job-detail__dl dt {
-    color: var(--admin-color-text-muted);
-  }
-
-  .job-detail__dl dd {
-    margin: 0;
-  }
-
-  .job-detail__dl code {
-    font-size: 0.8rem;
-    word-break: break-all;
-    background: var(--admin-color-surface-subtle);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-  }
-
-  .job-type {
-    font-family: monospace;
-    font-size: 0.8rem;
-    background: var(--admin-color-surface-subtle);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-    color: var(--admin-color-text);
   }
 
   .job-detail__error-text {

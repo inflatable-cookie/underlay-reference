@@ -13,9 +13,9 @@
     useToasts,
     Banner
   } from "@decodelabs/underlay/patterns";
-  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, Pill } from "@decodelabs/underlay/components";
+  import { Code, PageLoading, FormError, Badge, Pill, DetailsCard, DetailsSection, DetailsItem, TimeAgo, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
-  import Pencil from "lucide-svelte/icons/pencil";
+  import MoreVertical from "lucide-svelte/icons/more-vertical";
 
   interface Props {
     data: PageData;
@@ -24,6 +24,7 @@
   let { data }: Props = $props();
 
   const toastStore = useToasts();
+  let confirmDeleteOpen = $state(false);
 
   // Fetch category data
   const pageData = useAuthenticatedData(
@@ -71,6 +72,16 @@
       toastStore.push({ variant: "error", message });
     }
   }
+
+  const menuItems = $derived([
+    { label: "Edit", onSelect: handleEdit },
+    { separator: true },
+    {
+      label: "Delete",
+      destructive: true,
+      onSelect: () => (confirmDeleteOpen = true)
+    }
+  ]);
 </script>
 
 {#if pageData.loading}
@@ -82,6 +93,7 @@
     title={category.name}
     backHref="/categories"
     backLabel="Back to categories"
+    subtitle={category.description ?? undefined}
   >
     <PageHeaderMeta>
       <PageHeaderMetaRow>
@@ -96,145 +108,50 @@
     </PageHeaderMeta>
 
     {#snippet actions()}
-      <Button type="button" variant="secondary" onclick={handleEdit}>
-        <Pencil size={16} />
-        Edit
-      </Button>
-      <ConfirmAction
-        title="Delete Category"
-        description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
-        confirmLabel="Delete"
-        triggerLabel="Delete"
-        triggerVariant="danger"
-        onConfirm={handleDelete}
-      />
+      <DropdownMenu items={menuItems} triggerAriaLabel="Category actions">
+        {#snippet trigger()}
+          <MoreVertical size={16} aria-hidden="true" />
+        {/snippet}
+      </DropdownMenu>
     {/snippet}
   </PageHeader>
+
+  <AlertDialog
+    bind:open={confirmDeleteOpen}
+    showTrigger={false}
+    title="Delete Category"
+    description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
+    confirmLabel="Delete"
+    onConfirm={handleDelete}
+  />
 
   {#if !category.isActive}
     <Banner variant="warning" message="This category is inactive and won't appear in selection lists." />
   {/if}
 
-  <div class="detail-grid">
-    <section class="detail-section">
-      <h2>Details</h2>
-      <dl class="detail-list">
-        <div class="detail-item">
-          <dt>Slug</dt>
-          <dd><code>{category.slug}</code></dd>
-        </div>
-        <div class="detail-item">
-          <dt>Status</dt>
-          <dd>
-            {#if category.isActive}
-              <Badge variant="success">Active</Badge>
-            {:else}
-              <Badge variant="danger">Inactive</Badge>
-            {/if}
-          </dd>
-        </div>
-        <div class="detail-item">
-          <dt>Color</dt>
-          <dd>
-            <span class="color-swatch" style:background={category.color ?? "#6366f1"}></span>
-            {category.color ?? "#6366f1"}
-          </dd>
-        </div>
-        {#if category.description}
-          <div class="detail-item full">
-            <dt>Description</dt>
-            <dd>{category.description}</dd>
-          </div>
-        {/if}
-      </dl>
-    </section>
+  <DetailsCard>
+    <DetailsSection legend="Details">
+      <DetailsItem label="Slug" value={category.slug} code />
+      <DetailsItem label="Color">
+        <span class="color-swatch" style:background={category.color ?? "#6366f1"}></span>
+        <span class="color-value">{category.color ?? "#6366f1"}</span>
+      </DetailsItem>
+    </DetailsSection>
 
-    <section class="detail-section">
-      <h2>Metadata</h2>
-      <dl class="detail-list">
-        <div class="detail-item">
-          <dt>ID</dt>
-          <dd><code>{category.id}</code></dd>
-        </div>
-        <div class="detail-item">
-          <dt>Weight</dt>
-          <dd>{category.weight}</dd>
-        </div>
-        <div class="detail-item">
-          <dt>Created</dt>
-          <dd>{new Date(category.createdAt).toLocaleString()}</dd>
-        </div>
-        <div class="detail-item">
-          <dt>Updated</dt>
-          <dd>{new Date(category.updatedAt).toLocaleString()}</dd>
-        </div>
-      </dl>
-    </section>
-  </div>
+    <DetailsSection legend="Metadata">
+      <DetailsItem label="Created">
+        <TimeAgo date={category.createdAt} tooltipFormat="datetime" />
+      </DetailsItem>
+      <DetailsItem label="Updated">
+        <TimeAgo date={category.updatedAt} tooltipFormat="datetime" />
+      </DetailsItem>
+    </DetailsSection>
+  </DetailsCard>
 {:else}
   <FormError message="Category not found" />
 {/if}
 
 <style>
-  .detail-grid {
-    display: grid;
-    gap: 2rem;
-    margin-top: 1.5rem;
-  }
-
-  .detail-section {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-  }
-
-  .detail-section h2 {
-    margin: 0 0 1rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary, #111827);
-  }
-
-  .detail-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin: 0;
-  }
-
-  .detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .detail-item.full {
-    grid-column: span 2;
-  }
-
-  .detail-item dt {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary, #6b7280);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .detail-item dd {
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--text-primary, #111827);
-  }
-
-  code {
-    font-family: monospace;
-    font-size: 0.8em;
-    background: var(--bg-muted, #f3f4f6);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-  }
-
   .color-swatch {
     display: inline-block;
     width: 1rem;
@@ -243,5 +160,9 @@
     vertical-align: middle;
     margin-right: 0.5rem;
     border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .color-value {
+    vertical-align: middle;
   }
 </style>

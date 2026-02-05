@@ -17,7 +17,7 @@
     createReorderController,
     FilterBar
   } from "@decodelabs/underlay/patterns";
-  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, Pill, ProgressBar, Field, Select, OrderBy, type OrderByValue } from "@decodelabs/underlay/components";
+  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, Pill, ProgressBar, Field, Select, OrderBy, DetailsCard, DetailsSection, DetailsItem, TimeAgo, type OrderByValue } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { BatchActionBar } from "$lib/components";
   import Pencil from "lucide-svelte/icons/pencil";
@@ -410,56 +410,31 @@
     <Banner variant="info" message="This project is on hold." />
   {/if}
 
-  <div class="detail-grid">
-    <section class="detail-section">
-      <h2>Details</h2>
-      <dl class="detail-list">
-        <div class="detail-item">
-          <dt>Status</dt>
-          <dd>
-            <Badge variant={statusVariant}>{statusLabel}</Badge>
-          </dd>
+  <DetailsCard>
+    <DetailsSection legend="Details">
+      <DetailsItem label="Progress">
+        <div class="progress-cell">
+          <span>{completedTasks}/{tasks.length} tasks</span>
+          {#if tasks.length > 0}
+            <ProgressBar value={progress} max={100} />
+          {/if}
         </div>
-        <div class="detail-item">
-          <dt>Progress</dt>
-          <dd class="progress-cell">
-            <span>{completedTasks}/{tasks.length} tasks</span>
-            {#if tasks.length > 0}
-              <ProgressBar value={progress} max={100} />
-            {/if}
-          </dd>
-        </div>
-        {#if project.description}
-          <div class="detail-item full">
-            <dt>Description</dt>
-            <dd>{project.description}</dd>
-          </div>
-        {/if}
-      </dl>
-    </section>
+      </DetailsItem>
+      {#if project.description}
+        <DetailsItem label="Description" value={project.description} span="full" />
+      {/if}
+    </DetailsSection>
 
-    <section class="detail-section">
-      <h2>Metadata</h2>
-      <dl class="detail-list">
-        <div class="detail-item">
-          <dt>ID</dt>
-          <dd><code>{project.id}</code></dd>
-        </div>
-        <div class="detail-item">
-          <dt>Category</dt>
-          <dd>{project.categoryId ? project.categoryId : "None"}</dd>
-        </div>
-        <div class="detail-item">
-          <dt>Created</dt>
-          <dd>{new Date(project.createdAt).toLocaleString()}</dd>
-        </div>
-        <div class="detail-item">
-          <dt>Updated</dt>
-          <dd>{new Date(project.updatedAt).toLocaleString()}</dd>
-        </div>
-      </dl>
-    </section>
-  </div>
+    <DetailsSection legend="Metadata">
+      <DetailsItem label="Category" value={project.categoryId ? project.categoryId : "None"} />
+      <DetailsItem label="Created">
+        <TimeAgo date={project.createdAt} tooltipFormat="datetime" />
+      </DetailsItem>
+      <DetailsItem label="Updated">
+        <TimeAgo date={project.updatedAt} tooltipFormat="datetime" />
+      </DetailsItem>
+    </DetailsSection>
+  </DetailsCard>
 
   <section class="tasks-section">
     <div class="tasks-header">
@@ -598,75 +573,16 @@
 {/if}
 
 <style>
-  .detail-grid {
-    display: grid;
-    gap: 2rem;
-    margin-top: 1.5rem;
-  }
-
-  .detail-section {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-  }
-
-  .detail-section h2 {
-    margin: 0 0 1rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary, #111827);
-  }
-
-  .detail-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin: 0;
-  }
-
-  .detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .detail-item.full {
-    grid-column: span 2;
-  }
-
-  .detail-item dt {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary, #6b7280);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .detail-item dd {
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--text-primary, #111827);
-  }
-
   .progress-cell {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  code {
-    font-family: monospace;
-    font-size: 0.8em;
-    background: var(--bg-muted, #f3f4f6);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-  }
-
   .tasks-section {
     margin-top: 2rem;
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--underlay-color-surface, #fff);
+    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
     border-radius: 0.5rem;
     padding: 1.5rem;
   }

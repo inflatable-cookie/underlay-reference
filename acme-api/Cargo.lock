@@ -37,6 +37,7 @@ dependencies = [
  "underlay-email",
  "underlay-http",
  "underlay-jobs",
+ "underlay-media",
  "underlay-observability",
  "utoipa",
  "utoipa-swagger-ui",
@@ -142,6 +143,7 @@ dependencies = [
  "underlay-blob",
  "underlay-image",
  "underlay-jobs",
+ "underlay-media",
  "uuid",
 ]
 
@@ -4035,11 +4037,14 @@ name = "underlay-blob"
 version = "0.0.1"
 dependencies = [
  "async-trait",
+ "axum",
  "base64 0.22.1",
  "chrono",
  "serde",
  "thiserror 1.0.69",
  "tokio",
+ "tower-http",
+ "tracing",
  "url",
 ]
 
@@ -4132,6 +4137,18 @@ dependencies = [
  "tokio",
  "tracing",
  "underlay-core",
+ "uuid",
+]
+
+[[package]]
+name = "underlay-media"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "thiserror 1.0.69",
+ "underlay-db",
  "uuid",
 ]
 

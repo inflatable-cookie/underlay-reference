@@ -13,7 +13,8 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use underlay_http::query::QueryParams;
+use underlay_core::AppError;
+use underlay_http::{error_response, query::QueryParams};
 
 use acme_core::Uuid;
 use acme_db::{activity, categories};
@@ -135,7 +136,10 @@ pub async fn list_categories(
         }
         Err(e) => {
             tracing::error!("Failed to list categories: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            error_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                AppError::new("categories.list_failed", format!("Failed to list categories: {}", e)),
+            )
         }
     }
 }
