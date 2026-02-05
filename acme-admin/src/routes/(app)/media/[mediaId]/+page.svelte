@@ -529,11 +529,11 @@
         </div>
 
         <div class="form-actions">
-          <Button variant="secondary" onclick={closeEditDialog} disabled={submitting}>
-            Cancel
-          </Button>
           <Button type="submit" variant="primary" disabled={submitting}>
             {submitting ? "Saving..." : "Save"}
+          </Button>
+          <Button variant="subtle" onclick={closeEditDialog} disabled={submitting}>
+            Cancel
           </Button>
         </div>
       </form>
@@ -610,7 +610,7 @@
 
   .form-actions {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     gap: 0.75rem;
   }
 
