@@ -4,6 +4,10 @@
   import { env } from "$env/dynamic/public";
   import {
     PageHeader,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
+    PageHeaderMetaSeparator,
     getBackButtonInfo,
     useToasts,
     useAuthenticatedData,
@@ -33,6 +37,7 @@
     TabsList,
     TabsTrigger,
     TabsContent,
+    TextButton,
     TextInput,
     TimeAgo
   } from "@decodelabs/underlay/components";
@@ -285,19 +290,21 @@
     backIsContextual={backInfo.isContextual ?? false}
     bannerMessage={media.deletedAt ? "This media has been soft-deleted." : undefined}
   >
-    <p>
-      <strong>ID:</strong> <Code>{media.id}</Code>
-      <span class="header-separator">·</span>
-      <Pill accent={getMediaKindAccent(media.kind)}>{getMediaKindLabel(media.kind)}</Pill>
-      <span class="header-separator">·</span>
-      <Pill accent={media.visibility === MediaVisibility.Restricted ? "#f59e0b" : "#3b82f6"}>
-        {getMediaVisibilityLabel(media.visibility)}
-      </Pill>
-      {#if media.deletedAt}
-        <span class="header-separator">·</span>
-        <Pill accent="#ef4444">Deleted</Pill>
-      {/if}
-    </p>
+    <PageHeaderMeta>
+      <PageHeaderMetaRow>
+        <PageHeaderMetaItem label="ID">
+          <Code copy>{media.id}</Code>
+        </PageHeaderMetaItem>
+        <PageHeaderMetaSeparator />
+        <Pill accent={getMediaKindAccent(media.kind)}>{getMediaKindLabel(media.kind)}</Pill>
+        <Pill accent={media.visibility === MediaVisibility.Restricted ? "#f59e0b" : "#3b82f6"}>
+          {getMediaVisibilityLabel(media.visibility)}
+        </Pill>
+        {#if media.deletedAt}
+          <Pill accent="#ef4444">Deleted</Pill>
+        {/if}
+      </PageHeaderMetaRow>
+    </PageHeaderMeta>
 
     {#snippet actions()}
       <MediaActionsMenu
@@ -532,9 +539,9 @@
           <Button type="submit" variant="primary" disabled={submitting}>
             {submitting ? "Saving..." : "Save"}
           </Button>
-          <Button variant="subtle" onclick={closeEditDialog} disabled={submitting}>
+          <TextButton onclick={closeEditDialog} disabled={submitting}>
             Cancel
-          </Button>
+          </TextButton>
         </div>
       </form>
     {/snippet}
@@ -578,11 +585,6 @@
 {/if}
 
 <style>
-  .header-separator {
-    color: var(--admin-color-text-muted, #9ca3af);
-    margin: 0 0.5rem;
-  }
-
   .deleted-date {
     color: var(--color-danger, #ef4444);
   }
