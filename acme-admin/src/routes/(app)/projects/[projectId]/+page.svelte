@@ -4,8 +4,20 @@
   import { goto } from "$app/navigation";
   import { adminCommands, type Project, type TaskWithLabels, TaskStatus, TaskPriority } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { useAuthenticatedData, PageHeader, useToasts, Banner, ReorderableList, createReorderController, FilterBar } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, ProgressBar, Field, Select, OrderBy, type OrderByValue } from "@decodelabs/underlay/components";
+  import {
+    useAuthenticatedData,
+    PageHeader,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
+    PageHeaderMetaSeparator,
+    useToasts,
+    Banner,
+    ReorderableList,
+    createReorderController,
+    FilterBar
+  } from "@decodelabs/underlay/patterns";
+  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, Pill, ProgressBar, Field, Select, OrderBy, type OrderByValue } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { BatchActionBar } from "$lib/components";
   import Pencil from "lucide-svelte/icons/pencil";
@@ -292,6 +304,15 @@
     on_hold: "warning"
   } as Record<string, BadgeVariant>)[project.status] ?? "default" : "default");
 
+  function getStatusAccent(status: string): string {
+    switch (status) {
+      case "active": return "#10b981";
+      case "archived": return "#6b7280";
+      case "on_hold": return "#f59e0b";
+      default: return "#64748b";
+    }
+  }
+
   function handleEdit() {
     if (!project) return;
     void gotoWithContext(`/projects/${project.id}/edit`, {
@@ -357,6 +378,16 @@
     backHref="/projects"
     backLabel="Back to projects"
   >
+    <PageHeaderMeta>
+      <PageHeaderMetaRow>
+        <PageHeaderMetaItem label="ID">
+          <Code copy>{project.id}</Code>
+        </PageHeaderMetaItem>
+        <PageHeaderMetaSeparator />
+        <Pill accent={getStatusAccent(project.status)}>{statusLabel}</Pill>
+      </PageHeaderMetaRow>
+    </PageHeaderMeta>
+
     {#snippet actions()}
       <Button type="button" variant="secondary" onclick={handleEdit}>
         <Pencil size={16} />

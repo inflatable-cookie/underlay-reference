@@ -1,12 +1,22 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { PageHeader, useToasts, useAuthenticatedData } from "@decodelabs/underlay/patterns";
+  import {
+    PageHeader,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
+    PageHeaderMetaSeparator,
+    useToasts,
+    useAuthenticatedData
+  } from "@decodelabs/underlay/patterns";
   import {
     Button,
     Card,
+    Code,
     FormError,
     PageLoading,
     Badge,
+    Pill,
     Tooltip
   } from "@decodelabs/underlay/components";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
@@ -55,6 +65,17 @@
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
+  function getStatusAccent(status: string): string {
+    switch (status) {
+      case "succeeded": return "#10b981";
+      case "failed": return "#ef4444";
+      case "running": return "#3b82f6";
+      case "pending": return "#f59e0b";
+      case "cancelled": return "#6b7280";
+      default: return "#64748b";
+    }
+  }
+
   function formatDate(dateStr: string | null | undefined): string {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleString();
@@ -100,6 +121,18 @@
   backHref="/system/jobs"
   backLabel="Back to jobs"
 >
+  {#if job}
+    <PageHeaderMeta>
+      <PageHeaderMetaRow>
+        <PageHeaderMetaItem label="ID">
+          <Code copy>{job.id}</Code>
+        </PageHeaderMetaItem>
+        <PageHeaderMetaSeparator />
+        <Pill accent={getStatusAccent(job.status)}>{getStatusLabel(job.status)}</Pill>
+      </PageHeaderMetaRow>
+    </PageHeaderMeta>
+  {/if}
+
   {#snippet actions()}
     {#if job}
       {#if job.status === "pending" || job.status === "running"}

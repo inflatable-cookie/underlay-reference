@@ -1,14 +1,24 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { PageHeader, useToasts, useAuthenticatedData } from "@decodelabs/underlay/patterns";
+  import {
+    PageHeader,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
+    PageHeaderMetaSeparator,
+    useToasts,
+    useAuthenticatedData
+  } from "@decodelabs/underlay/patterns";
   import {
     Badge,
     Card,
+    Code,
     DataTable,
     DropdownMenu,
     FormError,
     PageLoading,
+    Pill,
     TabsRoot,
     TabsList,
     TabsTrigger,
@@ -181,9 +191,17 @@
     backLabel="Back to tasks"
   >
     {#if task}
-      <span class="task-detail-page__status" style="--status-color: {task.enabled ? '#10b981' : '#6b7280'}">
-        {task.enabled ? "Enabled" : "Disabled"}
-      </span>
+      <PageHeaderMeta>
+        <PageHeaderMetaRow>
+          <PageHeaderMetaItem label="ID">
+            <Code copy>{task.id}</Code>
+          </PageHeaderMetaItem>
+          <PageHeaderMetaSeparator />
+          <Pill accent={task.enabled ? "#10b981" : "#6b7280"}>
+            {task.enabled ? "Enabled" : "Disabled"}
+          </Pill>
+        </PageHeaderMetaRow>
+      </PageHeaderMeta>
     {/if}
     {#snippet actions()}
       {#if task}

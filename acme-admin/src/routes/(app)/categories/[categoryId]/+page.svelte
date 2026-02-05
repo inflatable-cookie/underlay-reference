@@ -3,8 +3,17 @@
   import { goto } from "$app/navigation";
   import { adminCommands, type Category } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { useAuthenticatedData, PageHeader, useToasts, Banner } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, ConfirmAction, Badge } from "@decodelabs/underlay/components";
+  import {
+    useAuthenticatedData,
+    PageHeader,
+    PageHeaderMeta,
+    PageHeaderMetaRow,
+    PageHeaderMetaItem,
+    PageHeaderMetaSeparator,
+    useToasts,
+    Banner
+  } from "@decodelabs/underlay/patterns";
+  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, Pill } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import Pencil from "lucide-svelte/icons/pencil";
 
@@ -74,6 +83,18 @@
     backHref="/categories"
     backLabel="Back to categories"
   >
+    <PageHeaderMeta>
+      <PageHeaderMetaRow>
+        <PageHeaderMetaItem label="ID">
+          <Code copy>{category.id}</Code>
+        </PageHeaderMetaItem>
+        <PageHeaderMetaSeparator />
+        <Pill accent={category.isActive ? "#10b981" : "#6b7280"}>
+          {category.isActive ? "Active" : "Inactive"}
+        </Pill>
+      </PageHeaderMetaRow>
+    </PageHeaderMeta>
+
     {#snippet actions()}
       <Button type="button" variant="secondary" onclick={handleEdit}>
         <Pencil size={16} />
