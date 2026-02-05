@@ -4,8 +4,8 @@
 	import { Pill, StatCard, StatGrid } from "@decodelabs/underlay/components";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
-	import UserPlus from "lucide-svelte/icons/user-plus";
-	import Activity from "lucide-svelte/icons/activity";
+	import Settings from "lucide-svelte/icons/settings";
+	import Box from "lucide-svelte/icons/box";
 	import { auth } from "$lib/stores/auth";
 	import LogList from "$lib/components/LogList.svelte";
 
@@ -57,6 +57,7 @@
 			variant="info"
 			loading={statsLoading}
 			error={statsError}
+			href="/users"
 		>
 			{#snippet icon()}<Users />{/snippet}
 			{#snippet breakdown()}
@@ -78,30 +79,32 @@
 			variant="warning"
 			loading={statsLoading}
 			error={statsError}
+			href="/media"
 		>
 			{#snippet icon()}<Image />{/snippet}
 		</StatCard>
 
-		<StatCard
-			title="Recent registrations"
-			value={stats?.recentRegistrations ?? 0}
-			label="Last 7 days"
-			variant="success"
-			loading={statsLoading}
-			error={statsError}
-		>
-			{#snippet icon()}<UserPlus />{/snippet}
-		</StatCard>
+		<div class="stat-card--acme">
+			<StatCard
+				title="Acme"
+				value="–"
+				label="Projects & Categories"
+				loading={statsLoading}
+				href="/projects"
+			>
+				{#snippet icon()}<Box />{/snippet}
+			</StatCard>
+		</div>
 
 		<StatCard
-			title="Active sessions"
+			title="System"
 			value={stats?.activeSessions ?? 0}
-			label="Logged in now"
-			variant="danger"
+			label="Active sessions"
 			loading={statsLoading}
 			error={statsError}
+			href="/system"
 		>
-			{#snippet icon()}<Activity />{/snippet}
+			{#snippet icon()}<Settings />{/snippet}
 		</StatCard>
 	</StatGrid>
 
@@ -162,5 +165,11 @@
 		border: 1px solid var(--admin-color-border-subtle);
 		border-radius: 0.5rem;
 		padding: 1rem;
+	}
+
+	/* Custom purple styling for Acme card to match nav badge */
+	.stat-card--acme :global(.underlay-stat-card__icon) {
+		background: color-mix(in srgb, #8b5cf6 15%, transparent);
+		color: #8b5cf6;
 	}
 </style>
