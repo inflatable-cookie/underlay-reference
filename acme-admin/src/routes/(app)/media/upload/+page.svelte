@@ -66,9 +66,9 @@
   const errorCount = $derived(uploadQueue.filter(q => q.status === "error").length);
   const allDone = $derived(uploadQueue.length > 0 && uploadQueue.every(q => q.status === "done" || q.status === "error" || q.status === "duplicate"));
 
-  // Add files to queue when selected
+  // Add files to queue when selected (bulk mode only)
   $effect(() => {
-    if (files.length > 0) {
+    if (isBulkMode && files.length > 0) {
       addFilesToQueue();
     }
   });
@@ -272,7 +272,7 @@
       await mediaCommands.finaliseUpload(
         mediaRecord.id,
         uploadInfo.versionId,
-        { sha256: hash },
+        { sha256: hash, contentType: item.file.type },
         fetch,
         token
       );
@@ -378,7 +378,7 @@
       await mediaCommands.finaliseUpload(
         mediaRecord.id,
         uploadInfo.versionId,
-        { sha256: item.hash ?? "" },
+        { sha256: item.hash ?? "", contentType: item.file.type },
         fetch,
         token
       );
@@ -501,7 +501,7 @@
       await mediaCommands.finaliseUpload(
         replaceMediaId,
         uploadInfo.versionId,
-        { sha256: hash },
+        { sha256: hash, contentType: file.type },
         fetch,
         token
       );
