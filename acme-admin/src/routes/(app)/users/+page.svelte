@@ -154,10 +154,6 @@
 	// Row actions
 	const actions = [
 		{
-			label: "View",
-			href: (row: User) => `/users/${row.id}`
-		},
-		{
 			label: "Edit",
 			href: (row: User) => `/users/${row.id}/edit`
 		},

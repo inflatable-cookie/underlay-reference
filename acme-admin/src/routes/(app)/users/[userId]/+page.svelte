@@ -353,26 +353,24 @@
     { value: UserRoleConst.Superadmin, label: "Superadmin" }
   ];
 
-  const userMenuItems = $derived(() => {
-    if (!user) return [];
-
+  function getUserMenuItems(currentUser: UserDetail) {
     return [
       {
         label: "Edit",
         onSelect: () =>
-          void gotoWithContext(`/users/${user.id}/edit`, {
+          void gotoWithContext(`/users/${currentUser.id}/edit`, {
             label: "User",
-            href: `/users/${user.id}`,
+            href: `/users/${currentUser.id}`,
             type: "detail"
           })
       },
       {
         label: "Copy ID",
-        onSelect: () => void copyToClipboard(user.id)
+        onSelect: () => void copyToClipboard(currentUser.id)
       },
       {
         label: "Copy Email",
-        onSelect: () => void copyToClipboard(user.email)
+        onSelect: () => void copyToClipboard(currentUser.email)
       },
       { separator: true },
       {
@@ -381,13 +379,13 @@
           showRoleDialog = true;
         }
       },
-      user.status === "active"
+      currentUser.status === "active"
         ? {
             label: "Suspend user",
             destructive: true,
             onSelect: () => void handleSuspend()
           }
-        : user.status === "suspended"
+        : currentUser.status === "suspended"
           ? {
               label: "Reactivate user",
               onSelect: () => void handleUnsuspend()
@@ -397,7 +395,7 @@
               disabled: true
             }
     ];
-  });
+  }
 </script>
 
 {#if pageData.loading}
@@ -414,7 +412,7 @@
     bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
   >
     {#snippet actions()}
-      <DropdownMenu items={userMenuItems}>
+      <DropdownMenu items={getUserMenuItems(user)}>
         {#snippet trigger()}
           <MoreVertical size={16} aria-hidden="true" />
         {/snippet}
