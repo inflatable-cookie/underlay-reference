@@ -13,6 +13,7 @@ use underlay_blob::UploadRequest;
 use underlay_db::pagination::PaginationParams;
 use underlay_http::query::QueryParams;
 use underlay_jobs::JobConfig;
+use underlay_media::storage::version_key;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -580,13 +581,13 @@ pub async fn initiate_upload(
         }
     };
 
-    // Generate object key
-    let ext = media_row
-        .original_filename
-        .as_ref()
-        .and_then(|f| f.rsplit('.').next())
-        .unwrap_or("bin");
-    let object_key = format!("media/{}/versions/{}/file.{}", media_id, version_id, ext);
+    // Generate object key using standardized storage pattern
+    // Use original filename if available, otherwise generate from content type
+    let filename = media_row.original_filename.clone().unwrap_or_else(|| {
+        let ext = underlay_media::storage::mime_to_extension(&req.content_type);
+        format!("file.{}", ext)
+    });
+    let object_key = version_key(media_id, version_id, &filename);
 
     // Request upload URL from blob adapter
     let upload_request = UploadRequest::new(&object_key, &req.content_type, req.content_length);
@@ -661,13 +662,13 @@ pub async fn finalise_upload(
         }
     };
 
-    // Generate object key (same as in initiate)
-    let ext = media_row
-        .original_filename
-        .as_ref()
-        .and_then(|f| f.rsplit('.').next())
-        .unwrap_or("bin");
-    let object_key = format!("media/{}/versions/{}/file.{}", media_id, version_id, ext);
+    // Generate object key (same as in initiate) using standardized storage pattern
+    // Use original filename if available, otherwise generate from content type
+    let filename = media_row.original_filename.clone().unwrap_or_else(|| {
+        let ext = underlay_media::storage::mime_to_extension(&req.content_type);
+        format!("file.{}", ext)
+    });
+    let object_key = version_key(media_id, version_id, &filename);
 
     // Finalise with blob adapter to get actual metadata
     let stored = match state.blob_adapter.finalise_upload(&object_key).await {
@@ -873,7 +874,18 @@ pub async fn list_versions(
 
     match media::list_media_versions(pool, media_id).await {
         Ok(rows) => {
-            let items: Vec<MediaVersionDto> = rows.into_iter().map(Into::into).collect();
+            let mut items = Vec::with_capacity(rows.len());
+            for row in rows {
+                let renditions = media::list_media_renditions(pool, row.id)
+                    .await
+                    .unwrap_or_default();
+                let dto = MediaVersionDto::from_row_with_urls(
+                    row,
+                    renditions,
+                    |key| state.blob_adapter.public_url(key),
+                );
+                items.push(dto);
+            }
             Json(json!({ "data": items })).into_response()
         }
         Err(e) => {

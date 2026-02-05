@@ -443,6 +443,9 @@ pub struct FinaliseUploadRequest {
     /// SHA-256 hash of the uploaded file (hex-encoded, 64 characters).
     #[validate(length(equal = 64))]
     pub sha256: String,
+    /// Content type of the uploaded file (must match what was declared in initiate).
+    #[validate(length(min = 1, max = 255))]
+    pub content_type: String,
 }
 
 /// Response for upload finalisation.

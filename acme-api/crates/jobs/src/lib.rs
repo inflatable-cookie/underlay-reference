@@ -44,6 +44,7 @@ use std::sync::Arc;
 use tracing::{info, warn};
 use underlay_blob::{BlobAdapter, MediaConfig};
 use underlay_image::{generate_thumbnail, ThumbnailConfig};
+use underlay_media::storage::rendition_key;
 
 // Re-export everything from underlay-jobs.
 pub use underlay_jobs::{
@@ -674,11 +675,8 @@ impl JobHandler for GenerateThumbnailHandler {
         let result = generate_thumbnail(&original_bytes, &config)
             .map_err(|e| JobHandlerError::permanent(format!("failed to generate thumbnail: {}", e)))?;
 
-        // Generate thumbnail object key
-        let thumb_object_key = format!(
-            "media/{}/versions/{}/thumbnail.jpg",
-            payload.media_id, payload.version_id
-        );
+        // Generate thumbnail object key using standardized storage pattern
+        let thumb_object_key = rendition_key(payload.media_id, payload.version_id, "thumb");
 
         // Upload thumbnail
         self.blob_adapter
