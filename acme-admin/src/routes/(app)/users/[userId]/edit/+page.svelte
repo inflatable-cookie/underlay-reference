@@ -73,6 +73,7 @@
       return { success: false, error: "Data not loaded" };
     }
 
+    const email = String(formData.get("email") ?? "").trim();
     const displayName = String(formData.get("displayName") ?? "").trim() || null;
     const role = String(formData.get("role") ?? user.role).trim();
     const status = String(formData.get("status") ?? user.status).trim();
@@ -80,6 +81,7 @@
     const formReturnTo = String(formData.get("returnTo") ?? "").trim() || null;
 
     const buildValues = () => ({
+      email,
       displayName,
       role,
       status,
@@ -87,6 +89,8 @@
     });
 
     const errors: Record<string, string> = {};
+    if (!email) errors.email = "Email is required";
+    if (email && !email.includes("@")) errors.email = "Email must be valid";
     if (!role) errors.role = "Role is required";
     if (!status) errors.status = "Status is required";
 
@@ -102,7 +106,7 @@
     try {
       await adminCommands.updateUser(
         user.id,
-        { displayName, role: role as UserRole, status: status as UserStatus },
+        { email, displayName, role: role as UserRole, status: status as UserStatus },
         fetch,
         token
       );
@@ -172,7 +176,7 @@
     <UserForm
       mode="edit"
       values={{
-        email: user.email,
+        email: typeof formValues?.email === "string" ? formValues.email : user.email,
         displayName: typeof formValues?.displayName === "string" ? formValues.displayName : user.displayName ?? "",
         role: typeof formValues?.role === "string" ? formValues.role : user.role,
         status: typeof formValues?.status === "string" ? formValues.status : user.status

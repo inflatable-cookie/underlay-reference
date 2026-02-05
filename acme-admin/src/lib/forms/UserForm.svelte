@@ -71,17 +71,16 @@
 
 <FormValidationProvider bind:isValid={isFormValid}>
   <FieldSet legend="User" columns={2}>
-    <Field label="Email" error={errors?.email} required>
-      <TextInput
-        name="email"
-        value={emailValue}
-        onchange={(v) => { emailValue = v; }}
-        required
-        placeholder="name@example.com"
-        maxlength={320}
-        disabled={mode === "edit"}
-      />
-    </Field>
+	<Field label="Email" error={errors?.email} required>
+		<TextInput
+			name="email"
+			value={emailValue}
+			onchange={(v) => { emailValue = v; }}
+			required
+			placeholder="name@example.com"
+			maxlength={320}
+		/>
+	</Field>
 
     <Field label="Display Name" error={errors?.displayName}>
       <TextInput
@@ -161,4 +160,3 @@
     bind:intent
   />
 </FormActions>
-

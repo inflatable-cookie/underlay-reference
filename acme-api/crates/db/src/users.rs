@@ -282,6 +282,8 @@ pub async fn create_user_admin(
 pub async fn update_user_admin(
     pool: &DbPool,
     user_id: Uuid,
+    email_update: bool,
+    email: Option<&str>,
     display_name_update: bool,
     display_name: Option<&str>,
     role: Option<&str>,
@@ -291,9 +293,10 @@ pub async fn update_user_admin(
         r#"
         UPDATE auth.users
         SET
-            display_name = CASE WHEN $2 THEN $3 ELSE display_name END,
-            role = COALESCE($4, role),
-            status = COALESCE($5, status),
+            email = CASE WHEN $2 THEN COALESCE($3, email) ELSE email END,
+            display_name = CASE WHEN $4 THEN $5 ELSE display_name END,
+            role = COALESCE($6, role),
+            status = COALESCE($7, status),
             updated_at = NOW()
         WHERE id = $1
         RETURNING
@@ -309,6 +312,8 @@ pub async fn update_user_admin(
         "#,
     )
     .bind(user_id)
+    .bind(email_update)
+    .bind(email)
     .bind(display_name_update)
     .bind(display_name)
     .bind(role)

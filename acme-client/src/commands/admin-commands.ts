@@ -668,6 +668,7 @@ export async function updateUser(
   const response = await http.put<SingleResponse<User>>(
     `/v1/admin/users/${encodeURIComponent(userId)}`,
     {
+      email: payload.email,
       role: payload.role,
       status: payload.status,
       displayName: payload.displayName ?? null,

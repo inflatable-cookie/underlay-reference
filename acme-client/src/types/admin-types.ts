@@ -248,6 +248,7 @@ export interface CreateUserPayload {
 }
 
 export interface UpdateUserPayload {
+  email?: string;
   role?: UserRole;
   status?: UserStatus;
   displayName?: string | null;
