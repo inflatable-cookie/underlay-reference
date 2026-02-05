@@ -4,11 +4,16 @@
   import {
     FilterBar,
     PageHeader,
+    CopyActionsMenu,
     useToasts,
     useAuthenticatedData,
     useBatchSelection,
+    getMediaKindAccent,
     getMediaKindLabel,
-    MediaKind
+    getMediaVisibilityAccent,
+    getMediaVisibilityLabel,
+    MediaKind,
+    MediaVisibility
   } from "@decodelabs/underlay/patterns";
   import {
     Button,
@@ -16,7 +21,7 @@
     FormError,
     ListGrid,
     ListCard,
-    Badge,
+    Pill,
     OrderBy,
     PageLoading,
     Select,
@@ -199,22 +204,6 @@
     }
   }
 
-  function getKindVariant(kind: string): "default" | "success" | "warning" | "danger" | "info" | "muted" {
-    switch (kind) {
-      case MediaKind.Image:
-        return "info";
-      case MediaKind.Video:
-        return "warning";
-      case MediaKind.Audio:
-        return "success";
-      case MediaKind.Document:
-      case MediaKind.Pdf:
-        return "muted";
-      default:
-        return "default";
-    }
-  }
-
   function formatFileSize(bytes: number | null | undefined): string {
     if (bytes == null || bytes === 0) return "—";
     const units = ["B", "KB", "MB", "GB"];
@@ -375,15 +364,18 @@
 {:else if (pageData.data?.items ?? []).length === 0}
   <p class="empty-state">No media found. Upload your first file to get started.</p>
 {:else}
-  <ListGrid minItemWidth={20}>
+  <ListGrid minItemWidth={26}>
     {#each pageData.data?.items ?? [] as item}
       {@const KindIcon = getKindIcon(item.kind)}
+      {@const accent = getMediaKindAccent(item.kind)}
       <ListCard
         title={item.title ?? item.originalFilename ?? "Untitled"}
-        subtitle={formatFileSize(item.byteSize)}
+        subtitle={isSelectionMode ? formatFileSize(item.byteSize) : undefined}
         href={isSelectionMode ? undefined : `/media/${item.id}`}
+        {accent}
         selected={selection.isSelected(item.id)}
         onSelectionChange={isSelectionMode ? (checked) => selection.toggle(item.id, checked) : undefined}
+        actionsPlacement="media-overlay"
       >
         {#snippet media()}
           {#if item.thumbnailUrl}
@@ -392,11 +384,56 @@
             <KindIcon size={20} />
           {/if}
         {/snippet}
-        {#snippet titleSuffix()}
-          <Badge variant={getKindVariant(item.kind)} size="sm">
-            {getMediaKindLabel(item.kind)}
-          </Badge>
+        {#snippet trailing()}
+          <div class="media-pills">
+            <Pill accent={accent}>
+              {getMediaKindLabel(item.kind)}
+            </Pill>
+            {#if item.visibility && item.visibility !== MediaVisibility.Public}
+              <Pill accent={getMediaVisibilityAccent(item.visibility)}>
+                {getMediaVisibilityLabel(item.visibility)}
+              </Pill>
+            {/if}
+          </div>
         {/snippet}
+
+        {#snippet actions({ trigger, align })}
+          <CopyActionsMenu
+            toastStore={toastStore}
+            {trigger}
+            {align}
+            copies={[
+              {
+                label: "Copy media ID",
+                text: item.id,
+                successMessage: "Copied media ID"
+              }
+            ]}
+            actions={[
+              {
+                label: "View details",
+                onSelect: () =>
+                  void gotoWithContext(`/media/${item.id}`, {
+                    label: "Media",
+                    href: "/media",
+                    type: "list"
+                  })
+              },
+              {
+                label: "Move to trash",
+                destructive: true,
+                onSelect: () => handleDeleteMedia(item.id)
+              }
+            ]}
+          />
+        {/snippet}
+
+        <span class="media-meta">
+          {#if item.byteSize}
+            {formatFileSize(item.byteSize)} &middot;
+          {/if}
+          Updated {new Date(item.updatedAt).toLocaleDateString()}
+        </span>
       </ListCard>
     {/each}
   </ListGrid>
@@ -423,5 +460,16 @@
     height: 100%;
     object-fit: cover;
     border-radius: 0.25rem;
+  }
+
+  .media-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    justify-content: flex-end;
+  }
+
+  .media-meta {
+    color: var(--admin-color-text-muted);
   }
 </style>
