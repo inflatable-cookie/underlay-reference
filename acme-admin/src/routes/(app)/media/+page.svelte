@@ -10,8 +10,10 @@
     useBatchSelection,
     getMediaKindAccent,
     getMediaKindLabel,
+    getMediaKindIcon,
     getMediaVisibilityAccent,
     getMediaVisibilityLabel,
+    formatFileSize,
     MediaKind,
     MediaVisibility
   } from "@decodelabs/underlay/patterns";
@@ -21,6 +23,7 @@
     FormError,
     ListGrid,
     ListCard,
+    MediaThumbnail,
     Pill,
     OrderBy,
     PageLoading,
@@ -34,11 +37,6 @@
   import { BatchActionBar } from "$lib/components";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import Upload from "lucide-svelte/icons/upload";
-  import Image from "lucide-svelte/icons/image";
-  import FileText from "lucide-svelte/icons/file-text";
-  import Film from "lucide-svelte/icons/film";
-  import Music from "lucide-svelte/icons/music";
-  import FileIcon from "lucide-svelte/icons/file";
   import Trash2 from "lucide-svelte/icons/trash-2";
   import CheckSquare from "lucide-svelte/icons/check-square";
 
@@ -186,34 +184,6 @@
       const message = e instanceof Error ? e.message : "Failed to delete media";
       toastStore.push({ variant: "error", message });
     }
-  }
-
-  function getKindIcon(kind: string) {
-    switch (kind) {
-      case MediaKind.Image:
-        return Image;
-      case MediaKind.Video:
-        return Film;
-      case MediaKind.Audio:
-        return Music;
-      case MediaKind.Document:
-      case MediaKind.Pdf:
-        return FileText;
-      default:
-        return FileIcon;
-    }
-  }
-
-  function formatFileSize(bytes: number | null | undefined): string {
-    if (bytes == null || bytes === 0) return "—";
-    const units = ["B", "KB", "MB", "GB"];
-    let size = bytes;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    return `${size.toFixed(unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
   }
 
   // Selection mode state
@@ -366,7 +336,6 @@
 {:else}
   <ListGrid minItemWidth={26}>
     {#each pageData.data?.items ?? [] as item}
-      {@const KindIcon = getKindIcon(item.kind)}
       {@const accent = getMediaKindAccent(item.kind)}
       <ListCard
         title={item.title ?? item.originalFilename ?? "Untitled"}
@@ -375,14 +344,15 @@
         {accent}
         selected={selection.isSelected(item.id)}
         onSelectionChange={isSelectionMode ? (checked) => selection.toggle(item.id, checked) : undefined}
-        actionsPlacement="media-overlay"
+        actionsPlacement={item.thumbnailUrl ? "media-overlay" : "media"}
       >
         {#snippet media()}
-          {#if item.thumbnailUrl}
-            <img src={item.thumbnailUrl} alt="" class="thumbnail" />
-          {:else}
-            <KindIcon size={20} />
-          {/if}
+          <MediaThumbnail
+            thumbnailUrl={item.thumbnailUrl}
+            kind={item.kind}
+            alt={item.title ?? ""}
+            size="fill"
+          />
         {/snippet}
         {#snippet trailing()}
           <div class="media-pills">
@@ -453,13 +423,6 @@
     padding: 2rem;
     text-align: center;
     color: var(--text-secondary, #6b7280);
-  }
-
-  .thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 0.25rem;
   }
 
   .media-pills {

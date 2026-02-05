@@ -5,14 +5,16 @@
     useToasts,
     useAuthenticatedData,
     getMediaKindLabel,
-    MediaKind
+    getMediaKindAccent,
+    formatFileSize
   } from "@decodelabs/underlay/patterns";
   import {
     Button,
     FormError,
     ListGrid,
     ListCard,
-    Badge,
+    MediaThumbnail,
+    Pill,
     PageLoading,
     ConfirmAction
   } from "@decodelabs/underlay/components";
@@ -20,11 +22,6 @@
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Trash2 from "lucide-svelte/icons/trash-2";
-  import Image from "lucide-svelte/icons/image";
-  import FileText from "lucide-svelte/icons/file-text";
-  import Film from "lucide-svelte/icons/film";
-  import Music from "lucide-svelte/icons/music";
-  import FileIcon from "lucide-svelte/icons/file";
 
   const toastStore = useToasts();
 
@@ -79,47 +76,6 @@
     }
   }
 
-  function getKindIcon(kind: string) {
-    switch (kind) {
-      case MediaKind.Image:
-        return Image;
-      case MediaKind.Video:
-        return Film;
-      case MediaKind.Audio:
-        return Music;
-      case MediaKind.Document:
-        return FileText;
-      default:
-        return FileIcon;
-    }
-  }
-
-  function getKindVariant(kind: string): "default" | "success" | "warning" | "danger" | "info" | "muted" {
-    switch (kind) {
-      case MediaKind.Image:
-        return "info";
-      case MediaKind.Video:
-        return "warning";
-      case MediaKind.Audio:
-        return "success";
-      case MediaKind.Document:
-        return "muted";
-      default:
-        return "default";
-    }
-  }
-
-  function formatFileSize(bytes: number | null | undefined): string {
-    if (bytes == null || bytes === 0) return "—";
-    const units = ["B", "KB", "MB", "GB"];
-    let size = bytes;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    return `${size.toFixed(unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
-  }
 </script>
 
 <PageHeader title="Trash" backHref="/media" backLabel="Back to media" />
@@ -130,7 +86,7 @@
   <FormError message={pageData.error} />
 {:else if (pageData.data?.media ?? []).length === 0}
   <div class="empty-state">
-    <Trash2 size={48} />
+    <Trash2 size="fill" />
     <h2>Trash is empty</h2>
     <p>Deleted media items will appear here.</p>
     <Button type="button" variant="subtle" onclick={() => goto("/media")}>
@@ -142,22 +98,43 @@
     Items in trash can be restored or permanently deleted. Permanently deleted items cannot be recovered.
   </p>
 
-  <ListGrid minItemWidth={20}>
+  <ListGrid minItemWidth={26}>
     {#each pageData.data?.media ?? [] as item}
-      {@const KindIcon = getKindIcon(item.kind)}
+      {@const accent = getMediaKindAccent(item.kind)}
       <ListCard
         title={item.title ?? item.originalFilename ?? "Untitled"}
-        subtitle={formatFileSize(item.byteSize)}
+        href={`/media/${item.id}`}
+        accent="#64748b"
+        actionsPlacement={item.thumbnailUrl ? "media-overlay" : "media"}
       >
         {#snippet media()}
-          <KindIcon size={20} />
+          <MediaThumbnail
+            thumbnailUrl={item.thumbnailUrl}
+            kind={item.kind}
+            alt={item.title ?? ""}
+            size="fill"
+          />
         {/snippet}
-        {#snippet titleSuffix()}
-          <Badge variant={getKindVariant(item.kind)} size="sm">
-            {getMediaKindLabel(item.kind)}
-          </Badge>
+
+        {#snippet trailing()}
+          <div class="media-pills">
+            <Pill {accent}>
+              {getMediaKindLabel(item.kind)}
+            </Pill>
+            <Pill accent="#ef4444">Deleted</Pill>
+          </div>
         {/snippet}
-        {#snippet actions()}
+
+        <span class="media-meta">
+          {#if item.byteSize}
+            {formatFileSize(item.byteSize)} &middot;
+          {/if}
+          {#if item.deletedAt}
+            Deleted {new Date(item.deletedAt).toLocaleDateString()}
+          {/if}
+        </span>
+
+        {#snippet actions({ trigger, align })}
           <div class="trash-actions">
             <Button type="button" variant="subtle" size="sm" onclick={() => handleRestore(item.id)}>
               <RotateCcw size={14} />
@@ -186,13 +163,13 @@
     justify-content: center;
     padding: 4rem 2rem;
     text-align: center;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted, #6b7280);
   }
 
   .empty-state h2 {
     margin: 1rem 0 0.5rem;
     font-size: 1.25rem;
-    color: var(--text-primary, #111827);
+    color: var(--admin-color-text, #111827);
   }
 
   .empty-state p {
@@ -207,6 +184,16 @@
     border-radius: 0.5rem;
     color: var(--text-warning, #b45309);
     font-size: 0.875rem;
+  }
+
+  .media-pills {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .media-meta {
+    font-size: 0.875rem;
+    color: var(--admin-color-text-muted, #9ca3af);
   }
 
   .trash-actions {

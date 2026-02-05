@@ -1,25 +1,56 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
+  import { env } from "$env/dynamic/public";
+  import {
+    PageHeader,
+    getBackButtonInfo,
+    useToasts,
+    useAuthenticatedData,
+    FormDialog,
+    getMediaKindLabel,
+    getMediaKindAccent,
+    getMediaVisibilityLabel,
+    getMediaVersionStateLabel,
+    getMediaVersionStateAccent,
+    formatFileSize
+  } from "@decodelabs/underlay/patterns";
+  import {
+    AlertDialog,
+    Button,
+    Code,
+    DetailsCard,
+    DetailsItem,
+    DetailsSection,
+    Field,
+    FormError,
+    InlineListCard,
+    InlineListItem,
+    PageLoading,
+    Pill,
+    Select,
+    TabsRoot,
+    TabsList,
+    TabsTrigger,
+    TabsContent,
+    TextInput,
+    TimeAgo
+  } from "@decodelabs/underlay/components";
   import {
     mediaCommands,
     type MediaDetail,
+    type MediaVersion,
+    type MediaUsage,
     MediaKind,
-    MediaVersionState,
-    getMediaKindLabel,
-    getMediaVersionStateLabel
+    MediaVisibility,
+    MediaVersionState
   } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, ConfirmAction, Badge, Field, TextInput } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
-  import Pencil from "lucide-svelte/icons/pencil";
-  import Upload from "lucide-svelte/icons/upload";
-  import Image from "lucide-svelte/icons/image";
-  import FileText from "lucide-svelte/icons/file-text";
-  import Film from "lucide-svelte/icons/film";
-  import Music from "lucide-svelte/icons/music";
-  import FileIcon from "lucide-svelte/icons/file";
+  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import Check from "lucide-svelte/icons/check";
+  import Plus from "lucide-svelte/icons/plus";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import { browser } from "$app/environment";
 
   interface Props {
     data: PageData;
@@ -28,22 +59,19 @@
   let { data }: Props = $props();
 
   const toastStore = useToasts();
+  const mediaId = data.mediaId;
 
-  // Form state for editing
-  let isEditing = $state(false);
-  let editTitle = $state("");
-  let saving = $state(false);
-
-  // Fetch media data
+  // Load media detail, versions, and usages
   const pageData = useAuthenticatedData(
-    async (fetch, token) => {
-      const item = await mediaCommands.getMedia(data.mediaId, fetch, token);
-      return { item };
+    async (fetchFn, token) => {
+      const [media, versions, usages] = await Promise.all([
+        mediaCommands.getMedia(mediaId, fetchFn, token),
+        mediaCommands.listVersions(mediaId, fetchFn, token),
+        mediaCommands.listUsages(mediaId, fetchFn, token)
+      ]);
+      return { media, versions, usages };
     },
-    {
-      getToken: () => auth.getToken(),
-      defaultValue: { item: null as MediaDetail | null }
-    }
+    { getToken: () => auth.getToken() }
   );
 
   // Trigger fetch when auth is ready
@@ -51,50 +79,90 @@
     pageData.tryFetch($authLoading, $currentUser);
   });
 
-  const item = $derived(pageData.data?.item);
-  const currentVersion = $derived(item?.currentVersion);
+  const media = $derived(pageData.data?.media);
+  const versions = $derived(pageData.data?.versions ?? []);
+  const usages = $derived(pageData.data?.usages ?? []);
 
-  function startEditing() {
-    if (!item) return;
-    editTitle = item.title ?? "";
-    isEditing = true;
+  let activeTab = $state("details");
+  const usageCount = $derived(usages.length);
+
+  const backInfo = getBackButtonInfo("Back to media", "/media");
+
+  // Edit dialog state
+  let editDialogOpen = $state(false);
+  let editDialogError = $state<string | null>(null);
+  let editDialogSubmitting = $state(false);
+  let editTitle = $state("");
+  let editFilename = $state("");
+  let editVisibility = $state<string>(MediaVisibility.Public);
+
+  function openEditDialog() {
+    if (!media) return;
+    editTitle = media.title || "";
+    editFilename = media.originalFilename || "";
+    editVisibility = media.visibility;
+    editDialogError = null;
+    editDialogOpen = true;
   }
 
-  function cancelEditing() {
-    isEditing = false;
+  function closeEditDialog() {
+    editDialogOpen = false;
+    editDialogError = null;
+    editDialogSubmitting = false;
   }
 
-  async function saveChanges() {
-    if (!item) return;
+  async function handleEditSubmit(e: SubmitEvent) {
+    e.preventDefault();
+    if (!browser || !media) return;
 
     const token = auth.getToken();
     if (!token) {
-      toastStore.push({ variant: "error", message: "Not authenticated" });
+      editDialogError = "Not authenticated";
       return;
     }
 
-    saving = true;
+    editDialogSubmitting = true;
+    editDialogError = null;
 
     try {
       await mediaCommands.updateMedia(
-        item.id,
-        { title: editTitle.trim() || null },
-        fetch,
+        media.id,
+        {
+          title: editTitle || null,
+          originalFilename: editFilename || null,
+          visibility: editVisibility as MediaVisibility
+        },
+        window.fetch.bind(window),
         token
       );
       toastStore.push({ variant: "success", message: "Media updated" });
-      isEditing = false;
+      closeEditDialog();
       await pageData.refetch();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to update media";
-      toastStore.push({ variant: "error", message });
+      editDialogError = message;
     } finally {
-      saving = false;
+      editDialogSubmitting = false;
     }
   }
 
-  async function handleDelete() {
-    if (!item) return;
+  // Version actions state
+  let activateDialogOpen = $state(false);
+  let deleteDialogOpen = $state(false);
+  let selectedVersion = $state<MediaVersion | null>(null);
+
+  function requestActivate(version: MediaVersion) {
+    selectedVersion = version;
+    activateDialogOpen = true;
+  }
+
+  function requestDelete(version: MediaVersion) {
+    selectedVersion = version;
+    deleteDialogOpen = true;
+  }
+
+  async function confirmActivate() {
+    if (!browser || !media || !selectedVersion) return;
 
     const token = auth.getToken();
     if (!token) {
@@ -103,7 +171,74 @@
     }
 
     try {
-      await mediaCommands.softDeleteMedia(item.id, fetch, token);
+      await mediaCommands.activateVersion(
+        media.id,
+        selectedVersion.id,
+        window.fetch.bind(window),
+        token
+      );
+      toastStore.push({ variant: "success", message: "Version activated" });
+      activateDialogOpen = false;
+      selectedVersion = null;
+      await pageData.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to activate version";
+      toastStore.push({ variant: "error", message });
+    }
+  }
+
+  async function confirmDelete() {
+    if (!browser || !media || !selectedVersion) return;
+
+    const token = auth.getToken();
+    if (!token) {
+      toastStore.push({ variant: "error", message: "Not authenticated" });
+      return;
+    }
+
+    try {
+      await mediaCommands.deleteVersion(
+        media.id,
+        selectedVersion.id,
+        window.fetch.bind(window),
+        token
+      );
+      toastStore.push({ variant: "success", message: "Version deleted" });
+      deleteDialogOpen = false;
+      selectedVersion = null;
+      await pageData.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to delete version";
+      toastStore.push({ variant: "error", message });
+    }
+  }
+
+  function cancelActivate() {
+    activateDialogOpen = false;
+    selectedVersion = null;
+  }
+
+  function cancelDelete() {
+    deleteDialogOpen = false;
+    selectedVersion = null;
+  }
+
+  // Soft delete
+  async function handleSoftDelete() {
+    if (!browser || !media) return;
+
+    const token = auth.getToken();
+    if (!token) {
+      toastStore.push({ variant: "error", message: "Not authenticated" });
+      return;
+    }
+
+    try {
+      await mediaCommands.softDeleteMedia(
+        media.id,
+        window.fetch.bind(window),
+        token
+      );
       toastStore.push({ variant: "success", message: "Media moved to trash" });
       await goto("/media");
     } catch (e) {
@@ -112,257 +247,473 @@
     }
   }
 
-  function getKindIcon(kind: string) {
-    switch (kind) {
-      case MediaKind.Image:
-        return Image;
-      case MediaKind.Video:
-        return Film;
-      case MediaKind.Audio:
-        return Music;
-      case MediaKind.Document:
-      case MediaKind.Pdf:
-        return FileText;
-      default:
-        return FileIcon;
+  // Restore
+  async function handleRestore() {
+    if (!browser || !media) return;
+
+    const token = auth.getToken();
+    if (!token) {
+      toastStore.push({ variant: "error", message: "Not authenticated" });
+      return;
+    }
+
+    try {
+      await mediaCommands.restoreMedia(
+        media.id,
+        window.fetch.bind(window),
+        token
+      );
+      toastStore.push({ variant: "success", message: "Media restored" });
+      await pageData.refetch();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to restore media";
+      toastStore.push({ variant: "error", message });
     }
   }
 
-  function formatFileSize(bytes: number | null | undefined): string {
-    if (bytes == null || bytes === 0) return "—";
-    const units = ["B", "KB", "MB", "GB"];
-    let size = bytes;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    return `${size.toFixed(unitIndex > 0 ? 1 : 0)} ${units[unitIndex]}`;
+  function isCurrentVersion(version: MediaVersion): boolean {
+    return media?.currentVersionId === version.id;
   }
 
-  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
-
-  function getVersionStateVariant(state: string): BadgeVariant {
-    switch (state) {
-      case MediaVersionState.Ready:
-        return "success";
-      case MediaVersionState.Uploading:
-        return "info";
-      case MediaVersionState.Failed:
-        return "danger";
-      case MediaVersionState.Purging:
-        return "warning";
-      default:
-        return "muted";
-    }
+  function canActivateVersion(version: MediaVersion): boolean {
+    return !isCurrentVersion(version) && version.state === MediaVersionState.Ready;
   }
+
+  function canDeleteVersion(version: MediaVersion): boolean {
+    return !isCurrentVersion(version);
+  }
+
+  /** Get the URL for viewing/downloading media */
+  function getMediaUrl(mediaId: string, restricted: boolean): string {
+    const base = env.PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+    if (restricted) {
+      return `${base}/v1/media/${encodeURIComponent(mediaId)}/download`;
+    }
+    return `${base}/v1/media/${encodeURIComponent(mediaId)}`;
+  }
+
+  /** Check if media can be previewed in browser */
+  function canPreview(kind: string, mimeType: string | null): boolean {
+    if (kind === MediaKind.Image) return true;
+    if (kind === MediaKind.Pdf) return true;
+    return false;
+  }
+
+  /** Check if media is an image */
+  function isImage(kind: string): boolean {
+    return kind === MediaKind.Image;
+  }
+
+  /** Check if media is a PDF */
+  function isPdf(kind: string): boolean {
+    return kind === MediaKind.Pdf;
+  }
+
+  // Derived media URL
+  const mediaUrl = $derived(
+    media ? getMediaUrl(media.id, media.visibility === MediaVisibility.Restricted) : null
+  );
+
+  const showPreviewTab = $derived(
+    media && media.currentVersion?.state === MediaVersionState.Ready &&
+    canPreview(media.kind, media.currentVersion?.mimeType ?? null)
+  );
 </script>
 
 {#if pageData.loading}
   <PageLoading message="Loading media..." />
 {:else if pageData.error}
   <FormError message={pageData.error} />
-{:else if item}
-  {@const KindIcon = getKindIcon(item.kind)}
+{:else if media}
   <PageHeader
-    title={item.title ?? item.originalFilename ?? "Untitled"}
-    backHref="/media"
-    backLabel="Back to media"
+    title={media.title || media.originalFilename || "Untitled"}
+    backHref={backInfo.href}
+    backLabel={backInfo.label}
+    backIsContextual={backInfo.isContextual ?? false}
+    bannerMessage={media.deletedAt ? "This media has been soft-deleted." : undefined}
   >
+    <p>
+      <strong>ID:</strong> <Code>{media.id}</Code>
+      <span class="header-separator">·</span>
+      <Pill accent={getMediaKindAccent(media.kind)}>{getMediaKindLabel(media.kind)}</Pill>
+      <span class="header-separator">·</span>
+      <Pill accent={media.visibility === MediaVisibility.Restricted ? "#f59e0b" : "#3b82f6"}>
+        {getMediaVisibilityLabel(media.visibility)}
+      </Pill>
+      {#if media.deletedAt}
+        <span class="header-separator">·</span>
+        <Pill accent="#ef4444">Deleted</Pill>
+      {/if}
+    </p>
+
     {#snippet actions()}
-      {#if !isEditing}
-        <Button type="button" variant="subtle" onclick={startEditing}>
-          <Pencil size={16} />
+      {#if media.deletedAt}
+        <Button type="button" variant="primary" onclick={handleRestore}>
+          Restore
+        </Button>
+      {:else}
+        <Button type="button" variant="subtle" onclick={openEditDialog}>
           Edit
         </Button>
         <Button
           type="button"
           variant="subtle"
           onclick={() =>
-            void gotoWithContext(`/media/upload?replace=${item.id}`, {
-              label: item.title ?? item.originalFilename ?? "Media",
-              href: `/media/${item.id}`,
+            void gotoWithContext(`/media/upload?replace=${media.id}`, {
+              label: media.title || media.originalFilename || "Media",
+              href: `/media/${media.id}`,
               type: "detail"
             })}
         >
-          <Upload size={16} />
           Replace
         </Button>
-        <ConfirmAction
-          title="Delete Media"
-          description={`Are you sure you want to delete "${item.title ?? item.originalFilename}"? It will be moved to trash.`}
-          confirmLabel="Delete"
-          triggerLabel="Delete"
-          triggerVariant="danger"
-          onConfirm={handleDelete}
-        />
+        <Button type="button" variant="danger" onclick={handleSoftDelete}>
+          Delete
+        </Button>
       {/if}
     {/snippet}
   </PageHeader>
 
-  <div class="detail-grid">
-    <!-- Preview -->
-    <section class="preview-section">
-      {#if currentVersion?.url && item.kind === MediaKind.Image}
-        <img
-          src={currentVersion.url}
-          alt={item.title ?? item.originalFilename ?? "Media preview"}
-          class="preview-image"
-        />
-      {:else}
-        <div class="preview-placeholder">
-          <KindIcon size={48} />
-          <span>{getMediaKindLabel(item.kind)}</span>
-        </div>
+  <TabsRoot bind:value={activeTab} variant="boxed" size="sm" historyKey="tab">
+    <TabsList>
+      <TabsTrigger value="details">Details</TabsTrigger>
+      {#if showPreviewTab}
+        <TabsTrigger value="preview">Preview</TabsTrigger>
       {/if}
-    </section>
+      <TabsTrigger value="usage" count={usageCount}>Usage</TabsTrigger>
+    </TabsList>
 
-    <!-- Details -->
-    <section class="detail-section">
-      <h2>{isEditing ? "Edit Details" : "Details"}</h2>
+    <TabsContent value="details">
+      <div class="underlay-details-content">
+        <DetailsCard>
+          <DetailsSection legend="File Details">
+            <DetailsItem label="Original Filename" value={media.originalFilename} />
+            {#if media.currentVersion}
+              <DetailsItem label="File Size" value={formatFileSize(media.currentVersion.byteSize)} />
+              <DetailsItem label="MIME Type">
+                <Code>{media.currentVersion.mimeType ?? "—"}</Code>
+              </DetailsItem>
+            {/if}
+          </DetailsSection>
 
-      {#if isEditing}
-        <div class="edit-form">
-          <Field label="Title">
-            <TextInput
-              bind:value={editTitle}
-              placeholder="Enter title"
-              disabled={saving}
-            />
-          </Field>
-          <div class="edit-actions">
-            <Button type="button" variant="subtle" onclick={cancelEditing} disabled={saving}>
-              Cancel
+          <DetailsSection legend="Timestamps">
+            <DetailsItem label="Created">
+              <TimeAgo date={media.createdAt} short />
+            </DetailsItem>
+            <DetailsItem label="Last Updated">
+              <TimeAgo date={media.updatedAt} short />
+            </DetailsItem>
+            {#if media.deletedAt}
+              <DetailsItem label="Deleted">
+                <span class="deleted-date"><TimeAgo date={media.deletedAt} short /></span>
+              </DetailsItem>
+            {/if}
+          </DetailsSection>
+        </DetailsCard>
+
+        <!-- Versions -->
+        <InlineListCard
+          title="Versions"
+          emptyMessage="No versions uploaded yet."
+          hasItems={versions.length > 0}
+        >
+          {#snippet action()}
+            <Button
+              type="button"
+              variant="primary"
+              size="icon-sm"
+              onclick={() => goto(`/media/upload?replace=${media.id}`)}
+              aria-label="Upload new version"
+            >
+              <Plus size={14} />
             </Button>
-            <Button type="button" variant="primary" onclick={saveChanges} disabled={saving}>
-              {saving ? "Saving..." : "Save"}
-            </Button>
-          </div>
-        </div>
-      {:else}
-        <dl class="detail-list">
-          <div class="detail-item">
-            <dt>Type</dt>
-            <dd><Badge variant="info">{getMediaKindLabel(item.kind)}</Badge></dd>
-          </div>
-          <div class="detail-item">
-            <dt>Filename</dt>
-            <dd><code>{item.originalFilename ?? "—"}</code></dd>
-          </div>
-          {#if currentVersion}
-            <div class="detail-item">
-              <dt>MIME Type</dt>
-              <dd><code>{currentVersion.mimeType ?? "—"}</code></dd>
-            </div>
-            <div class="detail-item">
-              <dt>Size</dt>
-              <dd>{formatFileSize(currentVersion.byteSize)}</dd>
-            </div>
-            <div class="detail-item">
-              <dt>Version State</dt>
-              <dd>
-                <Badge variant={getVersionStateVariant(currentVersion.state)} size="sm">
-                  {getMediaVersionStateLabel(currentVersion.state)}
-                </Badge>
-              </dd>
-            </div>
-          {/if}
-          <div class="detail-item">
-            <dt>Visibility</dt>
-            <dd>{item.visibility}</dd>
-          </div>
-        </dl>
-      {/if}
-    </section>
-
-    <!-- Renditions -->
-    {#if currentVersion?.renditions && currentVersion.renditions.length > 0}
-      <section class="detail-section">
-        <h2>Renditions</h2>
-        <div class="renditions-grid">
-          {#each currentVersion.renditions as rendition}
-            <div class="rendition-card">
-              {#if rendition.url && rendition.mimeType?.startsWith("image/")}
-                <img src={rendition.url} alt={rendition.kind} class="rendition-preview" />
-              {:else}
-                <div class="rendition-placeholder">
-                  <FileIcon size={24} />
-                </div>
-              {/if}
-              <div class="rendition-info">
-                <span class="rendition-kind">{rendition.kind}</span>
-                <span class="rendition-size">
-                  {rendition.width && rendition.height
-                    ? `${rendition.width}×${rendition.height}`
-                    : formatFileSize(rendition.byteSize)}
-                </span>
-              </div>
-            </div>
+          {/snippet}
+          {#each versions as version (version.id)}
+            <InlineListItem
+              label={version.sha256 ?? "No hash"}
+              accent={getMediaVersionStateAccent(version.state)}
+            >
+              {#snippet sublabelContent()}
+                {formatFileSize(version.byteSize)} · <Code>{version.mimeType ?? "Unknown type"}</Code> · <TimeAgo date={version.createdAt} short />
+              {/snippet}
+              {#snippet trailing()}
+                <Pill accent={getMediaVersionStateAccent(version.state)}>
+                  {getMediaVersionStateLabel(version.state)}
+                </Pill>
+                {#if isCurrentVersion(version)}
+                  <Pill accent="#3b82f6">Current</Pill>
+                {/if}
+              {/snippet}
+              {#snippet actions()}
+                <button
+                  type="button"
+                  onclick={() => requestActivate(version)}
+                  disabled={!canActivateVersion(version)}
+                  aria-label="Activate version"
+                >
+                  <Check size={14} />
+                </button>
+                <button
+                  type="button"
+                  onclick={() => requestDelete(version)}
+                  disabled={!canDeleteVersion(version)}
+                  aria-label="Delete version"
+                >
+                  <Trash2 size={14} />
+                </button>
+              {/snippet}
+            </InlineListItem>
           {/each}
+        </InlineListCard>
+
+        <!-- Renditions -->
+        {#if media.currentVersion?.renditions && media.currentVersion.renditions.length > 0}
+          <section class="renditions-section span-full">
+            <h3>Renditions</h3>
+            <div class="renditions-grid">
+              {#each media.currentVersion.renditions as rendition}
+                <div class="rendition-card">
+                  {#if rendition.url && rendition.mimeType?.startsWith("image/")}
+                    <img src={rendition.url} alt={rendition.kind} class="rendition-preview" />
+                  {:else}
+                    <div class="rendition-placeholder">
+                      <span>No preview</span>
+                    </div>
+                  {/if}
+                  <div class="rendition-info">
+                    <span class="rendition-kind">{rendition.kind}</span>
+                    <span class="rendition-size">
+                      {rendition.width && rendition.height
+                        ? `${rendition.width}×${rendition.height}`
+                        : formatFileSize(rendition.byteSize)}
+                    </span>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/if}
+      </div>
+    </TabsContent>
+
+    {#if showPreviewTab}
+      <TabsContent value="preview">
+        <div class="media-preview-container">
+          {#if mediaUrl}
+            {#if isImage(media.kind)}
+              <img
+                src={mediaUrl}
+                alt={media.title || media.originalFilename || "Media preview"}
+                class="media-preview-image"
+              />
+            {:else if isPdf(media.kind)}
+              <iframe
+                src={mediaUrl}
+                title={media.title || media.originalFilename || "PDF preview"}
+                class="media-preview-pdf"
+              ></iframe>
+            {/if}
+          {/if}
         </div>
-      </section>
+      </TabsContent>
     {/if}
 
-    <!-- Metadata -->
-    <section class="detail-section">
-      <h2>Metadata</h2>
-      <dl class="detail-list">
-        <div class="detail-item">
-          <dt>ID</dt>
-          <dd><code>{item.id}</code></dd>
-        </div>
-        {#if currentVersion}
-          <div class="detail-item">
-            <dt>Version ID</dt>
-            <dd><code>{currentVersion.id}</code></dd>
+    <TabsContent value="usage">
+      <div class="underlay-details-content">
+        {#if usages.length === 0}
+          <div class="empty-state">
+            <p>This media is not used anywhere yet.</p>
           </div>
+        {:else}
+          <InlineListCard
+            title="Usages"
+            hasItems={true}
+          >
+            {#each usages as usage}
+              <InlineListItem
+                label={usage.usedByType}
+                accent="#6366f1"
+              >
+                {#snippet sublabelContent()}
+                  <Code>{usage.usedById}</Code>
+                  {#if usage.field}
+                    <span class="usage-field"> · {usage.field}</span>
+                  {/if}
+                {/snippet}
+              </InlineListItem>
+            {/each}
+          </InlineListCard>
         {/if}
-        <div class="detail-item">
-          <dt>Created</dt>
-          <dd>{new Date(item.createdAt).toLocaleString()}</dd>
+      </div>
+    </TabsContent>
+  </TabsRoot>
+
+  <!-- Edit Dialog -->
+  <FormDialog
+    bind:open={editDialogOpen}
+    title="Edit Media"
+    subtitle={media.originalFilename ?? undefined}
+    error={editDialogError}
+    submitting={editDialogSubmitting}
+    onCancel={closeEditDialog}
+  >
+    {#snippet children(submitting)}
+      <form onsubmit={handleEditSubmit}>
+        <div class="form-fields">
+          <Field label="Title" forId="edit-title">
+            <TextInput
+              id="edit-title"
+              name="title"
+              bind:value={editTitle}
+              placeholder="Enter a title for this media"
+              disabled={submitting}
+            />
+          </Field>
+
+          <Field label="Filename" forId="edit-filename" hint="The filename shown when downloading">
+            <TextInput
+              id="edit-filename"
+              name="filename"
+              bind:value={editFilename}
+              placeholder="e.g. document.pdf"
+              disabled={submitting}
+            />
+          </Field>
+
+          <Field label="Visibility" forId="edit-visibility">
+            <Select id="edit-visibility" name="visibility" bind:value={editVisibility} disabled={submitting}>
+              <option value={MediaVisibility.Public}>Public - accessible without login</option>
+              <option value={MediaVisibility.Restricted}>Restricted - requires authentication</option>
+            </Select>
+          </Field>
         </div>
-        <div class="detail-item">
-          <dt>Updated</dt>
-          <dd>{new Date(item.updatedAt).toLocaleString()}</dd>
+
+        <div class="form-actions">
+          <Button variant="secondary" onclick={closeEditDialog} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" disabled={submitting}>
+            {submitting ? "Saving..." : "Save"}
+          </Button>
         </div>
-      </dl>
-    </section>
-  </div>
-{:else}
-  <FormError message="Media not found" />
+      </form>
+    {/snippet}
+  </FormDialog>
+
+  <!-- Activate Version Dialog -->
+  <AlertDialog
+    bind:open={activateDialogOpen}
+    showTrigger={false}
+    title="Activate version?"
+    description="This will set this version as the current active version for this media item."
+    confirmLabel="Activate"
+    cancelLabel="Cancel"
+    onConfirm={confirmActivate}
+    onCancel={cancelActivate}
+  >
+    {#if selectedVersion}
+      <p>
+        Version: <Code>{selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...</Code>
+      </p>
+    {/if}
+  </AlertDialog>
+
+  <!-- Delete Version Dialog -->
+  <AlertDialog
+    bind:open={deleteDialogOpen}
+    showTrigger={false}
+    title="Delete version?"
+    description="This will permanently delete this version and its stored file. This action cannot be undone."
+    confirmLabel="Delete"
+    cancelLabel="Cancel"
+    onConfirm={confirmDelete}
+    onCancel={cancelDelete}
+  >
+    {#if selectedVersion}
+      <p>
+        Version: <Code>{selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...</Code>
+      </p>
+    {/if}
+  </AlertDialog>
 {/if}
 
 <style>
-  .detail-grid {
-    display: grid;
-    gap: 2rem;
-    margin-top: 1.5rem;
+  .header-separator {
+    color: var(--admin-color-text-muted, #9ca3af);
+    margin: 0 0.5rem;
   }
 
-  .preview-section {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .deleted-date {
+    color: var(--color-danger, #ef4444);
   }
 
-  .preview-image {
-    max-width: 100%;
-    max-height: 400px;
-    object-fit: contain;
-    border-radius: 0.25rem;
-  }
-
-  .preview-placeholder {
+  .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
     padding: 3rem;
-    color: var(--text-secondary, #6b7280);
+    text-align: center;
+    color: var(--admin-color-text-muted);
+  }
+
+  .usage-field {
+    color: var(--admin-color-text-muted);
+  }
+
+  .form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  /* Full preview tab */
+  .media-preview-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 1.5rem;
+    background: var(--admin-color-surface-muted, rgba(255, 255, 255, 0.02));
+    border-radius: 0.5rem;
+    min-height: 400px;
+  }
+
+  .media-preview-image {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 0.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .media-preview-pdf {
+    width: 100%;
+    height: 80vh;
+    border: none;
+    border-radius: 0.25rem;
+    background: white;
+  }
+
+  /* Renditions section */
+  .renditions-section {
+    background: var(--admin-color-surface-muted, rgba(255, 255, 255, 0.02));
+    border: 1px solid var(--admin-color-border-subtle, rgba(148, 163, 184, 0.25));
+    border-radius: var(--underlay-radius-lg, 1rem);
+    padding: 1rem;
+  }
+
+  .renditions-section h3 {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--admin-color-text, #e5e7eb);
   }
 
   .renditions-grid {
@@ -372,8 +723,8 @@
   }
 
   .rendition-card {
-    background: var(--bg-muted, #f3f4f6);
-    border-radius: 0.5rem;
+    background: var(--admin-color-surface-inset, #1e293b);
+    border-radius: var(--underlay-radius-md, 0.5rem);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -391,7 +742,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-secondary, #6b7280);
+    color: var(--admin-color-text-muted, #9ca3af);
+    font-size: 0.75rem;
   }
 
   .rendition-info {
@@ -404,74 +756,11 @@
   .rendition-kind {
     font-size: 0.75rem;
     font-weight: 500;
-    color: var(--text-primary, #111827);
-    text-transform: capitalize;
+    color: var(--admin-color-text, #e5e7eb);
   }
 
   .rendition-size {
     font-size: 0.7rem;
-    color: var(--text-secondary, #6b7280);
-  }
-
-  .detail-section {
-    background: var(--bg-surface, #fff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-  }
-
-  .detail-section h2 {
-    margin: 0 0 1rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary, #111827);
-  }
-
-  .detail-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin: 0;
-  }
-
-  .detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .detail-item dt {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary, #6b7280);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .detail-item dd {
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--text-primary, #111827);
-  }
-
-  code {
-    font-family: monospace;
-    font-size: 0.8em;
-    background: var(--bg-muted, #f3f4f6);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-  }
-
-  .edit-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .edit-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 0.5rem;
+    color: var(--admin-color-text-muted, #9ca3af);
   }
 </style>
