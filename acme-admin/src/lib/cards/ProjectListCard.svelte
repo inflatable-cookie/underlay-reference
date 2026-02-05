@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ListCard, Badge, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
+  import { ListCard, Pill, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import type { ProjectWithCounts } from "acme-client";
   import Briefcase from "lucide-svelte/icons/briefcase";
@@ -36,11 +36,11 @@
     ] ?? project.status
   );
 
-  const statusVariant = $derived(
-    ({ active: "success", archived: "muted", on_hold: "warning" } as Record<string, string>)[
+  const statusAccent = $derived(
+    ({ active: "#10b981", archived: "#6b7280", on_hold: "#f59e0b" } as Record<string, string>)[
       project.status
-    ] ?? "default"
-  ) as "success" | "muted" | "warning" | "default";
+    ] ?? "#64748b"
+  );
 
   function handleEdit() {
     void gotoWithContext(`/projects/${project.id}/edit`, {
@@ -85,10 +85,10 @@
     {/if}
   {/snippet}
 
-  {#snippet titleSuffix()}
-    <Badge variant={statusVariant} size="sm">{statusLabel}</Badge>
+  {#snippet trailing()}
+    <Pill accent={statusAccent}>{statusLabel}</Pill>
     {#if project.categoryName}
-      <Badge variant="muted" size="sm">{project.categoryName}</Badge>
+      <Pill accent="#64748b">{project.categoryName}</Pill>
     {/if}
   {/snippet}
 

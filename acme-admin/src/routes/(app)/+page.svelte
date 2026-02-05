@@ -84,22 +84,21 @@
 			{#snippet icon()}<Image />{/snippet}
 		</StatCard>
 
-		<div class="stat-card--acme">
-			<StatCard
-				title="Acme"
-				value="–"
-				label="Projects & Categories"
-				loading={statsLoading}
-				href="/projects"
-			>
-				{#snippet icon()}<Box />{/snippet}
-			</StatCard>
-		</div>
+		<StatCard
+			title="Acme"
+			label="Projects & Categories"
+			variant="success"
+			loading={statsLoading}
+			href="/projects"
+		>
+			{#snippet icon()}<Box />{/snippet}
+		</StatCard>
 
 		<StatCard
 			title="System"
 			value={stats?.activeSessions ?? 0}
 			label="Active sessions"
+			variant="info"
 			loading={statsLoading}
 			error={statsError}
 			href="/system"
@@ -110,14 +109,12 @@
 
 	<section class="dashboard__section">
 		<h2 class="dashboard__section-title">Recent Activity</h2>
-		<div class="dashboard__activity">
-			<LogList
-				activities={recentActivity}
-				loading={activityLoading}
-				error={activityError}
-				emptyMessage="No recent activity"
-			/>
-		</div>
+		<LogList
+			activities={recentActivity}
+			loading={activityLoading}
+			error={activityError}
+			emptyMessage="No recent activity"
+		/>
 	</section>
 </div>
 
@@ -160,16 +157,4 @@
 		font-weight: 600;
 	}
 
-	.dashboard__activity {
-		background: var(--admin-color-surface);
-		border: 1px solid var(--admin-color-border-subtle);
-		border-radius: 0.5rem;
-		padding: 1rem;
-	}
-
-	/* Custom purple styling for Acme card to match nav badge */
-	.stat-card--acme :global(.underlay-stat-card__icon) {
-		background: color-mix(in srgb, #8b5cf6 15%, transparent);
-		color: #8b5cf6;
-	}
 </style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ListCard, Badge, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
+  import { ListCard, Pill, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import type { CategoryWithCounts } from "acme-client";
   import FolderOpen from "lucide-svelte/icons/folder-open";
@@ -50,9 +50,9 @@
     <FolderOpen size={30} />
   {/snippet}
 
-  {#snippet titleSuffix()}
+  {#snippet trailing()}
     {#if !category.isActive}
-      <Badge variant="danger" size="sm">Inactive</Badge>
+      <Pill accent="#ef4444">Inactive</Pill>
     {/if}
   {/snippet}
 

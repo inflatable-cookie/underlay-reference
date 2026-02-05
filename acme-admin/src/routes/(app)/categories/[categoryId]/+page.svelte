@@ -126,7 +126,9 @@
   />
 
   {#if !category.isActive}
-    <Banner variant="warning" message="This category is inactive and won't appear in selection lists." />
+    <div class="category-banner">
+      <Banner variant="warning" message="This category is inactive and won't appear in selection lists." />
+    </div>
   {/if}
 
   <DetailsCard>
@@ -164,5 +166,9 @@
 
   .color-value {
     vertical-align: middle;
+  }
+
+  .category-banner {
+    margin-bottom: 1rem;
   }
 </style>
