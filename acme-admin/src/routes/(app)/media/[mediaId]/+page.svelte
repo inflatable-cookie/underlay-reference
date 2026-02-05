@@ -47,6 +47,7 @@
   } from "acme-client";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";
   import Check from "lucide-svelte/icons/check";
   import Plus from "lucide-svelte/icons/plus";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -223,54 +224,6 @@
     selectedVersion = null;
   }
 
-  // Soft delete
-  async function handleSoftDelete() {
-    if (!browser || !media) return;
-
-    const token = auth.getToken();
-    if (!token) {
-      toastStore.push({ variant: "error", message: "Not authenticated" });
-      return;
-    }
-
-    try {
-      await mediaCommands.softDeleteMedia(
-        media.id,
-        window.fetch.bind(window),
-        token
-      );
-      toastStore.push({ variant: "success", message: "Media moved to trash" });
-      await goto("/media");
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to delete media";
-      toastStore.push({ variant: "error", message });
-    }
-  }
-
-  // Restore
-  async function handleRestore() {
-    if (!browser || !media) return;
-
-    const token = auth.getToken();
-    if (!token) {
-      toastStore.push({ variant: "error", message: "Not authenticated" });
-      return;
-    }
-
-    try {
-      await mediaCommands.restoreMedia(
-        media.id,
-        window.fetch.bind(window),
-        token
-      );
-      toastStore.push({ variant: "success", message: "Media restored" });
-      await pageData.refetch();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to restore media";
-      toastStore.push({ variant: "error", message });
-    }
-  }
-
   function isCurrentVersion(version: MediaVersion): boolean {
     return media?.currentVersionId === version.id;
   }
@@ -347,30 +300,17 @@
     </p>
 
     {#snippet actions()}
-      {#if media.deletedAt}
-        <Button type="button" variant="primary" onclick={handleRestore}>
-          Restore
-        </Button>
-      {:else}
-        <Button type="button" variant="subtle" onclick={openEditDialog}>
-          Edit
-        </Button>
-        <Button
-          type="button"
-          variant="subtle"
-          onclick={() =>
-            void gotoWithContext(`/media/upload?replace=${media.id}`, {
-              label: media.title || media.originalFilename || "Media",
-              href: `/media/${media.id}`,
-              type: "detail"
-            })}
-        >
-          Replace
-        </Button>
-        <Button type="button" variant="danger" onclick={handleSoftDelete}>
-          Delete
-        </Button>
-      {/if}
+      <MediaActionsMenu
+        {media}
+        sourceContext={{
+          label: media.title || media.originalFilename || "Media",
+          href: `/media/${media.id}`,
+          type: "detail"
+        }}
+        onEditRequest={openEditDialog}
+        onSoftDeleteSuccess={() => goto("/media")}
+        onRestoreSuccess={() => pageData.refetch()}
+      />
     {/snippet}
   </PageHeader>
 
