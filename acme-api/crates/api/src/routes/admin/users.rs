@@ -129,6 +129,8 @@ pub struct CreateUserRequest {
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserRequest {
+    #[validate(length(min = 3, max = 320), email)]
+    pub email: Option<String>,
     #[validate(length(max = 100))]
     pub display_name: Option<String>,
     #[validate(length(min = 1))]
@@ -363,10 +365,16 @@ pub async fn update_user(
         return error_response(StatusCode::BAD_REQUEST, err).into_response();
     }
 
+    let email = payload.email.as_deref().map(str::trim);
     let role = payload.role.as_deref().map(str::trim);
     let status = payload.status.as_deref().map(str::trim);
 
     let mut field_errors = std::collections::HashMap::new();
+    if let Some(email) = email {
+        if email.is_empty() {
+            field_errors.insert("email".to_string(), "Email is required".to_string());
+        }
+    }
     if let Some(role) = role {
         if !is_valid_role(role) {
             field_errors.insert("role".to_string(), "Invalid role".to_string());
@@ -386,6 +394,10 @@ pub async fn update_user(
         return error_response(StatusCode::BAD_REQUEST, err).into_response();
     }
 
+    let email_update = payload.email.is_some();
+    let normalized_email = email
+        .filter(|value| !value.is_empty())
+        .map(|value| value.to_lowercase());
     let display_name_update = payload.display_name.is_some();
     let display_name = payload
         .display_name
@@ -394,11 +406,35 @@ pub async fn update_user(
         .and_then(|s| if s.is_empty() { None } else { Some(s) });
 
     let pool = state.local_auth.pool();
-    match users::update_user_admin(pool, user_id, display_name_update, display_name, role, status).await
+    match users::update_user_admin(
+        pool,
+        user_id,
+        email_update,
+        normalized_email.as_deref(),
+        display_name_update,
+        display_name,
+        role,
+        status,
+    )
+    .await
     {
         Ok(Some(user)) => Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response(),
         Ok(None) => StatusCode::NOT_FOUND.into_response(),
         Err(e) => {
+            let msg = e.to_string();
+            if msg.contains("duplicate key value violates unique constraint")
+                && (msg.contains("email") || msg.contains("users_email_key"))
+            {
+                let mut field_errors = std::collections::HashMap::new();
+                field_errors.insert("email".to_string(), "Email is already in use".to_string());
+                let err = AppError {
+                    code: "admin.users.email_not_unique",
+                    message: "Email is already in use.".to_string(),
+                    field_errors: Some(field_errors),
+                };
+                return error_response(StatusCode::CONFLICT, err).into_response();
+            }
+
             tracing::error!("Failed to update user: {}", e);
             error_response(
                 StatusCode::INTERNAL_SERVER_ERROR,
