@@ -2,7 +2,7 @@
   import { adminCommands, type ErrorLogSummary, type ErrorLogStats, type ErrorLogDetail } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Badge, Select, Card, DataTable, TimeAgo, DetailsCard, DetailsSection, DetailsItem, type DataTableColumn } from "@decodelabs/underlay/components";
+  import { Button, PageLoading, FormError, Badge, Select, Card, DataTable, TimeAgo, type DataTableColumn } from "@decodelabs/underlay/components";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
@@ -226,22 +226,36 @@
             <div class="detail-loading">Loading details...</div>
           {:else if expandedLogDetail}
             <div class="detail-content">
-              <DetailsCard class="detail-card">
-                <DetailsSection>
-                  <DetailsItem label="Full Timestamp" value={formatDateTime(expandedLogDetail.occurredAt)} />
-                  <DetailsItem label="Correlation ID" value={expandedLogDetail.correlationId} code />
-                  <DetailsItem label="Full Endpoint" value={`${expandedLogDetail.method} ${expandedLogDetail.endpoint}`} code />
-                  <DetailsItem label="Error Code" value={expandedLogDetail.errorCode} code />
-                  {#if expandedLogDetail.message}
-                    <DetailsItem label="Message" value={expandedLogDetail.message} span="full" />
-                  {/if}
-                  {#if expandedLogDetail.context && Object.keys(expandedLogDetail.context).length > 0}
-                    <DetailsItem label="Context" span="full">
-                      <pre class="detail-context">{JSON.stringify(expandedLogDetail.context, null, 2)}</pre>
-                    </DetailsItem>
-                  {/if}
-                </DetailsSection>
-              </DetailsCard>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Full Timestamp</span>
+                  <span class="detail-value">{formatDateTime(expandedLogDetail.occurredAt)}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Correlation ID</span>
+                  <code class="detail-value correlation-id">{expandedLogDetail.correlationId}</code>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Full Endpoint</span>
+                  <code class="detail-value">{expandedLogDetail.method} {expandedLogDetail.endpoint}</code>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Error Code</span>
+                  <code class="detail-value">{expandedLogDetail.errorCode}</code>
+                </div>
+              </div>
+              {#if expandedLogDetail.message}
+                <div class="detail-item detail-item--full">
+                  <span class="detail-label">Message</span>
+                  <span class="detail-value">{expandedLogDetail.message}</span>
+                </div>
+              {/if}
+              {#if expandedLogDetail.context && Object.keys(expandedLogDetail.context).length > 0}
+                <div class="detail-item detail-item--full">
+                  <span class="detail-label">Context</span>
+                  <pre class="detail-context">{JSON.stringify(expandedLogDetail.context, null, 2)}</pre>
+                </div>
+              {/if}
             </div>
           {/if}
         {/if}
@@ -410,7 +424,54 @@
   }
 
   .detail-content {
-    padding: 1.25rem 1.5rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .detail-item--full {
+    grid-column: 1 / -1;
+  }
+
+  .detail-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--admin-color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .detail-value {
+    font-size: 0.85rem;
+    color: var(--admin-color-text);
+  }
+
+  code.detail-value {
+    font-family: monospace;
+    font-size: 0.8rem;
+    background: var(--admin-color-surface-card);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    display: inline-block;
+    color: var(--admin-color-text);
+  }
+
+  .correlation-id {
+    font-size: 0.75rem;
+    word-break: break-all;
   }
 
   .detail-context {
