@@ -12,7 +12,7 @@
 //!
 //! The refresh endpoint accepts the refresh token from EITHER the request body OR cookie.
 
-use acme_core::{AppError, Uuid};
+use acme_core::Uuid;
 use axum::{
     extract::{Path, State},
     http::{header, HeaderMap, HeaderValue, StatusCode},
@@ -34,7 +34,6 @@ use crate::dto::auth::{
     RefreshRequest, RegisterRequest, SessionDto, TotpEnableRequest, TotpStatusResponse,
     TotpVerifyRequest, TwoFactorStatusResponse,
 };
-use crate::error::error_response;
 use crate::state::{AppState, AuthenticatedUser};
 
 use acme_auth::SessionFingerprint;
@@ -115,7 +114,7 @@ fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
     None
 }
 
-/// Convert validation errors to an AppError response.
+/// Convert validation errors to an ApiError response.
 fn validation_error_response(validation_err: validator::ValidationErrors) -> impl IntoResponse {
     let mut field_errors = std::collections::HashMap::new();
     for (field, errors) in validation_err.field_errors() {
@@ -771,11 +770,8 @@ pub async fn totp_enable(
     let setup_id = match Uuid::parse_str(&payload.setup_id) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_setup_id", "Invalid setup id"),
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_setup_id", "Invalid setup id")
+                .into_response();
         }
     };
 
@@ -850,11 +846,12 @@ pub async fn email_totp_request(
     let email = match state.local_auth.me(user.user_id.0).await {
         Ok((user_info, _)) => user_info.email,
         Err(err) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new(err.code(), err.message()),
-            )
-            .into_response();
+            return ApiError::new(StatusCode::BAD_REQUEST, err.code(), err.message())
+                .with_context(json!({
+                    "operation": "auth.email_totp_request.lookup_user",
+                    "user_id": user.user_id.0,
+                }))
+                .into_response();
         }
     };
 
@@ -870,22 +867,27 @@ pub async fn email_totp_request(
             (StatusCode::OK, Json(SingleResponse { data: response })).into_response()
         }
         Err(acme_auth::EmailTotpError::RateLimited) => {
-            let mut res = error_response(
+            let mut response = ApiError::new(
                 StatusCode::TOO_MANY_REQUESTS,
-                AppError::new(
-                    "auth.email_totp.rate_limited",
-                    "Too many code requests. Please wait before requesting another code.",
-                ),
-            );
+                "auth.email_totp.rate_limited",
+                "Too many code requests. Please wait before requesting another code.",
+            )
+            .into_response();
             if let Ok(v) = HeaderValue::from_str("3600") {
-                res.headers_mut().insert(header::RETRY_AFTER, v);
+                response.headers_mut().insert(header::RETRY_AFTER, v);
             }
-            res
+            response
         }
-        Err(err) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new("auth.email_totp.request_failed", err.to_string()),
+        Err(err) => ApiError::bad_request(
+            "auth.email_totp.request_failed",
+            "Email verification code request failed",
         )
+        .with_cause(&err)
+        .with_context(json!({
+            "operation": "auth.email_totp_request.request_code",
+            "user_id": user.user_id.0,
+            "purpose": format!("{:?}", payload.purpose.to_db_purpose()),
+        }))
         .into_response(),
     }
 }
@@ -914,39 +916,35 @@ pub async fn email_totp_verify(
             };
             (StatusCode::OK, Json(SingleResponse { data: response })).into_response()
         }
-        Err(acme_auth::EmailTotpError::InvalidCode) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new("auth.email_totp.invalid_code", "Invalid verification code"),
+        Err(acme_auth::EmailTotpError::InvalidCode) => {
+            ApiError::bad_request("auth.email_totp.invalid_code", "Invalid verification code")
+                .into_response()
+        }
+        Err(acme_auth::EmailTotpError::CodeExpired) => ApiError::bad_request(
+            "auth.email_totp.code_expired",
+            "Verification code has expired. Please request a new one.",
         )
         .into_response(),
-        Err(acme_auth::EmailTotpError::CodeExpired) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new(
-                "auth.email_totp.code_expired",
-                "Verification code has expired. Please request a new one.",
-            ),
+        Err(acme_auth::EmailTotpError::TooManyAttempts) => ApiError::bad_request(
+            "auth.email_totp.too_many_attempts",
+            "Too many invalid attempts. Please request a new code.",
         )
         .into_response(),
-        Err(acme_auth::EmailTotpError::TooManyAttempts) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new(
-                "auth.email_totp.too_many_attempts",
-                "Too many invalid attempts. Please request a new code.",
-            ),
+        Err(acme_auth::EmailTotpError::NoActiveCode) => ApiError::bad_request(
+            "auth.email_totp.no_active_code",
+            "No active verification code found. Please request a new one.",
         )
         .into_response(),
-        Err(acme_auth::EmailTotpError::NoActiveCode) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new(
-                "auth.email_totp.no_active_code",
-                "No active verification code found. Please request a new one.",
-            ),
+        Err(err) => ApiError::bad_request(
+            "auth.email_totp.verify_failed",
+            "Email verification failed",
         )
-        .into_response(),
-        Err(err) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new("auth.email_totp.verify_failed", err.to_string()),
-        )
+        .with_cause(&err)
+        .with_context(json!({
+            "operation": "auth.email_totp_verify.verify_code",
+            "user_id": user.user_id.0,
+            "purpose": format!("{purpose:?}"),
+        }))
         .into_response(),
     }
 }
@@ -979,19 +977,14 @@ pub async fn totp_verify(
             };
             (StatusCode::OK, Json(SingleResponse { data: response })).into_response()
         }
-        Err(underlay_auth::AuthError::TwoFactorNotSetUp) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new(
-                "auth.totp.not_configured",
-                "TOTP is not configured for this account",
-            ),
+        Err(underlay_auth::AuthError::TwoFactorNotSetUp) => ApiError::bad_request(
+            "auth.totp.not_configured",
+            "TOTP is not configured for this account",
         )
         .into_response(),
-        Err(underlay_auth::AuthError::TwoFactorInvalid) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new("auth.totp.invalid_code", "Invalid TOTP code"),
-        )
-        .into_response(),
+        Err(underlay_auth::AuthError::TwoFactorInvalid) => {
+            ApiError::bad_request("auth.totp.invalid_code", "Invalid TOTP code").into_response()
+        }
         Err(err) => map_auth_error_to_response(err),
     }
 }
@@ -1013,12 +1006,9 @@ pub async fn change_password_with_verification(
     let verification_session_id = match Uuid::parse_str(&payload.verification_session_id) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new(
-                    "validation.invalid_session_id",
-                    "Invalid verification session ID",
-                ),
+            return ApiError::bad_request(
+                "validation.invalid_session_id",
+                "Invalid verification session ID",
             )
             .into_response();
         }
@@ -1035,12 +1025,10 @@ pub async fn change_password_with_verification(
     {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(underlay_auth::AuthError::BadRequest(msg)) if msg.contains("verification session") => {
-            error_response(
+            ApiError::new(
                 StatusCode::FORBIDDEN,
-                AppError::new(
-                    "auth.password.invalid_verification_session",
-                    "Invalid, expired, or already used verification session",
-                ),
+                "auth.password.invalid_verification_session",
+                "Invalid, expired, or already used verification session",
             )
             .into_response()
         }
@@ -1128,11 +1116,9 @@ pub async fn password_reset_verify(
             };
             (StatusCode::OK, Json(SingleResponse { data: response })).into_response()
         }
-        Err(underlay_auth::AuthError::BadRequest(msg)) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new("auth.password_reset.invalid_code", msg),
-        )
-        .into_response(),
+        Err(underlay_auth::AuthError::BadRequest(msg)) => {
+            ApiError::bad_request("auth.password_reset.invalid_code", msg).into_response()
+        }
         Err(err) => map_auth_error_to_response(err),
     }
 }
@@ -1152,11 +1138,8 @@ pub async fn password_reset_complete(
     let reset_token = match Uuid::parse_str(payload.reset_token.trim()) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_reset_token", "Invalid reset token"),
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_reset_token", "Invalid reset token")
+                .into_response();
         }
     };
 
@@ -1167,21 +1150,15 @@ pub async fn password_reset_complete(
     {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(underlay_auth::AuthError::BadRequest(msg)) if msg.contains("reset token") => {
-            error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new(
-                    "auth.password_reset.invalid_token",
-                    "Invalid or expired reset token",
-                ),
+            ApiError::bad_request(
+                "auth.password_reset.invalid_token",
+                "Invalid or expired reset token",
             )
             .into_response()
         }
-        Err(underlay_auth::AuthError::PasswordTooWeak) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new(
-                "auth.password.too_weak",
-                "Password does not meet strength requirements",
-            ),
+        Err(underlay_auth::AuthError::PasswordTooWeak) => ApiError::bad_request(
+            "auth.password.too_weak",
+            "Password does not meet strength requirements",
         )
         .into_response(),
         Err(err) => map_auth_error_to_response(err),
@@ -1236,11 +1213,8 @@ pub async fn rename_passkey(
     let credential_uuid = match Uuid::parse_str(&credential_id) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_credential_id", "Invalid credential ID"),
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_credential_id", "Invalid credential ID")
+                .into_response();
         }
     };
 
@@ -1263,11 +1237,8 @@ pub async fn delete_passkey(
     let credential_uuid = match Uuid::parse_str(&credential_id) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_credential_id", "Invalid credential ID"),
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_credential_id", "Invalid credential ID")
+                .into_response();
         }
     };
 
@@ -1316,11 +1287,8 @@ pub async fn passkey_register_finish(
     let state_id = match Uuid::parse_str(&payload.state_id) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_state_id", "Invalid state ID"),
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_state_id", "Invalid state ID")
+                .into_response();
         }
     };
 
@@ -1379,11 +1347,8 @@ pub async fn passkey_login_finish(
     let state_id = match Uuid::parse_str(&payload.state_id) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_state_id", "Invalid state ID"),
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_state_id", "Invalid state ID")
+                .into_response();
         }
     };
 
@@ -1461,11 +1426,8 @@ pub async fn passkey_verify_finish(
     let state_id = match Uuid::parse_str(&payload.state_id) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_state_id", "Invalid state ID"),
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_state_id", "Invalid state ID")
+                .into_response();
         }
     };
 
