@@ -2,13 +2,17 @@
 //!
 //! Endpoints for user profile management.
 
-use acme_core::AppError;
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
 use underlay_core::SingleResponse;
+use underlay_http::ApiError;
 use validator::Validate;
 
 use crate::dto::account::{UpdateProfileRequest, UserProfileDto};
-use crate::error::error_response;
 use crate::state::{AppState, AuthenticatedUser};
 use acme_db::account::{get_or_create_user_profile, upsert_user_profile};
 
@@ -22,20 +26,24 @@ use acme_db::account::{get_or_create_user_profile, upsert_user_profile};
 pub async fn get_profile(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let user_id = user.user_id.0.into_inner();
 
     match get_or_create_user_profile(state.local_auth.pool(), user_id).await {
         Ok(profile) => {
             let dto = UserProfileDto::from(profile);
             let body = SingleResponse { data: dto };
-            (StatusCode::OK, Json(body)).into_response()
+            Ok((StatusCode::OK, Json(body)).into_response())
         }
         Err(e) => {
             tracing::error!(error = %e, user_id = %user_id, "Failed to get/create user profile");
-            error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("profile.load_failed", "Failed to load profile"),
+            Err(
+                ApiError::internal("profile.load_failed", "Failed to load profile")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "account.get_profile",
+                        "user_id": user_id
+                    })),
             )
         }
     }
@@ -48,18 +56,15 @@ pub async fn update_profile(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     Json(request): Json<UpdateProfileRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let user_id = user.user_id.0.into_inner();
 
     // Validate request
     if let Err(errors) = request.validate() {
-        return error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new(
-                "validation.failed",
-                format!("Validation failed: {}", errors),
-            ),
-        );
+        return Err(ApiError::bad_request(
+            "validation.failed",
+            format!("Validation failed: {}", errors),
+        ));
     }
 
     // Convert to DB update and apply
@@ -69,13 +74,17 @@ pub async fn update_profile(
         Ok(profile) => {
             let dto = UserProfileDto::from(profile);
             let body = SingleResponse { data: dto };
-            (StatusCode::OK, Json(body)).into_response()
+            Ok((StatusCode::OK, Json(body)).into_response())
         }
         Err(e) => {
             tracing::error!(error = %e, user_id = %user_id, "Failed to update user profile");
-            error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("profile.update_failed", "Failed to update profile"),
+            Err(
+                ApiError::internal("profile.update_failed", "Failed to update profile")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "account.update_profile",
+                        "user_id": user_id
+                    })),
             )
         }
     }

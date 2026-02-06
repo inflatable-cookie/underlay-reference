@@ -22,7 +22,7 @@ use axum::{
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use underlay_core::{ListResponse, SingleResponse};
-use underlay_http::{clear_auth_cookies, extract_refresh_token, set_auth_cookies};
+use underlay_http::{clear_auth_cookies, extract_refresh_token, set_auth_cookies, ApiError};
 use validator::Validate;
 
 use crate::dto::auth::{
@@ -127,12 +127,12 @@ fn validation_error_response(validation_err: validator::ValidationErrors) -> imp
             field_errors.insert(field.to_string(), msg.to_string());
         }
     }
-    let err = AppError {
-        code: "auth.validation_failed",
-        message: "There is a problem with one or more fields.".to_string(),
-        field_errors: Some(field_errors),
-    };
-    error_response(StatusCode::BAD_REQUEST, err)
+    ApiError::bad_request(
+        "auth.validation_failed",
+        "There is a problem with one or more fields.",
+    )
+    .with_field_errors(field_errors)
+    .into_response()
 }
 
 /// Map an AuthError to an HTTP response with appropriate status code.
@@ -167,15 +167,14 @@ fn map_auth_error_to_response(err: underlay_auth::AuthError) -> axum::response::
         retry_after_seconds,
     } = &err
     {
-        let mut response =
-            error_response(status, AppError::new(err.code(), err.message())).into_response();
+        let mut response = ApiError::new(status, err.code(), err.message()).into_response();
         if let Ok(value) = HeaderValue::try_from(retry_after_seconds.to_string()) {
             response.headers_mut().insert("Retry-After", value);
         }
         return response;
     }
 
-    error_response(status, AppError::new(err.code(), err.message())).into_response()
+    ApiError::new(status, err.code(), err.message()).into_response()
 }
 
 fn login_client_fingerprint(headers: &HeaderMap) -> String {
