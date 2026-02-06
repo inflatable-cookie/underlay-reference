@@ -316,6 +316,7 @@
   <FormError message={pageData.error} />
 {:else if media}
   <PageHeader
+    section="Media"
     title={media.title || media.originalFilename || "Untitled"}
     backHref={backInfo.href}
     backLabel={backInfo.label}

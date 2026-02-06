@@ -78,7 +78,7 @@
 
 </script>
 
-<PageHeader title="Trash" backHref="/media" backLabel="Back to media" />
+<PageHeader section="Media Trash" backHref="/media" backLabel="Back to media" />
 
 {#if pageData.loading}
   <PageLoading message="Loading trash..." />

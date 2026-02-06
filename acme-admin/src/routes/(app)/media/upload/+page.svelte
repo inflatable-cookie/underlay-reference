@@ -520,7 +520,7 @@
 </script>
 
 <PageHeader
-  title={replaceMediaId ? "Replace File" : "Upload Media"}
+  section={replaceMediaId ? "Replace File" : "Upload Media"}
   backHref={replaceMediaId ? `/media/${replaceMediaId}` : "/media"}
   backLabel={replaceMediaId ? "Back to media" : "Back to library"}
 />
