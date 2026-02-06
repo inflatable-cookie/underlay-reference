@@ -4,19 +4,19 @@
 
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+use underlay_http::ApiError;
 use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
-use acme_core::{AppError, Uuid as UnderlayUuid};
+use acme_core::Uuid as UnderlayUuid;
 use acme_db::{activity, users};
 
-use crate::error::error_response;
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -169,7 +169,7 @@ pub async fn list_users(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Query(query): Query<ListUsersQuery>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     let limit = query.limit.unwrap_or(50);
@@ -188,16 +188,24 @@ pub async fn list_users(
     {
         Ok(response) => {
             let items: Vec<UserResponse> = response.data.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({
+            Ok(Json(serde_json::json!({
                 "data": items,
                 "hasMore": response.has_more,
                 "total": response.total
             }))
-            .into_response()
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list users: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("admin.users.list_failed", "Failed to list users")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "admin.users.list",
+                        "limit": limit,
+                        "offset": offset
+                    })),
+            )
         }
     }
 }
@@ -209,7 +217,7 @@ pub async fn create_user(
     AdminUser(_admin): AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateUserRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if let Err(validation_err) = payload.validate() {
         let mut field_errors = std::collections::HashMap::new();
         for (field, errors) in validation_err.field_errors() {
@@ -224,12 +232,13 @@ pub async fn create_user(
                 );
             }
         }
-        let err = AppError {
-            code: "admin.users.validation_failed",
-            message: "There is a problem with one or more fields.".to_string(),
-            field_errors: Some(field_errors),
-        };
-        return error_response(StatusCode::BAD_REQUEST, err).into_response();
+        return Err(
+            ApiError::bad_request(
+                "admin.users.validation_failed",
+                "There is a problem with one or more fields.",
+            )
+            .with_field_errors(field_errors),
+        );
     }
 
     let email = payload.email.trim().to_lowercase();
@@ -244,12 +253,13 @@ pub async fn create_user(
         field_errors.insert("status".to_string(), "Invalid status".to_string());
     }
     if !field_errors.is_empty() {
-        let err = AppError {
-            code: "admin.users.validation_failed",
-            message: "There is a problem with one or more fields.".to_string(),
-            field_errors: Some(field_errors),
-        };
-        return error_response(StatusCode::BAD_REQUEST, err).into_response();
+        return Err(
+            ApiError::bad_request(
+                "admin.users.validation_failed",
+                "There is a problem with one or more fields.",
+            )
+            .with_field_errors(field_errors),
+        );
     }
 
     let display_name = payload
@@ -276,20 +286,22 @@ pub async fn create_user(
             {
                 let mut field_errors = std::collections::HashMap::new();
                 field_errors.insert("email".to_string(), "Email is already in use".to_string());
-                let err = AppError {
-                    code: "admin.users.email_not_unique",
-                    message: "Email is already in use.".to_string(),
-                    field_errors: Some(field_errors),
-                };
-                return error_response(StatusCode::CONFLICT, err).into_response();
+                return Err(
+                    ApiError::conflict("admin.users.email_not_unique", "Email is already in use.")
+                        .with_field_errors(field_errors),
+                );
             }
 
             tracing::error!("Failed to create user: {}", e);
-            return error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("admin.users.create_failed", "Failed to create user"),
-            )
-            .into_response();
+            return Err(
+                ApiError::internal("admin.users.create_failed", "Failed to create user")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "admin.users.create",
+                        "user_id": user_id,
+                        "email": &email
+                    })),
+            );
         }
     };
 
@@ -308,7 +320,7 @@ pub async fn create_user(
         }
     }
 
-    Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response()
+    Ok(Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response())
 }
 
 /// Get a single user (admin).
@@ -318,18 +330,25 @@ pub async fn get_user(
     AdminUser(_admin): AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match users::get_user_with_session_count(pool, user_id).await {
         Ok(Some(user)) => {
             let response: UserDetailResponse = user.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
         Err(e) => {
             tracing::error!("Failed to get user: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("admin.users.get_failed", "Failed to get user")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "admin.users.get",
+                        "user_id": user_id
+                    })),
+            )
         }
     }
 }
@@ -342,7 +361,7 @@ pub async fn update_user(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<UpdateUserRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if let Err(validation_err) = payload.validate() {
         let mut field_errors = std::collections::HashMap::new();
         for (field, errors) in validation_err.field_errors() {
@@ -357,12 +376,13 @@ pub async fn update_user(
                 );
             }
         }
-        let err = AppError {
-            code: "admin.users.validation_failed",
-            message: "There is a problem with one or more fields.".to_string(),
-            field_errors: Some(field_errors),
-        };
-        return error_response(StatusCode::BAD_REQUEST, err).into_response();
+        return Err(
+            ApiError::bad_request(
+                "admin.users.validation_failed",
+                "There is a problem with one or more fields.",
+            )
+            .with_field_errors(field_errors),
+        );
     }
 
     let email = payload.email.as_deref().map(str::trim);
@@ -386,12 +406,13 @@ pub async fn update_user(
         }
     }
     if !field_errors.is_empty() {
-        let err = AppError {
-            code: "admin.users.validation_failed",
-            message: "There is a problem with one or more fields.".to_string(),
-            field_errors: Some(field_errors),
-        };
-        return error_response(StatusCode::BAD_REQUEST, err).into_response();
+        return Err(
+            ApiError::bad_request(
+                "admin.users.validation_failed",
+                "There is a problem with one or more fields.",
+            )
+            .with_field_errors(field_errors),
+        );
     }
 
     let email_update = payload.email.is_some();
@@ -418,8 +439,8 @@ pub async fn update_user(
     )
     .await
     {
-        Ok(Some(user)) => Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response(),
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(Some(user)) => Ok(Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response()),
+        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
         Err(e) => {
             let msg = e.to_string();
             if msg.contains("duplicate key value violates unique constraint")
@@ -427,20 +448,21 @@ pub async fn update_user(
             {
                 let mut field_errors = std::collections::HashMap::new();
                 field_errors.insert("email".to_string(), "Email is already in use".to_string());
-                let err = AppError {
-                    code: "admin.users.email_not_unique",
-                    message: "Email is already in use.".to_string(),
-                    field_errors: Some(field_errors),
-                };
-                return error_response(StatusCode::CONFLICT, err).into_response();
+                return Err(
+                    ApiError::conflict("admin.users.email_not_unique", "Email is already in use.")
+                        .with_field_errors(field_errors),
+                );
             }
 
             tracing::error!("Failed to update user: {}", e);
-            error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("admin.users.update_failed", "Failed to update user"),
+            Err(
+                ApiError::internal("admin.users.update_failed", "Failed to update user")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "admin.users.update",
+                        "user_id": user_id
+                    })),
             )
-            .into_response()
         }
     }
 }
@@ -453,19 +475,9 @@ pub async fn update_user_role(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Json(req): Json<UpdateUserRoleRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "ok": false,
-                "error": {
-                    "code": "validation.failed",
-                    "message": e.to_string()
-                }
-            })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
 
     // Validate role value
@@ -478,17 +490,10 @@ pub async fn update_user_role(
         "superadmin",
     ];
     if !valid_roles.contains(&req.role.as_str()) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "ok": false,
-                "error": {
-                    "code": "validation.invalid_role",
-                    "message": "Invalid role value"
-                }
-            })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.invalid_role",
+            "Invalid role value",
+        ));
     }
 
     let pool = state.local_auth.pool();
@@ -511,12 +516,20 @@ pub async fn update_user_role(
             .await;
 
             let response: UserResponse = user.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
         Err(e) => {
             tracing::error!("Failed to update user role: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("admin.users.update_role_failed", "Failed to update user role")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "admin.users.update_role",
+                        "user_id": user_id,
+                        "role": &req.role
+                    })),
+            )
         }
     }
 }
@@ -528,7 +541,7 @@ pub async fn suspend_user(
     AdminUser(admin): AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     // Update status to suspended
@@ -557,12 +570,19 @@ pub async fn suspend_user(
             .await;
 
             let response: UserResponse = user.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
         Err(e) => {
             tracing::error!("Failed to suspend user: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("admin.users.suspend_failed", "Failed to suspend user")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "admin.users.suspend",
+                        "user_id": user_id
+                    })),
+            )
         }
     }
 }
@@ -574,7 +594,7 @@ pub async fn unsuspend_user(
     AdminUser(admin): AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match users::update_user_status(pool, user_id, "active").await {
@@ -595,12 +615,19 @@ pub async fn unsuspend_user(
             .await;
 
             let response: UserResponse = user.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
         Err(e) => {
             tracing::error!("Failed to unsuspend user: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("admin.users.unsuspend_failed", "Failed to unsuspend user")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "admin.users.unsuspend",
+                        "user_id": user_id
+                    })),
+            )
         }
     }
 }
@@ -660,17 +687,27 @@ pub async fn list_user_sessions(
     AdminUser(_admin): AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match users::list_sessions_for_user(pool, user_id).await {
         Ok(sessions) => {
             let items: Vec<SessionResponse> = sessions.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({ "data": items })).into_response()
+            Ok(Json(serde_json::json!({ "data": items })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list sessions for user: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal(
+                    "admin.users.list_sessions_failed",
+                    "Failed to list user sessions",
+                )
+                .with_cause(&e)
+                .with_context(json!({
+                    "operation": "admin.users.list_sessions",
+                    "user_id": user_id
+                })),
+            )
         }
     }
 }
@@ -682,7 +719,7 @@ pub async fn revoke_user_session(
     AdminUser(admin): AdminUser,
     State(state): State<AppState>,
     Path(path): Path<UserSessionPath>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match users::revoke_session_admin(pool, path.user_id, path.session_id, "Revoked by admin").await
@@ -703,25 +740,28 @@ pub async fn revoke_user_session(
             )
             .await;
 
-            Json(serde_json::json!({ "ok": true })).into_response()
+            Ok(Json(serde_json::json!({ "ok": true })).into_response())
         }
         Ok(false) => {
-            // Session not found or already revoked
-            (
-                StatusCode::NOT_FOUND,
-                Json(serde_json::json!({
-                    "ok": false,
-                    "error": {
-                        "code": "session.not_found",
-                        "message": "Session not found or already revoked"
-                    }
-                })),
-            )
-                .into_response()
+            Err(ApiError::not_found(
+                "session.not_found",
+                "Session not found or already revoked",
+            ))
         }
         Err(e) => {
             tracing::error!("Failed to revoke session: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal(
+                    "admin.users.revoke_session_failed",
+                    "Failed to revoke session",
+                )
+                .with_cause(&e)
+                .with_context(json!({
+                    "operation": "admin.users.revoke_session",
+                    "user_id": path.user_id,
+                    "session_id": path.session_id
+                })),
+            )
         }
     }
 }

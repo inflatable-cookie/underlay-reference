@@ -9,12 +9,12 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use underlay_http::query::QueryParams;
+use underlay_http::{query::QueryParams, ApiError};
 
 use acme_core::Uuid;
 use acme_db::{activity, tasks};
@@ -191,18 +191,26 @@ pub async fn list_tasks(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Query(query): Query<QueryParams>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let project_id = project_id.into_inner();
 
-    match tasks::list_tasks_admin(pool, project_id.into_inner(), &query).await {
+    match tasks::list_tasks_admin(pool, project_id, &query).await {
         Ok(task_list) => {
             let response: Vec<TaskWithLabelsResponse> =
                 task_list.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list tasks: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.list_failed", "Failed to list tasks")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.list",
+                        "project_id": project_id
+                    })),
+            )
         }
     }
 }
@@ -212,18 +220,33 @@ pub async fn get_task(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let task_id = task_id.into_inner();
 
-    match tasks::get_task(pool, task_id.into_inner()).await {
+    match tasks::get_task(pool, task_id).await {
         Ok(Some(task)) => {
             let response: TaskResponse = task.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("tasks.not_found", "Task not found").with_context(
+                serde_json::json!({
+                    "operation": "tasks.get",
+                    "task_id": task_id
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to get task: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.get_failed", "Failed to get task")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.get",
+                        "task_id": task_id
+                    })),
+            )
         }
     }
 }
@@ -234,7 +257,7 @@ pub async fn create_task(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<CreateTaskRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let task_id = Uuid::new_v7().into_inner();
     let project_id = project_id.into_inner();
@@ -277,15 +300,24 @@ pub async fn create_task(
             .await;
 
             let response: TaskResponse = task.into();
-            (
+            Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
             )
-                .into_response()
+                .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to create task: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.create_failed", "Failed to create task")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.create",
+                        "task_id": task_id,
+                        "project_id": project_id,
+                        "title": &req.title
+                    })),
+            )
         }
     }
 }
@@ -296,7 +328,7 @@ pub async fn update_task(
     State(state): State<AppState>,
     Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateTaskRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let task_id_inner = task_id.into_inner();
 
@@ -336,12 +368,26 @@ pub async fn update_task(
             .await;
 
             let response: TaskResponse = task.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("tasks.not_found", "Task not found").with_context(
+                serde_json::json!({
+                    "operation": "tasks.update",
+                    "task_id": task_id_inner
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to update task: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.update_failed", "Failed to update task")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.update",
+                        "task_id": task_id_inner
+                    })),
+            )
         }
     }
 }
@@ -351,7 +397,7 @@ pub async fn soft_delete_task(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let batch_id = Uuid::new_v7().into_inner();
     let tid = task_id.into_inner();
@@ -373,12 +419,27 @@ pub async fn soft_delete_task(
             )
             .await;
 
-            StatusCode::NO_CONTENT.into_response()
+            Ok(StatusCode::NO_CONTENT.into_response())
         }
-        Ok(false) => StatusCode::NOT_FOUND.into_response(),
+        Ok(false) => Err(
+            ApiError::not_found("tasks.not_found", "Task not found").with_context(
+                serde_json::json!({
+                    "operation": "tasks.soft_delete",
+                    "task_id": tid
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to soft delete task: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.soft_delete_failed", "Failed to delete task")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.soft_delete",
+                        "task_id": tid,
+                        "batch_id": batch_id
+                    })),
+            )
         }
     }
 }
@@ -389,15 +450,24 @@ pub async fn reorder_tasks(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<ReorderRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let project_id = project_id.into_inner();
     let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
 
-    match tasks::reorder_tasks(pool, project_id.into_inner(), &ids).await {
-        Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
+    match tasks::reorder_tasks(pool, project_id, &ids).await {
+        Ok(()) => Ok(Json(serde_json::json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to reorder tasks: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.reorder_failed", "Failed to reorder tasks")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.reorder",
+                        "project_id": project_id,
+                        "count": ids.len()
+                    })),
+            )
         }
     }
 }
@@ -411,17 +481,25 @@ pub async fn list_labels(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let project_id = project_id.into_inner();
 
-    match tasks::list_labels_for_project(pool, project_id.into_inner()).await {
+    match tasks::list_labels_for_project(pool, project_id).await {
         Ok(labels) => {
             let response: Vec<LabelResponse> = labels.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list labels: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("labels.list_failed", "Failed to list labels")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "labels.list",
+                        "project_id": project_id
+                    })),
+            )
         }
     }
 }
@@ -432,19 +510,20 @@ pub async fn create_label(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<CreateLabelRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let label_id = Uuid::new_v7().into_inner();
     let color = req.color.as_deref().unwrap_or("#6366f1");
+    let project_id = project_id.into_inner();
 
-    match tasks::create_label(pool, label_id, project_id.into_inner(), &req.name, color).await {
+    match tasks::create_label(pool, label_id, project_id, &req.name, color).await {
         Ok(label) => {
             let response: LabelResponse = label.into();
-            (
+            Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
             )
-                .into_response()
+                .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to create label: {}", e);
@@ -452,21 +531,29 @@ pub async fn create_label(
             // Check for unique constraint violation
             if let Some(db_err) = e.as_database_error() {
                 if db_err.code().as_deref() == Some("23505") {
-                    return (
-                        StatusCode::CONFLICT,
-                        Json(serde_json::json!({
-                            "ok": false,
-                            "error": {
-                                "code": "label.name_exists",
-                                "message": "A label with this name already exists in this project"
-                            }
+                    return Err(
+                        ApiError::conflict(
+                            "label.name_exists",
+                            "A label with this name already exists in this project",
+                        )
+                        .with_context(serde_json::json!({
+                            "operation": "labels.create",
+                            "project_id": project_id,
+                            "name": &req.name
                         })),
-                    )
-                        .into_response();
+                    );
                 }
             }
 
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("labels.create_failed", "Failed to create label")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "labels.create",
+                        "project_id": project_id,
+                        "name": &req.name
+                    })),
+            )
         }
     }
 }
@@ -476,17 +563,25 @@ pub async fn get_task_labels(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let task_id = task_id.into_inner();
 
-    match tasks::get_labels_for_task(pool, task_id.into_inner()).await {
+    match tasks::get_labels_for_task(pool, task_id).await {
         Ok(labels) => {
             let response: Vec<LabelResponse> = labels.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to get task labels: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("labels.get_for_task_failed", "Failed to get task labels")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "labels.get_for_task",
+                        "task_id": task_id
+                    })),
+            )
         }
     }
 }
@@ -497,27 +592,36 @@ pub async fn set_task_labels(
     State(state): State<AppState>,
     Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<SetLabelsRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let task_id = task_id.into_inner();
     let ids: Vec<_> = req.label_ids.iter().map(|id| id.into_inner()).collect();
 
-    match tasks::set_task_labels(pool, task_id.into_inner(), &ids).await {
+    match tasks::set_task_labels(pool, task_id, &ids).await {
         Ok(()) => {
             // Return the updated labels
-            match tasks::get_labels_for_task(pool, task_id.into_inner()).await {
+            match tasks::get_labels_for_task(pool, task_id).await {
                 Ok(labels) => {
                     let response: Vec<LabelResponse> = labels.into_iter().map(Into::into).collect();
-                    Json(serde_json::json!({ "data": response })).into_response()
+                    Ok(Json(serde_json::json!({ "data": response })).into_response())
                 }
                 Err(e) => {
                     tracing::error!("Failed to get updated labels: {}", e);
-                    Json(serde_json::json!({ "ok": true })).into_response()
+                    Ok(Json(serde_json::json!({ "ok": true })).into_response())
                 }
             }
         }
         Err(e) => {
             tracing::error!("Failed to set task labels: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("labels.set_for_task_failed", "Failed to set task labels")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "labels.set_for_task",
+                        "task_id": task_id,
+                        "count": ids.len()
+                    })),
+            )
         }
     }
 }
@@ -534,19 +638,13 @@ pub async fn batch_delete_tasks(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<BatchDeleteTasksRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
+    let project_id = project_id.into_inner();
     if req.ids.is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "ok": false,
-                "error": {
-                    "code": "validation.empty_ids",
-                    "message": "At least one ID is required"
-                }
-            })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.empty_ids",
+            "At least one ID is required",
+        ));
     }
 
     let pool = state.local_auth.pool();
@@ -574,11 +672,20 @@ pub async fn batch_delete_tasks(
             )
             .await;
 
-            Json(serde_json::json!({ "ok": true, "deleted": count })).into_response()
+            Ok(Json(serde_json::json!({ "ok": true, "deleted": count })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to batch delete tasks: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.batch_delete_failed", "Failed to batch delete tasks")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.batch_delete",
+                        "project_id": project_id,
+                        "batch_id": batch_id,
+                        "count": ids.len()
+                    })),
+            )
         }
     }
 }
@@ -591,35 +698,22 @@ pub async fn batch_update_task_status(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<BatchUpdateTaskStatusRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
+    let project_id = project_id.into_inner();
     if req.ids.is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "ok": false,
-                "error": {
-                    "code": "validation.empty_ids",
-                    "message": "At least one ID is required"
-                }
-            })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.empty_ids",
+            "At least one ID is required",
+        ));
     }
 
     // Validate status value
     let valid_statuses = ["pending", "in_progress", "completed", "cancelled"];
     if !valid_statuses.contains(&req.status.as_str()) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(serde_json::json!({
-                "ok": false,
-                "error": {
-                    "code": "validation.invalid_status",
-                    "message": "Invalid status value"
-                }
-            })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.invalid_status",
+            "Invalid status value",
+        ));
     }
 
     let pool = state.local_auth.pool();
@@ -647,11 +741,23 @@ pub async fn batch_update_task_status(
             )
             .await;
 
-            Json(serde_json::json!({ "ok": true, "updated": count })).into_response()
+            Ok(Json(serde_json::json!({ "ok": true, "updated": count })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to batch update task status: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal(
+                    "tasks.batch_update_status_failed",
+                    "Failed to batch update task status",
+                )
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "tasks.batch_update_status",
+                    "project_id": project_id,
+                    "count": ids.len(),
+                    "status": &req.status
+                })),
+            )
         }
     }
 }
