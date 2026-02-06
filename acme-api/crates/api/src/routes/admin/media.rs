@@ -5,13 +5,13 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use serde_json::json;
 use underlay_blob::UploadRequest;
 use underlay_db::pagination::PaginationParams;
-use underlay_http::query::QueryParams;
+use underlay_http::{query::QueryParams, ApiError};
 use underlay_jobs::JobConfig;
 use underlay_media::storage::version_key;
 use uuid::Uuid;
@@ -38,13 +38,9 @@ pub async fn check_duplicate(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<CheckDuplicateRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "validation.failed", "message": e.to_string() } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
 
     let pool = state.local_auth.pool();
@@ -52,20 +48,27 @@ pub async fn check_duplicate(
     match media::find_media_by_hash(pool, &req.sha256).await {
         Ok(Some(row)) => {
             let summary: MediaSummaryDto = row.into();
-            Json(CheckDuplicateResponse {
+            Ok(Json(CheckDuplicateResponse {
                 exists: true,
                 media: Some(summary),
             })
-            .into_response()
+            .into_response())
         }
-        Ok(None) => Json(CheckDuplicateResponse {
+        Ok(None) => Ok(Json(CheckDuplicateResponse {
             exists: false,
             media: None,
         })
-        .into_response(),
+        .into_response()),
         Err(e) => {
             tracing::error!("Failed to check for duplicate: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.duplicate_check_failed", "Failed to check duplicate")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.check_duplicate",
+                        "sha256": &req.sha256
+                    })),
+            )
         }
     }
 }
@@ -81,30 +84,24 @@ pub async fn create_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<CreateMediaRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "validation.failed", "message": e.to_string() } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
 
     // Validate kind and visibility
     let Some(_kind) = req.media_kind() else {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "validation.invalid_kind", "message": "Invalid media kind" } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.invalid_kind",
+            "Invalid media kind",
+        ));
     };
 
     let Some(_visibility) = req.media_visibility() else {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "validation.invalid_visibility", "message": "Invalid visibility" } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.invalid_visibility",
+            "Invalid visibility",
+        ));
     };
 
     let pool = state.local_auth.pool();
@@ -138,11 +135,19 @@ pub async fn create_media(
             .await;
 
             let detail = MediaDetailDto::from_media(row, None, 0);
-            (StatusCode::CREATED, Json(json!({ "data": detail }))).into_response()
+            Ok((StatusCode::CREATED, Json(json!({ "data": detail }))).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to create media: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.create_failed", "Failed to create media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.create",
+                        "media_id": media_id,
+                        "kind": &req.kind
+                    })),
+            )
         }
     }
 }
@@ -160,7 +165,7 @@ pub async fn list_media(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Query(query): Query<QueryParams>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::list_media_admin(pool, &query).await {
@@ -173,11 +178,17 @@ pub async fn list_media(
                     })
                 })
                 .collect();
-            Json(json!({ "data": items })).into_response()
+            Ok(Json(json!({ "data": items })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list media: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.list_failed", "Failed to list media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.list"
+                    })),
+            )
         }
     }
 }
@@ -189,7 +200,7 @@ pub async fn list_media_paginated(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Query(params): Query<PaginationParams>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::list_media_admin_paginated(pool, params).await {
@@ -203,18 +214,24 @@ pub async fn list_media_paginated(
                     })
                 })
                 .collect();
-            Json(json!({
+            Ok(Json(json!({
                 "data": items,
                 "nextCursor": response.next_cursor,
                 "prevCursor": response.prev_cursor,
                 "hasMore": response.has_more,
                 "total": response.total
             }))
-            .into_response()
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list media paginated: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.list_paginated_failed", "Failed to list media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.list_paginated"
+                    })),
+            )
         }
     }
 }
@@ -225,7 +242,7 @@ pub async fn list_media_paginated(
 pub async fn list_media_trash(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::list_media_trash(pool).await {
@@ -238,11 +255,17 @@ pub async fn list_media_trash(
                     })
                 })
                 .collect();
-            Json(json!({ "data": items })).into_response()
+            Ok(Json(json!({ "data": items })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list media trash: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.list_trash_failed", "Failed to list media trash")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.list_trash"
+                    })),
+            )
         }
     }
 }
@@ -254,7 +277,7 @@ pub async fn get_media(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::get_media_admin(pool, media_id).await {
@@ -290,12 +313,24 @@ pub async fn get_media(
                 usage_count,
                 |key| state.blob_adapter.public_url(key),
             );
-            Json(json!({ "data": detail })).into_response()
+            Ok(Json(json!({ "data": detail })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("media.not_found", "Media item not found").with_context(json!({
+                "operation": "media.get",
+                "media_id": media_id
+            })),
+        ),
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.get_failed", "Failed to get media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.get",
+                        "media_id": media_id
+                    })),
+            )
         }
     }
 }
@@ -308,21 +343,16 @@ pub async fn update_media(
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
     Json(req): Json<UpdateMediaRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "validation.failed", "message": e.to_string() } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
 
     let Some(_visibility) = req.media_visibility() else {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "validation.invalid_visibility", "message": "Invalid visibility" } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.invalid_visibility",
+            "Invalid visibility",
+        ));
     };
 
     let pool = state.local_auth.pool();
@@ -369,12 +399,24 @@ pub async fn update_media(
                 .unwrap_or(0);
 
             let detail = MediaDetailDto::from_media(row, current_version, usage_count);
-            Json(json!({ "data": detail })).into_response()
+            Ok(Json(json!({ "data": detail })).into_response())
         }
-        Err(e) if e.to_string().contains("no rows") => StatusCode::NOT_FOUND.into_response(),
+        Err(e) if e.to_string().contains("no rows") => Err(
+            ApiError::not_found("media.not_found", "Media item not found").with_context(json!({
+                "operation": "media.update",
+                "media_id": media_id
+            })),
+        ),
         Err(e) => {
             tracing::error!("Failed to update media: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.update_failed", "Failed to update media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.update",
+                        "media_id": media_id
+                    })),
+            )
         }
     }
 }
@@ -386,7 +428,7 @@ pub async fn soft_delete_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::soft_delete_media(pool, media_id, Some(user.user_id.0.into_inner())).await {
@@ -406,11 +448,18 @@ pub async fn soft_delete_media(
             )
             .await;
 
-            Json(json!({ "ok": true })).into_response()
+            Ok(Json(json!({ "ok": true })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to soft delete media: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.soft_delete_failed", "Failed to delete media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.soft_delete",
+                        "media_id": media_id
+                    })),
+            )
         }
     }
 }
@@ -422,7 +471,7 @@ pub async fn restore_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::restore_media(pool, media_id).await {
@@ -442,11 +491,18 @@ pub async fn restore_media(
             )
             .await;
 
-            Json(json!({ "ok": true })).into_response()
+            Ok(Json(json!({ "ok": true })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to restore media: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.restore_failed", "Failed to restore media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.restore",
+                        "media_id": media_id
+                    })),
+            )
         }
     }
 }
@@ -458,7 +514,7 @@ pub async fn purge_media(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     // Check if media is in use
@@ -466,22 +522,22 @@ pub async fn purge_media(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to get usage count: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.usage_count_failed", "Failed to purge media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.purge",
+                        "media_id": media_id
+                    })),
+            );
         }
     };
 
     if usage_count > 0 {
-        return (
-            StatusCode::CONFLICT,
-            Json(json!({
-                "ok": false,
-                "error": {
-                    "code": "media.in_use",
-                    "message": format!("Media is still in use ({} references)", usage_count)
-                }
-            })),
-        )
-            .into_response();
+        return Err(ApiError::conflict(
+            "media.in_use",
+            format!("Media is still in use ({} references)", usage_count),
+        ));
     }
 
     // Get all versions to delete blobs
@@ -489,7 +545,14 @@ pub async fn purge_media(
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Failed to list versions: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.versions_list_failed", "Failed to purge media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.purge",
+                        "media_id": media_id
+                    })),
+            );
         }
     };
 
@@ -504,10 +567,17 @@ pub async fn purge_media(
 
     // Purge from database
     match media::purge_media(pool, media_id).await {
-        Ok(()) => Json(json!({ "ok": true })).into_response(),
+        Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to purge media: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.purge_failed", "Failed to purge media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.purge",
+                        "media_id": media_id
+                    })),
+            )
         }
     }
 }

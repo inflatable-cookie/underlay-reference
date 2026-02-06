@@ -5,11 +5,12 @@
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use underlay_http::ApiError;
 
 use acme_core::Uuid;
 use acme_db::tasks;
@@ -116,22 +117,67 @@ pub struct UpdateTaskRequest {
 // Project Handlers
 // ============================================================================
 
+async fn ensure_project_owned(
+    pool: &acme_db::DbPool,
+    user_id: uuid::Uuid,
+    project_id: uuid::Uuid,
+    operation: &'static str,
+) -> Result<(), ApiError> {
+    match tasks::get_project(pool, project_id).await {
+        Ok(Some(project)) if project.owner_id == user_id => Ok(()),
+        Ok(Some(_)) => Err(
+            ApiError::new(StatusCode::FORBIDDEN, "auth.forbidden", "Forbidden").with_context(
+                serde_json::json!({
+                    "operation": operation,
+                    "project_id": project_id
+                }),
+            ),
+        ),
+        Ok(None) => Err(
+            ApiError::not_found("projects.not_found", "Project not found").with_context(
+                serde_json::json!({
+                    "operation": operation,
+                    "project_id": project_id
+                }),
+            ),
+        ),
+        Err(e) => {
+            tracing::error!("Failed to get project: {}", e);
+            Err(
+                ApiError::internal("projects.get_failed", "Failed to get project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": operation,
+                        "project_id": project_id
+                    })),
+            )
+        }
+    }
+}
+
 /// List all projects for the authenticated user.
 pub async fn list_projects(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
 
     match tasks::list_projects_for_user(pool, user_id, false).await {
         Ok(projects) => {
             let response: Vec<ProjectResponse> = projects.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({ "items": response })).into_response()
+            Ok(Json(serde_json::json!({ "items": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list projects: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.list_failed", "Failed to list projects")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.list",
+                        "user_id": user_id
+                    })),
+            )
         }
     }
 }
@@ -141,7 +187,7 @@ pub async fn create_project(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     Json(req): Json<CreateProjectRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = Uuid::new_v7().into_inner();
@@ -158,15 +204,23 @@ pub async fn create_project(
     {
         Ok(project) => {
             let response: ProjectResponse = project.into();
-            (
+            Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
             )
-                .into_response()
+                .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to create project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.create_failed", "Failed to create project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.create",
+                        "project_id": project_id,
+                        "user_id": user_id
+                    })),
+            )
         }
     }
 }
@@ -176,7 +230,7 @@ pub async fn get_project(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
@@ -184,13 +238,35 @@ pub async fn get_project(
     match tasks::get_project(pool, project_id).await {
         Ok(Some(project)) if project.owner_id == user_id => {
             let response: ProjectResponse = project.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(Some(_)) => StatusCode::FORBIDDEN.into_response(),
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(Some(_)) => Err(
+            ApiError::new(StatusCode::FORBIDDEN, "auth.forbidden", "Forbidden").with_context(
+                serde_json::json!({
+                    "operation": "projects.get",
+                    "project_id": project_id,
+                    "user_id": user_id
+                }),
+            ),
+        ),
+        Ok(None) => Err(
+            ApiError::not_found("projects.not_found", "Project not found").with_context(
+                serde_json::json!({
+                    "operation": "projects.get",
+                    "project_id": project_id
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to get project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.get_failed", "Failed to get project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.get",
+                        "project_id": project_id
+                    })),
+            )
         }
     }
 }
@@ -201,21 +277,12 @@ pub async fn update_project(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<UpdateProjectRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
 
-    // First check ownership
-    match tasks::get_project(pool, project_id).await {
-        Ok(Some(project)) if project.owner_id == user_id => {}
-        Ok(Some(_)) => return StatusCode::FORBIDDEN.into_response(),
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
-        Err(e) => {
-            tracing::error!("Failed to get project: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    }
+    ensure_project_owned(pool, user_id, project_id, "projects.update").await?;
 
     match tasks::update_project(
         pool,
@@ -229,12 +296,26 @@ pub async fn update_project(
     {
         Ok(Some(project)) => {
             let response: ProjectResponse = project.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("projects.not_found", "Project not found").with_context(
+                serde_json::json!({
+                    "operation": "projects.update",
+                    "project_id": project_id
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to update project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.update_failed", "Failed to update project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.update",
+                        "project_id": project_id
+                    })),
+            )
         }
     }
 }
@@ -244,28 +325,33 @@ pub async fn delete_project(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
 
-    // First check ownership
-    match tasks::get_project(pool, project_id).await {
-        Ok(Some(project)) if project.owner_id == user_id => {}
-        Ok(Some(_)) => return StatusCode::FORBIDDEN.into_response(),
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
-        Err(e) => {
-            tracing::error!("Failed to get project: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    }
+    ensure_project_owned(pool, user_id, project_id, "projects.delete").await?;
 
     match tasks::delete_project(pool, project_id).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
-        Ok(false) => StatusCode::NOT_FOUND.into_response(),
+        Ok(true) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Ok(false) => Err(
+            ApiError::not_found("projects.not_found", "Project not found").with_context(
+                serde_json::json!({
+                    "operation": "projects.delete",
+                    "project_id": project_id
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to delete project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.delete_failed", "Failed to delete project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.delete",
+                        "project_id": project_id
+                    })),
+            )
         }
     }
 }
@@ -279,30 +365,28 @@ pub async fn list_tasks(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
 
-    // Verify project ownership
-    match tasks::get_project(pool, project_id).await {
-        Ok(Some(project)) if project.owner_id == user_id => {}
-        Ok(Some(_)) => return StatusCode::FORBIDDEN.into_response(),
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
-        Err(e) => {
-            tracing::error!("Failed to get project: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    }
+    ensure_project_owned(pool, user_id, project_id, "tasks.list").await?;
 
     match tasks::list_tasks_for_project(pool, project_id, false).await {
         Ok(task_list) => {
             let response: Vec<TaskResponse> = task_list.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({ "items": response })).into_response()
+            Ok(Json(serde_json::json!({ "items": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list tasks: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.list_failed", "Failed to list tasks")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.list",
+                        "project_id": project_id
+                    })),
+            )
         }
     }
 }
@@ -313,21 +397,12 @@ pub async fn create_task(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<CreateTaskRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
 
-    // Verify project ownership
-    match tasks::get_project(pool, project_id).await {
-        Ok(Some(project)) if project.owner_id == user_id => {}
-        Ok(Some(_)) => return StatusCode::FORBIDDEN.into_response(),
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
-        Err(e) => {
-            tracing::error!("Failed to get project: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    }
+    ensure_project_owned(pool, user_id, project_id, "tasks.create").await?;
 
     let task_id = Uuid::new_v7().into_inner();
     let priority = req.priority.as_deref().unwrap_or("medium");
@@ -345,15 +420,23 @@ pub async fn create_task(
     {
         Ok(task) => {
             let response: TaskResponse = task.into();
-            (
+            Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
             )
-                .into_response()
+                .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to create task: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.create_failed", "Failed to create task")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.create",
+                        "project_id": project_id,
+                        "task_id": task_id
+                    })),
+            )
         }
     }
 }
@@ -364,22 +447,13 @@ pub async fn update_task(
     State(state): State<AppState>,
     Path((project_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateTaskRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
     let task_id = task_id.into_inner();
 
-    // Verify project ownership
-    match tasks::get_project(pool, project_id).await {
-        Ok(Some(project)) if project.owner_id == user_id => {}
-        Ok(Some(_)) => return StatusCode::FORBIDDEN.into_response(),
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
-        Err(e) => {
-            tracing::error!("Failed to get project: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    }
+    ensure_project_owned(pool, user_id, project_id, "tasks.update").await?;
 
     match tasks::update_task(
         pool,
@@ -394,12 +468,26 @@ pub async fn update_task(
     {
         Ok(Some(task)) => {
             let response: TaskResponse = task.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("tasks.not_found", "Task not found").with_context(
+                serde_json::json!({
+                    "operation": "tasks.update",
+                    "task_id": task_id
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to update task: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.update_failed", "Failed to update task")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.update",
+                        "task_id": task_id
+                    })),
+            )
         }
     }
 }
@@ -409,29 +497,34 @@ pub async fn delete_task(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     Path((project_id, task_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
     let task_id = task_id.into_inner();
 
-    // Verify project ownership
-    match tasks::get_project(pool, project_id).await {
-        Ok(Some(project)) if project.owner_id == user_id => {}
-        Ok(Some(_)) => return StatusCode::FORBIDDEN.into_response(),
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
-        Err(e) => {
-            tracing::error!("Failed to get project: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    }
+    ensure_project_owned(pool, user_id, project_id, "tasks.delete").await?;
 
     match tasks::delete_task(pool, task_id).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
-        Ok(false) => StatusCode::NOT_FOUND.into_response(),
+        Ok(true) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Ok(false) => Err(
+            ApiError::not_found("tasks.not_found", "Task not found").with_context(
+                serde_json::json!({
+                    "operation": "tasks.delete",
+                    "task_id": task_id
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to delete task: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("tasks.delete_failed", "Failed to delete task")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "tasks.delete",
+                        "task_id": task_id
+                    })),
+            )
         }
     }
 }
