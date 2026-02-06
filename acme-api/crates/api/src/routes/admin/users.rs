@@ -156,8 +156,8 @@ fn is_valid_status(status: &str) -> bool {
 
 fn field_name_for_errors(field: &str) -> &str {
     match field {
-        "display_name" => "displayName",
-        "send_password_reset" => "sendPasswordReset",
+        "display_name" => "display_name",
+        "send_password_reset" => "send_password_reset",
         other => other,
     }
 }

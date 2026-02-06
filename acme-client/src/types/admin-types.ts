@@ -161,8 +161,12 @@ export interface ValidateFieldPayload {
   /** Value to validate */
   value: string;
   /** Context value (e.g., project_id for label uniqueness) */
-  contextValue?: string;
+  context_value?: string;
   /** ID to exclude from uniqueness check (for edits) */
+  exclude_id?: string;
+  /** @deprecated Use context_value */
+  contextValue?: string;
+  /** @deprecated Use exclude_id */
   excludeId?: string;
 }
 

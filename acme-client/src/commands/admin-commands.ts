@@ -60,6 +60,28 @@ import {
   type SuggestionRequestOptions,
 } from "@decodelabs/underlay/patterns";
 
+function camelToSnake(value: string): string {
+  return value.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+}
+
+function toSnakeQueryParams(query?: QueryParams): QueryParams {
+  if (!query) {
+    return {};
+  }
+
+  return {
+    ...query,
+    sort: query.sort?.map((item) => ({
+      ...item,
+      field: camelToSnake(item.field),
+    })),
+    filters: query.filters?.map((item) => ({
+      ...item,
+      field: camelToSnake(item.field),
+    })),
+  };
+}
+
 // ============================================================================
 // Categories
 // ============================================================================
@@ -77,7 +99,7 @@ export async function listCategories(
   query?: QueryParams
 ): Promise<CategoryWithCounts[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const path = appendQueryParams("/v1/admin/categories", query ?? {});
+  const path = appendQueryParams("/v1/admin/categories", toSnakeQueryParams(query));
   const response = await http.get<ListResponse<CategoryWithCounts>>(path);
   return response.data;
 }
@@ -203,7 +225,7 @@ export async function listProjects(
   query?: QueryParams
 ): Promise<ProjectWithCounts[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const path = appendQueryParams("/v1/admin/projects", query ?? {});
+  const path = appendQueryParams("/v1/admin/projects", toSnakeQueryParams(query));
   const response = await http.get<ListResponse<ProjectWithCounts>>(path);
   return response.data;
 }
@@ -346,7 +368,7 @@ export async function listTasks(
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const path = appendQueryParams(
     `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks`,
-    query ?? {}
+    toSnakeQueryParams(query)
   );
   const response = await http.get<ListResponse<TaskWithLabels>>(path);
   return response.data;
@@ -563,9 +585,16 @@ export async function validateField(
   accessToken: string
 ): Promise<ValidationResult> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
+  const requestPayload = {
+    entity: payload.entity,
+    field: payload.field,
+    value: payload.value,
+    context_value: payload.context_value ?? payload.contextValue,
+    exclude_id: payload.exclude_id ?? payload.excludeId,
+  };
   return await http.post<ValidationResult>(
     "/v1/admin/validate-field",
-    payload
+    requestPayload
   );
 }
 
@@ -630,7 +659,7 @@ export async function listUsers(
   if (query?.role) params.set("role", query.role);
   if (query?.status) params.set("status", query.status);
   if (query?.search) params.set("search", query.search);
-  if (query?.displayName) params.set("displayName", query.displayName);
+  if (query?.displayName) params.set("display_name", query.displayName);
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
   if (query?.offset !== undefined) params.set("offset", String(query.offset));
 
@@ -848,7 +877,7 @@ export async function listJobs(
 
   const params = new URLSearchParams();
   if (query?.status) params.set("status", query.status);
-  if (query?.jobType) params.set("jobType", query.jobType);
+  if (query?.jobType) params.set("job_type", query.jobType);
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
 
   const queryString = params.toString();
@@ -994,8 +1023,8 @@ export async function listCapturedEmails(
   const http = getAdminHttpClient({ fetchFn, accessToken });
 
   const params = new URLSearchParams();
-  if (query?.toAddress) params.set("toAddress", query.toAddress);
-  if (query?.fromAddress) params.set("fromAddress", query.fromAddress);
+  if (query?.toAddress) params.set("to_address", query.toAddress);
+  if (query?.fromAddress) params.set("from_address", query.fromAddress);
   if (query?.since) params.set("since", query.since);
   if (query?.until) params.set("until", query.until);
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
@@ -1054,8 +1083,8 @@ export async function listErrorLogs(
   const http = getAdminHttpClient({ fetchFn, accessToken });
 
   const params = new URLSearchParams();
-  if (query?.statusCode !== undefined) params.set("statusCode", String(query.statusCode));
-  if (query?.errorCode) params.set("errorCode", query.errorCode);
+  if (query?.statusCode !== undefined) params.set("status_code", String(query.statusCode));
+  if (query?.errorCode) params.set("error_code", query.errorCode);
   if (query?.endpoint) params.set("endpoint", query.endpoint);
   if (query?.since) params.set("since", query.since);
   if (query?.until) params.set("until", query.until);
