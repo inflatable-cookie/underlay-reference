@@ -386,13 +386,15 @@ pub async fn login_start(
                 .await
             {
                 tracing::error!("Failed to send email code: {}", e);
-                return error_response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    AppError::new(
-                        "auth.email_send_failed",
-                        "Failed to send verification email",
-                    ),
+                return ApiError::internal(
+                    "auth.email_send_failed",
+                    "Failed to send verification email",
                 )
+                .with_cause(&e)
+                .with_context(json!({
+                    "operation": "auth.login_start",
+                    "user_id": user_id
+                }))
                 .into_response();
             }
 
@@ -423,9 +425,9 @@ pub async fn login_finish(
     let state_id = match Uuid::parse_str(payload.login_state_id.trim()) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_login_state", "Invalid login state"),
+            return ApiError::bad_request(
+                "validation.invalid_login_state",
+                "Invalid login state",
             )
             .into_response();
         }
@@ -518,29 +520,25 @@ pub async fn login_finish(
                 .local_auth
                 .increment_email_login_attempts(state_id)
                 .await;
-            error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("auth.invalid_code", "Invalid verification code"),
-            )
-            .into_response()
+            ApiError::bad_request("auth.invalid_code", "Invalid verification code").into_response()
         }
-        Err(acme_auth::EmailTotpError::CodeExpired) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new("auth.code_expired", "Verification code has expired"),
-        )
-        .into_response(),
-        Err(acme_auth::EmailTotpError::TooManyAttempts) => error_response(
-            StatusCode::BAD_REQUEST,
-            AppError::new("auth.too_many_attempts", "Too many invalid attempts"),
-        )
-        .into_response(),
+        Err(acme_auth::EmailTotpError::CodeExpired) => {
+            ApiError::bad_request("auth.code_expired", "Verification code has expired")
+                .into_response()
+        }
+        Err(acme_auth::EmailTotpError::TooManyAttempts) => {
+            ApiError::bad_request("auth.too_many_attempts", "Too many invalid attempts")
+                .into_response()
+        }
         Err(e) => {
             tracing::error!("Email TOTP verification error: {}", e);
-            error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("auth.verification_failed", "Verification failed"),
-            )
-            .into_response()
+            ApiError::bad_request("auth.verification_failed", "Verification failed")
+                .with_cause(&e)
+                .with_context(json!({
+                    "operation": "auth.login_finish_email_verify",
+                    "state_id": state_id
+                }))
+                .into_response()
         }
     }
 }
@@ -556,9 +554,10 @@ pub async fn refresh(
     } else if let Some(cookie_token) = extract_refresh_token(&headers, &state.cookie_config) {
         cookie_token
     } else {
-        return error_response(
+        return ApiError::new(
             StatusCode::UNAUTHORIZED,
-            AppError::new("auth.missing_refresh_token", "No refresh token provided"),
+            "auth.missing_refresh_token",
+            "No refresh token provided",
         )
         .into_response();
     };
@@ -635,10 +634,7 @@ pub async fn logout(
             (
                 StatusCode::BAD_REQUEST,
                 response_headers,
-                error_response(
-                    StatusCode::BAD_REQUEST,
-                    AppError::new(err.code(), err.message()),
-                ),
+                ApiError::new(StatusCode::BAD_REQUEST, err.code(), err.message()).into_response(),
             )
                 .into_response()
         }
@@ -717,11 +713,8 @@ pub async fn revoke_session(
     let session_uuid = match Uuid::parse_str(&session_id) {
         Ok(id) => id,
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("validation.invalid_session_id", "Invalid session id"),
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_session_id", "Invalid session id")
+                .into_response();
         }
     };
 
@@ -737,7 +730,7 @@ pub async fn revoke_session(
                 "auth.bad_request" => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             };
-            error_response(status, AppError::new(err.code(), err.message())).into_response()
+            ApiError::new(status, err.code(), err.message()).into_response()
         }
     }
 }
