@@ -181,6 +181,12 @@ This triggers a forced `ApiError` at `POST /v1/dev/error-smoke` (debug builds on
 - `message`
 - `context.handler_context`
 
+To measure current `handler_context` null-rate (default last 24h):
+
+```bash
+./scripts/error-log-metrics.sh
+```
+
 ## Bootstrapping a New Project
 
 To create a new project from this reference:
