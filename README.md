@@ -187,6 +187,12 @@ To measure current `handler_context` null-rate (default last 24h):
 ./scripts/error-log-metrics.sh
 ```
 
+To run the full validation sequence (route checks + smoke + null-rate metrics):
+
+```bash
+./scripts/validate-error-reporting.sh
+```
+
 ## Bootstrapping a New Project
 
 To create a new project from this reference:
