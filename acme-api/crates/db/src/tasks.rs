@@ -56,11 +56,11 @@ pub fn project_field_mapping() -> FieldMapping {
         .map("name", "p.name")
         .map("status", "p.status")
         .sort_only("weight", "p.weight")
-        .sort_only("createdAt", "p.created_at")
-        .sort_only("updatedAt", "p.updated_at")
-        .sort_only("categoryName", "c.name")
-        .filter_only("categoryId", "p.category_id")
-        .filter_only("ownerId", "p.owner_id")
+        .sort_only("created_at", "p.created_at")
+        .sort_only("updated_at", "p.updated_at")
+        .sort_only("category_name", "c.name")
+        .filter_only("category_id", "p.category_id")
+        .filter_only("owner_id", "p.owner_id")
 }
 
 /// Create a new project.
@@ -363,9 +363,9 @@ pub fn task_field_mapping() -> FieldMapping {
         .map("status", "t.status")
         .map("priority", "t.priority")
         .sort_only("position", "t.position")
-        .sort_only("dueDate", "t.due_date")
-        .sort_only("createdAt", "t.created_at")
-        .filter_only("projectId", "t.project_id")
+        .sort_only("due_date", "t.due_date")
+        .sort_only("created_at", "t.created_at")
+        .filter_only("project_id", "t.project_id")
 }
 
 /// Create a new task.

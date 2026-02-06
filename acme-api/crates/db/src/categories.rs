@@ -54,9 +54,9 @@ pub fn category_field_mapping() -> FieldMapping {
     FieldMapping::new()
         .map("name", "name")
         .map("slug", "slug")
-        .map("isActive", "is_active")
+        .map("is_active", "is_active")
         .sort_only("weight", "weight")
-        .sort_only("createdAt", "created_at")
+        .sort_only("created_at", "created_at")
 }
 
 /// List categories with filtering and sorting.
@@ -112,10 +112,10 @@ pub async fn list_categories_with_counts(
     let mapping = FieldMapping::new()
         .map("name", "c.name")
         .map("slug", "c.slug")
-        .map("isActive", "c.is_active")
+        .map("is_active", "c.is_active")
         .sort_only("weight", "c.weight")
-        .sort_only("createdAt", "c.created_at")
-        .sort_only("projectCount", "project_count");
+        .sort_only("created_at", "c.created_at")
+        .sort_only("project_count", "project_count");
     let filters = query.filter_fields();
 
     let mut where_builder = WhereBuilder::new(1);

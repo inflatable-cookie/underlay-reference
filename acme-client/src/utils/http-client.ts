@@ -19,16 +19,59 @@ export interface AcmeClientConfig {
   onRefresh?: () => Promise<string | null>;
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && value.constructor === Object;
+}
+
+function camelToSnake(key: string): string {
+  return key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+}
+
+function snakeToCamel(key: string): string {
+  return key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+}
+
+function toSnakeCaseValue<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => toSnakeCaseValue(item)) as T;
+  }
+  if (!isPlainObject(value)) {
+    return value;
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, nestedValue] of Object.entries(value)) {
+    result[camelToSnake(key)] = toSnakeCaseValue(nestedValue);
+  }
+  return result as T;
+}
+
+function toCamelCaseValue<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => toCamelCaseValue(item)) as T;
+  }
+  if (!isPlainObject(value)) {
+    return value;
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, nestedValue] of Object.entries(value)) {
+    result[snakeToCamel(key)] = toCamelCaseValue(nestedValue);
+  }
+  return result as T;
+}
+
 function convertError(error: unknown): never {
   if (error instanceof UnderlayHttpError) {
     const rawError = error.envelope?.error as Record<string, unknown> | undefined;
-    const requestId = rawError?.requestId as string | undefined;
+    const requestId = rawError?.request_id as string | undefined;
+    const fieldErrors = rawError?.field_errors as Record<string, unknown> | undefined;
 
     const apiError: ApiError = Object.assign(new Error(error.message), {
       status: error.status,
       code: error.envelope?.error.code ?? "unknown_error",
-      details: error.envelope?.error.fieldErrors
-        ? { fieldErrors: error.envelope.error.fieldErrors }
+      details: fieldErrors
+        ? { fieldErrors }
         : undefined,
       requestId,
       raw: error.envelope,
@@ -77,7 +120,8 @@ export class HttpClient {
 
   async get<T>(path: string): Promise<T> {
     try {
-      return await this.underlayClient.get<T>(path);
+      const response = await this.underlayClient.get<unknown>(path);
+      return toCamelCaseValue(response) as T;
     } catch (error) {
       convertError(error);
     }
@@ -85,7 +129,8 @@ export class HttpClient {
 
   async post<T>(path: string, body: unknown): Promise<T> {
     try {
-      return await this.underlayClient.post<T>(path, body);
+      const response = await this.underlayClient.post<unknown>(path, toSnakeCaseValue(body));
+      return toCamelCaseValue(response) as T;
     } catch (error) {
       convertError(error);
     }
@@ -93,7 +138,8 @@ export class HttpClient {
 
   async put<T>(path: string, body: unknown): Promise<T> {
     try {
-      return await this.underlayClient.put<T>(path, body);
+      const response = await this.underlayClient.put<unknown>(path, toSnakeCaseValue(body));
+      return toCamelCaseValue(response) as T;
     } catch (error) {
       convertError(error);
     }
@@ -101,7 +147,8 @@ export class HttpClient {
 
   async patch<T>(path: string, body: unknown): Promise<T> {
     try {
-      return await this.underlayClient.patch<T>(path, body);
+      const response = await this.underlayClient.patch<unknown>(path, toSnakeCaseValue(body));
+      return toCamelCaseValue(response) as T;
     } catch (error) {
       convertError(error);
     }
@@ -109,7 +156,8 @@ export class HttpClient {
 
   async delete<T>(path: string): Promise<T> {
     try {
-      return await this.underlayClient.delete<T>(path);
+      const response = await this.underlayClient.delete<unknown>(path);
+      return toCamelCaseValue(response) as T;
     } catch (error) {
       convertError(error);
     }

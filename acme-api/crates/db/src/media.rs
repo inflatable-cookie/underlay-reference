@@ -98,14 +98,14 @@ pub struct MediaWithVersionRow {
 /// Get field mapping for media queries.
 ///
 /// Supports filtering by kind, visibility, and title (search).
-/// Supports sorting by title, kind, updatedAt, createdAt.
+/// Supports sorting by title, kind, updated_at, created_at.
 pub fn media_field_mapping() -> FieldMapping {
     FieldMapping::new()
         .map("title", "m.title")
         .map("kind", "m.kind")
         .map("visibility", "m.visibility")
-        .sort_only("updatedAt", "m.updated_at")
-        .sort_only("createdAt", "m.created_at")
+        .sort_only("updated_at", "m.updated_at")
+        .sort_only("created_at", "m.created_at")
 }
 
 // ============================================================================
