@@ -25,7 +25,7 @@ use crate::state::{AdminUser, AppState};
 
 /// User response for list view.
 #[derive(Debug, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UserResponse {
     pub id: String,
     pub email: String,
@@ -52,7 +52,7 @@ impl From<users::UserRow> for UserResponse {
 
 /// User detail response with session info.
 #[derive(Debug, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UserDetailResponse {
     pub id: String,
     pub email: String,
@@ -85,7 +85,7 @@ impl From<users::UserWithSessionCountRow> for UserDetailResponse {
 
 /// Query parameters for user listing.
 #[derive(Debug, Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ListUsersQuery {
     /// Filter by role
     pub role: Option<String>,
@@ -103,7 +103,7 @@ pub struct ListUsersQuery {
 
 /// Request to update user role.
 #[derive(Debug, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateUserRoleRequest {
     #[validate(length(min = 1))]
     pub role: String,
@@ -111,7 +111,7 @@ pub struct UpdateUserRoleRequest {
 
 /// Request to create a user (admin).
 #[derive(Debug, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateUserRequest {
     #[validate(length(min = 3, max = 320), email)]
     pub email: String,
@@ -127,7 +127,7 @@ pub struct CreateUserRequest {
 
 /// Request to update a user (admin).
 #[derive(Debug, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateUserRequest {
     #[validate(length(min = 3, max = 320), email)]
     pub email: Option<String>,
@@ -190,7 +190,7 @@ pub async fn list_users(
             let items: Vec<UserResponse> = response.data.into_iter().map(Into::into).collect();
             Ok(Json(serde_json::json!({
                 "data": items,
-                "hasMore": response.has_more,
+                "has_more": response.has_more,
                 "total": response.total
             }))
             .into_response())
@@ -508,7 +508,7 @@ pub async fn update_user_role(
                     action: "role_change",
                     resource_type: "user",
                     resource_id: user_id,
-                    details: Some(serde_json::json!({ "newRole": req.role })),
+                    details: Some(serde_json::json!({ "new_role": req.role })),
                     correlation_id: None,
                     ip_address: None,
                 },
@@ -640,7 +640,7 @@ pub async fn unsuspend_user(
 ///
 /// Matches the common Session type from the TypeScript client.
 #[derive(Debug, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct SessionResponse {
     pub id: String,
     pub user_id: String,
@@ -733,7 +733,7 @@ pub async fn revoke_user_session(
                     action: "revoke_session",
                     resource_type: "user",
                     resource_id: path.user_id,
-                    details: Some(serde_json::json!({ "sessionId": path.session_id.to_string() })),
+                    details: Some(serde_json::json!({ "session_id": path.session_id.to_string() })),
                     correlation_id: None,
                     ip_address: None,
                 },

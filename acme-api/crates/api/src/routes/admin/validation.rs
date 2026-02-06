@@ -22,7 +22,7 @@ use crate::state::{AdminUser, AppState};
 // ============================================================================
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ValidateFieldRequest {
     /// Entity type: "category", "project", "label"
     pub entity: String,
@@ -37,7 +37,7 @@ pub struct ValidateFieldRequest {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ValidationResponse {
     pub valid: bool,
     pub message: Option<String>,
@@ -57,7 +57,7 @@ pub struct ValidationResponse {
 ///   "entity": "category",
 ///   "field": "slug",
 ///   "value": "my-category",
-///   "excludeId": "optional-uuid-for-edits"
+///   "exclude_id": "optional-uuid-for-edits"
 /// }
 /// ```
 ///
