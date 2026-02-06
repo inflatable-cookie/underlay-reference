@@ -3,16 +3,16 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use underlay_core::{AppError, ListResponse, SingleResponse, Uuid};
+use underlay_core::{ListResponse, SingleResponse, Uuid};
+use underlay_http::ApiError;
 
 use acme_db::infra::{self, CapturedEmailFilters};
 
-use crate::error::error_response;
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -111,7 +111,7 @@ pub async fn list_captured_emails(
     _user: AdminUser,
     State(state): State<AppState>,
     Query(query): Query<ListCapturedEmailsQuery>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     let parse_datetime = |value: Option<String>, label: &str| {
@@ -119,12 +119,7 @@ pub async fn list_captured_emails(
             .map(|raw| {
                 DateTime::parse_from_rfc3339(&raw)
                     .map(|dt| dt.with_timezone(&Utc))
-                    .map_err(|_| {
-                        AppError::new(
-                            "captured_email_invalid_filter",
-                            format!("Invalid {label} date format"),
-                        )
-                    })
+                    .map_err(|_| format!("Invalid {label} date format"))
             })
             .transpose()
     };
@@ -132,14 +127,14 @@ pub async fn list_captured_emails(
     let since = match parse_datetime(query.since, "since") {
         Ok(value) => value,
         Err(err) => {
-            return error_response(StatusCode::BAD_REQUEST, err);
+            return Err(ApiError::bad_request("captured_email_invalid_filter", err));
         }
     };
 
     let until = match parse_datetime(query.until, "until") {
         Ok(value) => value,
         Err(err) => {
-            return error_response(StatusCode::BAD_REQUEST, err);
+            return Err(ApiError::bad_request("captured_email_invalid_filter", err));
         }
     };
 
@@ -156,14 +151,16 @@ pub async fn list_captured_emails(
         Ok(rows) => {
             let data: Vec<CapturedEmailSummaryDto> =
                 rows.into_iter().map(CapturedEmailSummaryDto::from).collect();
-            (StatusCode::OK, Json(ListResponse { data })).into_response()
+            Ok((StatusCode::OK, Json(ListResponse { data })).into_response())
         }
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new(
-                "captured_email_query_failed",
-                format!("Failed to list captured emails: {}", e),
-            ),
+        Err(e) => Err(
+            ApiError::internal("captured_email_query_failed", "Failed to list captured emails")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "captured_emails.list",
+                    "limit": query.limit.unwrap_or(50).clamp(1, 200),
+                    "offset": query.offset.unwrap_or(0).max(0)
+                })),
         ),
     }
 }
@@ -175,14 +172,14 @@ pub async fn get_captured_email(
     _user: AdminUser,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let uuid = match Uuid::parse_str(&id) {
         Ok(id) => id.into_inner(),
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("captured_email_invalid_id", "Invalid captured email id"),
-            )
+            return Err(ApiError::bad_request(
+                "captured_email_invalid_id",
+                "Invalid captured email id",
+            ))
         }
     };
 
@@ -191,18 +188,19 @@ pub async fn get_captured_email(
     match infra::get_captured_email_by_id(pool, uuid).await {
         Ok(Some(row)) => {
             let dto = CapturedEmailDetailDto::from(row);
-            (StatusCode::OK, Json(SingleResponse { data: dto })).into_response()
+            Ok((StatusCode::OK, Json(SingleResponse { data: dto })).into_response())
         }
-        Ok(None) => error_response(
-            StatusCode::NOT_FOUND,
-            AppError::new("captured_email_not_found", "Captured email not found"),
-        ),
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new(
-                "captured_email_query_failed",
-                format!("Failed to get captured email: {}", e),
-            ),
+        Ok(None) => Err(ApiError::not_found(
+            "captured_email_not_found",
+            "Captured email not found",
+        )),
+        Err(e) => Err(
+            ApiError::internal("captured_email_query_failed", "Failed to get captured email")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "captured_emails.get",
+                    "captured_email_id": uuid
+                })),
         ),
     }
 }
@@ -214,31 +212,35 @@ pub async fn delete_captured_email(
     _user: AdminUser,
     State(state): State<AppState>,
     Path(id): Path<String>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let uuid = match Uuid::parse_str(&id) {
         Ok(id) => id.into_inner(),
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("captured_email_invalid_id", "Invalid captured email id"),
-            )
+            return Err(ApiError::bad_request(
+                "captured_email_invalid_id",
+                "Invalid captured email id",
+            ))
         }
     };
 
     let pool = state.local_auth.pool();
 
     match infra::delete_captured_email(pool, uuid).await {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
-        Ok(false) => error_response(
-            StatusCode::NOT_FOUND,
-            AppError::new("captured_email_not_found", "Captured email not found"),
-        ),
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new(
+        Ok(true) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Ok(false) => Err(ApiError::not_found(
+            "captured_email_not_found",
+            "Captured email not found",
+        )),
+        Err(e) => Err(
+            ApiError::internal(
                 "captured_email_delete_failed",
-                format!("Failed to delete captured email: {}", e),
-            ),
+                "Failed to delete captured email",
+            )
+            .with_cause(&e)
+            .with_context(serde_json::json!({
+                "operation": "captured_emails.delete",
+                "captured_email_id": uuid
+            })),
         ),
     }
 }
