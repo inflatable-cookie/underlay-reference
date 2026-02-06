@@ -5,15 +5,14 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use underlay_core::{AppError, SingleResponse, Uuid};
-use underlay_http::{count_error_logs, get_error_log_by_id, list_error_logs, ErrorLogFilters};
+use underlay_core::{SingleResponse, Uuid};
+use underlay_http::{count_error_logs, get_error_log_by_id, list_error_logs, ApiError, ErrorLogFilters};
 
-use crate::error::error_response;
 use crate::state::{AdminUser, AppState, DB_POOL};
 
 // ============================================================================
@@ -123,12 +122,13 @@ pub async fn list_error_logs_handler(
     _user: AdminUser,
     State(_state): State<AppState>,
     Query(query): Query<ListErrorLogsQuery>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let Some(pool) = DB_POOL.get() else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Database not available"),
-        );
+            "service_unavailable",
+            "Database not available",
+        ));
     };
 
     let limit = query.limit.unwrap_or(50);
@@ -149,9 +149,15 @@ pub async fn list_error_logs_handler(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to count error logs: {}", e);
-            return error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("error_log_count_failed", "Failed to count error logs"),
+            return Err(
+                ApiError::internal("error_log_count_failed", "Failed to count error logs")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "error_logs.count",
+                        "status_code": query.status_code,
+                        "limit": limit,
+                        "offset": offset
+                    })),
             );
         }
     };
@@ -162,18 +168,24 @@ pub async fn list_error_logs_handler(
             let items: Vec<ErrorLogSummaryDto> = logs.into_iter().map(Into::into).collect();
             let has_more = (offset + items.len() as i64) < total;
 
-            Json(PaginatedErrorLogsResponse {
+            Ok(Json(PaginatedErrorLogsResponse {
                 data: items,
                 total,
                 has_more,
             })
-            .into_response()
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list error logs: {}", e);
-            error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("error_log_list_failed", "Failed to list error logs"),
+            Err(
+                ApiError::internal("error_log_list_failed", "Failed to list error logs")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "error_logs.list",
+                        "status_code": query.status_code,
+                        "limit": limit,
+                        "offset": offset
+                    })),
             )
         }
     }
@@ -186,28 +198,33 @@ pub async fn get_error_log_handler(
     _user: AdminUser,
     State(_state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let Some(pool) = DB_POOL.get() else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Database not available"),
-        );
+            "service_unavailable",
+            "Database not available",
+        ));
     };
 
     match get_error_log_by_id(pool, id.into_inner()).await {
         Ok(Some(log)) => {
             let dto: ErrorLogDetailDto = log.into();
-            Json(SingleResponse { data: dto }).into_response()
+            Ok(Json(SingleResponse { data: dto }).into_response())
         }
-        Ok(None) => error_response(
-            StatusCode::NOT_FOUND,
-            AppError::new("not_found", "Error log entry not found"),
-        ),
+        Ok(None) => Err(ApiError::not_found(
+            "not_found",
+            "Error log entry not found",
+        )),
         Err(e) => {
             tracing::error!("Failed to get error log: {}", e);
-            error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("error_log_get_failed", "Failed to get error log"),
+            Err(
+                ApiError::internal("error_log_get_failed", "Failed to get error log")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "error_logs.get",
+                        "error_log_id": id
+                    })),
             )
         }
     }
@@ -219,12 +236,13 @@ pub async fn get_error_log_handler(
 pub async fn get_error_log_stats(
     _user: AdminUser,
     State(_state): State<AppState>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let Some(pool) = DB_POOL.get() else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Database not available"),
-        );
+            "service_unavailable",
+            "Database not available",
+        ));
     };
 
     // Get counts for the last 24 hours
@@ -273,12 +291,12 @@ pub async fn get_error_log_stats(
         client_errors_last_24h: i64,
     }
 
-    Json(SingleResponse {
+    Ok(Json(SingleResponse {
         data: ErrorLogStats {
             total_last_24h: total_24h,
             server_errors_last_24h: server_errors_24h,
             client_errors_last_24h: client_errors_24h,
         },
     })
-    .into_response()
+    .into_response())
 }

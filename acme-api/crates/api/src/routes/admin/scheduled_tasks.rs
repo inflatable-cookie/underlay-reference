@@ -5,15 +5,15 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use underlay_core::{AppError, ListResponse, SingleResponse, Uuid};
+use underlay_core::{ListResponse, SingleResponse, Uuid};
+use underlay_http::ApiError;
 use underlay_jobs::JobConfig;
 
-use crate::error::error_response;
 use crate::state::{AdminUser, AppState, DB_POOL};
 
 // ============================================================================
@@ -128,14 +128,15 @@ pub struct ListScheduledTasksQuery {
 pub async fn list_scheduled_tasks(
     _user: AdminUser,
     Query(query): Query<ListScheduledTasksQuery>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = match DB_POOL.get() {
         Some(pool) => pool,
         None => {
-            return error_response(
+            return Err(ApiError::new(
                 StatusCode::SERVICE_UNAVAILABLE,
-                AppError::new("service_unavailable", "Scheduled tasks not available"),
-            )
+                "service_unavailable",
+                "Scheduled tasks not available",
+            ))
         }
     };
 
@@ -161,11 +162,17 @@ pub async fn list_scheduled_tasks(
         Ok(rows) => {
             let data: Vec<ScheduledTaskSummaryDto> =
                 rows.into_iter().map(ScheduledTaskSummaryDto::from_row).collect();
-            (StatusCode::OK, Json(ListResponse { data })).into_response()
+            Ok((StatusCode::OK, Json(ListResponse { data })).into_response())
         }
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new("scheduled_tasks_list_failed", format!("Failed to list tasks: {}", e)),
+        Err(e) => Err(
+            ApiError::internal("scheduled_tasks_list_failed", "Failed to list tasks")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "scheduled_tasks.list",
+                    "enabled": query.enabled,
+                    "limit": limit,
+                    "offset": offset
+                })),
         ),
     }
 }
@@ -176,24 +183,22 @@ pub async fn list_scheduled_tasks(
 pub async fn get_scheduled_task(
     _user: AdminUser,
     Path(task_id): Path<String>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let uuid = match Uuid::parse_str(&task_id) {
         Ok(id) => id.into_inner(),
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("invalid_id", "Invalid scheduled task id"),
-            )
+            return Err(ApiError::bad_request("invalid_id", "Invalid scheduled task id"))
         }
     };
 
     let pool = match DB_POOL.get() {
         Some(pool) => pool,
         None => {
-            return error_response(
+            return Err(ApiError::new(
                 StatusCode::SERVICE_UNAVAILABLE,
-                AppError::new("service_unavailable", "Scheduled tasks not available"),
-            )
+                "service_unavailable",
+                "Scheduled tasks not available",
+            ))
         }
     };
 
@@ -211,15 +216,16 @@ pub async fn get_scheduled_task(
     match row {
         Ok(Some(row)) => {
             let dto = ScheduledTaskDetailDto::from_row(row);
-            (StatusCode::OK, Json(SingleResponse { data: dto })).into_response()
+            Ok((StatusCode::OK, Json(SingleResponse { data: dto })).into_response())
         }
-        Ok(None) => error_response(
-            StatusCode::NOT_FOUND,
-            AppError::new("not_found", "Scheduled task not found"),
-        ),
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new("scheduled_task_get_failed", format!("Failed to get task: {}", e)),
+        Ok(None) => Err(ApiError::not_found("not_found", "Scheduled task not found")),
+        Err(e) => Err(
+            ApiError::internal("scheduled_task_get_failed", "Failed to get task")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "scheduled_tasks.get",
+                    "task_id": uuid
+                })),
         ),
     }
 }
@@ -237,24 +243,22 @@ pub async fn toggle_scheduled_task(
     _user: AdminUser,
     Path(task_id): Path<String>,
     Json(payload): Json<ToggleScheduledTaskRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let uuid = match Uuid::parse_str(&task_id) {
         Ok(id) => id.into_inner(),
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("invalid_id", "Invalid scheduled task id"),
-            )
+            return Err(ApiError::bad_request("invalid_id", "Invalid scheduled task id"))
         }
     };
 
     let pool = match DB_POOL.get() {
         Some(pool) => pool,
         None => {
-            return error_response(
+            return Err(ApiError::new(
                 StatusCode::SERVICE_UNAVAILABLE,
-                AppError::new("service_unavailable", "Scheduled tasks not available"),
-            )
+                "service_unavailable",
+                "Scheduled tasks not available",
+            ))
         }
     };
 
@@ -271,14 +275,16 @@ pub async fn toggle_scheduled_task(
     .await;
 
     match result {
-        Ok(result) if result.rows_affected() > 0 => StatusCode::NO_CONTENT.into_response(),
-        Ok(_) => error_response(
-            StatusCode::NOT_FOUND,
-            AppError::new("not_found", "Scheduled task not found"),
-        ),
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new("scheduled_task_toggle_failed", format!("Failed to toggle task: {}", e)),
+        Ok(result) if result.rows_affected() > 0 => Ok(StatusCode::NO_CONTENT.into_response()),
+        Ok(_) => Err(ApiError::not_found("not_found", "Scheduled task not found")),
+        Err(e) => Err(
+            ApiError::internal("scheduled_task_toggle_failed", "Failed to toggle task")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "scheduled_tasks.toggle",
+                    "task_id": uuid,
+                    "enabled": payload.enabled
+                })),
         ),
     }
 }
@@ -296,31 +302,30 @@ pub async fn trigger_scheduled_task(
     _user: AdminUser,
     State(state): State<AppState>,
     Path(task_id): Path<String>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let uuid = match Uuid::parse_str(&task_id) {
         Ok(id) => id.into_inner(),
         Err(_) => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new("invalid_id", "Invalid scheduled task id"),
-            )
+            return Err(ApiError::bad_request("invalid_id", "Invalid scheduled task id"))
         }
     };
 
     let Some(ref job_repo) = state.job_repository else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Job system not available"),
-        );
+            "service_unavailable",
+            "Job system not available",
+        ));
     };
 
     let pool = match DB_POOL.get() {
         Some(pool) => pool,
         None => {
-            return error_response(
+            return Err(ApiError::new(
                 StatusCode::SERVICE_UNAVAILABLE,
-                AppError::new("service_unavailable", "Scheduled tasks not available"),
-            )
+                "service_unavailable",
+                "Scheduled tasks not available",
+            ))
         }
     };
 
@@ -338,15 +343,16 @@ pub async fn trigger_scheduled_task(
     let task = match row {
         Ok(Some(task)) => task,
         Ok(None) => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                AppError::new("not_found", "Scheduled task not found"),
-            );
+            return Err(ApiError::not_found("not_found", "Scheduled task not found"));
         }
         Err(e) => {
-            return error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("scheduled_task_get_failed", format!("Failed to get task: {}", e)),
+            return Err(
+                ApiError::internal("scheduled_task_get_failed", "Failed to get task")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "scheduled_tasks.trigger",
+                        "task_id": uuid
+                    })),
             );
         }
     };
@@ -366,11 +372,16 @@ pub async fn trigger_scheduled_task(
                     job_id: job_id.to_string(),
                 },
             };
-            (StatusCode::OK, Json(body)).into_response()
+            Ok((StatusCode::OK, Json(body)).into_response())
         }
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new("scheduled_task_trigger_failed", format!("Failed to trigger task: {}", e)),
+        Err(e) => Err(
+            ApiError::internal("scheduled_task_trigger_failed", "Failed to trigger task")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "scheduled_tasks.trigger",
+                    "task_id": uuid,
+                    "job_type": task.job_type
+                })),
         ),
     }
 }

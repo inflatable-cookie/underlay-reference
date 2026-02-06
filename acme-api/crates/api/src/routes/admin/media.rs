@@ -594,32 +594,22 @@ pub async fn initiate_upload(
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
     Json(req): Json<InitiateUploadRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "validation.failed", "message": e.to_string() } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
 
     // Check declared file size before initiating upload
     if req.content_length > state.config.media.max_file_size_bytes {
-        return (
+        return Err(ApiError::new(
             StatusCode::PAYLOAD_TOO_LARGE,
-            Json(json!({
-                "ok": false,
-                "error": {
-                    "code": "media.file_too_large",
-                    "message": format!(
-                        "File size ({:.1} MB) exceeds maximum allowed size ({})",
-                        req.content_length as f64 / (1024.0 * 1024.0),
-                        state.config.media.max_file_size_display()
-                    )
-                }
-            })),
-        )
-            .into_response();
+            "media.file_too_large",
+            format!(
+                "File size ({:.1} MB) exceeds maximum allowed size ({})",
+                req.content_length as f64 / (1024.0 * 1024.0),
+                state.config.media.max_file_size_display()
+            ),
+        ));
     }
 
     let pool = state.local_auth.pool();
@@ -627,10 +617,17 @@ pub async fn initiate_upload(
     // Verify media exists
     let media_row = match media::get_media_admin(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.get_failed", "Failed to initiate upload")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.initiate_upload",
+                        "media_id": media_id
+                    })),
+            );
         }
     };
 
@@ -647,7 +644,15 @@ pub async fn initiate_upload(
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Failed to create version: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.version_create_failed", "Failed to initiate upload")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.initiate_upload",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
@@ -667,15 +672,23 @@ pub async fn initiate_upload(
             tracing::error!("Failed to initiate upload: {}", e);
             // Mark version as failed
             let _ = media::fail_media_version(pool, version_id).await;
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.upload_initiate_failed", "Failed to initiate upload")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.initiate_upload",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
-    Json(InitiateUploadResponse {
+    Ok(Json(InitiateUploadResponse {
         version_id: version.id,
         upload_plan,
     })
-    .into_response()
+    .into_response())
 }
 
 /// Finalise an upload.
@@ -686,13 +699,9 @@ pub async fn finalise_upload(
     State(state): State<AppState>,
     Path((media_id, version_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<FinaliseUploadRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "validation.failed", "message": e.to_string() } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
 
     let pool = state.local_auth.pool();
@@ -700,35 +709,44 @@ pub async fn finalise_upload(
     // Verify version exists and belongs to this media
     let version = match media::get_media_version(pool, version_id).await {
         Ok(Some(v)) if v.media_id == media_id => v,
-        Ok(Some(_)) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({ "ok": false, "error": { "code": "version.wrong_media", "message": "Version does not belong to this media" } })),
-            )
-                .into_response()
-        }
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(Some(_)) => return Err(ApiError::bad_request("version.wrong_media", "Version does not belong to this media")),
+        Ok(None) => return Err(ApiError::not_found("version.not_found", "Version not found")),
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.version_get_failed", "Failed to finalise upload")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.finalise_upload",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
     if version.state != "uploading" {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "version.not_uploading", "message": "Version is not in uploading state" } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "version.not_uploading",
+            "Version is not in uploading state",
+        ));
     }
 
     // Get media for filename
     let media_row = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.get_failed", "Failed to finalise upload")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.finalise_upload",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
@@ -746,7 +764,15 @@ pub async fn finalise_upload(
         Err(e) => {
             tracing::error!("Failed to finalise upload: {}", e);
             let _ = media::fail_media_version(pool, version_id).await;
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.upload_finalise_failed", "Failed to finalise upload")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.finalise_upload",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
@@ -760,21 +786,15 @@ pub async fn finalise_upload(
         // Clean up: delete the uploaded blob and fail the version
         let _ = state.blob_adapter.delete(&object_key).await;
         let _ = media::fail_media_version(pool, version_id).await;
-        return (
+        return Err(ApiError::new(
             StatusCode::PAYLOAD_TOO_LARGE,
-            Json(json!({
-                "ok": false,
-                "error": {
-                    "code": "media.file_too_large",
-                    "message": format!(
-                        "File size ({:.1} MB) exceeds maximum allowed size ({})",
-                        stored.size as f64 / (1024.0 * 1024.0),
-                        state.config.media.max_file_size_display()
-                    )
-                }
-            })),
-        )
-            .into_response();
+            "media.file_too_large",
+            format!(
+                "File size ({:.1} MB) exceeds maximum allowed size ({})",
+                stored.size as f64 / (1024.0 * 1024.0),
+                state.config.media.max_file_size_display()
+            ),
+        ));
     }
 
     // Magic byte detection: verify file content matches declared MIME type
@@ -830,21 +850,15 @@ pub async fn finalise_upload(
                 // Clean up: delete the uploaded blob and fail the version
                 let _ = state.blob_adapter.delete(&object_key).await;
                 let _ = media::fail_media_version(pool, version_id).await;
-                return (
+                return Err(ApiError::new(
                     StatusCode::UNPROCESSABLE_ENTITY,
-                    Json(json!({
-                        "ok": false,
-                        "error": {
-                            "code": "media.content_type_mismatch",
-                            "message": format!(
-                                "File content does not match declared type. Detected: {}, Declared: {}",
-                                detected_mime,
-                                declared_mime
-                            )
-                        }
-                    })),
-                )
-                    .into_response();
+                    "media.content_type_mismatch",
+                    format!(
+                        "File content does not match declared type. Detected: {}, Declared: {}",
+                        detected_mime,
+                        declared_mime
+                    ),
+                ));
             }
         }
         // If infer returns None, allow the upload (unknown format)
@@ -866,14 +880,30 @@ pub async fn finalise_upload(
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Failed to finalise version: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.version_finalise_failed", "Failed to finalise upload")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.finalise_upload",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
     // Set as current version
     if let Err(e) = media::set_current_version(pool, media_id, version_id).await {
         tracing::error!("Failed to set current version: {}", e);
-        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        return Err(
+            ApiError::internal("media.set_current_version_failed", "Failed to finalise upload")
+                .with_cause(&e)
+                .with_context(json!({
+                    "operation": "media.finalise_upload",
+                    "media_id": media_id,
+                    "version_id": version_id
+                })),
+        );
     }
 
     // Enqueue thumbnail generation job for images
@@ -906,10 +936,18 @@ pub async fn finalise_upload(
     // Get updated media
     let updated_media = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
         Err(e) => {
             tracing::error!("Failed to get updated media: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.get_failed", "Failed to finalise upload")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.finalise_upload",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
@@ -921,11 +959,11 @@ pub async fn finalise_upload(
         MediaDetailDto::from_media(updated_media, Some(finalised_version.clone()), usage_count);
     let version_dto = MediaVersionDto::from(finalised_version);
 
-    Json(FinaliseUploadResponse {
+    Ok(Json(FinaliseUploadResponse {
         media: detail,
         version: version_dto,
     })
-    .into_response()
+    .into_response())
 }
 
 // ============================================================================
@@ -939,7 +977,7 @@ pub async fn list_versions(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::list_media_versions(pool, media_id).await {
@@ -956,11 +994,18 @@ pub async fn list_versions(
                 );
                 items.push(dto);
             }
-            Json(json!({ "data": items })).into_response()
+            Ok(Json(json!({ "data": items })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list versions: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.list_versions_failed", "Failed to list versions")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.list_versions",
+                        "media_id": media_id
+                    })),
+            )
         }
     }
 }
@@ -972,57 +1017,70 @@ pub async fn activate_version(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path((media_id, version_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     // Verify version exists, belongs to media, and is ready
     let version = match media::get_media_version(pool, version_id).await {
         Ok(Some(v)) if v.media_id == media_id => v,
-        Ok(Some(_)) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({ "ok": false, "error": { "code": "version.wrong_media", "message": "Version does not belong to this media" } })),
-            )
-                .into_response()
-        }
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(Some(_)) => return Err(ApiError::bad_request("version.wrong_media", "Version does not belong to this media")),
+        Ok(None) => return Err(ApiError::not_found("version.not_found", "Version not found")),
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.version_get_failed", "Failed to activate version")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.activate_version",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
     if version.state != "ready" {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "version.not_ready", "message": "Version is not ready" } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request("version.not_ready", "Version is not ready"));
     }
 
     // Check if already current
     let media_row = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.get_failed", "Failed to activate version")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.activate_version",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
     if media_row.current_version_id == Some(version_id) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "version.already_current", "message": "Version is already the current version" } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "version.already_current",
+            "Version is already the current version",
+        ));
     }
 
     match media::set_current_version(pool, media_id, version_id).await {
-        Ok(()) => Json(json!({ "ok": true })).into_response(),
+        Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to set current version: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.set_current_version_failed", "Failed to activate version")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.activate_version",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            )
         }
     }
 }
@@ -1034,42 +1092,51 @@ pub async fn delete_version(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path((media_id, version_id)): Path<(Uuid, Uuid)>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     // Verify version exists and belongs to media
     let version = match media::get_media_version(pool, version_id).await {
         Ok(Some(v)) if v.media_id == media_id => v,
-        Ok(Some(_)) => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({ "ok": false, "error": { "code": "version.wrong_media", "message": "Version does not belong to this media" } })),
-            )
-                .into_response()
-        }
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(Some(_)) => return Err(ApiError::bad_request("version.wrong_media", "Version does not belong to this media")),
+        Ok(None) => return Err(ApiError::not_found("version.not_found", "Version not found")),
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.version_get_failed", "Failed to delete version")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.delete_version",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
     // Can't delete current version
     let media_row = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            return Err(
+                ApiError::internal("media.get_failed", "Failed to delete version")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.delete_version",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            );
         }
     };
 
     if media_row.current_version_id == Some(version_id) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "ok": false, "error": { "code": "version.is_current", "message": "Cannot delete the current version" } })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "version.is_current",
+            "Cannot delete the current version",
+        ));
     }
 
     // Delete blob if exists
@@ -1080,10 +1147,18 @@ pub async fn delete_version(
     }
 
     match media::delete_media_version(pool, version_id).await {
-        Ok(()) => Json(json!({ "ok": true })).into_response(),
+        Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to delete version: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.delete_version_failed", "Failed to delete version")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.delete_version",
+                        "media_id": media_id,
+                        "version_id": version_id
+                    })),
+            )
         }
     }
 }
@@ -1099,17 +1174,24 @@ pub async fn list_usage(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(media_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::list_media_usages(pool, media_id).await {
         Ok(rows) => {
             let items: Vec<MediaUsageDto> = rows.into_iter().map(Into::into).collect();
-            Json(json!({ "data": items })).into_response()
+            Ok(Json(json!({ "data": items })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list usage: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.list_usage_failed", "Failed to list media usage")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.list_usage",
+                        "media_id": media_id
+                    })),
+            )
         }
     }
 }
@@ -1132,19 +1214,12 @@ pub async fn batch_delete_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<BatchDeleteMediaRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if req.ids.is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({
-                "ok": false,
-                "error": {
-                    "code": "validation.empty_ids",
-                    "message": "At least one ID is required"
-                }
-            })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.empty_ids",
+            "At least one ID is required",
+        ));
     }
 
     let pool = state.local_auth.pool();
@@ -1168,11 +1243,18 @@ pub async fn batch_delete_media(
             )
             .await;
 
-            Json(json!({ "ok": true, "deleted": count })).into_response()
+            Ok(Json(json!({ "ok": true, "deleted": count })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to batch delete media: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("media.batch_delete_failed", "Failed to batch delete media")
+                    .with_cause(&e)
+                    .with_context(json!({
+                        "operation": "media.batch_delete",
+                        "count": req.ids.len()
+                    })),
+            )
         }
     }
 }

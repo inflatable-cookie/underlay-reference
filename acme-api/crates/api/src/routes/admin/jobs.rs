@@ -5,15 +5,15 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use underlay_core::{AppError, ListResponse, SingleResponse, Uuid};
+use underlay_core::{ListResponse, SingleResponse, Uuid};
+use underlay_http::ApiError;
 use underlay_jobs::{Job, JobFilters, JobStatus};
 
-use crate::error::error_response;
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -131,12 +131,13 @@ pub async fn list_jobs(
     _user: AdminUser,
     State(state): State<AppState>,
     Query(query): Query<ListJobsQuery>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let Some(ref job_repo) = state.job_repository else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Job system not available"),
-        );
+            "service_unavailable",
+            "Job system not available",
+        ));
     };
 
     let status = query.status.as_ref().and_then(|s| match s.as_str() {
@@ -158,11 +159,16 @@ pub async fn list_jobs(
     match job_repo.list(filters).await {
         Ok(jobs) => {
             let items: Vec<JobSummaryDto> = jobs.iter().map(JobSummaryDto::from_job).collect();
-            Json(ListResponse { data: items }).into_response()
+            Ok(Json(ListResponse { data: items }).into_response())
         }
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new("job_list_failed", format!("Failed to list jobs: {}", e)),
+        Err(e) => Err(
+            ApiError::internal("job_list_failed", "Failed to list jobs")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "jobs.list",
+                    "status": query.status,
+                    "job_type": query.job_type
+                })),
         ),
     }
 }
@@ -174,26 +180,28 @@ pub async fn get_job(
     _user: AdminUser,
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let Some(ref job_repo) = state.job_repository else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Job system not available"),
-        );
+            "service_unavailable",
+            "Job system not available",
+        ));
     };
 
     match job_repo.get(job_id).await {
         Ok(Some(job)) => {
             let dto = JobDetailDto::from_job(job);
-            Json(SingleResponse { data: dto }).into_response()
+            Ok(Json(SingleResponse { data: dto }).into_response())
         }
-        Ok(None) => error_response(
-            StatusCode::NOT_FOUND,
-            AppError::new("not_found", "Job not found"),
-        ),
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new("job_get_failed", format!("Failed to get job: {}", e)),
+        Ok(None) => Err(ApiError::not_found("not_found", "Job not found")),
+        Err(e) => Err(
+            ApiError::internal("job_get_failed", "Failed to get job")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "jobs.get",
+                    "job_id": job_id
+                })),
         ),
     }
 }
@@ -205,27 +213,27 @@ pub async fn cancel_job(
     _user: AdminUser,
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let Some(ref job_repo) = state.job_repository else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Job system not available"),
-        );
+            "service_unavailable",
+            "Job system not available",
+        ));
     };
 
     // Get the job first to check its status
     let job = match job_repo.get(job_id).await {
         Ok(Some(job)) => job,
-        Ok(None) => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                AppError::new("not_found", "Job not found"),
-            )
-        }
+        Ok(None) => return Err(ApiError::not_found("not_found", "Job not found")),
         Err(e) => {
-            return error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("job_get_failed", format!("Failed to get job: {}", e)),
+            return Err(
+                ApiError::internal("job_get_failed", "Failed to get job")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "jobs.cancel.get",
+                        "job_id": job_id
+                    })),
             )
         }
     };
@@ -234,13 +242,10 @@ pub async fn cancel_job(
     match job.status {
         JobStatus::Pending | JobStatus::Running => {}
         _ => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new(
-                    "invalid_status",
-                    format!("Cannot cancel job with status {}", job.status.as_str()),
-                ),
-            )
+            return Err(ApiError::bad_request(
+                "invalid_status",
+                format!("Cannot cancel job with status {}", job.status.as_str()),
+            ))
         }
     }
 
@@ -250,24 +255,26 @@ pub async fn cancel_job(
             match job_repo.get(job_id).await {
                 Ok(Some(job)) => {
                     let dto = JobDetailDto::from_job(job);
-                    Json(SingleResponse { data: dto }).into_response()
+                    Ok(Json(SingleResponse { data: dto }).into_response())
                 }
-                Ok(None) => error_response(
-                    StatusCode::NOT_FOUND,
-                    AppError::new("not_found", "Job not found after cancel"),
-                ),
-                Err(e) => error_response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    AppError::new(
-                        "job_get_failed",
-                        format!("Failed to get job after cancel: {}", e),
-                    ),
+                Ok(None) => Err(ApiError::not_found("not_found", "Job not found after cancel")),
+                Err(e) => Err(
+                    ApiError::internal("job_get_failed", "Failed to get job after cancel")
+                        .with_cause(&e)
+                        .with_context(serde_json::json!({
+                            "operation": "jobs.cancel.get_after",
+                            "job_id": job_id
+                        })),
                 ),
             }
         }
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new("job_cancel_failed", format!("Failed to cancel job: {}", e)),
+        Err(e) => Err(
+            ApiError::internal("job_cancel_failed", "Failed to cancel job")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "jobs.cancel",
+                    "job_id": job_id
+                })),
         ),
     }
 }
@@ -279,27 +286,27 @@ pub async fn retry_job(
     _user: AdminUser,
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let Some(ref job_repo) = state.job_repository else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Job system not available"),
-        );
+            "service_unavailable",
+            "Job system not available",
+        ));
     };
 
     // Get the original job
     let job = match job_repo.get(job_id).await {
         Ok(Some(job)) => job,
-        Ok(None) => {
-            return error_response(
-                StatusCode::NOT_FOUND,
-                AppError::new("not_found", "Job not found"),
-            )
-        }
+        Ok(None) => return Err(ApiError::not_found("not_found", "Job not found")),
         Err(e) => {
-            return error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("job_get_failed", format!("Failed to get job: {}", e)),
+            return Err(
+                ApiError::internal("job_get_failed", "Failed to get job")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "jobs.retry.get",
+                        "job_id": job_id
+                    })),
             )
         }
     };
@@ -308,13 +315,10 @@ pub async fn retry_job(
     match job.status {
         JobStatus::Failed | JobStatus::Cancelled => {}
         _ => {
-            return error_response(
-                StatusCode::BAD_REQUEST,
-                AppError::new(
-                    "invalid_status",
-                    format!("Cannot retry job with status {}", job.status.as_str()),
-                ),
-            )
+            return Err(ApiError::bad_request(
+                "invalid_status",
+                format!("Cannot retry job with status {}", job.status.as_str()),
+            ))
         }
     }
 
@@ -333,24 +337,26 @@ pub async fn retry_job(
             match job_repo.get(new_job_id).await {
                 Ok(Some(new_job)) => {
                     let dto = JobDetailDto::from_job(new_job);
-                    (StatusCode::CREATED, Json(SingleResponse { data: dto })).into_response()
+                    Ok((StatusCode::CREATED, Json(SingleResponse { data: dto })).into_response())
                 }
-                Ok(None) => error_response(
-                    StatusCode::NOT_FOUND,
-                    AppError::new("not_found", "New job not found after create"),
-                ),
-                Err(e) => error_response(
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    AppError::new("job_get_failed", format!("Failed to get new job: {}", e)),
+                Ok(None) => Err(ApiError::not_found("not_found", "New job not found after create")),
+                Err(e) => Err(
+                    ApiError::internal("job_get_failed", "Failed to get new job")
+                        .with_cause(&e)
+                        .with_context(serde_json::json!({
+                            "operation": "jobs.retry.get_new",
+                            "job_id": new_job_id
+                        })),
                 ),
             }
         }
-        Err(e) => error_response(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::new(
-                "job_create_failed",
-                format!("Failed to create retry job: {}", e),
-            ),
+        Err(e) => Err(
+            ApiError::internal("job_create_failed", "Failed to create retry job")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "jobs.retry.create",
+                    "job_id": job_id
+                })),
         ),
     }
 }
@@ -358,12 +364,16 @@ pub async fn retry_job(
 /// Get job statistics for the dashboard.
 ///
 /// GET /v1/admin/jobs/stats
-pub async fn get_job_stats(_user: AdminUser, State(state): State<AppState>) -> impl IntoResponse {
+pub async fn get_job_stats(
+    _user: AdminUser,
+    State(state): State<AppState>,
+) -> Result<Response, ApiError> {
     let Some(ref job_repo) = state.job_repository else {
-        return error_response(
+        return Err(ApiError::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            AppError::new("service_unavailable", "Job system not available"),
-        );
+            "service_unavailable",
+            "Job system not available",
+        ));
     };
 
     // Get counts for each status
@@ -416,7 +426,7 @@ pub async fn get_job_stats(_user: AdminUser, State(state): State<AppState>) -> i
         succeeded_recent: i64,
     }
 
-    Json(SingleResponse {
+    Ok(Json(SingleResponse {
         data: JobStats {
             pending,
             running,
@@ -424,5 +434,5 @@ pub async fn get_job_stats(_user: AdminUser, State(state): State<AppState>) -> i
             succeeded_recent,
         },
     })
-    .into_response()
+    .into_response())
 }
