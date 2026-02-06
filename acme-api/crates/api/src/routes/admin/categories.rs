@@ -9,12 +9,11 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use serde::{Deserialize, Serialize};
-use underlay_core::AppError;
-use underlay_http::{error_response, query::QueryParams};
+use underlay_http::{query::QueryParams, ApiError};
 
 use acme_core::Uuid;
 use acme_db::{activity, categories};
@@ -125,20 +124,23 @@ pub async fn list_categories(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Query(query): Query<QueryParams>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match categories::list_categories_with_counts(pool, &query).await {
         Ok(cats) => {
             let response: Vec<CategoryWithCountsResponse> =
                 cats.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list categories: {}", e);
-            error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("categories.list_failed", format!("Failed to list categories: {}", e)),
+            Err(
+                ApiError::internal("categories.list_failed", "Failed to list categories")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "categories.list"
+                    })),
             )
         }
     }
@@ -149,18 +151,33 @@ pub async fn get_category(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(category_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let category_id = category_id.into_inner();
 
-    match categories::get_category(pool, category_id.into_inner()).await {
+    match categories::get_category(pool, category_id).await {
         Ok(Some(category)) => {
             let response: CategoryResponse = category.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("categories.not_found", "Category not found").with_context(
+                serde_json::json!({
+                    "operation": "categories.get",
+                    "category_id": category_id
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to get category: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("categories.get_failed", "Failed to get category")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "categories.get",
+                        "category_id": category_id
+                    })),
+            )
         }
     }
 }
@@ -170,7 +187,7 @@ pub async fn create_category(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<CreateCategoryRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let category_id = Uuid::new_v7().into_inner();
 
@@ -201,11 +218,11 @@ pub async fn create_category(
             .await;
 
             let response: CategoryResponse = category.into();
-            (
+            Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
             )
-                .into_response()
+                .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to create category: {}", e);
@@ -213,21 +230,27 @@ pub async fn create_category(
             // Check for unique constraint violation
             if let Some(db_err) = e.as_database_error() {
                 if db_err.code().as_deref() == Some("23505") {
-                    return (
-                        StatusCode::CONFLICT,
-                        Json(serde_json::json!({
-                            "ok": false,
-                            "error": {
-                                "code": "category.slug_exists",
-                                "message": "A category with this slug already exists"
-                            }
+                    return Err(
+                        ApiError::conflict(
+                            "category.slug_exists",
+                            "A category with this slug already exists",
+                        )
+                        .with_context(serde_json::json!({
+                            "operation": "categories.create",
+                            "slug": &req.slug
                         })),
-                    )
-                        .into_response();
+                    );
                 }
             }
 
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("categories.create_failed", "Failed to create category")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "categories.create",
+                        "slug": &req.slug
+                    })),
+            )
         }
     }
 }
@@ -238,7 +261,7 @@ pub async fn update_category(
     State(state): State<AppState>,
     Path(category_id): Path<Uuid>,
     Json(req): Json<UpdateCategoryRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let cid = category_id.into_inner();
 
@@ -270,12 +293,26 @@ pub async fn update_category(
             .await;
 
             let response: CategoryResponse = category.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("categories.not_found", "Category not found").with_context(
+                serde_json::json!({
+                    "operation": "categories.update",
+                    "category_id": cid
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to update category: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("categories.update_failed", "Failed to update category")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "categories.update",
+                        "category_id": cid
+                    })),
+            )
         }
     }
 }
@@ -285,7 +322,7 @@ pub async fn soft_delete_category(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(category_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let batch_id = Uuid::new_v7().into_inner();
     let cid = category_id.into_inner();
@@ -307,12 +344,27 @@ pub async fn soft_delete_category(
             )
             .await;
 
-            StatusCode::NO_CONTENT.into_response()
+            Ok(StatusCode::NO_CONTENT.into_response())
         }
-        Ok(false) => StatusCode::NOT_FOUND.into_response(),
+        Ok(false) => Err(
+            ApiError::not_found("categories.not_found", "Category not found").with_context(
+                serde_json::json!({
+                    "operation": "categories.soft_delete",
+                    "category_id": cid
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to soft delete category: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("categories.soft_delete_failed", "Failed to delete category")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "categories.soft_delete",
+                        "category_id": cid,
+                        "batch_id": batch_id
+                    })),
+            )
         }
     }
 }
@@ -322,7 +374,7 @@ pub async fn restore_category(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(category_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let cid = category_id.into_inner();
 
@@ -344,12 +396,26 @@ pub async fn restore_category(
             .await;
 
             let response: CategoryResponse = category.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("categories.not_found", "Category not found").with_context(
+                serde_json::json!({
+                    "operation": "categories.restore",
+                    "category_id": cid
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to restore category: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("categories.restore_failed", "Failed to restore category")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "categories.restore",
+                        "category_id": cid
+                    })),
+            )
         }
     }
 }
@@ -362,15 +428,22 @@ pub async fn reorder_categories(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<ReorderRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
 
     match categories::reorder_categories(pool, &ids).await {
-        Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
+        Ok(()) => Ok(Json(serde_json::json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to reorder categories: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("categories.reorder_failed", "Failed to reorder categories")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "categories.reorder",
+                        "count": ids.len()
+                    })),
+            )
         }
     }
 }

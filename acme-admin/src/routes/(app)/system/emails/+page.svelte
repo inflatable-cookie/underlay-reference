@@ -94,7 +94,7 @@
 </script>
 
 <section class="emails-page">
-  <PageHeader title="Captured emails" backHref="/system" backLabel="Back to system">
+  <PageHeader section="Captured Emails" backHref="/system" backLabel="Back to system">
     Emails captured during development instead of being sent to real recipients.
     Only visible in development mode.
   </PageHeader>

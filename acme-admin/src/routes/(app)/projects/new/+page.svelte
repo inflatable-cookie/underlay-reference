@@ -141,7 +141,7 @@
   <FormError message={pageData.error} />
 {:else}
   <SpaFormShell
-    title="New Project"
+    section="New Project"
     subtitle="Create a new project to organize your tasks"
     backHref={backInfo.href}
     backLabel={backInfo.label}

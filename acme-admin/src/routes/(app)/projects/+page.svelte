@@ -270,7 +270,7 @@
   }
 </script>
 
-<PageHeader title="Projects" backHref="/" backLabel="Back to dashboard">
+<PageHeader section="Projects" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
     {#if (pageData.data?.projects ?? []).length > 0 && !isReorderMode}
       <Tooltip content={isSelectionMode ? "Cancel Selection" : "Select Items"} inline>

@@ -227,7 +227,7 @@
 	}
 </script>
 
-<PageHeader title="Users" count={total} backHref="/" backLabel="Back to dashboard">
+<PageHeader section="Users" count={total} backHref="/" backLabel="Back to dashboard">
 	{#snippet actions()}
 		<Tooltip content="Add User" inline>
 			{#snippet trigger()}

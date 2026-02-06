@@ -113,7 +113,7 @@
   ];
 </script>
 
-<PageHeader title="Error log" backHref="/system" backLabel="Back to system">
+<PageHeader section="Error Log" backHref="/system" backLabel="Back to system">
   {#snippet actions()}
     <Button type="button" variant="subtle" onclick={() => pageData.refetch()}>
       <RefreshCw size={16} />

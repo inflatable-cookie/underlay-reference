@@ -4,12 +4,12 @@
 
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+use underlay_http::ApiError;
 use uuid::Uuid;
 
 use acme_db::activity;
@@ -83,7 +83,7 @@ pub async fn list_activity(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Query(query): Query<ListActivityQuery>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     let limit = query.limit.unwrap_or(50);
@@ -92,16 +92,24 @@ pub async fn list_activity(
     match activity::list_activity(pool, limit, offset).await {
         Ok(response) => {
             let items: Vec<ActivityResponse> = response.data.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({
+            Ok(Json(serde_json::json!({
                 "data": items,
                 "hasMore": response.has_more,
                 "total": response.total
             }))
-            .into_response()
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list activity: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("activity.list_failed", "Failed to list activity")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "activity.list",
+                        "limit": limit,
+                        "offset": offset
+                    })),
+            )
         }
     }
 }
@@ -114,7 +122,7 @@ pub async fn list_activity_for_entity(
     State(state): State<AppState>,
     Path((entity_type, entity_id)): Path<(String, Uuid)>,
     Query(query): Query<ListActivityQuery>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     let limit = query.limit.unwrap_or(50);
@@ -123,16 +131,26 @@ pub async fn list_activity_for_entity(
     match activity::list_activity_for_entity(pool, &entity_type, entity_id, limit, offset).await {
         Ok(response) => {
             let items: Vec<ActivityResponse> = response.data.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({
+            Ok(Json(serde_json::json!({
                 "data": items,
                 "hasMore": response.has_more,
                 "total": response.total
             }))
-            .into_response()
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list entity activity: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("activity.entity_list_failed", "Failed to list activity")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "activity.list_for_entity",
+                        "entity_type": entity_type,
+                        "entity_id": entity_id,
+                        "limit": limit,
+                        "offset": offset
+                    })),
+            )
         }
     }
 }
@@ -145,7 +163,7 @@ pub async fn list_activity_for_user(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
     Query(query): Query<ListActivityQuery>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     let limit = query.limit.unwrap_or(50);
@@ -154,16 +172,25 @@ pub async fn list_activity_for_user(
     match activity::list_activity_for_user(pool, user_id, limit, offset).await {
         Ok(response) => {
             let items: Vec<ActivityResponse> = response.data.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({
+            Ok(Json(serde_json::json!({
                 "data": items,
                 "hasMore": response.has_more,
                 "total": response.total
             }))
-            .into_response()
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list user activity: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("activity.user_list_failed", "Failed to list activity")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "activity.list_for_user",
+                        "user_id": user_id,
+                        "limit": limit,
+                        "offset": offset
+                    })),
+            )
         }
     }
 }

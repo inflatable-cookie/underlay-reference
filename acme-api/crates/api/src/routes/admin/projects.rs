@@ -9,12 +9,11 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     Json,
 };
 use serde::{Deserialize, Serialize};
-use underlay_core::AppError;
-use underlay_http::{error_response, query::QueryParams};
+use underlay_http::{query::QueryParams, ApiError};
 
 use acme_core::Uuid;
 use acme_db::{activity, tasks};
@@ -137,20 +136,23 @@ pub async fn list_projects(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Query(query): Query<QueryParams>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match tasks::list_projects_admin(pool, &query).await {
         Ok(projects) => {
             let response: Vec<ProjectWithCountsResponse> =
                 projects.into_iter().map(Into::into).collect();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list projects: {}", e);
-            error_response(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                AppError::new("projects.list_failed", format!("Failed to list projects: {}", e)),
+            Err(
+                ApiError::internal("projects.list_failed", "Failed to list projects")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.list"
+                    })),
             )
         }
     }
@@ -161,18 +163,33 @@ pub async fn get_project(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let project_id = project_id.into_inner();
 
-    match tasks::get_project_admin(pool, project_id.into_inner()).await {
+    match tasks::get_project_admin(pool, project_id).await {
         Ok(Some(project)) => {
             let response: ProjectResponse = project.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("projects.not_found", "Project not found").with_context(
+                serde_json::json!({
+                    "operation": "projects.get",
+                    "project_id": project_id
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to get project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.get_failed", "Failed to get project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.get",
+                        "project_id": project_id
+                    })),
+            )
         }
     }
 }
@@ -185,7 +202,7 @@ pub async fn create_project(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<CreateProjectRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let project_id = Uuid::new_v7().into_inner();
     let owner_id = req
@@ -220,15 +237,24 @@ pub async fn create_project(
             .await;
 
             let response: ProjectResponse = project.into();
-            (
+            Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
             )
-                .into_response()
+                .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to create project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.create_failed", "Failed to create project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.create",
+                        "owner_id": owner_id,
+                        "category_id": req.category_id.map(|id| id.into_inner()),
+                        "name": &req.name
+                    })),
+            )
         }
     }
 }
@@ -239,7 +265,7 @@ pub async fn update_project(
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
     Json(req): Json<UpdateProjectRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let pid = project_id.into_inner();
 
@@ -272,12 +298,26 @@ pub async fn update_project(
             .await;
 
             let response: ProjectResponse = project.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("projects.not_found", "Project not found").with_context(
+                serde_json::json!({
+                    "operation": "projects.update",
+                    "project_id": pid
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to update project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.update_failed", "Failed to update project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.update",
+                        "project_id": pid
+                    })),
+            )
         }
     }
 }
@@ -287,7 +327,7 @@ pub async fn soft_delete_project(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let batch_id = Uuid::new_v7().into_inner();
     let pid = project_id.into_inner();
@@ -309,12 +349,27 @@ pub async fn soft_delete_project(
             )
             .await;
 
-            StatusCode::NO_CONTENT.into_response()
+            Ok(StatusCode::NO_CONTENT.into_response())
         }
-        Ok(false) => StatusCode::NOT_FOUND.into_response(),
+        Ok(false) => Err(
+            ApiError::not_found("projects.not_found", "Project not found").with_context(
+                serde_json::json!({
+                    "operation": "projects.soft_delete",
+                    "project_id": pid
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to soft delete project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.soft_delete_failed", "Failed to delete project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.soft_delete",
+                        "project_id": pid,
+                        "batch_id": batch_id
+                    })),
+            )
         }
     }
 }
@@ -324,7 +379,7 @@ pub async fn restore_project(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let pid = project_id.into_inner();
 
@@ -346,12 +401,26 @@ pub async fn restore_project(
             .await;
 
             let response: ProjectResponse = project.into();
-            Json(serde_json::json!({ "data": response })).into_response()
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => StatusCode::NOT_FOUND.into_response(),
+        Ok(None) => Err(
+            ApiError::not_found("projects.not_found", "Project not found").with_context(
+                serde_json::json!({
+                    "operation": "projects.restore",
+                    "project_id": pid
+                }),
+            ),
+        ),
         Err(e) => {
             tracing::error!("Failed to restore project: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.restore_failed", "Failed to restore project")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.restore",
+                        "project_id": pid
+                    })),
+            )
         }
     }
 }
@@ -361,15 +430,22 @@ pub async fn reorder_projects(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<ReorderRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
 
     match tasks::reorder_projects(pool, &ids).await {
-        Ok(()) => Json(serde_json::json!({ "ok": true })).into_response(),
+        Ok(()) => Ok(Json(serde_json::json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to reorder projects: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("projects.reorder_failed", "Failed to reorder projects")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "projects.reorder",
+                        "count": ids.len()
+                    })),
+            )
         }
     }
 }
@@ -381,19 +457,12 @@ pub async fn batch_delete_projects(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<BatchDeleteRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     if req.ids.is_empty() {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(json!({
-                "ok": false,
-                "error": {
-                    "code": "validation.empty_ids",
-                    "message": "At least one ID is required"
-                }
-            })),
-        )
-            .into_response();
+        return Err(ApiError::bad_request(
+            "validation.empty_ids",
+            "At least one ID is required",
+        ));
     }
 
     let pool = state.local_auth.pool();
@@ -417,11 +486,22 @@ pub async fn batch_delete_projects(
             )
             .await;
 
-            Json(json!({ "ok": true, "deleted": count })).into_response()
+            Ok(Json(json!({ "ok": true, "deleted": count })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to batch delete projects: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal(
+                    "projects.batch_delete_failed",
+                    "Failed to batch delete projects",
+                )
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "projects.batch_delete",
+                    "count": ids.len(),
+                    "batch_id": batch_id
+                })),
+            )
         }
     }
 }

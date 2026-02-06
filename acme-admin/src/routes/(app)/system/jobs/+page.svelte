@@ -158,7 +158,7 @@
   ];
 </script>
 
-<PageHeader title="Job queue" backHref="/system" backLabel="Back to system">
+<PageHeader section="Job Queue" backHref="/system" backLabel="Back to system">
   {#snippet actions()}
     <Button type="button" variant="subtle" onclick={() => pageData.refetch()}>
       <RefreshCw size={16} />

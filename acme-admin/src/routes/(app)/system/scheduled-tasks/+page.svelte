@@ -107,7 +107,7 @@
 </script>
 
 <section class="scheduled-tasks-page">
-  <PageHeader title="Scheduled tasks" backHref="/system" backLabel="Back to system">
+  <PageHeader section="Scheduled Tasks" backHref="/system" backLabel="Back to system">
     Manage cron-scheduled maintenance tasks. Tasks run automatically based on their schedule.
   </PageHeader>
 

@@ -90,6 +90,7 @@
   <FormError message={pageData.error} />
 {:else if category}
   <PageHeader
+    section="Category"
     title={category.name}
     backHref="/categories"
     backLabel="Back to categories"

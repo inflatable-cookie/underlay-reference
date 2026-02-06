@@ -186,7 +186,8 @@
 
 <section class="task-detail-page">
   <PageHeader
-    title={task ? formatTaskName(task.name) : "Scheduled Task"}
+    section="Scheduled Task"
+    title={task ? formatTaskName(task.name) : "Not Found"}
     backHref="/system/scheduled-tasks"
     backLabel="Back to tasks"
   >

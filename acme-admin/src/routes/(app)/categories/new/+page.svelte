@@ -111,7 +111,7 @@
 </script>
 
 <SpaFormShell
-  title="New Category"
+  section="New Category"
   subtitle="Create a new category to organize your projects"
   backHref={backInfo.href}
   backLabel={backInfo.label}

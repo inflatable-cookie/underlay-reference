@@ -158,7 +158,7 @@
   {/snippet}
 
   <SpaFormShell
-    title="Edit User"
+    section="Edit User"
     subtitle={user.email}
     backHref={computedBackInfo.href}
     backLabel={computedBackInfo.label}

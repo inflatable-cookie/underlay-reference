@@ -183,7 +183,7 @@
   {/snippet}
 
   <SpaFormShell
-    title="Edit Project"
+    section="Edit Project"
     subtitle={project.name}
     backHref={computedBackInfo.href}
     backLabel={computedBackInfo.label}

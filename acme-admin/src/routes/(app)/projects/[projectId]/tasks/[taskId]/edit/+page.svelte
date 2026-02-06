@@ -137,7 +137,7 @@
   <FormError message={pageData.error} />
 {:else if task && project}
   <PageHeader
-    title="Edit Task"
+    section="Edit Task"
     backHref={`/projects/${data.projectId}/tasks/${data.taskId}`}
     backLabel={`Back to ${task.title}`}
   />

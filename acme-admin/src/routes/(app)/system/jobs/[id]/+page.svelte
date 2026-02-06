@@ -106,7 +106,8 @@
 </script>
 
 <PageHeader
-  title={job ? formatJobType(job.jobType) : "Job Detail"}
+  section="Job"
+  title={job ? formatJobType(job.jobType) : "Not Found"}
   backHref="/system/jobs"
   backLabel="Back to jobs"
 >

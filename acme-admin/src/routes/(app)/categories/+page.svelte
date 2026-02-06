@@ -184,7 +184,7 @@
   }
 </script>
 
-<PageHeader title="Categories" backHref="/" backLabel="Back to dashboard">
+<PageHeader section="Categories" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
     {#if (pageData.data?.categories ?? []).length > 1}
       <Tooltip content={isReorderMode ? "Cancel Reorder" : "Reorder Categories"} inline>

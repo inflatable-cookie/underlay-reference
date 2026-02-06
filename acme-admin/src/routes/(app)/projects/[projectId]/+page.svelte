@@ -374,6 +374,7 @@
   <FormError message={pageData.error} />
 {:else if project}
   <PageHeader
+    section="Project"
     title={project.name}
     backHref="/projects"
     backLabel="Back to projects"

@@ -4,8 +4,13 @@
 //! Common use case: check slug/name uniqueness before form submission.
 
 use anyhow::Error as AnyhowError;
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Response},
+    Json,
+};
 use serde::{Deserialize, Serialize};
+use underlay_http::ApiError;
 
 use acme_core::Uuid;
 use acme_db::{categories, tasks};
@@ -67,7 +72,7 @@ pub async fn validate_field(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Json(req): Json<ValidateFieldRequest>,
-) -> impl IntoResponse {
+) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     // Route to appropriate validation based on entity and field
@@ -81,10 +86,18 @@ pub async fn validate_field(
     };
 
     match result {
-        Ok(response) => Json(response).into_response(),
+        Ok(response) => Ok(Json(response).into_response()),
         Err(e) => {
             tracing::error!("Validation error: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Err(
+                ApiError::internal("validation.failed", "Field validation failed")
+                    .with_cause(&e)
+                    .with_context(serde_json::json!({
+                        "operation": "validation.validate_field",
+                        "entity": req.entity,
+                        "field": req.field
+                    })),
+            )
         }
     }
 }

@@ -404,6 +404,7 @@
   <FormError message={pageData.error} />
 {:else if user}
   <PageHeader
+    section="User"
     title={user.email}
     subtitle={user.displayName ?? undefined}
     backHref={computedBackInfo.href}

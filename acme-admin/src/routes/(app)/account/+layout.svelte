@@ -46,7 +46,7 @@
   });
 </script>
 
-<PageHeader title="Account" />
+<PageHeader section="Account" />
 
 <TabsRoot bind:value={activeTab} variant="boxed" size="sm">
   <TabsList>

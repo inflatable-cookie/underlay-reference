@@ -243,7 +243,7 @@
   }
 </script>
 
-<PageHeader title="Media Library" backHref="/" backLabel="Back to dashboard">
+<PageHeader section="Media Library" backHref="/" backLabel="Back to dashboard">
   {#snippet actions()}
     {#if (pageData.data?.items ?? []).length > 0}
       <Tooltip content={isSelectionMode ? "Cancel Selection" : "Select Items"} inline>

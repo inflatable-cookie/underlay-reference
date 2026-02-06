@@ -153,7 +153,7 @@
 </script>
 
 <section class="audit-page">
-  <PageHeader title="Audit log" backHref="/system" backLabel="Back to system">
+  <PageHeader section="Audit Log" backHref="/system" backLabel="Back to system">
     Track changes made to content and configuration across the platform.
   </PageHeader>
 

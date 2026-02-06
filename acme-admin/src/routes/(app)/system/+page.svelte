@@ -7,7 +7,7 @@
   import Mail from "lucide-svelte/icons/mail";
 </script>
 
-<PageHeader title="System" />
+<PageHeader section="System" />
 
 <NavCardGrid>
   <NavCard

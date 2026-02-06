@@ -88,7 +88,7 @@
 </script>
 
 <SpaFormShell
-  title="New User"
+  section="New User"
   subtitle="Create a new user account"
   backHref={backInfo.href}
   backLabel={backInfo.label}

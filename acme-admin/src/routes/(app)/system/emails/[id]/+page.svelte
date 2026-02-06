@@ -106,8 +106,8 @@
 
   <section class="email-detail">
     <PageHeader
-      title="Captured Email"
-      subtitle={email.subject || "(no subject)"}
+      section="Captured Email"
+      title={email.subject || "(no subject)"}
       backHref="/system/emails"
       backLabel="Back to emails"
     >
