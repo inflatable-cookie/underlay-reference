@@ -66,7 +66,7 @@
   let { data }: Props = $props();
 
   const toastStore = useToasts();
-  const mediaId = data.mediaId;
+  const mediaId = $derived(data.mediaId);
 
   // Load media detail, versions, and usages
   const pageData = useAuthenticatedData(
@@ -297,7 +297,7 @@
   }
 
   // Derived media URL
-  const mediaPreviewUrl = $derived(() => {
+  const mediaPreviewUrl = $derived.by(() => {
     if (!media?.currentVersion) return null;
     return getPreviewUrl(media.currentVersion);
   });

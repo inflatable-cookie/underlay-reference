@@ -260,8 +260,14 @@
             —
           {/if}
         {:else if column.key === "actions"}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div class="actions-cell" onclick={(e) => e.stopPropagation()}>
+          <div
+            class="actions-cell"
+            role="button"
+            tabindex="0"
+            aria-label="Job actions"
+            onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => e.stopPropagation()}
+          >
             <DropdownMenu items={getMenuItems(row)} triggerAriaLabel="Job actions">
               {#snippet trigger()}
                 <MoreHorizontal size={16} />

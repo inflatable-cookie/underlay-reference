@@ -132,7 +132,7 @@
           bind:checked={sendPasswordResetValue}
           leftLabel="No"
           rightLabel="Yes"
-          leftVariant="muted"
+          leftVariant="default"
           rightVariant="success"
         />
       </Field>

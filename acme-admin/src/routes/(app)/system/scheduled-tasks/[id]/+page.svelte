@@ -333,16 +333,6 @@
     gap: 1.5rem;
   }
 
-  .task-detail-page__status {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    background: color-mix(in srgb, var(--status-color) 20%, transparent);
-    color: var(--status-color);
-    font-size: 0.85rem;
-    font-weight: 500;
-  }
-
   .task-detail-page__grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

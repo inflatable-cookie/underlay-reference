@@ -86,6 +86,7 @@
 
 		<StatCard
 			title="Acme"
+			value={stats?.recentRegistrations ?? 0}
 			label="Projects & Categories"
 			variant="success"
 			loading={statsLoading}

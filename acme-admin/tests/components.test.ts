@@ -225,22 +225,21 @@ describe("Async data patterns", () => {
 
 	it("handles loading state during fetch", async () => {
 		let isLoading = true;
-		let data: { items: string[] } | null = null;
 
 		const loadData = async () => {
 			isLoading = true;
-			data = await fetchData();
+			const loaded = await fetchData();
 			isLoading = false;
+			return loaded;
 		};
 
 		// Before loading
 		expect(isLoading).toBe(true);
-		expect(data).toBeNull();
 
 		// After loading
-		await loadData();
+		const data = await loadData();
 		expect(isLoading).toBe(false);
-		expect(data?.items).toHaveLength(3);
+		expect(data.items).toHaveLength(3);
 	});
 
 	const fetchWithError = async (): Promise<{ items: string[] }> => {
