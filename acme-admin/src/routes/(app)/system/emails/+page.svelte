@@ -25,8 +25,8 @@
 
   // Derive filters from URL
   const filters = $derived({
-    toAddress: $page.url.searchParams.get("toAddress") ?? "",
-    fromAddress: $page.url.searchParams.get("fromAddress") ?? "",
+    to_address: $page.url.searchParams.get("to_address") ?? "",
+    from_address: $page.url.searchParams.get("from_address") ?? "",
     sinceDate: $page.url.searchParams.get("since") ?? "",
     untilDate: $page.url.searchParams.get("until") ?? ""
   });
@@ -34,8 +34,8 @@
   // Fetch captured emails using authenticated data pattern
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const toAddressParam = $page.url.searchParams.get("toAddress");
-      const fromAddressParam = $page.url.searchParams.get("fromAddress");
+      const toAddressParam = $page.url.searchParams.get("to_address");
+      const fromAddressParam = $page.url.searchParams.get("from_address");
       const sinceDateParam = $page.url.searchParams.get("since");
       const untilDateParam = $page.url.searchParams.get("until");
 
@@ -43,8 +43,8 @@
       const until = untilDateParam ? `${untilDateParam}T23:59:59Z` : undefined;
 
       const entries = await adminCommands.listCapturedEmails(fetch, token, {
-        toAddress: toAddressParam ?? undefined,
-        fromAddress: fromAddressParam ?? undefined,
+        to_address: toAddressParam ?? undefined,
+        from_address: fromAddressParam ?? undefined,
         since,
         until
       });
@@ -105,16 +105,16 @@
         <Field label="To address">
           <TextInput
             type="email"
-            name="toAddress"
-            value={filters.toAddress}
+            name="to_address"
+            value={filters.to_address}
             placeholder="recipient@example.com"
           />
         </Field>
         <Field label="From address">
           <TextInput
             type="email"
-            name="fromAddress"
-            value={filters.fromAddress}
+            name="from_address"
+            value={filters.from_address}
             placeholder="sender@example.com"
           />
         </Field>

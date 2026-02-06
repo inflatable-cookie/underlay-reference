@@ -88,7 +88,7 @@ pub enum LoginStartOutcome {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 struct LoginTwoFactorState {
     user_id: String,
     client_fingerprint: String,
@@ -2853,7 +2853,7 @@ impl AcmeLocalAuthService {
 }
 
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TotpSetupResult {
     pub setup_id: Uuid,
     pub otpauth_uri: String,
@@ -2885,7 +2885,7 @@ struct TotpDetails {
 }
 
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct GoogleOAuthStartResult {
     pub authorization_url: String,
     pub state_id: Uuid,

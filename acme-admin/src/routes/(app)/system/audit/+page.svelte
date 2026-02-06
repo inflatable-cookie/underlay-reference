@@ -12,7 +12,7 @@
   // Derive filters from URL
   const filterValues = $derived({
     action: $page.url.searchParams.get("action") ?? "",
-    resourceType: $page.url.searchParams.get("resourceType") ?? ""
+    resource_type: $page.url.searchParams.get("resource_type") ?? ""
   });
 
   // Filter configuration
@@ -30,7 +30,7 @@
       ]
     },
     {
-      field: "resourceType",
+      field: "resource_type",
       label: "Resource",
       type: "select",
       placeholder: "All resources",
@@ -79,9 +79,9 @@
   const logEntries = $derived<LogEntry[]>(
     (pageData.data?.entries ?? [])
       .filter((entry) => {
-        // Client-side filtering since API doesn't support action/resourceType filters
+        // Client-side filtering since API doesn't support action/resource_type filters
         const actionFilter = filterValues.action;
-        const resourceTypeFilter = filterValues.resourceType;
+        const resourceTypeFilter = filterValues.resource_type;
 
         if (actionFilter && entry.action !== actionFilter) return false;
         if (resourceTypeFilter && entry.resourceType !== resourceTypeFilter) return false;

@@ -20,7 +20,7 @@ use crate::state::{AdminUser, AppState};
 // ============================================================================
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CapturedEmailSummaryDto {
     pub id: String,
     pub email_id: String,
@@ -32,7 +32,7 @@ pub struct CapturedEmailSummaryDto {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CapturedEmailDetailDto {
     pub id: String,
     pub email_id: String,
@@ -90,7 +90,7 @@ impl From<infra::CapturedEmailRow> for CapturedEmailDetailDto {
 // ============================================================================
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ListCapturedEmailsQuery {
     pub since: Option<String>,
     pub until: Option<String>,

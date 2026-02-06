@@ -15,7 +15,7 @@ use validator::Validate;
 /// - `fullName`: User's full name as they wish to be known
 /// - `displayName`: Short name for UI display
 #[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UserProfileDto {
     pub user_id: String,
     pub full_name: Option<String>,
@@ -58,7 +58,7 @@ impl From<UserProfileRow> for UserProfileDto {
 ///
 /// All fields are optional - only provided fields will be updated.
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateProfileRequest {
     #[validate(length(max = 256, message = "Full name must be 256 characters or less"))]
     pub full_name: Option<String>,

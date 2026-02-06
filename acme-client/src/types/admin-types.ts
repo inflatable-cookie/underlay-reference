@@ -164,10 +164,6 @@ export interface ValidateFieldPayload {
   context_value?: string;
   /** ID to exclude from uniqueness check (for edits) */
   exclude_id?: string;
-  /** @deprecated Use context_value */
-  contextValue?: string;
-  /** @deprecated Use exclude_id */
-  excludeId?: string;
 }
 
 export interface ValidationResult {
@@ -469,8 +465,8 @@ export interface CapturedEmailDetail {
 export interface ListCapturedEmailsQuery {
   since?: string;
   until?: string;
-  toAddress?: string;
-  fromAddress?: string;
+  to_address?: string;
+  from_address?: string;
   limit?: number;
   offset?: number;
 }
@@ -501,8 +497,8 @@ export interface ErrorLogStats {
 }
 
 export interface ListErrorLogsQuery {
-  statusCode?: number;
-  errorCode?: string;
+  status_code?: number;
+  error_code?: string;
   endpoint?: string;
   since?: string;
   until?: string;

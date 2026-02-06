@@ -26,7 +26,7 @@ use crate::state::{AdminUser, AppState};
 // ============================================================================
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TaskResponse {
     pub id: String,
     pub project_id: String,
@@ -62,7 +62,7 @@ impl From<tasks::TaskRow> for TaskResponse {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TaskWithLabelsResponse {
     pub id: String,
     pub project_id: String,
@@ -100,7 +100,7 @@ impl From<tasks::TaskWithLabelsRow> for TaskWithLabelsResponse {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LabelResponse {
     pub id: String,
     pub project_id: String,
@@ -124,7 +124,7 @@ impl From<tasks::LabelRow> for LabelResponse {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateTaskRequest {
     pub title: String,
     pub description: Option<String>,
@@ -134,7 +134,7 @@ pub struct CreateTaskRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateTaskRequest {
     pub title: Option<String>,
     pub description: Option<Option<String>>,
@@ -145,32 +145,32 @@ pub struct UpdateTaskRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateLabelRequest {
     pub name: String,
     pub color: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ReorderRequest {
     pub ids: Vec<Uuid>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct SetLabelsRequest {
     pub label_ids: Vec<Uuid>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct BatchDeleteTasksRequest {
     pub ids: Vec<Uuid>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct BatchUpdateTaskStatusRequest {
     pub ids: Vec<Uuid>,
     pub status: String,
@@ -292,7 +292,7 @@ pub async fn create_task(
                     action: "create",
                     resource_type: "task",
                     resource_id: task_id,
-                    details: Some(serde_json::json!({ "title": req.title, "projectId": project_id.to_string() })),
+                    details: Some(serde_json::json!({ "title": req.title, "project_id": project_id.to_string() })),
                     correlation_id: None,
                     ip_address: None,
                 },
@@ -664,7 +664,7 @@ pub async fn batch_delete_tasks(
                     details: Some(serde_json::json!({
                         "count": count,
                         "ids": req.ids,
-                        "projectId": project_id.to_string()
+                        "project_id": project_id.to_string()
                     })),
                     correlation_id: None,
                     ip_address: None,
@@ -733,7 +733,7 @@ pub async fn batch_update_task_status(
                         "count": count,
                         "ids": req.ids,
                         "status": req.status,
-                        "projectId": project_id.to_string()
+                        "project_id": project_id.to_string()
                     })),
                     correlation_id: None,
                     ip_address: None,

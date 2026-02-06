@@ -3,7 +3,7 @@ use serde::Serialize;
 use underlay_http::ApiError;
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct HealthData {
     pub status: &'static str,
 }

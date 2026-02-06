@@ -15,7 +15,7 @@ use crate::state::{AdminUser, AppState};
 // ============================================================================
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UserCountsDto {
     pub active: i64,
     pub suspended: i64,
@@ -35,7 +35,7 @@ impl From<stats::UserCounts> for UserCountsDto {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct DashboardStatsResponse {
     pub user_counts: UserCountsDto,
     pub media_count: i64,

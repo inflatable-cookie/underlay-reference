@@ -68,25 +68,25 @@ VALUES
    '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
    'password',
    '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
-   '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
+   '{"type":"password","algorithm":"argon2id","memory_kb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE),
   (gen_random_uuid(),
    '018f2a3b-3c4d-7e8f-8a9b-00000000a002'::uuid,
    'password',
    '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
-   '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
+   '{"type":"password","algorithm":"argon2id","memory_kb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE),
   (gen_random_uuid(),
    '018f2a3b-3c4d-7e8f-8a9b-00000000a003'::uuid,
    'password',
    '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
-   '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
+   '{"type":"password","algorithm":"argon2id","memory_kb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE),
   (gen_random_uuid(),
    '018f2a3b-3c4d-7e8f-8a9b-00000000a004'::uuid,
    'password',
    '$argon2id$v=19$m=65536,t=3,p=4$3RN+dCR49Pjd0klVKYzT9w$EnQbwy2Uo6+d/pOmjD1eHVIFgH8IoqFEX/iEcSc7ONc',
-   '{"type":"Password","algorithm":"argon2id","memoryKb":65536,"iterations":3,"parallelism":4}'::jsonb,
+   '{"type":"password","algorithm":"argon2id","memory_kb":65536,"iterations":3,"parallelism":4}'::jsonb,
    TRUE);
 
 -- TOTP credential for admin user
@@ -97,7 +97,7 @@ VALUES
    '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
    'totp',
    '3PBE4CUJZGNDQTEEU6ZKQ4FRIOWP7TJ2',
-   '{"type":"Totp","issuer":"Acme","algorithm":"SHA1","digits":6,"period":30}'::jsonb,
+   '{"type":"totp","issuer":"Acme","algorithm":"SHA1","digits":6,"period":30}'::jsonb,
    TRUE);
 
 INSERT INTO auth.totp_credential (credential_id, last_counter, backup_code_hashes)

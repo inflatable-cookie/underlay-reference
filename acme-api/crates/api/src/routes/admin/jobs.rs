@@ -22,7 +22,7 @@ use crate::state::{AdminUser, AppState};
 
 /// Summary of a job for list views.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct JobSummaryDto {
     pub id: String,
     pub job_type: String,
@@ -37,7 +37,7 @@ pub struct JobSummaryDto {
 
 /// Detailed job information including payload.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct JobDetailDto {
     pub id: String,
     pub job_type: String,
@@ -55,7 +55,7 @@ pub struct JobDetailDto {
 
 /// Progress information for long-running jobs.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct JobProgressDto {
     pub current: u64,
     pub total: u64,
@@ -110,7 +110,7 @@ impl JobDetailDto {
 // ============================================================================
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ListJobsQuery {
     /// Filter by status: pending, running, succeeded, failed, cancelled
     pub status: Option<String>,
@@ -418,7 +418,7 @@ pub async fn get_job_stats(
         .unwrap_or(0);
 
     #[derive(Serialize)]
-    #[serde(rename_all = "camelCase")]
+    #[serde(rename_all = "snake_case")]
     struct JobStats {
         pending: i64,
         running: i64,

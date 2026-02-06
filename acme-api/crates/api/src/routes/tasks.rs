@@ -22,7 +22,7 @@ use crate::state::{AppState, AuthenticatedUser};
 // ============================================================================
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ProjectResponse {
     pub id: String,
     pub name: String,
@@ -46,14 +46,14 @@ impl From<tasks::ProjectRow> for ProjectResponse {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateProjectRequest {
     pub name: String,
     pub description: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateProjectRequest {
     pub name: Option<String>,
     pub description: Option<Option<String>>,
@@ -61,7 +61,7 @@ pub struct UpdateProjectRequest {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TaskResponse {
     pub id: String,
     pub project_id: String,
@@ -95,7 +95,7 @@ impl From<tasks::TaskRow> for TaskResponse {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateTaskRequest {
     pub title: String,
     pub description: Option<String>,
@@ -104,7 +104,7 @@ pub struct CreateTaskRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateTaskRequest {
     pub title: Option<String>,
     pub description: Option<Option<String>>,

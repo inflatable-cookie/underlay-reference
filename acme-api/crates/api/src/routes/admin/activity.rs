@@ -22,7 +22,7 @@ use crate::state::{AdminUser, AppState};
 
 /// Activity entry response.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ActivityResponse {
     pub id: String,
     pub occurred_at: String,
@@ -35,7 +35,7 @@ pub struct ActivityResponse {
 
 /// Actor (user) info in activity response.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ActorResponse {
     pub id: String,
     pub email: String,
@@ -64,7 +64,7 @@ impl From<activity::ActivityWithActorRow> for ActivityResponse {
 
 /// Query parameters for activity listing.
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ListActivityQuery {
     /// Limit (default 50)
     pub limit: Option<i64>,
@@ -94,7 +94,7 @@ pub async fn list_activity(
             let items: Vec<ActivityResponse> = response.data.into_iter().map(Into::into).collect();
             Ok(Json(serde_json::json!({
                 "data": items,
-                "hasMore": response.has_more,
+                "has_more": response.has_more,
                 "total": response.total
             }))
             .into_response())
@@ -133,7 +133,7 @@ pub async fn list_activity_for_entity(
             let items: Vec<ActivityResponse> = response.data.into_iter().map(Into::into).collect();
             Ok(Json(serde_json::json!({
                 "data": items,
-                "hasMore": response.has_more,
+                "has_more": response.has_more,
                 "total": response.total
             }))
             .into_response())
@@ -174,7 +174,7 @@ pub async fn list_activity_for_user(
             let items: Vec<ActivityResponse> = response.data.into_iter().map(Into::into).collect();
             Ok(Json(serde_json::json!({
                 "data": items,
-                "hasMore": response.has_more,
+                "has_more": response.has_more,
                 "total": response.total
             }))
             .into_response())

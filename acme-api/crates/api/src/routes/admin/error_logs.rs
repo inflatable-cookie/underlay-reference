@@ -21,7 +21,7 @@ use crate::state::{AdminUser, AppState, DB_POOL};
 
 /// Summary of an error log for list views.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ErrorLogSummaryDto {
     pub id: String,
     pub occurred_at: DateTime<Utc>,
@@ -35,7 +35,7 @@ pub struct ErrorLogSummaryDto {
 
 /// Detailed error log information including context.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ErrorLogDetailDto {
     pub id: String,
     pub occurred_at: DateTime<Utc>,
@@ -84,7 +84,7 @@ impl From<underlay_http::ErrorLogRow> for ErrorLogDetailDto {
 // ============================================================================
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ListErrorLogsQuery {
     /// Filter by status code (e.g., 500, 404)
     pub status_code: Option<i32>,
@@ -104,7 +104,7 @@ pub struct ListErrorLogsQuery {
 
 /// Response for paginated error log lists.
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PaginatedErrorLogsResponse {
     pub data: Vec<ErrorLogSummaryDto>,
     pub total: i64,
@@ -284,7 +284,7 @@ pub async fn get_error_log_stats(
     .unwrap_or(0);
 
     #[derive(Serialize)]
-    #[serde(rename_all = "camelCase")]
+    #[serde(rename_all = "snake_case")]
     struct ErrorLogStats {
         total_last_24h: i64,
         server_errors_last_24h: i64,

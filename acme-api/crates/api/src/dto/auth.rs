@@ -10,7 +10,7 @@ use validator::Validate;
 // ============================================================================
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct RegisterRequest {
     #[validate(email(message = "Invalid email address"))]
     #[validate(length(max = 254, message = "Email too long"))]
@@ -30,7 +30,7 @@ pub struct RegisterRequest {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LoginRequest {
     #[validate(email(message = "Invalid email address"))]
     #[validate(length(max = 254, message = "Email too long"))]
@@ -42,7 +42,7 @@ pub struct LoginRequest {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LoginStartRequest {
     #[validate(email(message = "Invalid email address"))]
     #[validate(length(max = 254, message = "Email too long"))]
@@ -56,7 +56,7 @@ pub struct LoginStartRequest {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LoginFinishRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid login state"))]
     pub login_state_id: String,
@@ -65,14 +65,14 @@ pub struct LoginFinishRequest {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LoginEmailFallbackRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid login state"))]
     pub login_state_id: String,
 }
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LoginEmailFallbackResponse {
     /// New login state ID for email verification
     pub login_state_id: String,
@@ -81,14 +81,14 @@ pub struct LoginEmailFallbackResponse {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LoginEmailResendRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid login state"))]
     pub login_state_id: String,
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct RefreshRequest {
     /// Refresh token. Can be omitted if refresh token is provided via httpOnly cookie.
     #[serde(default)]
@@ -97,7 +97,7 @@ pub struct RefreshRequest {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LogoutRequest {
     /// Refresh token. Can be omitted if refresh token is provided via httpOnly cookie.
     #[serde(default)]
@@ -106,7 +106,7 @@ pub struct LogoutRequest {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ChangePasswordRequest {
     #[validate(length(min = 1, max = 128, message = "Current password required"))]
     pub current_password: String,
@@ -115,7 +115,7 @@ pub struct ChangePasswordRequest {
 }
 
 #[derive(Deserialize, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TotpEnableRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid setup ID"))]
     pub setup_id: String,
@@ -124,7 +124,7 @@ pub struct TotpEnableRequest {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyRenameRequest {
     #[validate(length(
         min = 1,
@@ -135,14 +135,14 @@ pub struct PasskeyRenameRequest {
 }
 
 #[derive(Deserialize, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyLoginStartRequest {
     #[validate(email(message = "Invalid email address"))]
     pub email: Option<String>,
 }
 
 #[derive(Deserialize, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyRegisterFinishRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid state ID"))]
     pub state_id: String,
@@ -152,7 +152,7 @@ pub struct PasskeyRegisterFinishRequest {
 }
 
 #[derive(Deserialize, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyLoginFinishRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid state ID"))]
     pub state_id: String,
@@ -160,7 +160,7 @@ pub struct PasskeyLoginFinishRequest {
 }
 
 #[derive(Deserialize, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct GoogleOAuthCallbackRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid state ID"))]
     pub state_id: String,
@@ -175,7 +175,7 @@ pub struct GoogleOAuthCallbackRequest {
 // ============================================================================
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct AuthUserDto {
     pub user_id: String,
     pub email: String,
@@ -184,7 +184,7 @@ pub struct AuthUserDto {
 }
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct AuthSessionDto {
     pub user: AuthUserDto,
     pub session_id: String,
@@ -193,7 +193,7 @@ pub struct AuthSessionDto {
 }
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct LoginStartResponse {
     pub requires_two_factor: bool,
     /// When true, the required verification is via email code (not TOTP/passkey).
@@ -207,13 +207,13 @@ pub struct LoginStartResponse {
 }
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TotpStatusResponse {
     pub enabled: bool,
 }
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TwoFactorStatusResponse {
     pub has_totp_configured: bool,
     pub has_passkey_configured: bool,
@@ -223,7 +223,7 @@ pub struct TwoFactorStatusResponse {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct SessionDto {
     pub id: String,
     pub user_id: String,
@@ -262,14 +262,14 @@ impl From<underlay_auth::Session> for SessionDto {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyStartRegistrationDto {
     pub options: webauthn_rs_proto::attest::CreationChallengeResponse,
     pub state_id: String,
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyCredentialDto {
     pub id: String,
     pub display_name: Option<String>,
@@ -279,27 +279,27 @@ pub struct PasskeyCredentialDto {
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyLoginStartDto {
     pub options: webauthn_rs_proto::auth::RequestChallengeResponse,
     pub state_id: String,
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct GoogleOAuthStartDto {
     pub authorization_url: String,
     pub state_id: String,
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct GoogleOAuthStatusDto {
     pub connected: bool,
 }
 
 #[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct GoogleOAuthTokenDto {
     pub access_token: String,
     pub expires_in_seconds: Option<u64>,
@@ -375,14 +375,14 @@ impl EmailTotpPurposeDto {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct EmailTotpRequestRequest {
     /// The purpose for the verification code.
     pub purpose: EmailTotpPurposeDto,
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct EmailTotpVerifyRequest {
     /// The 6-digit verification code sent via email.
     #[validate(length(min = 6, max = 6, message = "Code must be 6 digits"))]
@@ -392,14 +392,14 @@ pub struct EmailTotpVerifyRequest {
 }
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct EmailTotpRequestResponse {
     /// When the code expires.
     pub expires_at: DateTime<Utc>,
 }
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct EmailTotpVerifyResponse {
     /// Verification session ID (can be used to authorize sensitive actions).
     pub verification_session_id: String,
@@ -412,7 +412,7 @@ pub struct EmailTotpVerifyResponse {
 // ============================================================================
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TotpVerifyRequest {
     /// The 6-digit TOTP code from authenticator app.
     #[validate(length(min = 1, max = 10, message = "Invalid code"))]
@@ -429,14 +429,14 @@ pub type TotpVerifyResponse = EmailTotpVerifyResponse;
 // ============================================================================
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyVerifyStartRequest {
     /// The purpose this verification is for.
     pub purpose: EmailTotpPurposeDto,
 }
 
 #[derive(Deserialize, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasskeyVerifyFinishRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid state ID"))]
     pub state_id: String,
@@ -451,7 +451,7 @@ pub type PasskeyVerifyResponse = EmailTotpVerifyResponse;
 // ============================================================================
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ChangePasswordWithVerificationRequest {
     /// The verification session ID obtained from 2FA verification.
     #[validate(length(min = 1, max = 100, message = "Invalid verification session ID"))]
@@ -466,7 +466,7 @@ pub struct ChangePasswordWithVerificationRequest {
 // ============================================================================
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasswordResetRequestRequest {
     /// The email address of the account to reset.
     #[validate(email(message = "Invalid email address"))]
@@ -475,7 +475,7 @@ pub struct PasswordResetRequestRequest {
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasswordResetVerifyRequest {
     /// The email address of the account.
     #[validate(email(message = "Invalid email address"))]
@@ -487,14 +487,14 @@ pub struct PasswordResetVerifyRequest {
 }
 
 #[derive(Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasswordResetVerifyResponse {
     /// The reset token (verification session ID) to use when setting the new password.
     pub reset_token: String,
 }
 
 #[derive(Deserialize, ToSchema, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct PasswordResetCompleteRequest {
     /// The reset token obtained from the verify step.
     #[validate(length(min = 1, max = 100, message = "Invalid reset token"))]

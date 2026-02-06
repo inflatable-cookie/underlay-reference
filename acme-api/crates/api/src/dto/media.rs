@@ -21,7 +21,7 @@ use acme_db::media::{
 
 /// Media item summary for list views.
 #[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct MediaSummaryDto {
     pub id: Uuid,
     pub kind: String,
@@ -98,7 +98,7 @@ impl From<MediaRow> for MediaSummaryDto {
 
 /// Full media item detail.
 #[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct MediaDetailDto {
     pub id: Uuid,
     pub kind: String,
@@ -175,7 +175,7 @@ impl MediaDetailDto {
 
 /// Media version DTO.
 #[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct MediaVersionDto {
     pub id: Uuid,
     pub media_id: Uuid,
@@ -254,7 +254,7 @@ impl From<MediaVersionRow> for MediaVersionDto {
 
 /// Media usage record DTO.
 #[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct MediaUsageDto {
     pub id: Uuid,
     pub media_id: Uuid,
@@ -283,7 +283,7 @@ impl From<MediaUsageRow> for MediaUsageDto {
 
 /// Media rendition DTO.
 #[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct MediaRenditionDto {
     pub id: Uuid,
     pub media_version_id: Uuid,
@@ -340,7 +340,7 @@ impl From<MediaRenditionRow> for MediaRenditionDto {
 
 /// Request to create a new media item.
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateMediaRequest {
     /// Media kind: "image" or "pdf".
     #[validate(length(min = 1, max = 20))]
@@ -373,7 +373,7 @@ impl CreateMediaRequest {
 
 /// Request to update a media item.
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateMediaRequest {
     /// Human-readable title.
     #[validate(length(min = 1, max = 255))]
@@ -397,7 +397,7 @@ impl UpdateMediaRequest {
 
 /// Request to check for duplicate media by hash.
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CheckDuplicateRequest {
     /// SHA-256 hash of the file (hex-encoded, 64 characters).
     #[validate(length(equal = 64))]
@@ -406,7 +406,7 @@ pub struct CheckDuplicateRequest {
 
 /// Response for duplicate check.
 #[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CheckDuplicateResponse {
     /// Whether a duplicate was found.
     pub exists: bool,
@@ -416,7 +416,7 @@ pub struct CheckDuplicateResponse {
 
 /// Request to initiate an upload.
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct InitiateUploadRequest {
     /// Expected content type (MIME type).
     #[validate(length(min = 1, max = 100))]
@@ -428,7 +428,7 @@ pub struct InitiateUploadRequest {
 
 /// Response for upload initiation.
 #[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct InitiateUploadResponse {
     /// The version ID for this upload.
     pub version_id: Uuid,
@@ -438,7 +438,7 @@ pub struct InitiateUploadResponse {
 
 /// Request to finalise an upload.
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct FinaliseUploadRequest {
     /// SHA-256 hash of the uploaded file (hex-encoded, 64 characters).
     #[validate(length(equal = 64))]
@@ -450,7 +450,7 @@ pub struct FinaliseUploadRequest {
 
 /// Response for upload finalisation.
 #[derive(Debug, Clone, Serialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct FinaliseUploadResponse {
     /// The finalised media item.
     pub media: MediaDetailDto,
@@ -464,7 +464,7 @@ pub struct FinaliseUploadResponse {
 
 /// Query parameters for listing media.
 #[derive(Debug, Clone, Deserialize, Default, ToSchema)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct MediaListQuery {
     /// Filter by kind ("image", "pdf").
     pub kind: Option<String>,

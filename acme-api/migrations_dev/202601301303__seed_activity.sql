@@ -232,7 +232,7 @@ VALUES
    'update',
    'user',
    '018f2a3b-3c4d-7e8f-8a9b-00000000a003'::uuid,
-   '{"changes": {"displayName": "Alice"}}'::jsonb,
+   '{"changes": {"display_name": "Alice"}}'::jsonb,
    'seed-user-003',
    '192.168.1.100',
    NOW() - INTERVAL '7 days' + INTERVAL '1 hour'),

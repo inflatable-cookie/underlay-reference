@@ -26,7 +26,7 @@ use crate::state::{AdminUser, AppState};
 // ============================================================================
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ProjectResponse {
     pub id: String,
     pub owner_id: String,
@@ -56,7 +56,7 @@ impl From<tasks::ProjectRow> for ProjectResponse {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ProjectWithCountsResponse {
     pub id: String,
     pub owner_id: String,
@@ -92,7 +92,7 @@ impl From<tasks::ProjectWithCountsRow> for ProjectWithCountsResponse {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateProjectRequest {
     pub name: String,
     pub description: Option<String>,
@@ -101,7 +101,7 @@ pub struct CreateProjectRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateProjectRequest {
     pub name: Option<String>,
     pub description: Option<Option<String>>,
@@ -110,13 +110,13 @@ pub struct UpdateProjectRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ReorderRequest {
     pub ids: Vec<Uuid>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct BatchDeleteRequest {
     pub ids: Vec<Uuid>,
 }

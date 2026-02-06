@@ -585,16 +585,9 @@ export async function validateField(
   accessToken: string
 ): Promise<ValidationResult> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const requestPayload = {
-    entity: payload.entity,
-    field: payload.field,
-    value: payload.value,
-    context_value: payload.context_value ?? payload.contextValue,
-    exclude_id: payload.exclude_id ?? payload.excludeId,
-  };
   return await http.post<ValidationResult>(
     "/v1/admin/validate-field",
-    requestPayload
+    payload
   );
 }
 
@@ -1023,8 +1016,8 @@ export async function listCapturedEmails(
   const http = getAdminHttpClient({ fetchFn, accessToken });
 
   const params = new URLSearchParams();
-  if (query?.toAddress) params.set("to_address", query.toAddress);
-  if (query?.fromAddress) params.set("from_address", query.fromAddress);
+  if (query?.to_address) params.set("to_address", query.to_address);
+  if (query?.from_address) params.set("from_address", query.from_address);
   if (query?.since) params.set("since", query.since);
   if (query?.until) params.set("until", query.until);
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
@@ -1083,8 +1076,8 @@ export async function listErrorLogs(
   const http = getAdminHttpClient({ fetchFn, accessToken });
 
   const params = new URLSearchParams();
-  if (query?.statusCode !== undefined) params.set("status_code", String(query.statusCode));
-  if (query?.errorCode) params.set("error_code", query.errorCode);
+  if (query?.status_code !== undefined) params.set("status_code", String(query.status_code));
+  if (query?.error_code) params.set("error_code", query.error_code);
   if (query?.endpoint) params.set("endpoint", query.endpoint);
   if (query?.since) params.set("since", query.since);
   if (query?.until) params.set("until", query.until);

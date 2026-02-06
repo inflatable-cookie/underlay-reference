@@ -25,7 +25,7 @@
     async (fetch, token) => {
       const [logsResponse, stats] = await Promise.all([
         adminCommands.listErrorLogs(fetch, token, {
-          statusCode: statusCodeFilter ? parseInt(statusCodeFilter) : undefined,
+          status_code: statusCodeFilter ? parseInt(statusCodeFilter) : undefined,
           limit: 50
         }),
         adminCommands.getErrorLogStats(fetch, token)

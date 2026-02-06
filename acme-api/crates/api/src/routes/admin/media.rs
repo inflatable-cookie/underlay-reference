@@ -216,9 +216,9 @@ pub async fn list_media_paginated(
                 .collect();
             Ok(Json(json!({
                 "data": items,
-                "nextCursor": response.next_cursor,
-                "prevCursor": response.prev_cursor,
-                "hasMore": response.has_more,
+                "next_cursor": response.next_cursor,
+                "prev_cursor": response.prev_cursor,
+                "has_more": response.has_more,
                 "total": response.total
             }))
             .into_response())
@@ -1202,7 +1202,7 @@ pub async fn list_usage(
 
 /// Request for batch delete operation.
 #[derive(Debug, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct BatchDeleteMediaRequest {
     pub ids: Vec<Uuid>,
 }

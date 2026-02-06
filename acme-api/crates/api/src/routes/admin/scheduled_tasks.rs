@@ -21,7 +21,7 @@ use crate::state::{AdminUser, AppState, DB_POOL};
 // ============================================================================
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ScheduledTaskSummaryDto {
     pub id: String,
     pub name: String,
@@ -34,7 +34,7 @@ pub struct ScheduledTaskSummaryDto {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ScheduledTaskDetailDto {
     pub id: String,
     pub name: String,
@@ -111,7 +111,7 @@ impl ScheduledTaskDetailDto {
 // ============================================================================
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ListScheduledTasksQuery {
     pub enabled: Option<bool>,
     pub limit: Option<i64>,
@@ -231,7 +231,7 @@ pub async fn get_scheduled_task(
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ToggleScheduledTaskRequest {
     pub enabled: bool,
 }
@@ -290,7 +290,7 @@ pub async fn toggle_scheduled_task(
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct TriggerScheduledTaskResponse {
     pub job_id: String,
 }

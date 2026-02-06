@@ -77,7 +77,7 @@
         entity: "category",
         field: "slug",
         value: slug,
-        excludeId: category.id
+        exclude_id: category.id
       },
       window.fetch.bind(window),
       token

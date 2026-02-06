@@ -25,7 +25,7 @@ use crate::state::{AdminUser, AppState};
 // ============================================================================
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CategoryResponse {
     pub id: String,
     pub name: String,
@@ -55,7 +55,7 @@ impl From<categories::CategoryRow> for CategoryResponse {
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CategoryWithCountsResponse {
     pub id: String,
     pub name: String,
@@ -87,7 +87,7 @@ impl From<categories::CategoryWithCountsRow> for CategoryWithCountsResponse {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateCategoryRequest {
     pub name: String,
     pub slug: String,
@@ -96,7 +96,7 @@ pub struct CreateCategoryRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateCategoryRequest {
     pub name: Option<String>,
     pub slug: Option<String>,
@@ -106,7 +106,7 @@ pub struct UpdateCategoryRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ReorderRequest {
     pub ids: Vec<Uuid>,
 }
