@@ -168,6 +168,19 @@ cd acme-front && bun dev
 | MailHog | http://localhost:8025 |
 | MinIO Console | http://localhost:9001 |
 
+### Error Logging Smoke Test
+
+After `acme-api` is running, run:
+
+```bash
+./scripts/smoke-error-logging.sh
+```
+
+This triggers a forced `ApiError` at `POST /v1/dev/error-smoke` (debug builds only), then verifies the latest `platform.error_log` row includes:
+- `error_code`
+- `message`
+- `context.handler_context`
+
 ## Bootstrapping a New Project
 
 To create a new project from this reference:

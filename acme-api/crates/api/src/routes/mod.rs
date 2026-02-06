@@ -23,7 +23,7 @@ mod tasks;
 pub fn build_router() -> Router<AppState> {
     let cors = build_cors_layer();
 
-    Router::new()
+    let router = Router::new()
         // OpenAPI / Swagger UI
         .merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
         // Favicon (return 204 to stop browser 404s)
@@ -383,7 +383,12 @@ pub fn build_router() -> Router<AppState> {
             "/v1/admin/error-logs/:id",
             get(admin::error_logs::get_error_log_handler),
         )
-        .layer(cors)
+        .layer(cors);
+
+    #[cfg(debug_assertions)]
+    let router = router.route("/v1/dev/error-smoke", post(shared::health::error_smoke));
+
+    router
 }
 
 fn build_cors_layer() -> tower_http::cors::CorsLayer {
