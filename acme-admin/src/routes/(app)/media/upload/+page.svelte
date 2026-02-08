@@ -1,13 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { mediaCommands, detectMediaKindFromMimeType } from "acme-client";
+  import { mediaCommands } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import {
     PageHeader,
     useToasts,
-    computeFileHash,
-    uploadToBlob,
     validateFileType,
     ALLOWED_MEDIA_TYPES,
     REJECTED_VIDEO_TYPES,
@@ -20,15 +18,18 @@
   import XCircle from "lucide-svelte/icons/x-circle";
   import X from "lucide-svelte/icons/x";
   import FileIcon from "lucide-svelte/icons/file";
+  import {
+    MAX_FILE_SIZE,
+    checkDuplicate,
+    createAndUpload,
+    replaceUpload,
+  } from "$lib/utils/upload-pipeline";
 
   const toastStore = useToasts();
 
   // Check if we're replacing an existing media (single file mode)
   const replaceMediaId = $derived($page.url.searchParams.get("replace"));
   const isBulkMode = $derived(!replaceMediaId);
-
-  // File size limit (50MB)
-  const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
   // Upload queue item type
   type UploadStatus = "pending" | "hashing" | "checking" | "creating" | "uploading" | "finalizing" | "done" | "error" | "duplicate";
@@ -54,10 +55,6 @@
   // Single-file mode state (for replace)
   let singleTitle = $state("");
   let singleAltText = $state("");
-
-  // Deduplication dialog state
-  let showDuplicateDialog = $state(false);
-  let duplicateItem = $state<QueueItem | null>(null);
 
   // Derived states
   const hasFiles = $derived(files.length > 0 || uploadQueue.length > 0);
@@ -192,99 +189,48 @@
     }
   }
 
-  async function processQueueItem(item: QueueItem, token: string) {
-    const index = uploadQueue.findIndex(q => q.id === item.id);
+  function updateQueueItem(itemId: string, updates: Partial<QueueItem>) {
+    const index = uploadQueue.findIndex(q => q.id === itemId);
     if (index === -1) return;
+    Object.assign(uploadQueue[index], updates);
+  }
 
+  async function processQueueItem(item: QueueItem, token: string) {
     try {
-      // Step 1: Hash
-      uploadQueue[index].status = "hashing";
-      const hash = await computeFileHash(item.file);
-      uploadQueue[index].hash = hash;
+      // Step 1: Check duplicates
+      updateQueueItem(item.id, { status: "hashing" });
+      const dupResult = await checkDuplicate(item.file, fetch, token);
+      updateQueueItem(item.id, { hash: dupResult.hash, status: "checking" });
 
-      // Step 2: Check duplicates
-      uploadQueue[index].status = "checking";
-      const duplicateCheck = await mediaCommands.checkDuplicate(
-        { sha256: hash },
-        fetch,
-        token
-      );
-
-      if (duplicateCheck.exists && duplicateCheck.media) {
-        uploadQueue[index].status = "duplicate";
-        uploadQueue[index].duplicateOf = {
-          id: duplicateCheck.media.id,
-          title: duplicateCheck.media.title ?? duplicateCheck.media.originalFilename ?? "Untitled"
-        };
+      if (dupResult.exists && dupResult.media) {
+        updateQueueItem(item.id, {
+          status: "duplicate",
+          duplicateOf: {
+            id: dupResult.media.id,
+            title: dupResult.media.title ?? dupResult.media.originalFilename ?? "Untitled"
+          }
+        });
         return;
       }
 
-      // Step 3: Create media
-      uploadQueue[index].status = "creating";
-      const kind = detectMediaKindFromMimeType(item.file.type);
-      const mediaRecord = await mediaCommands.createMedia(
-        {
-          kind,
-          visibility: "public",
-          originalFilename: item.file.name,
-          title: item.title.trim() || null
-        },
-        fetch,
-        token
-      );
-      uploadQueue[index].mediaId = mediaRecord.id;
-
-      // Step 4: Initiate upload
-      const uploadInfo = await mediaCommands.initiateUpload(
-        mediaRecord.id,
-        {
-          contentType: item.file.type,
-          contentLength: item.file.size
-        },
-        fetch,
-        token
-      );
-
-      // Step 5: Upload with progress
-      uploadQueue[index].status = "uploading";
-
-      const plan = {
-        uploadUrl: uploadInfo.uploadPlan.uploadUrl,
-        method: uploadInfo.uploadPlan.method,
-        requiredHeaders: uploadInfo.uploadPlan.headers,
-        maxBytes: uploadInfo.uploadPlan.maxBytes ?? MAX_FILE_SIZE,
-        allowedContentTypes: uploadInfo.uploadPlan.allowedContentTypes ?? [],
-        expiresAt: uploadInfo.uploadPlan.expiresAt,
-        objectKey: ""
-      };
-
-      await uploadToBlob(plan, item.file, {
+      // Step 2: Create and upload
+      updateQueueItem(item.id, { status: "creating" });
+      const result = await createAndUpload({
+        file: item.file,
+        fetchFn: fetch,
+        accessToken: token,
+        title: item.title.trim() || null,
         onProgress: (progress: UploadProgress) => {
-          const idx = uploadQueue.findIndex(q => q.id === item.id);
-          if (idx !== -1) {
-            uploadQueue[idx].progress = progress.percent;
-          }
+          updateQueueItem(item.id, { status: "uploading", progress: progress.percent });
         }
       });
 
-      // Step 6: Finalize
-      uploadQueue[index].status = "finalizing";
-      await mediaCommands.finaliseUpload(
-        mediaRecord.id,
-        uploadInfo.versionId,
-        { sha256: hash, contentType: item.file.type },
-        fetch,
-        token
-      );
-
-      uploadQueue[index].status = "done";
-      uploadQueue[index].progress = 100;
+      updateQueueItem(item.id, { status: "done", progress: 100, mediaId: result.mediaId });
     } catch (e) {
-      const idx = uploadQueue.findIndex(q => q.id === item.id);
-      if (idx !== -1) {
-        uploadQueue[idx].status = "error";
-        uploadQueue[idx].error = e instanceof Error ? e.message : "Upload failed";
-      }
+      updateQueueItem(item.id, {
+        status: "error",
+        error: e instanceof Error ? e.message : "Upload failed"
+      });
     }
   }
 
@@ -299,10 +245,7 @@
     }
 
     // Reset item state
-    const index = uploadQueue.findIndex(q => q.id === itemId);
-    uploadQueue[index].status = "pending";
-    uploadQueue[index].progress = 0;
-    uploadQueue[index].error = undefined;
+    updateQueueItem(itemId, { status: "pending", progress: 0, error: undefined });
 
     uploading = true;
     try {
@@ -323,74 +266,33 @@
       return;
     }
 
-    const index = uploadQueue.findIndex(q => q.id === itemId);
-
     uploading = true;
     try {
-      // Skip duplicate check, go straight to create
-      uploadQueue[index].status = "creating";
-      const kind = detectMediaKindFromMimeType(item.file.type);
-      const mediaRecord = await mediaCommands.createMedia(
-        {
-          kind,
-          visibility: "public",
-          originalFilename: item.file.name,
-          title: item.title.trim() || null
-        },
-        fetch,
-        token
-      );
-      uploadQueue[index].mediaId = mediaRecord.id;
+      updateQueueItem(itemId, { status: "creating" });
 
-      // Continue with upload
-      const uploadInfo = await mediaCommands.initiateUpload(
-        mediaRecord.id,
-        {
-          contentType: item.file.type,
-          contentLength: item.file.size
-        },
-        fetch,
-        token
-      );
-
-      uploadQueue[index].status = "uploading";
-
-      const plan = {
-        uploadUrl: uploadInfo.uploadPlan.uploadUrl,
-        method: uploadInfo.uploadPlan.method,
-        requiredHeaders: uploadInfo.uploadPlan.headers,
-        maxBytes: uploadInfo.uploadPlan.maxBytes ?? MAX_FILE_SIZE,
-        allowedContentTypes: uploadInfo.uploadPlan.allowedContentTypes ?? [],
-        expiresAt: uploadInfo.uploadPlan.expiresAt,
-        objectKey: ""
-      };
-
-      await uploadToBlob(plan, item.file, {
+      const result = await createAndUpload({
+        file: item.file,
+        fetchFn: fetch,
+        accessToken: token,
+        title: item.title.trim() || null,
         onProgress: (progress: UploadProgress) => {
-          const idx = uploadQueue.findIndex(q => q.id === item.id);
-          if (idx !== -1) {
-            uploadQueue[idx].progress = progress.percent;
-          }
+          updateQueueItem(itemId, { status: "uploading", progress: progress.percent });
         }
       });
 
-      uploadQueue[index].status = "finalizing";
-      await mediaCommands.finaliseUpload(
-        mediaRecord.id,
-        uploadInfo.versionId,
-        { sha256: item.hash ?? "", contentType: item.file.type },
-        fetch,
-        token
-      );
-
-      uploadQueue[index].status = "done";
-      uploadQueue[index].progress = 100;
-      uploadQueue[index].duplicateOf = undefined;
+      updateQueueItem(itemId, {
+        status: "done",
+        progress: 100,
+        mediaId: result.mediaId,
+        duplicateOf: undefined,
+      });
 
       toastStore.push({ variant: "success", message: "File uploaded" });
     } catch (e) {
-      uploadQueue[index].status = "error";
-      uploadQueue[index].error = e instanceof Error ? e.message : "Upload failed";
+      updateQueueItem(itemId, {
+        status: "error",
+        error: e instanceof Error ? e.message : "Upload failed"
+      });
     }
     uploading = false;
   }
@@ -461,50 +363,18 @@
     singleUploadProgress = 0;
 
     try {
-      const file = files[0].file;
-
-      // Hash
       singleUploadStage = "hashing";
-      const hash = await computeFileHash(file);
 
-      // Initiate
-      const uploadInfo = await mediaCommands.initiateUpload(
-        replaceMediaId,
-        {
-          contentType: file.type,
-          contentLength: file.size
-        },
-        fetch,
-        token
-      );
-
-      // Upload
-      singleUploadStage = "uploading";
-      const plan = {
-        uploadUrl: uploadInfo.uploadPlan.uploadUrl,
-        method: uploadInfo.uploadPlan.method,
-        requiredHeaders: uploadInfo.uploadPlan.headers,
-        maxBytes: uploadInfo.uploadPlan.maxBytes ?? MAX_FILE_SIZE,
-        allowedContentTypes: uploadInfo.uploadPlan.allowedContentTypes ?? [],
-        expiresAt: uploadInfo.uploadPlan.expiresAt,
-        objectKey: ""
-      };
-
-      await uploadToBlob(plan, file, {
+      await replaceUpload({
+        file: files[0].file,
+        mediaId: replaceMediaId,
+        fetchFn: fetch,
+        accessToken: token,
         onProgress: (progress: UploadProgress) => {
+          singleUploadStage = "uploading";
           singleUploadProgress = progress.percent;
         }
       });
-
-      // Finalize
-      singleUploadStage = "finalizing";
-      await mediaCommands.finaliseUpload(
-        replaceMediaId,
-        uploadInfo.versionId,
-        { sha256: hash, contentType: file.type },
-        fetch,
-        token
-      );
 
       singleUploadStage = "done";
       toastStore.push({ variant: "success", message: "File replaced" });

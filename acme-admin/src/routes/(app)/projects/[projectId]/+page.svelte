@@ -20,6 +20,7 @@
   import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, Pill, ProgressBar, Field, Select, OrderBy, DetailsCard, DetailsSection, DetailsItem, TimeAgo, type OrderByValue } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { BatchActionBar } from "$lib/components";
+  import { getProjectStatusAccent } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
@@ -304,15 +305,6 @@
     on_hold: "warning"
   } as Record<string, BadgeVariant>)[project.status] ?? "default" : "default");
 
-  function getStatusAccent(status: string): string {
-    switch (status) {
-      case "active": return "#10b981";
-      case "archived": return "#6b7280";
-      case "on_hold": return "#f59e0b";
-      default: return "#64748b";
-    }
-  }
-
   function handleEdit() {
     if (!project) return;
     void gotoWithContext(`/projects/${project.id}/edit`, {
@@ -385,7 +377,7 @@
           <Code copy>{project.id}</Code>
         </PageHeaderMetaItem>
         <PageHeaderMetaSeparator />
-        <Pill accent={getStatusAccent(project.status)}>{statusLabel}</Pill>
+        <Pill accent={getProjectStatusAccent(project.status)}>{statusLabel}</Pill>
       </PageHeaderMetaRow>
     </PageHeaderMeta>
 

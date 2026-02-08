@@ -44,6 +44,7 @@
     UserRole as UserRoleConst
   } from "@api-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { getUserRoleAccent, getUserStatusAccent, getSessionStatusAccent, getActivityAccent } from "$lib/utils/accents";
   import MoreVertical from "lucide-svelte/icons/more-vertical";
 
   interface Props {
@@ -121,63 +122,6 @@
 
   function formatDate(dateStr: string): string {
     return new Date(dateStr).toLocaleString();
-  }
-
-  function getRoleAccent(role: string): string {
-    switch (role) {
-      case "superadmin": return "#dc2626";
-      case "admin": return "#8b5cf6";
-      case "support": return "#3b82f6";
-      case "editor": return "#14b8a6";
-      case "tutor": return "#22c55e";
-      case "tester": return "#f97316";
-      default: return "#64748b";
-    }
-  }
-
-  function getStatusAccent(status: string): string {
-    switch (status) {
-      case "active": return "#22c55e";
-      case "suspended": return "#f97316";
-      case "deleted": return "#dc2626";
-      default: return "#64748b";
-    }
-  }
-
-  function getSessionStatusAccent(status: string): string {
-    switch (status) {
-      case "active": return "#22c55e";
-      case "expired": return "#f59e0b";
-      case "revoked": return "#dc2626";
-      default: return "#64748b";
-    }
-  }
-
-  function getActivityAccent(action: string): string {
-    switch (action) {
-      case "create":
-      case "created":
-      case "restore":
-      case "restored":
-      case "unsuspend":
-        return "#22c55e";
-      case "delete":
-      case "deleted":
-      case "soft_delete":
-      case "suspend":
-        return "#dc2626";
-      case "update":
-      case "updated":
-      case "upload":
-      case "uploaded":
-      case "role_change":
-        return "#3b82f6";
-      case "login":
-      case "logout":
-        return "#64748b";
-      default:
-        return "#8b5cf6";
-    }
   }
 
   function truncateUserAgent(ua: string | null | undefined, max = 70): string {
@@ -426,8 +370,8 @@
           <Code copy>{user.id}</Code>
         </PageHeaderMetaItem>
         <PageHeaderMetaSeparator />
-        <Pill accent={getRoleAccent(user.role)}>{user.role}</Pill>
-        <Pill accent={getStatusAccent(user.status)}>{user.status}</Pill>
+        <Pill accent={getUserRoleAccent(user.role)}>{user.role}</Pill>
+        <Pill accent={getUserStatusAccent(user.status)}>{user.status}</Pill>
       </PageHeaderMetaRow>
     </PageHeaderMeta>
   </PageHeader>

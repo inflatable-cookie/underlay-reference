@@ -15,6 +15,7 @@
   } from "@decodelabs/underlay/patterns";
   import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, Pill, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
+  import { getTaskStatusAccent, getTaskPriorityAccent } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
   import Calendar from "lucide-svelte/icons/calendar";
@@ -81,26 +82,6 @@
     urgent: "danger"
   } as Record<string, BadgeVariant>)[task.priority] ?? "default" : "default");
 
-  function getStatusAccent(status: string): string {
-    switch (status) {
-      case "pending": return "#6b7280";
-      case "in_progress": return "#3b82f6";
-      case "completed": return "#10b981";
-      case "cancelled": return "#ef4444";
-      default: return "#64748b";
-    }
-  }
-
-  function getPriorityAccent(priority: string): string {
-    switch (priority) {
-      case "low": return "#6b7280";
-      case "medium": return "#64748b";
-      case "high": return "#f59e0b";
-      case "urgent": return "#ef4444";
-      default: return "#64748b";
-    }
-  }
-
   function handleEdit() {
     if (!task || !project) return;
     void gotoWithContext(`/projects/${data.projectId}/tasks/${task.id}/edit`, {
@@ -157,8 +138,8 @@
           <Code copy>{task.id}</Code>
         </PageHeaderMetaItem>
         <PageHeaderMetaSeparator />
-        <Pill accent={getStatusAccent(task.status)}>{statusLabel}</Pill>
-        <Pill accent={getPriorityAccent(task.priority)}>{priorityLabel}</Pill>
+        <Pill accent={getTaskStatusAccent(task.status)}>{statusLabel}</Pill>
+        <Pill accent={getTaskPriorityAccent(task.priority)}>{priorityLabel}</Pill>
       </PageHeaderMetaRow>
     </PageHeaderMeta>
 

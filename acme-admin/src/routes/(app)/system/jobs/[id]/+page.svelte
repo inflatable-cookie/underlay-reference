@@ -26,6 +26,7 @@
   import Ban from "lucide-svelte/icons/ban";
   import { adminCommands, type JobDetail } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { getJobStatusAccent } from "$lib/utils/accents";
 
   const toastStore = useToasts();
   const jobId = $page.params.id;
@@ -52,17 +53,6 @@
 
   function getStatusLabel(status: string): string {
     return status.charAt(0).toUpperCase() + status.slice(1);
-  }
-
-  function getStatusAccent(status: string): string {
-    switch (status) {
-      case "succeeded": return "#10b981";
-      case "failed": return "#ef4444";
-      case "running": return "#3b82f6";
-      case "pending": return "#f59e0b";
-      case "cancelled": return "#6b7280";
-      default: return "#64748b";
-    }
   }
 
   function formatDate(dateStr: string | null | undefined): string {
@@ -118,7 +108,7 @@
           <Code copy>{job.id}</Code>
         </PageHeaderMetaItem>
         <PageHeaderMetaSeparator />
-        <Pill accent={getStatusAccent(job.status)}>{getStatusLabel(job.status)}</Pill>
+        <Pill accent={getJobStatusAccent(job.status)}>{getStatusLabel(job.status)}</Pill>
       </PageHeaderMetaRow>
     </PageHeaderMeta>
   {/if}

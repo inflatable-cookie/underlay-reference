@@ -14,6 +14,7 @@
 	import { gotoWithContext } from "@decodelabs/underlay/client";
 	import Plus from "lucide-svelte/icons/plus";
 	import { auth, authLoading, currentUser } from "$lib/stores/auth";
+	import { getUserRoleAccent, getUserStatusAccent } from "$lib/utils/accents";
 
 	const PAGE_SIZE = 20;
 
@@ -72,27 +73,6 @@
 		limit: PAGE_SIZE,
 		total
 	});
-
-	function getRoleAccent(role: string): string {
-		switch (role) {
-			case "superadmin": return "#dc2626";
-			case "admin": return "#8b5cf6";
-			case "support": return "#3b82f6";
-			case "editor": return "#14b8a6";
-			case "tutor": return "#22c55e";
-			case "tester": return "#f97316";
-			default: return "#64748b";
-		}
-	}
-
-	function getStatusAccent(status: string): string {
-		switch (status) {
-			case "active": return "#22c55e";
-			case "suspended": return "#f97316";
-			case "deleted": return "#dc2626";
-			default: return "#64748b";
-		}
-	}
 
 	function formatDate(dateStr: string): string {
 		return new Date(dateStr).toLocaleDateString();
@@ -256,9 +236,9 @@
 		{#if column.key === "email"}
 			<a href={`/users/${row.id}`} class="email-link">{value}</a>
 		{:else if column.key === "role"}
-			<Pill accent={getRoleAccent(row.role)}>{row.role}</Pill>
+			<Pill accent={getUserRoleAccent(row.role)}>{row.role}</Pill>
 		{:else if column.key === "status"}
-			<Pill accent={getStatusAccent(row.status)}>{row.status}</Pill>
+			<Pill accent={getUserStatusAccent(row.status)}>{row.status}</Pill>
 		{:else}
 			{value}
 		{/if}
