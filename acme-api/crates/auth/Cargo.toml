@@ -30,3 +30,4 @@ underlay-email = { workspace = true, features = ["templates"] }
 underlay-ratelimit = { workspace = true }
 uuid = { workspace = true }
 webauthn-rs-proto = "0.5.4"
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }

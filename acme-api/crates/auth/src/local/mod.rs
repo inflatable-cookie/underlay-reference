@@ -31,6 +31,9 @@ use underlay_auth::state::{AuthStateError, AuthStateStore};
 use underlay_auth_totp::{TotpConfig, TotpService, TwoFactorVerified};
 use underlay_auth_webauthn::{WebAuthnConfig, WebAuthnService};
 use underlay_ratelimit::{InMemoryBackend, RateLimitBackend, RateLimitConfig};
+
+use crate::rate_limiter::DynamicRateLimiter;
+use crate::redis_rate_limit::RedisRateLimitBackend;
 use webauthn_rs_proto::{attest::RegisterPublicKeyCredential, auth::PublicKeyCredential};
 
 mod auth_state;
@@ -190,7 +193,7 @@ pub struct AcmeLocalAuthService {
     google_oauth: Option<GoogleOAuthAppService>,
     #[allow(dead_code)] // Prepared for future OAuth implementation
     oauth_cipher: Option<OAuthTokenCipher>,
-    rate_limiter: InMemoryBackend,
+    rate_limiter: DynamicRateLimiter,
     config: AuthConfig,
 }
 
@@ -237,11 +240,38 @@ impl AcmeLocalAuthService {
 
         let oauth_cipher = OAuthTokenCipher::from_env_optional().ok().flatten();
 
-        // Load auth configuration (uses defaults, can be extended for env var support)
-        let config = AuthConfig::default();
+        // Load auth configuration with environment overrides
+        let rate_limit_backend = std::env::var("RATE_LIMIT_BACKEND")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or_default();
+        let redis_url = std::env::var("REDIS_URL")
+            .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+
+        let config = AuthConfig {
+            rate_limit_backend,
+            redis_url,
+            ..AuthConfig::default()
+        };
 
         // Rate limiter with background cleanup
-        let rate_limiter = InMemoryBackend::with_cleanup(config.rate_limit_cleanup_interval);
+        let rate_limiter = match config.rate_limit_backend {
+            crate::redis_rate_limit::RateLimitBackendType::InMemory => {
+                DynamicRateLimiter::in_memory(InMemoryBackend::with_cleanup(
+                    config.rate_limit_cleanup_interval,
+                ))
+            }
+            crate::redis_rate_limit::RateLimitBackendType::Redis => {
+                let redis_backend =
+                    RedisRateLimitBackend::new(&config.redis_url).map_err(|e| {
+                        AuthError::Internal(format!(
+                            "Failed to connect to Redis for rate limiting: {}",
+                            e
+                        ))
+                    })?;
+                DynamicRateLimiter::redis(redis_backend)
+            }
+        };
 
         // Argon2 password hashing parameters (configurable via environment)
         // Defaults: 64 MiB memory, 3 iterations, 4 parallelism

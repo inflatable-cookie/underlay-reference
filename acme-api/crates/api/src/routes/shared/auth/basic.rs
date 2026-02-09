@@ -347,6 +347,18 @@ pub async fn refresh(
     State(state): State<AppState>,
     Json(payload): Json<RefreshRequest>,
 ) -> impl IntoResponse {
+    // Extract fingerprint for rate limiting and session validation
+    let fingerprint = extract_session_fingerprint(&headers);
+
+    // Check rate limit before processing
+    if let Err(err) = state
+        .local_auth
+        .check_refresh_rate_limit(&fingerprint)
+        .await
+    {
+        return map_auth_error_to_response(err);
+    }
+
     // Accept refresh token from body (mobile) or cookie (browser)
     let refresh_token = if !payload.refresh_token.is_empty() {
         payload.refresh_token.clone()
@@ -360,9 +372,6 @@ pub async fn refresh(
         )
         .into_response();
     };
-
-    // Extract fingerprint for session validation
-    let fingerprint = extract_session_fingerprint(&headers);
 
     match state
         .local_auth

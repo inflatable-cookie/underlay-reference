@@ -62,6 +62,8 @@
 
 use std::time::Duration;
 
+use crate::redis_rate_limit::RateLimitBackendType;
+
 /// Centralized configuration for all authentication operations.
 ///
 /// All timeouts and limits can be customized via this struct. Sensible defaults
@@ -85,6 +87,19 @@ pub struct AuthConfig {
 
     /// Maximum passkey login attempts per hour per email.
     pub passkey_login_rate_limit_per_hour: u32,
+
+    /// Maximum token refresh attempts per hour per fingerprint.
+    /// Prevents brute force enumeration of valid refresh tokens.
+    pub refresh_rate_limit_per_hour: u32,
+
+    /// Type of rate limiter backend to use.
+    /// Default: InMemory (single-instance)
+    /// Set to Redis for distributed deployments.
+    pub rate_limit_backend: RateLimitBackendType,
+
+    /// Redis URL for rate limiting (only used when backend is Redis).
+    /// Default: "redis://localhost:6379"
+    pub redis_url: String,
 
     // =========================================================================
     // Attempt Limits
@@ -150,6 +165,9 @@ impl Default for AuthConfig {
             password_change_rate_limit_per_hour: 5,
             passkey_register_rate_limit_per_hour: 5,
             passkey_login_rate_limit_per_hour: 10,
+            refresh_rate_limit_per_hour: 60,
+            rate_limit_backend: RateLimitBackendType::InMemory,
+            redis_url: "redis://localhost:6379".to_string(),
 
             // Attempt limits
             max_totp_attempts: 5,
@@ -258,6 +276,24 @@ impl AuthConfigBuilder {
     /// Set the passkey login rate limit per hour.
     pub fn passkey_login_rate_limit_per_hour(mut self, value: u32) -> Self {
         self.config.passkey_login_rate_limit_per_hour = value;
+        self
+    }
+
+    /// Set the token refresh rate limit per hour.
+    pub fn refresh_rate_limit_per_hour(mut self, value: u32) -> Self {
+        self.config.refresh_rate_limit_per_hour = value;
+        self
+    }
+
+    /// Set the rate limit backend type.
+    pub fn rate_limit_backend(mut self, backend: RateLimitBackendType) -> Self {
+        self.config.rate_limit_backend = backend;
+        self
+    }
+
+    /// Set the Redis URL for rate limiting.
+    pub fn redis_url(mut self, url: impl Into<String>) -> Self {
+        self.config.redis_url = url.into();
         self
     }
 

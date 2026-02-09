@@ -1,4 +1,6 @@
 use super::*;
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 impl AcmeLocalAuthService {
     /// Check rate limit for login attempts.
@@ -115,6 +117,49 @@ impl AcmeLocalAuthService {
 
         let rl_config =
             RateLimitConfig::per_hour(self.config.passkey_login_rate_limit_per_hour.into());
+
+        let result = self
+            .rate_limiter
+            .check_and_increment(&key, &rl_config)
+            .await
+            .map_err(|e| AuthError::Internal(format!("Rate limit error: {}", e)))?;
+
+        if result.is_denied() {
+            return Err(AuthError::RateLimited {
+                retry_after_seconds: result.retry_after_secs(),
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Check rate limit for token refresh attempts.
+    ///
+    /// Rate limits by fingerprint (IP + User-Agent hash) to prevent
+    /// brute force enumeration of valid refresh tokens.
+    pub async fn check_refresh_rate_limit(
+        &self,
+        fingerprint: &crate::SessionFingerprint,
+    ) -> AuthResult<()> {
+        // Create a key based on fingerprint components
+        let ip_part = fingerprint.ip_address.as_deref().unwrap_or("unknown");
+        let ua_part = fingerprint
+            .user_agent
+            .as_deref()
+            .map(|ua| {
+                // Simple hash of user agent to keep key short
+                use std::collections::hash_map::DefaultHasher;
+                use std::hash::{Hash, Hasher};
+                let mut hasher = DefaultHasher::new();
+                ua.hash(&mut hasher);
+                format!("{:x}", hasher.finish())[..8].to_string()
+            })
+            .unwrap_or_else(|| "unknown".to_string());
+
+        let key = format!("refresh:{}:{}", ip_part, ua_part);
+
+        let rl_config =
+            RateLimitConfig::per_hour(self.config.refresh_rate_limit_per_hour.into());
 
         let result = self
             .rate_limiter

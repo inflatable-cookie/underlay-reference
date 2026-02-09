@@ -10,9 +10,13 @@ mod email_totp_sender;
 mod local;
 mod principal;
 mod provider;
+mod rate_limiter;
+mod redis_rate_limit;
 mod underlay;
 
 pub use config::{AuthConfig, AuthConfigBuilder};
+pub use rate_limiter::DynamicRateLimiter;
+pub use redis_rate_limit::{RateLimitBackendType, RedisRateLimitBackend};
 pub use email_totp::{
     EmailTotpConfig, EmailTotpError, EmailTotpResult, EmailTotpService, VerificationSession,
 };

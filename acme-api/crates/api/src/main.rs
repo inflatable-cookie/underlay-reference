@@ -54,7 +54,20 @@ async fn main() -> anyhow::Result<()> {
         .map(|v| v == "true" || v == "1")
         .unwrap_or(false);
 
-    let mut cookie_config = underlay_http::AuthCookieConfig::new().with_secure(cookie_secure);
+    // SameSite cookie policy for CSRF protection
+    // Default to Strict in production, Lax in development
+    let same_site = if std::env::var("COOKIE_SAMESITE_STRICT")
+        .map(|v| v == "true" || v == "1")
+        .unwrap_or(!app_config.env.is_development())
+    {
+        underlay_http::cookies::SameSite::Strict
+    } else {
+        underlay_http::cookies::SameSite::Lax
+    };
+
+    let mut cookie_config = underlay_http::AuthCookieConfig::new()
+        .with_secure(cookie_secure)
+        .with_same_site(same_site);
 
     if let Ok(domain) = std::env::var("COOKIE_DOMAIN") {
         cookie_config = cookie_config.with_domain(domain);

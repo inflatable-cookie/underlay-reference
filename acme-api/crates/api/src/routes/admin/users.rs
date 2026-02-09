@@ -14,6 +14,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
 
+use acme_auth::UserPrincipal;
 use acme_core::Uuid as UnderlayUuid;
 use acme_db::{activity, users};
 
@@ -467,6 +468,88 @@ pub async fn update_user(
     }
 }
 
+/// Role hierarchy for privilege checking.
+/// Higher number = more privileges.
+fn role_level(role: &str) -> i32 {
+    match role {
+        "user" => 0,
+        "tester" => 1,
+        "editor" => 2,
+        "support" => 3,
+        "admin" => 4,
+        "superadmin" => 5,
+        _ => 0,
+    }
+}
+
+/// Convert UserRole to level.
+fn user_role_level(role: &acme_auth::UserRole) -> i32 {
+    use acme_auth::UserRole;
+    match role {
+        UserRole::User => 0,
+        UserRole::Tester => 1,
+        // Editor doesn't exist in UserRole enum, map to support
+        UserRole::Support => 3,
+        UserRole::Admin => 4,
+        UserRole::Superadmin => 5,
+    }
+}
+
+/// Check if an admin can manage a target user based on roles.
+fn can_manage_user(admin: &UserPrincipal, target_role: &str, is_self: bool) -> Result<(), ApiError> {
+    use axum::http::StatusCode;
+
+    // No one can manage themselves (prevents self-demotion, self-suspension)
+    if is_self {
+        return Err(ApiError::new(
+            StatusCode::FORBIDDEN,
+            "admin.users.cannot_manage_self",
+            "You cannot modify your own account."
+        ));
+    }
+
+    let admin_level = admin.roles.iter()
+        .map(|r| user_role_level(r))
+        .max()
+        .unwrap_or(0);
+    let target_level = role_level(target_role);
+
+    // Check if admin is superadmin
+    let is_superadmin = admin.roles.iter().any(|r| matches!(r, acme_auth::UserRole::Superadmin));
+
+    // Superadmin can manage anyone except other superadmins (unless self-check passed)
+    if is_superadmin {
+        if target_role == "superadmin" {
+            return Err(ApiError::new(
+                StatusCode::FORBIDDEN,
+                "admin.users.cannot_manage_superadmin",
+                "Only superadmins can manage other superadmins."
+            ));
+        }
+        return Ok(());
+    }
+
+    // Admin can only manage users with lower role levels
+    if admin_level <= target_level {
+        return Err(ApiError::new(
+            StatusCode::FORBIDDEN,
+            "admin.users.insufficient_privileges",
+            "You can only manage users with lower privileges than your own."
+        ));
+    }
+
+    // Admin cannot promote to superadmin
+    if target_role == "superadmin" && !is_superadmin {
+        return Err(ApiError::new(
+            StatusCode::FORBIDDEN,
+            "admin.users.cannot_promote_to_superadmin",
+            "Only superadmins can promote users to superadmin."
+        ));
+    }
+
+    Ok(())
+}
+
 /// Update a user's role.
 ///
 /// PUT /v1/admin/users/:user_id/role
@@ -476,6 +559,8 @@ pub async fn update_user_role(
     Path(user_id): Path<Uuid>,
     Json(req): Json<UpdateUserRoleRequest>,
 ) -> Result<Response, ApiError> {
+    use acme_auth::UserRole;
+
     if let Err(e) = req.validate() {
         return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
@@ -494,6 +579,20 @@ pub async fn update_user_role(
             "validation.invalid_role",
             "Invalid role value",
         ));
+    }
+
+    // Check privilege escalation
+    let is_self = admin.user_id.0.into_inner() == user_id;
+    can_manage_user(&admin, &req.role, is_self)?;
+
+    // Get current user to check their current role
+    let pool = state.local_auth.pool();
+    let current_user = users::get_user_admin(pool, user_id).await
+        .map_err(|e| ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e))?;
+
+    if let Some(ref user) = current_user {
+        // Check if trying to demote a higher-privileged user
+        can_manage_user(&admin, &user.role, is_self)?;
     }
 
     let pool = state.local_auth.pool();
@@ -542,7 +641,28 @@ pub async fn suspend_user(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
+    use axum::http::StatusCode;
+
+    // Check privilege escalation
+    let is_self = admin.user_id.0.into_inner() == user_id;
+    if is_self {
+        return Err(ApiError::new(
+            StatusCode::FORBIDDEN,
+            "admin.users.cannot_suspend_self",
+            "You cannot suspend your own account."
+        ));
+    }
+
     let pool = state.local_auth.pool();
+
+    // Get current user to check their role
+    let current_user = users::get_user_admin(pool, user_id).await
+        .map_err(|e| ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e))?;
+
+    if let Some(ref user) = current_user {
+        // Prevent admins from suspending other admins
+        can_manage_user(&admin, &user.role, is_self)?;
+    }
 
     // Update status to suspended
     match users::update_user_status(pool, user_id, "suspended").await {
@@ -595,7 +715,28 @@ pub async fn unsuspend_user(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
+    use axum::http::StatusCode;
+
+    // Check privilege escalation
+    let is_self = admin.user_id.0.into_inner() == user_id;
+    if is_self {
+        return Err(ApiError::new(
+            StatusCode::FORBIDDEN,
+            "admin.users.cannot_unsuspend_self",
+            "You cannot unsuspend your own account."
+        ));
+    }
+
     let pool = state.local_auth.pool();
+
+    // Get current user to check their role
+    let current_user = users::get_user_admin(pool, user_id).await
+        .map_err(|e| ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e))?;
+
+    if let Some(ref user) = current_user {
+        // Prevent admins from unsuspending other admins
+        can_manage_user(&admin, &user.role, is_self)?;
+    }
 
     match users::update_user_status(pool, user_id, "active").await {
         Ok(Some(user)) => {
