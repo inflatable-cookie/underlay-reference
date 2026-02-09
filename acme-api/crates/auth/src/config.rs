@@ -128,6 +128,11 @@ pub struct AuthConfig {
     /// Rate limit cleanup interval (how often the rate limiter cleans up old entries).
     pub rate_limit_cleanup_interval: Duration,
 
+    /// Absolute session timeout (maximum lifetime of a session regardless of activity).
+    /// After this duration, the session is forcefully expired and the user must re-authenticate.
+    /// Default: 30 days
+    pub absolute_session_timeout: Duration,
+
     // =========================================================================
     // Rate Limit Responses
     // =========================================================================
@@ -179,6 +184,7 @@ impl Default for AuthConfig {
             email_state_timeout: Duration::from_secs(600), // 10 minutes
             verification_session_timeout: Duration::from_secs(300), // 5 minutes
             rate_limit_cleanup_interval: Duration::from_secs(300), // 5 minutes
+            absolute_session_timeout: Duration::from_secs(30 * 24 * 60 * 60), // 30 days
 
             // Rate limit responses
             rate_limit_retry_after_short: Duration::from_secs(60), // 1 minute

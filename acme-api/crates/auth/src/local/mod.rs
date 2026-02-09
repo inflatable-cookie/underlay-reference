@@ -249,9 +249,19 @@ impl AcmeLocalAuthService {
         let redis_url = std::env::var("REDIS_URL")
             .unwrap_or_else(|_| "redis://localhost:6379".to_string());
 
+        // Absolute session timeout (default: 30 days)
+        let absolute_session_timeout_days: u64 = std::env::var("SESSION_MAX_ABSOLUTE_DAYS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(30);
+        let absolute_session_timeout = std::time::Duration::from_secs(
+            absolute_session_timeout_days * 24 * 60 * 60
+        );
+
         let config = AuthConfig {
             rate_limit_backend,
             redis_url,
+            absolute_session_timeout,
             ..AuthConfig::default()
         };
 

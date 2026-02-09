@@ -40,6 +40,22 @@ impl AcmeLocalAuthService {
             return Err(AuthError::TokenInvalid);
         }
 
+        // Check absolute session timeout
+        let session_age = Utc::now() - session.created_at;
+        if session_age > chrono::Duration::from_std(self.config.absolute_session_timeout)
+            .unwrap_or(chrono::Duration::days(30))
+        {
+            // Session has exceeded absolute lifetime - revoke it
+            tracing::info!(
+                session_id = %session.id,
+                user_id = %session.user_id,
+                session_age_days = session_age.num_days(),
+                "Session exceeded absolute timeout, revoking"
+            );
+            self.revoke_session(session.id, "absolute_timeout").await?;
+            return Err(AuthError::SessionExpired);
+        }
+
         // Validate session fingerprint if provided
         if let Some(ref current) = current_fingerprint {
             let stored = SessionFingerprint {
