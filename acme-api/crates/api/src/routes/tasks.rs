@@ -122,6 +122,44 @@ pub struct UpdateTaskRequest {
     pub due_date: Option<Option<NaiveDate>>,
 }
 
+const VALID_PROJECT_STATUSES: &[&str] = &["active", "archived", "completed"];
+const VALID_TASK_STATUSES: &[&str] = &["todo", "in_progress", "done"];
+const VALID_TASK_PRIORITIES: &[&str] = &["low", "medium", "high"];
+
+fn validate_project_status_input(status: Option<&str>) -> Result<(), ApiError> {
+    if let Some(status) = status {
+        if !VALID_PROJECT_STATUSES.contains(&status) {
+            return Err(ApiError::bad_request(
+                "validation.invalid_status",
+                "Project status must be one of: active, archived, completed",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_task_input(status: Option<&str>, priority: Option<&str>) -> Result<(), ApiError> {
+    if let Some(status) = status {
+        if !VALID_TASK_STATUSES.contains(&status) {
+            return Err(ApiError::bad_request(
+                "validation.invalid_status",
+                "Task status must be one of: todo, in_progress, done",
+            ));
+        }
+    }
+
+    if let Some(priority) = priority {
+        if !VALID_TASK_PRIORITIES.contains(&priority) {
+            return Err(ApiError::bad_request(
+                "validation.invalid_priority",
+                "Task priority must be one of: low, medium, high",
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 // ============================================================================
 // Project Handlers
 // ============================================================================
@@ -296,6 +334,7 @@ pub async fn update_project(
     if let Err(e) = req.validate() {
         return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
+    validate_project_status_input(req.status.as_deref())?;
 
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
@@ -421,6 +460,7 @@ pub async fn create_task(
     if let Err(e) = req.validate() {
         return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
+    validate_task_input(None, req.priority.as_deref())?;
 
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
@@ -476,6 +516,7 @@ pub async fn update_task(
     if let Err(e) = req.validate() {
         return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
+    validate_task_input(req.status.as_deref(), req.priority.as_deref())?;
 
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();

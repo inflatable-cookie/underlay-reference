@@ -52,7 +52,13 @@ async fn main() -> anyhow::Result<()> {
     // Configure auth cookies
     let cookie_secure = std::env::var("COOKIE_SECURE")
         .map(|v| v == "true" || v == "1")
-        .unwrap_or(false);
+        .unwrap_or(!app_config.env.is_development());
+
+    if !cookie_secure && !app_config.env.is_development() {
+        tracing::warn!(
+            "COOKIE_SECURE=false in non-development environment; auth cookies may be sent over HTTP"
+        );
+    }
 
     // SameSite cookie policy for CSRF protection
     // Default to Strict in production, Lax in development

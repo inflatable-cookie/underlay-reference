@@ -50,8 +50,8 @@ pub(super) fn map_credential_row(row: sqlx::postgres::PgRow) -> Credential {
     let metadata = serde_json::from_value::<CredentialMetadata>(metadata).unwrap_or(
         CredentialMetadata::Password {
             algorithm: "argon2id".to_string(),
-            memory_kb: 65536,
-            iterations: 3,
+            memory_kb: 131072,
+            iterations: 4,
             parallelism: 4,
         },
     );

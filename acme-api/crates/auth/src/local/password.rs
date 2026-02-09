@@ -89,9 +89,9 @@ impl AcmeLocalAuthService {
 
         let metadata = CredentialMetadata::Password {
             algorithm: "argon2id".to_string(),
-            memory_kb: 65536,
-            iterations: 3,
-            parallelism: 4,
+            memory_kb: self.argon2_memory_kb,
+            iterations: self.argon2_iterations,
+            parallelism: self.argon2_parallelism,
         };
 
         let metadata_json = serde_json::to_value(&metadata)

@@ -196,6 +196,9 @@ pub struct AcmeLocalAuthService {
     rate_limiter: DynamicRateLimiter,
     config: AuthConfig,
     encryption: Option<acme_infra::EncryptionService>,
+    argon2_memory_kb: u32,
+    argon2_iterations: u32,
+    argon2_parallelism: u32,
 }
 
 impl AcmeLocalAuthService {
@@ -285,15 +288,15 @@ impl AcmeLocalAuthService {
         };
 
         // Argon2 password hashing parameters (configurable via environment)
-        // Defaults: 64 MiB memory, 3 iterations, 4 parallelism
+        // Defaults: 128 MiB memory, 4 iterations, 4 parallelism
         let argon2_memory_kb: u32 = std::env::var("ARGON2_MEMORY_KB")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(65536);
+            .unwrap_or(131072);
         let argon2_iterations: u32 = std::env::var("ARGON2_ITERATIONS")
             .ok()
             .and_then(|v| v.parse().ok())
-            .unwrap_or(3);
+            .unwrap_or(4);
         let argon2_parallelism: u32 = std::env::var("ARGON2_PARALLELISM")
             .ok()
             .and_then(|v| v.parse().ok())
@@ -323,6 +326,9 @@ impl AcmeLocalAuthService {
             rate_limiter,
             config,
             encryption,
+            argon2_memory_kb,
+            argon2_iterations,
+            argon2_parallelism,
         })
     }
 }

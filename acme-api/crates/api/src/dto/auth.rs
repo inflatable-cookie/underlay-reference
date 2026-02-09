@@ -16,9 +16,9 @@ pub struct RegisterRequest {
     #[validate(length(max = 254, message = "Email too long"))]
     pub email: String,
     #[validate(length(
-        min = 1,
+        min = 12,
         max = 128,
-        message = "Password must be between 1 and 128 characters"
+        message = "Password must be between 12 and 128 characters"
     ))]
     pub password: String,
     #[validate(length(
@@ -110,7 +110,11 @@ pub struct LogoutRequest {
 pub struct ChangePasswordRequest {
     #[validate(length(min = 1, max = 128, message = "Current password required"))]
     pub current_password: String,
-    #[validate(length(min = 1, max = 128, message = "New password required"))]
+    #[validate(length(
+        min = 12,
+        max = 128,
+        message = "New password must be between 12 and 128 characters"
+    ))]
     pub new_password: String,
 }
 
@@ -457,7 +461,11 @@ pub struct ChangePasswordWithVerificationRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid verification session ID"))]
     pub verification_session_id: String,
     /// The new password.
-    #[validate(length(min = 1, max = 128, message = "New password required"))]
+    #[validate(length(
+        min = 12,
+        max = 128,
+        message = "New password must be between 12 and 128 characters"
+    ))]
     pub new_password: String,
 }
 
@@ -500,6 +508,10 @@ pub struct PasswordResetCompleteRequest {
     #[validate(length(min = 1, max = 100, message = "Invalid reset token"))]
     pub reset_token: String,
     /// The new password.
-    #[validate(length(min = 1, max = 128, message = "New password required"))]
+    #[validate(length(
+        min = 12,
+        max = 128,
+        message = "New password must be between 12 and 128 characters"
+    ))]
     pub new_password: String,
 }
