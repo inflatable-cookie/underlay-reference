@@ -23,7 +23,6 @@ underlay-auth-email-totp = { workspace = true }
 underlay-auth-jwt = { workspace = true }
 underlay-auth-oauth = { workspace = true }
 underlay-auth-password = { workspace = true }
-underlay-auth-state = { workspace = true }
 underlay-auth-totp = { workspace = true }
 underlay-auth-webauthn = { workspace = true, features = ["danger-allow-state-serialisation"] }
 underlay-core = { workspace = true }

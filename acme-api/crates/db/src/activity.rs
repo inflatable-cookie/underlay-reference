@@ -16,7 +16,7 @@ use crate::DbPool;
 // Applications can use these for basic audit operations.
 pub use underlay_audit::{
     append_audit_log, count_audit_logs, get_audit_log_by_id, list_audit_logs, AuditAction,
-    AuditEntry, AuditLogFilters, AuditLogRow,
+    AuditEntry, AuditError, AuditLogFilters, AuditLogRow, AuditResult,
 };
 
 // ============================================================================

@@ -15,7 +15,6 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 
 underlay-blob = { workspace = true }
-underlay-image = { workspace = true }
 underlay-jobs = { workspace = true }
 underlay-media = { workspace = true }
 

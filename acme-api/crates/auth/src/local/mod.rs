@@ -27,7 +27,7 @@ use underlay_auth_oauth::{
 use underlay_auth_password::{
     Argon2Hasher, PasswordHasherExt, PasswordStrengthAnalyzer, PasswordVerifierExt,
 };
-use underlay_auth_state::{AuthStateError, AuthStateStore};
+use underlay_auth::state::{AuthStateError, AuthStateStore};
 use underlay_auth_totp::{TotpConfig, TotpService, TwoFactorVerified};
 use underlay_auth_webauthn::{WebAuthnConfig, WebAuthnService};
 use underlay_ratelimit::{InMemoryBackend, RateLimitBackend, RateLimitConfig};

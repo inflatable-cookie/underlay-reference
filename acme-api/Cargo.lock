@@ -69,7 +69,6 @@ dependencies = [
  "underlay-auth-jwt",
  "underlay-auth-oauth",
  "underlay-auth-password",
- "underlay-auth-state",
  "underlay-auth-totp",
  "underlay-auth-webauthn",
  "underlay-core",
@@ -141,7 +140,6 @@ dependencies = [
  "tokio",
  "tracing",
  "underlay-blob",
- "underlay-image",
  "underlay-jobs",
  "underlay-media",
  "uuid",
@@ -3904,6 +3902,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "thiserror 1.0.69",
  "tokio",
  "tracing",
  "uuid",
@@ -3913,12 +3912,15 @@ dependencies = [
 name = "underlay-auth"
 version = "0.0.1"
 dependencies = [
+ "argon2",
  "async-trait",
  "axum",
  "chrono",
  "http 1.4.0",
  "serde",
  "serde_json",
+ "sqlx",
+ "thiserror 2.0.18",
  "underlay-core",
  "uuid",
 ]
@@ -3933,7 +3935,6 @@ dependencies = [
  "thiserror 2.0.18",
  "tracing",
  "underlay-auth",
- "underlay-auth-password",
 ]
 
 [[package]]
@@ -3977,7 +3978,6 @@ dependencies = [
 name = "underlay-auth-password"
 version = "0.0.1"
 dependencies = [
- "argon2",
  "async-trait",
  "base64 0.22.1",
  "rand 0.8.5",
@@ -3987,18 +3987,6 @@ dependencies = [
  "underlay-ratelimit",
  "uuid",
  "zxcvbn",
-]
-
-[[package]]
-name = "underlay-auth-state"
-version = "0.0.1"
-dependencies = [
- "chrono",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror 2.0.18",
- "underlay-core",
 ]
 
 [[package]]
@@ -4052,9 +4040,6 @@ dependencies = [
 name = "underlay-core"
 version = "0.0.1"
 dependencies = [
- "deunicode",
- "once_cell",
- "regex",
  "serde",
  "uuid",
 ]
@@ -4116,14 +4101,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "underlay-image"
-version = "0.0.1"
-dependencies = [
- "image",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "underlay-jobs"
 version = "0.0.1"
 dependencies = [
@@ -4146,6 +4123,7 @@ version = "0.0.1"
 dependencies = [
  "async-trait",
  "chrono",
+ "image",
  "serde",
  "thiserror 1.0.69",
  "underlay-db",

@@ -44,13 +44,12 @@ infer = "0.19"
 underlay-core = { path = "../underlay/rust/crates/underlay-core" }
 underlay-http = { path = "../underlay/rust/crates/underlay-http", features = ["error-logging"] }
 underlay-observability = { path = "../underlay/rust/crates/underlay-observability" }
-underlay-auth = { path = "../underlay/rust/crates/underlay-auth" }
+underlay-auth = { path = "../underlay/rust/crates/underlay-auth", features = ["postgres"] }
 underlay-blob = { path = "../underlay/rust/crates/underlay-blob", features = ["dev-server"] }
 underlay-auth-email-totp = { path = "../underlay/rust/crates/underlay-auth-email-totp" }
 underlay-auth-jwt = { path = "../underlay/rust/crates/underlay-auth-jwt" }
 underlay-auth-oauth = { path = "../underlay/rust/crates/underlay-auth-oauth" }
 underlay-auth-password = { path = "../underlay/rust/crates/underlay-auth-password" }
-underlay-auth-state = { path = "../underlay/rust/crates/underlay-auth-state" }
 underlay-auth-totp = { path = "../underlay/rust/crates/underlay-auth-totp" }
 underlay-auth-webauthn = { path = "../underlay/rust/crates/underlay-auth-webauthn" }
 underlay-audit = { path = "../underlay/rust/crates/underlay-audit" }
@@ -58,7 +57,6 @@ underlay-db = { path = "../underlay/rust/crates/underlay-db" }
 underlay-devtools = { path = "../underlay/rust/crates/underlay-devtools" }
 underlay-email = { path = "../underlay/rust/crates/underlay-email", features = ["templates"] }
 underlay-events = { path = "../underlay/rust/crates/underlay-events" }
-underlay-image = { path = "../underlay/rust/crates/underlay-image" }
 underlay-jobs = { path = "../underlay/rust/crates/underlay-jobs", features = ["full"] }
 underlay-media = { path = "../underlay/rust/crates/underlay-media" }
 underlay-ratelimit = { path = "../underlay/rust/crates/underlay-ratelimit" }

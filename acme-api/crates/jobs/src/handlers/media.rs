@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{info, warn};
 use underlay_blob::{BlobAdapter, MediaConfig};
-use underlay_image::{generate_thumbnail, ThumbnailConfig};
+use underlay_media::image::{generate_thumbnail, ThumbnailConfig};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
 use underlay_media::storage::rendition_key;
 
