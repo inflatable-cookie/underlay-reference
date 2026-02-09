@@ -1,6 +1,4 @@
 use super::*;
-use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 
 impl AcmeLocalAuthService {
     /// Check rate limit for login attempts.

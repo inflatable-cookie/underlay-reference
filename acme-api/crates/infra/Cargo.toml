@@ -4,7 +4,11 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+aes-gcm = "0.10"
+base64 = "0.21"
 dotenvy = { workspace = true }
+rand = "0.8"
+thiserror = "1"
 tracing = { workspace = true }
 underlay-email = { workspace = true }
 underlay-observability = { workspace = true }

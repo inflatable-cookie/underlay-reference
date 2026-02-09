@@ -195,6 +195,7 @@ pub struct AcmeLocalAuthService {
     oauth_cipher: Option<OAuthTokenCipher>,
     rate_limiter: DynamicRateLimiter,
     config: AuthConfig,
+    encryption: Option<acme_infra::EncryptionService>,
 }
 
 impl AcmeLocalAuthService {
@@ -291,6 +292,12 @@ impl AcmeLocalAuthService {
         let password_hasher =
             Argon2Hasher::with_params(argon2_memory_kb, argon2_iterations, argon2_parallelism);
 
+        // Initialize encryption service for TOTP secrets (optional - will work without it for backward compatibility)
+        let encryption = acme_infra::EncryptionService::from_env();
+        if encryption.is_none() {
+            tracing::warn!("ENCRYPTION_KEY not set - TOTP secrets will be stored in plaintext. Set ENCRYPTION_KEY for production.");
+        }
+
         Ok(Self {
             auth_state: AuthStateStore::new(pool.clone()),
             pool,
@@ -305,6 +312,7 @@ impl AcmeLocalAuthService {
             oauth_cipher,
             rate_limiter,
             config,
+            encryption,
         })
     }
 }

@@ -174,7 +174,10 @@ impl AppConfig {
 
         // Public hostname for URLs (defaults to localhost for local/dev/test)
         let public_host = env::var("PUBLIC_HOST").unwrap_or_else(|_| {
-            if matches!(env, Environment::Local | Environment::Dev | Environment::Test) {
+            if matches!(
+                env,
+                Environment::Local | Environment::Dev | Environment::Test
+            ) {
                 "localhost".to_string()
             } else {
                 bind_addr.clone()
@@ -277,7 +280,11 @@ impl AppConfig {
 
         AppConfig {
             env,
-            http: HttpConfig { bind_addr, port, public_host },
+            http: HttpConfig {
+                bind_addr,
+                port,
+                public_host,
+            },
             database: DatabaseConfig { url: database_url },
             logging: LoggingConfig {
                 level: logging_level,

@@ -1,6 +1,42 @@
 use super::*;
 
 impl AcmeLocalAuthService {
+    /// Encrypt a TOTP secret if encryption is enabled.
+    fn encrypt_totp_secret(&self, secret: &str) -> String {
+        match &self.encryption {
+            Some(enc) => match enc.encrypt(secret) {
+                Ok(encrypted) => encrypted,
+                Err(e) => {
+                    tracing::error!("Failed to encrypt TOTP secret: {}", e);
+                    secret.to_string() // Fallback to plaintext on error
+                }
+            }
+            None => secret.to_string(), // No encryption configured
+        }
+    }
+
+    /// Decrypt a TOTP secret if encryption is enabled.
+    fn decrypt_totp_secret(&self, encrypted: &str) -> String {
+        match &self.encryption {
+            Some(enc) => {
+                // Check if value is encrypted
+                if acme_infra::EncryptionService::is_encrypted(encrypted) {
+                    match enc.decrypt(encrypted) {
+                        Ok(decrypted) => decrypted,
+                        Err(e) => {
+                            tracing::error!("Failed to decrypt TOTP secret: {}", e);
+                            encrypted.to_string() // Fallback
+                        }
+                    }
+                } else {
+                    // Plaintext - migrate on next write
+                    encrypted.to_string()
+                }
+            }
+            None => encrypted.to_string(), // No encryption configured
+        }
+    }
+
     pub(super) async fn find_totp_details(
         &self,
         user_id: Uuid,
@@ -28,13 +64,17 @@ impl AcmeLocalAuthService {
         let credential_id: sqlx::types::Uuid = row.get("credential_id");
         let last_counter: i64 = row.get("last_counter");
         let backup_code_hashes_value: serde_json::Value = row.get("backup_code_hashes");
+        let encrypted_secret: String = row.get("secret_encrypted");
 
         let backup_code_hashes =
             serde_json::from_value::<Vec<String>>(backup_code_hashes_value).unwrap_or_default();
 
+        // Decrypt the secret
+        let secret_base32 = self.decrypt_totp_secret(&encrypted_secret);
+
         Ok(Some(TotpDetails {
             credential_id: Uuid(credential_id),
-            secret_base32: row.get("secret_encrypted"),
+            secret_base32,
             last_counter: u64::try_from(last_counter).unwrap_or(0),
             backup_code_hashes,
         }))
@@ -163,6 +203,9 @@ impl AcmeLocalAuthService {
         let metadata_json = serde_json::to_value(&state.metadata)
             .map_err(|_| AuthError::Internal("Failed to encode credential metadata".into()))?;
 
+        // Encrypt the TOTP secret before storing
+        let encrypted_secret = self.encrypt_totp_secret(&state.secret_base32);
+
         sqlx::query(
             r#"
             INSERT INTO auth.credentials (
@@ -173,7 +216,7 @@ impl AcmeLocalAuthService {
         )
         .bind(credential_id.into_inner())
         .bind(user_id.into_inner())
-        .bind(&state.secret_base32)
+        .bind(&encrypted_secret)
         .bind(metadata_json)
         .bind(now)
         .bind(now)
