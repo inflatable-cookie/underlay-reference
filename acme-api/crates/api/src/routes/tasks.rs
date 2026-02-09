@@ -16,6 +16,7 @@ use acme_core::Uuid;
 use acme_db::tasks;
 
 use crate::state::{AppState, AuthenticatedUser};
+use validator::Validate;
 
 // ============================================================================
 // DTOs
@@ -45,17 +46,21 @@ impl From<tasks::ProjectRow> for ProjectResponse {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "snake_case")]
 pub struct CreateProjectRequest {
+    #[validate(length(min = 1, max = 255, message = "Name must be between 1 and 255 characters"))]
     pub name: String,
+    #[validate(length(max = 2000, message = "Description must not exceed 2000 characters"))]
     pub description: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "snake_case")]
 pub struct UpdateProjectRequest {
+    #[validate(length(min = 1, max = 255, message = "Name must be between 1 and 255 characters"))]
     pub name: Option<String>,
+    #[validate(length(max = 2000, message = "Description must not exceed 2000 characters"))]
     pub description: Option<Option<String>>,
     pub status: Option<String>,
 }
@@ -94,19 +99,23 @@ impl From<tasks::TaskRow> for TaskResponse {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "snake_case")]
 pub struct CreateTaskRequest {
+    #[validate(length(min = 1, max = 255, message = "Title must be between 1 and 255 characters"))]
     pub title: String,
+    #[validate(length(max = 5000, message = "Description must not exceed 5000 characters"))]
     pub description: Option<String>,
     pub priority: Option<String>,
     pub due_date: Option<NaiveDate>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "snake_case")]
 pub struct UpdateTaskRequest {
+    #[validate(length(min = 1, max = 255, message = "Title must be between 1 and 255 characters"))]
     pub title: Option<String>,
+    #[validate(length(max = 5000, message = "Description must not exceed 5000 characters"))]
     pub description: Option<Option<String>>,
     pub status: Option<String>,
     pub priority: Option<String>,
@@ -188,6 +197,11 @@ pub async fn create_project(
     State(state): State<AppState>,
     Json(req): Json<CreateProjectRequest>,
 ) -> Result<Response, ApiError> {
+    // Validate request
+    if let Err(e) = req.validate() {
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+    }
+
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = Uuid::new_v7().into_inner();
@@ -278,6 +292,11 @@ pub async fn update_project(
     Path(project_id): Path<Uuid>,
     Json(req): Json<UpdateProjectRequest>,
 ) -> Result<Response, ApiError> {
+    // Validate request
+    if let Err(e) = req.validate() {
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+    }
+
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
@@ -398,6 +417,11 @@ pub async fn create_task(
     Path(project_id): Path<Uuid>,
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<Response, ApiError> {
+    // Validate request
+    if let Err(e) = req.validate() {
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+    }
+
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
@@ -448,6 +472,11 @@ pub async fn update_task(
     Path((project_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Response, ApiError> {
+    // Validate request
+    if let Err(e) = req.validate() {
+        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+    }
+
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
