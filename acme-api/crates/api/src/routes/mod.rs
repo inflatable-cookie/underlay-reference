@@ -5,7 +5,10 @@
 //! - `tasks` - User-facing project/task routes
 //! - `admin/` - Admin-only routes with enhanced features
 
-use axum::http::{header::HeaderName, StatusCode};
+use axum::extract::State;
+use axum::http::{header::HeaderName, Method, Request, StatusCode};
+use axum::middleware::Next;
+use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 use underlay_http::{cors_layer, CorsConfig};
@@ -35,6 +38,7 @@ pub fn build_router() -> Router<AppState> {
         .route("/v1/auth/login", post(shared::auth::login))
         .route("/v1/auth/login/start", post(shared::auth::login_start))
         .route("/v1/auth/login/finish", post(shared::auth::login_finish))
+        .route("/v1/auth/csrf-token", get(shared::auth::csrf_token))
         .route("/v1/auth/refresh", post(shared::auth::refresh))
         .route("/v1/auth/logout", post(shared::auth::logout))
         .route("/v1/auth/me", get(shared::auth::me))
@@ -410,6 +414,7 @@ fn build_cors_layer() -> tower_http::cors::CorsLayer {
     // Add it explicitly to allowed headers.
     let mut config = CorsConfig::default()
         .with_header(HeaderName::from_static("x-api-version"))
+        .with_header(HeaderName::from_static("x-csrf-token"))
         .with_credentials(true);
 
     if mirror_origin {
@@ -433,4 +438,74 @@ fn parse_cors_origins() -> Vec<axum::http::HeaderValue> {
         .filter(|s| !s.is_empty())
         .filter_map(|s| axum::http::HeaderValue::from_str(s).ok())
         .collect()
+}
+
+pub async fn csrf_protection_middleware(
+    State(state): State<AppState>,
+    req: Request<axum::body::Body>,
+    next: Next,
+) -> Response {
+    let csrf_protection_enabled = std::env::var("CSRF_PROTECTION")
+        .map(|v| v == "true" || v == "1")
+        .unwrap_or(true);
+
+    if !csrf_protection_enabled {
+        return next.run(req).await;
+    }
+
+    let method = req.method();
+    if !matches!(
+        method,
+        &Method::POST | &Method::PUT | &Method::PATCH | &Method::DELETE
+    ) {
+        return next.run(req).await;
+    }
+
+    // Skip CSRF for authentication endpoints that don't have cookies yet
+    let path = req.uri().path();
+    let is_auth_endpoint_without_cookie = matches!(
+        path,
+        "/v1/auth/register"
+            | "/v1/auth/login"
+            | "/v1/auth/login/start"
+            | "/v1/auth/login/finish"
+            | "/v1/auth/csrf-token"
+            | "/v1/auth/password/reset/request"
+            | "/v1/auth/password/reset/verify"
+            | "/v1/auth/password/reset/complete"
+            | "/v1/auth/passkeys/login/start"
+            | "/v1/auth/passkeys/login/finish"
+            | "/v1/auth/passkeys/register/start"
+            | "/v1/auth/passkeys/register/finish"
+    );
+
+    if is_auth_endpoint_without_cookie {
+        return next.run(req).await;
+    }
+
+    // Only enforce for browser-style cookie flows.
+    // Mobile/native clients can keep using bearer tokens without CSRF.
+    let headers = req.headers();
+    let has_refresh_cookie =
+        underlay_http::extract_refresh_token(headers, &state.cookie_config).is_some();
+    if !has_refresh_cookie {
+        return next.run(req).await;
+    }
+
+    let cookie_token = shared::auth::extract_csrf_token(headers, &state.cookie_config);
+    let header_token = headers
+        .get("x-csrf-token")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+
+    if cookie_token.is_none() || header_token.is_none() || cookie_token != header_token {
+        return underlay_http::ApiError::new(
+            StatusCode::FORBIDDEN,
+            "auth.csrf.invalid",
+            "CSRF validation failed",
+        )
+        .into_response();
+    }
+
+    next.run(req).await
 }

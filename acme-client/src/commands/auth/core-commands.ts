@@ -86,6 +86,7 @@ export async function refresh(
   fetchFn: typeof fetch,
 ): Promise<LoginResponse> {
   const http = getHttpClient({ fetchFn, credentials: 'include' });
+  // CSRF token is automatically injected by HttpClient for mutating requests
   const response = await http.post<SingleResponse<LoginResponse>>("/v1/auth/refresh", payload);
   return response.data;
 }
@@ -96,6 +97,7 @@ export async function logout(
   accessToken?: string,
 ): Promise<void> {
   const http = getHttpClient({ fetchFn, accessToken, credentials: 'include' });
+  // CSRF token is automatically injected by HttpClient for mutating requests
   await http.post<void>("/v1/auth/logout", payload);
 }
 
@@ -113,6 +115,7 @@ export async function changePassword(
   fetchFn: typeof fetch,
   accessToken: string,
 ): Promise<void> {
-  const http = getHttpClient({ fetchFn, accessToken });
+  const http = getHttpClient({ fetchFn, accessToken, credentials: "include" });
+  // CSRF token is automatically injected by HttpClient for mutating requests
   await http.post<void>("/v1/auth/password/change", payload);
 }

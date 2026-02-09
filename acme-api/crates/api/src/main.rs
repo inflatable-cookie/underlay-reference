@@ -209,7 +209,11 @@ async fn main() -> anyhow::Result<()> {
         .with_server_errors(true);
 
     let app = routes::build_router()
-        .with_state(state)
+        .with_state(state.clone())
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            routes::csrf_protection_middleware,
+        ))
         .layer(axum::middleware::from_fn_with_state(
             error_logging_config,
             underlay_http::error_logging_middleware,

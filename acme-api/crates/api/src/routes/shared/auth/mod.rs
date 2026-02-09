@@ -36,7 +36,9 @@ use axum::{
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use underlay_core::{ListResponse, SingleResponse};
-use underlay_http::{clear_auth_cookies, extract_refresh_token, set_auth_cookies, ApiError};
+use underlay_http::{
+    clear_auth_cookies, extract_refresh_token, set_auth_cookies, ApiError, SameSite,
+};
 use validator::Validate;
 
 use crate::dto::auth::{
@@ -62,6 +64,12 @@ use std::time::{Duration, Instant};
 /// This ensures all code paths take at least this long, preventing attackers
 /// from inferring information based on response timing.
 const MIN_RESPONSE_TIME_MS: u64 = 200;
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct CsrfTokenResponse {
+    pub csrf_token: String,
+}
 
 /// Ensure a minimum amount of time has elapsed since `start`.
 ///
@@ -121,6 +129,77 @@ pub(super) fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
     }
 
     None
+}
+
+pub(crate) fn csrf_cookie_name(config: &underlay_http::AuthCookieConfig) -> String {
+    format!("{}csrf_token", config.cookie_prefix)
+}
+
+pub(crate) fn extract_csrf_token(headers: &HeaderMap, config: &underlay_http::AuthCookieConfig) -> Option<String> {
+    let cookie_header = headers.get(header::COOKIE)?.to_str().ok()?;
+    let cookie_name = csrf_cookie_name(config);
+    let prefix = format!("{}=", cookie_name);
+
+    for cookie in cookie_header.split(';') {
+        let cookie = cookie.trim();
+        if let Some(value) = cookie.strip_prefix(&prefix) {
+            if !value.is_empty() {
+                return Some(value.to_string());
+            }
+        }
+    }
+
+    None
+}
+
+pub(crate) fn set_csrf_cookie(
+    headers: &mut HeaderMap,
+    csrf_token: &str,
+    config: &underlay_http::AuthCookieConfig,
+) -> Result<(), String> {
+    let same_site = match config.same_site {
+        SameSite::Lax => "Lax",
+        SameSite::Strict => "Strict",
+        SameSite::None => "None",
+    };
+
+    let mut cookie = format!(
+        "{}={}; SameSite={}; Path=/; Max-Age={}",
+        csrf_cookie_name(config),
+        csrf_token,
+        same_site,
+        config.refresh_token_max_age
+    );
+
+    if config.secure {
+        cookie.push_str("; Secure");
+    }
+
+    if let Some(domain) = &config.domain {
+        cookie.push_str(&format!("; Domain={}", domain));
+    }
+
+    let value = HeaderValue::from_str(&cookie)
+        .map_err(|e| format!("invalid CSRF cookie header: {}", e))?;
+    headers.append(header::SET_COOKIE, value);
+    Ok(())
+}
+
+pub async fn csrf_token(State(state): State<AppState>) -> impl IntoResponse {
+    let csrf_token = Uuid::new_v7().to_string();
+
+    let mut response_headers = HeaderMap::new();
+    if let Err(e) = set_csrf_cookie(&mut response_headers, &csrf_token, &state.cookie_config) {
+        tracing::warn!("Failed to set CSRF cookie: {}", e);
+    }
+
+    (
+        StatusCode::OK,
+        response_headers,
+        Json(SingleResponse {
+            data: CsrfTokenResponse { csrf_token },
+        }),
+    )
 }
 
 /// Convert validation errors to an ApiError response.

@@ -14,7 +14,7 @@ The reference implementation demonstrates strong security practices with modern 
 
 - Completed: Phase 1 (critical fixes), Phase 2 (high-priority fixes), and core Phase 3 hardening items.
 - In place now: distributed-capable rate limiting, refresh endpoint throttling, SameSite CSRF mitigation, admin privilege guards, TOTP at-rest encryption, absolute session timeout, trusted proxy IP extraction, request size validation, stronger password minimums, stronger Argon2 defaults, environment-aware secure cookie defaults, and CSP report-only toggle support.
-- Remaining backlog: full CSRF token flow (double-submit or synchronizer token), frontend UX for absolute session timeout, enterprise key rotation/HSM integration, and security monitoring/alerting enhancements.
+- Remaining backlog: broaden CSRF coverage beyond sensitive auth endpoints, frontend UX for absolute session timeout, enterprise key rotation/HSM integration, and security monitoring/alerting enhancements.
 
 ---
 

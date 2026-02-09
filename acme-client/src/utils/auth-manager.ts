@@ -40,6 +40,7 @@
 
 import type { TokenStore } from './token-store.js';
 import { createTokenStore } from './token-store.js';
+import { clearCsrfToken } from './csrf-manager.js';
 import type { LoginRequest, LoginResponse, LoginUser, LoginStartRequest, LoginStartResponse, RegisterRequest } from '../types/common-types.js';
 import * as authCommands from '../commands/auth-commands.js';
 
@@ -186,6 +187,7 @@ export function createAuthManager(config: AuthManagerConfig = {}): AuthManager {
 
 	function handleLogout(): void {
 		store.clearToken();
+		clearCsrfToken();
 		state = {
 			...state,
 			initialized: true,

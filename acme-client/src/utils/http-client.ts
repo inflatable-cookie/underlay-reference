@@ -7,6 +7,7 @@ import {
 } from "@decodelabs/underlay/client";
 
 import type { ApiError } from "../types/common-types.js";
+import { getCsrfHeaders, clearCsrfToken } from "./csrf-manager.js";
 
 export interface AcmeClientConfig {
   baseUrl: string;
@@ -17,6 +18,11 @@ export interface AcmeClientConfig {
   fetchFn?: typeof fetch;
   credentials?: RequestCredentials;
   onRefresh?: () => Promise<string | null>;
+  /**
+   * Whether to automatically inject CSRF tokens for mutating requests.
+   * Default: true when credentials are 'include'.
+   */
+  enableCsrf?: boolean;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -85,6 +91,8 @@ function convertError(error: unknown): never {
 
 export class HttpClient {
   private underlayClient: UnderlayHttpClient;
+  private fetchFn: typeof fetch;
+  private enableCsrf: boolean;
 
   constructor(config: AcmeClientConfig) {
     const underlayOptions: HttpClientOptions = {
@@ -116,50 +124,94 @@ export class HttpClient {
     };
 
     this.underlayClient = createUnderlayHttpClient(underlayOptions);
+    this.fetchFn = config.fetchFn ?? globalThis.fetch;
+    // Enable CSRF by default when using cookies
+    this.enableCsrf = config.enableCsrf ?? (config.credentials === "include");
   }
 
-  async get<T>(path: string): Promise<T> {
+  async get<T>(path: string, headers?: Record<string, string>): Promise<T> {
     try {
-      const response = await this.underlayClient.get<unknown>(path);
+      const response = await this.underlayClient.get<unknown>(path, headers);
       return toCamelCaseValue(response) as T;
     } catch (error) {
       convertError(error);
     }
   }
 
-  async post<T>(path: string, body: unknown): Promise<T> {
+  async post<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
     try {
-      const response = await this.underlayClient.post<unknown>(path, toSnakeCaseValue(body));
+      // Auto-inject CSRF token for mutating requests when using cookies
+      const csrfHeaders = this.enableCsrf ? await getCsrfHeaders(this.fetchFn) : {};
+      const mergedHeaders = { ...csrfHeaders, ...headers };
+      
+      const response = await this.underlayClient.post<unknown>(
+        path,
+        toSnakeCaseValue(body),
+        mergedHeaders,
+      );
       return toCamelCaseValue(response) as T;
     } catch (error) {
+      // Clear CSRF token on auth errors (session might be invalid)
+      if (error instanceof UnderlayHttpError && error.status === 401) {
+        clearCsrfToken();
+      }
       convertError(error);
     }
   }
 
-  async put<T>(path: string, body: unknown): Promise<T> {
+  async put<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
     try {
-      const response = await this.underlayClient.put<unknown>(path, toSnakeCaseValue(body));
+      const csrfHeaders = this.enableCsrf ? await getCsrfHeaders(this.fetchFn) : {};
+      const mergedHeaders = { ...csrfHeaders, ...headers };
+      
+      const response = await this.underlayClient.put<unknown>(
+        path,
+        toSnakeCaseValue(body),
+        mergedHeaders,
+      );
       return toCamelCaseValue(response) as T;
     } catch (error) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
+        clearCsrfToken();
+      }
       convertError(error);
     }
   }
 
-  async patch<T>(path: string, body: unknown): Promise<T> {
+  async patch<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
     try {
-      const response = await this.underlayClient.patch<unknown>(path, toSnakeCaseValue(body));
+      const csrfHeaders = this.enableCsrf ? await getCsrfHeaders(this.fetchFn) : {};
+      const mergedHeaders = { ...csrfHeaders, ...headers };
+      
+      const response = await this.underlayClient.patch<unknown>(
+        path,
+        toSnakeCaseValue(body),
+        mergedHeaders,
+      );
       return toCamelCaseValue(response) as T;
     } catch (error) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
+        clearCsrfToken();
+      }
       convertError(error);
     }
   }
 
-  async delete<T>(path: string): Promise<T> {
+  async delete<T>(path: string, headers?: Record<string, string>): Promise<T> {
     try {
-      const response = await this.underlayClient.delete<unknown>(path);
+      const csrfHeaders = this.enableCsrf ? await getCsrfHeaders(this.fetchFn) : {};
+      const mergedHeaders = { ...csrfHeaders, ...headers };
+      
+      const response = await this.underlayClient.delete<unknown>(path, mergedHeaders);
       return toCamelCaseValue(response) as T;
     } catch (error) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
+        clearCsrfToken();
+      }
       convertError(error);
     }
   }
 }
+
+export { clearCsrfToken };
+export * from "./csrf-manager.js";

@@ -10,6 +10,11 @@ export interface HttpClientOptions {
   accessToken?: string | null;
   credentials?: RequestCredentials;
   onRefresh?: (fetchFn: typeof fetch) => Promise<string | null>;
+  /**
+   * Whether to enable CSRF protection for mutating requests.
+   * Defaults to true when credentials are 'include'.
+   */
+  enableCsrf?: boolean;
 }
 
 export type Audience = "admin" | "front" | "shared";
@@ -33,11 +38,11 @@ function validatePath(path: string, audience: Audience): void {
 }
 
 interface GuardedHttpClient {
-  get<T>(path: string): Promise<T>;
-  post<T>(path: string, body: unknown): Promise<T>;
-  put<T>(path: string, body: unknown): Promise<T>;
-  patch<T>(path: string, body: unknown): Promise<T>;
-  delete<T>(path: string): Promise<T>;
+  get<T>(path: string, headers?: Record<string, string>): Promise<T>;
+  post<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T>;
+  put<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T>;
+  patch<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T>;
+  delete<T>(path: string, headers?: Record<string, string>): Promise<T>;
 }
 
 let storedConfig: AcmeClientConfig | null = null;
@@ -64,6 +69,7 @@ export function getHttpClient(options?: HttpClientOptions): HttpClient {
     fetchFn: options?.fetchFn,
     getToken: options?.accessToken ? () => options.accessToken! : undefined,
     credentials: options?.credentials,
+    enableCsrf: options?.enableCsrf,
     onRefresh: options?.onRefresh
       ? () => options.onRefresh!(options.fetchFn ?? fetch)
       : undefined,
@@ -74,25 +80,25 @@ function createGuardedClient(options: HttpClientOptions, audience: Audience): Gu
   const baseClient = getHttpClient(options);
 
   return {
-    async get<T>(path: string): Promise<T> {
+    async get<T>(path: string, headers?: Record<string, string>): Promise<T> {
       validatePath(path, audience);
-      return baseClient.get<T>(path);
+      return baseClient.get<T>(path, headers);
     },
-    async post<T>(path: string, body: unknown): Promise<T> {
+    async post<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
       validatePath(path, audience);
-      return baseClient.post<T>(path, body);
+      return baseClient.post<T>(path, body, headers);
     },
-    async put<T>(path: string, body: unknown): Promise<T> {
+    async put<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
       validatePath(path, audience);
-      return baseClient.put<T>(path, body);
+      return baseClient.put<T>(path, body, headers);
     },
-    async patch<T>(path: string, body: unknown): Promise<T> {
+    async patch<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
       validatePath(path, audience);
-      return baseClient.patch<T>(path, body);
+      return baseClient.patch<T>(path, body, headers);
     },
-    async delete<T>(path: string): Promise<T> {
+    async delete<T>(path: string, headers?: Record<string, string>): Promise<T> {
       validatePath(path, audience);
-      return baseClient.delete<T>(path);
+      return baseClient.delete<T>(path, headers);
     },
   };
 }

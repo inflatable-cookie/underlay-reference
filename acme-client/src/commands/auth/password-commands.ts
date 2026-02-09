@@ -14,7 +14,8 @@ export async function changePasswordWithVerification(
   fetchFn: typeof fetch,
   accessToken: string,
 ): Promise<void> {
-  const http = getHttpClient({ fetchFn, accessToken });
+  const http = getHttpClient({ fetchFn, accessToken, credentials: "include" });
+  // CSRF token is automatically injected by HttpClient for mutating requests
   await http.post<void>("/v1/auth/password/change-2fa", payload);
 }
 

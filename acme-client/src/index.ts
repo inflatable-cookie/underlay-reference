@@ -167,6 +167,13 @@ export type { AcmeClientConfig, HttpClientOptions, Audience } from "./utils/clie
 export { createTokenStore, tokenStore } from "./utils/token-store.js";
 export type { TokenStore, TokenState } from "./utils/token-store.js";
 
+// CSRF protection
+export {
+  getCsrfToken,
+  getCsrfHeaders,
+  clearCsrfToken,
+} from "./utils/csrf-manager.js";
+
 // Auth manager
 export {
   createAuthManager,
