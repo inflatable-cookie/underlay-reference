@@ -233,7 +233,7 @@ pub async fn login_finish(
     };
 
     let fingerprint = login_client_fingerprint(&headers);
-    let session_fp = extract_session_fingerprint(&headers);
+    let session_fp = extract_session_fingerprint(&headers, &state.trusted_proxy_config);
 
     // Try TOTP first
     match state
@@ -348,7 +348,7 @@ pub async fn refresh(
     Json(payload): Json<RefreshRequest>,
 ) -> impl IntoResponse {
     // Extract fingerprint for rate limiting and session validation
-    let fingerprint = extract_session_fingerprint(&headers);
+    let fingerprint = extract_session_fingerprint(&headers, &state.trusted_proxy_config);
 
     // Check rate limit before processing
     if let Err(err) = state

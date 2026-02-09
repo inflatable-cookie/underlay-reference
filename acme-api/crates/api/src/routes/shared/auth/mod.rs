@@ -74,21 +74,16 @@ pub(super) async fn ensure_min_response_time(start: Instant) {
     }
 }
 
-/// Extract session fingerprint from request headers.
+/// Extract session fingerprint from request headers with proxy trust validation.
 ///
-/// Returns IP address (from X-Forwarded-For or X-Real-IP) and User-Agent.
-pub(super) fn extract_session_fingerprint(headers: &HeaderMap) -> SessionFingerprint {
-    // Try to get client IP from proxy headers
-    let ip_address = headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .map(|s| s.split(',').next().unwrap_or(s).trim().to_string())
-        .or_else(|| {
-            headers
-                .get("x-real-ip")
-                .and_then(|v| v.to_str().ok())
-                .map(|s| s.to_string())
-        });
+/// Returns IP address (from X-Forwarded-For or X-Real-IP if trusted) and User-Agent.
+/// Only trusts proxy headers if properly configured via TRUSTED_PROXIES env var.
+pub(super) fn extract_session_fingerprint(
+    headers: &HeaderMap,
+    config: &acme_infra::TrustedProxyConfig,
+) -> SessionFingerprint {
+    // Use secure IP extraction that validates proxy headers
+    let ip_address = acme_infra::extract_client_ip(headers, config);
 
     let user_agent = headers
         .get(header::USER_AGENT)

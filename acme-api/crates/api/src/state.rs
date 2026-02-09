@@ -37,6 +37,8 @@ pub struct AppState {
     pub job_repository: Option<Arc<JobRepository>>,
     /// Application configuration.
     pub config: AcmeConfig,
+    /// Trusted proxy configuration for secure IP extraction.
+    pub trusted_proxy_config: acme_infra::TrustedProxyConfig,
 }
 
 impl underlay_auth::HasAuthProvider for AppState {

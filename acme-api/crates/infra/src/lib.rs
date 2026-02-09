@@ -3,6 +3,7 @@
 mod config;
 pub mod email;
 pub mod encryption;
+pub mod network;
 
 pub use config::{
     AppConfig, CorsConfig, DatabaseConfig, DevCaptureEmailConfig, EmailAdapterType, EmailConfig,
@@ -12,6 +13,7 @@ pub use email::{
     create_email_context, create_email_manager, create_template_engine, EmailInitError,
 };
 pub use encryption::{generate_encryption_key, EncryptionError, EncryptionService};
+pub use network::{extract_client_ip, TrustedProxyConfig};
 
 /// Initialise structured logging and tracing subscribers.
 ///

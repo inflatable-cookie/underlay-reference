@@ -183,7 +183,7 @@ pub async fn passkey_login_finish(
         }
     };
 
-    let session_fp = extract_session_fingerprint(&headers);
+    let session_fp = extract_session_fingerprint(&headers, &state.trusted_proxy_config);
 
     match state
         .local_auth

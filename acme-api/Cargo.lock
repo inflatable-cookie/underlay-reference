@@ -123,6 +123,7 @@ dependencies = [
  "aes-gcm",
  "base64 0.21.7",
  "dotenvy",
+ "http 1.4.0",
  "rand 0.8.5",
  "thiserror 1.0.69",
  "tracing",

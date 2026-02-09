@@ -166,6 +166,17 @@ async fn main() -> anyhow::Result<()> {
     // Application config - use defaults, override as needed
     let config = AcmeConfig::default();
 
+    // Trusted proxy configuration for secure IP extraction
+    let trusted_proxy_config = acme_infra::TrustedProxyConfig::from_env();
+    if trusted_proxy_config.trust_proxy_headers {
+        tracing::info!(
+            "Proxy headers enabled with {} trusted proxies",
+            trusted_proxy_config.trusted_proxies.len()
+        );
+    } else {
+        tracing::debug!("Proxy headers disabled - using direct connection IPs only");
+    }
+
     let state = AppState {
         local_auth,
         auth_provider,
@@ -177,6 +188,7 @@ async fn main() -> anyhow::Result<()> {
         blob_adapter,
         job_repository,
         config,
+        trusted_proxy_config,
     };
 
     // Set global DB pool for middleware
