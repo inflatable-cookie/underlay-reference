@@ -1,0 +1,4 @@
+[auth]
+argon2_memory_kb = 131072
+argon2_iterations = 4
+argon2_parallelism = 4

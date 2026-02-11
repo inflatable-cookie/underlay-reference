@@ -6,8 +6,9 @@ pub mod encryption;
 pub mod network;
 
 pub use config::{
-    AppConfig, CorsConfig, DatabaseConfig, DevCaptureEmailConfig, EmailAdapterType, EmailConfig,
-    Environment, HttpConfig, LoggingConfig, SesEmailConfig, SmtpEmailConfig,
+    AppBehaviorConfig, AppConfig, AuthBehaviorDefaults, CorsConfig, DatabaseConfig,
+    DevCaptureEmailConfig, EmailAdapterType, EmailConfig, Environment, HttpConfig, LoggingConfig,
+    SesEmailConfig, SmtpEmailConfig,
 };
 pub use email::{
     create_email_context, create_email_manager, create_template_engine, EmailInitError,

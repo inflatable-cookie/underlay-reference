@@ -1,4 +1,6 @@
-use std::env;
+use std::{env, fs, path::Path};
+
+use serde::Deserialize;
 
 // Re-export Environment from underlay-observability.
 // This provides consistent environment handling across all Underlay apps.
@@ -133,6 +135,92 @@ pub struct EmailConfig {
     pub dev_capture: Option<DevCaptureEmailConfig>,
 }
 
+#[derive(Debug, Clone)]
+pub struct AppBehaviorConfig {
+    pub auth: AuthBehaviorDefaults,
+}
+
+#[derive(Debug, Clone)]
+pub struct AuthBehaviorDefaults {
+    pub argon2_memory_kb: u32,
+    pub argon2_iterations: u32,
+    pub argon2_parallelism: u32,
+}
+
+impl Default for AppBehaviorConfig {
+    fn default() -> Self {
+        Self {
+            auth: AuthBehaviorDefaults {
+                argon2_memory_kb: 131072,
+                argon2_iterations: 4,
+                argon2_parallelism: 4,
+            },
+        }
+    }
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileBehaviorConfig {
+    auth: Option<FileAuthBehaviorDefaults>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileAuthBehaviorDefaults {
+    argon2_memory_kb: Option<u32>,
+    argon2_iterations: Option<u32>,
+    argon2_parallelism: Option<u32>,
+}
+
+impl AppBehaviorConfig {
+    pub fn load() -> Self {
+        let mut behavior = Self::default();
+        let config_path = Path::new("config/default.toml");
+
+        let raw = match fs::read_to_string(config_path) {
+            Ok(contents) => contents,
+            Err(_) => return behavior,
+        };
+
+        let parsed: FileBehaviorConfig = match toml::from_str(&raw) {
+            Ok(parsed) => parsed,
+            Err(err) => {
+                eprintln!(
+                    "warning: failed to parse {}: {}. Falling back to built-in behavior defaults.",
+                    config_path.display(),
+                    err
+                );
+                return behavior;
+            }
+        };
+
+        if let Some(auth) = parsed.auth {
+            if let Some(v) = auth.argon2_memory_kb {
+                behavior.auth.argon2_memory_kb = v;
+            }
+            if let Some(v) = auth.argon2_iterations {
+                behavior.auth.argon2_iterations = v;
+            }
+            if let Some(v) = auth.argon2_parallelism {
+                behavior.auth.argon2_parallelism = v;
+            }
+        }
+
+        behavior
+    }
+}
+
+fn env_behavior_override(key: &str) -> Option<String> {
+    match env::var(key) {
+        Ok(value) => {
+            eprintln!(
+                "warning: {key} is deprecated for app-behavior config; move it to config/default.toml"
+            );
+            Some(value)
+        }
+        Err(_) => None,
+    }
+}
+
 /// Top-level application configuration.
 #[derive(Debug, Clone)]
 pub struct AppConfig {
@@ -142,6 +230,7 @@ pub struct AppConfig {
     pub logging: LoggingConfig,
     pub cors: CorsConfig,
     pub email: EmailConfig,
+    pub behavior: AppBehaviorConfig,
 }
 
 impl AppConfig {
@@ -149,6 +238,8 @@ impl AppConfig {
     pub fn from_env() -> Self {
         // Load variables from a local `.env` file if present.
         let _ = dotenvy::dotenv();
+
+        let mut behavior = AppBehaviorConfig::load();
 
         // Environment
         let env_str = env::var("ENVIRONMENT").unwrap_or_else(|_| "local".to_string());
@@ -278,6 +369,20 @@ impl AppConfig {
             dev_capture: dev_capture_config,
         };
 
+        let argon2_memory_kb: u32 = env_behavior_override("ARGON2_MEMORY_KB")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(behavior.auth.argon2_memory_kb);
+        let argon2_iterations: u32 = env_behavior_override("ARGON2_ITERATIONS")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(behavior.auth.argon2_iterations);
+        let argon2_parallelism: u32 = env_behavior_override("ARGON2_PARALLELISM")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(behavior.auth.argon2_parallelism);
+
+        behavior.auth.argon2_memory_kb = argon2_memory_kb;
+        behavior.auth.argon2_iterations = argon2_iterations;
+        behavior.auth.argon2_parallelism = argon2_parallelism;
+
         AppConfig {
             env,
             http: HttpConfig {
@@ -295,6 +400,7 @@ impl AppConfig {
                 cookie_secure,
             },
             email,
+            behavior,
         }
     }
 }

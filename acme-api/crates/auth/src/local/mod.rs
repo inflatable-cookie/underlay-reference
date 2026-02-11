@@ -9,11 +9,13 @@ use acme_db::auth::{
     consume_verification_session, create_verification_session, EmailTotpPurpose,
     VerificationMethod, VerificationSessionRow,
 };
+use acme_infra::AppBehaviorConfig;
 
 use crate::config::AuthConfig;
 #[allow(unused_imports)] // These will be used when email TOTP is integrated
 use crate::email_totp::{EmailTotpService, VerificationSession};
 
+use underlay_auth::state::{AuthStateError, AuthStateStore};
 use underlay_auth::{
     AuthError, AuthResult, Credential, CredentialMetadata, CredentialType, RoleSet, Session,
     SessionStatus, User, UserStatus,
@@ -27,7 +29,6 @@ use underlay_auth_oauth::{
 use underlay_auth_password::{
     Argon2Hasher, PasswordHasherExt, PasswordStrengthAnalyzer, PasswordVerifierExt,
 };
-use underlay_auth::state::{AuthStateError, AuthStateStore};
 use underlay_auth_totp::{TotpConfig, TotpService, TwoFactorVerified};
 use underlay_auth_webauthn::{WebAuthnConfig, WebAuthnService};
 use underlay_ratelimit::{InMemoryBackend, RateLimitBackend, RateLimitConfig};
@@ -215,6 +216,20 @@ impl AcmeLocalAuthService {
     }
 
     pub fn from_env(pool: sqlx::PgPool) -> AuthResult<Self> {
+        let behavior = AppBehaviorConfig::load();
+
+        let env_behavior_override = |key: &str| -> Option<String> {
+            match std::env::var(key) {
+                Ok(value) => {
+                    eprintln!(
+                        "warning: {key} is deprecated for app-behavior config; move it to config/default.toml"
+                    );
+                    Some(value)
+                }
+                Err(_) => None,
+            }
+        };
+
         let cfg = JwtConfig::from_env().map_err(AuthError::from)?;
         let jwt = JwtService::new(cfg).map_err(AuthError::from)?;
 
@@ -249,17 +264,16 @@ impl AcmeLocalAuthService {
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or_default();
-        let redis_url = std::env::var("REDIS_URL")
-            .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+        let redis_url =
+            std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
 
         // Absolute session timeout (default: 30 days)
         let absolute_session_timeout_days: u64 = std::env::var("SESSION_MAX_ABSOLUTE_DAYS")
             .ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(30);
-        let absolute_session_timeout = std::time::Duration::from_secs(
-            absolute_session_timeout_days * 24 * 60 * 60
-        );
+        let absolute_session_timeout =
+            std::time::Duration::from_secs(absolute_session_timeout_days * 24 * 60 * 60);
 
         let config = AuthConfig {
             rate_limit_backend,
@@ -276,31 +290,27 @@ impl AcmeLocalAuthService {
                 ))
             }
             crate::redis_rate_limit::RateLimitBackendType::Redis => {
-                let redis_backend =
-                    RedisRateLimitBackend::new(&config.redis_url).map_err(|e| {
-                        AuthError::Internal(format!(
-                            "Failed to connect to Redis for rate limiting: {}",
-                            e
-                        ))
-                    })?;
+                let redis_backend = RedisRateLimitBackend::new(&config.redis_url).map_err(|e| {
+                    AuthError::Internal(format!(
+                        "Failed to connect to Redis for rate limiting: {}",
+                        e
+                    ))
+                })?;
                 DynamicRateLimiter::redis(redis_backend)
             }
         };
 
         // Argon2 password hashing parameters (configurable via environment)
         // Defaults: 128 MiB memory, 4 iterations, 4 parallelism
-        let argon2_memory_kb: u32 = std::env::var("ARGON2_MEMORY_KB")
-            .ok()
+        let argon2_memory_kb: u32 = env_behavior_override("ARGON2_MEMORY_KB")
             .and_then(|v| v.parse().ok())
-            .unwrap_or(131072);
-        let argon2_iterations: u32 = std::env::var("ARGON2_ITERATIONS")
-            .ok()
+            .unwrap_or(behavior.auth.argon2_memory_kb);
+        let argon2_iterations: u32 = env_behavior_override("ARGON2_ITERATIONS")
             .and_then(|v| v.parse().ok())
-            .unwrap_or(4);
-        let argon2_parallelism: u32 = std::env::var("ARGON2_PARALLELISM")
-            .ok()
+            .unwrap_or(behavior.auth.argon2_iterations);
+        let argon2_parallelism: u32 = env_behavior_override("ARGON2_PARALLELISM")
             .and_then(|v| v.parse().ok())
-            .unwrap_or(4);
+            .unwrap_or(behavior.auth.argon2_parallelism);
 
         let password_hasher =
             Argon2Hasher::with_params(argon2_memory_kb, argon2_iterations, argon2_parallelism);
