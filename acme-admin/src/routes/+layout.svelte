@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import favicon from '$lib/assets/favicon.svg';
+	import { resolveAdminPageTitle } from '$lib/utils/page-title';
 	import "@decodelabs/underlay/styles/base.css";
 	// Import Underlay CSS FIRST so our :root overrides take precedence.
 	import "@decodelabs/underlay/styles/tokens.css";
@@ -9,6 +11,7 @@
 </script>
 
 <svelte:head>
+	<title>{resolveAdminPageTitle($page.route.id, $page.url.pathname)}</title>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
