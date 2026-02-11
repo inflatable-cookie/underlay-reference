@@ -124,6 +124,9 @@ docker compose up -d mailhog     # MailHog (email) only
 cp acme-api/.env.example acme-api/.env
 # Edit acme-api/.env with your DATABASE_URL
 
+# Optional: copy local config overrides (otherwise defaults come from config/default.toml)
+cp acme-api/config/local.toml.example acme-api/config/local.toml
+
 # Run migrations
 cd acme-api
 cargo run -p acme-db --bin migrate_dev_db
@@ -240,6 +243,14 @@ underlay-core = { path = "../underlay/rust/crates/underlay-core" }
 ```
 
 ## Environment Variables
+
+`acme-api` uses layered config precedence:
+
+1. `acme-api/config/default.toml`
+2. `acme-api/config/local.toml` (optional, gitignored)
+3. `.env` / environment variables (override layer)
+
+Use TOML for app behavior defaults, and env vars for secrets/runtime wiring and per-environment overrides.
 
 ### Required for API
 

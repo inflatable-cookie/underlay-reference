@@ -23,6 +23,8 @@ crates/
 
 ### Configuration
 - `.env.example` - Environment variables template
+- `config/default.toml` - Committed behavior defaults
+- `config/local.toml.example` - Local override template
 - `crates/infra/src/config.rs` - Config struct and loading
 
 ### Database

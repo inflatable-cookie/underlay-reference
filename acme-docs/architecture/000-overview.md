@@ -199,9 +199,15 @@ cargo run -p acme-db --bin migrate_dev_db
 
 ## Configuration
 
-### Environment Variables
+### Layered Configuration
 
-The API reads configuration from environment variables. See `acme-api/.env.example` for all options.
+The API reads configuration with the following precedence:
+
+1. `acme-api/config/default.toml`
+2. `acme-api/config/local.toml` (optional local overrides)
+3. environment variables from `.env`/runtime (override layer)
+
+See `acme-api/.env.example` for env options and override keys.
 
 Required:
 - `DATABASE_URL` - PostgreSQL connection string
