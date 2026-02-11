@@ -218,33 +218,77 @@ impl AcmeLocalAuthService {
     pub fn from_env(pool: sqlx::PgPool) -> AuthResult<Self> {
         let behavior = AppBehaviorConfig::load();
 
-        let env_behavior_override = |key: &str| -> Option<String> {
-            match std::env::var(key) {
-                Ok(value) => {
-                    eprintln!(
-                        "warning: {key} is deprecated for app-behavior config; move it to config/default.toml"
-                    );
-                    Some(value)
-                }
-                Err(_) => None,
-            }
-        };
+        let env_behavior_override = |key: &str| -> Option<String> { std::env::var(key).ok() };
 
         let cfg = JwtConfig::from_env().map_err(AuthError::from)?;
         let jwt = JwtService::new(cfg).map_err(AuthError::from)?;
 
+        let rate_limit_backend = std::env::var("RATE_LIMIT_BACKEND")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or_default();
+        let redis_url =
+            std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+
+        // Absolute session timeout (default comes from layered config)
+        let absolute_session_timeout_days: u64 = std::env::var("SESSION_MAX_ABSOLUTE_DAYS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(behavior.auth.absolute_session_timeout_days);
+        let absolute_session_timeout =
+            std::time::Duration::from_secs(absolute_session_timeout_days * 24 * 60 * 60);
+
+        let config = AuthConfig {
+            login_rate_limit_per_hour: behavior.auth.login_rate_limit_per_hour,
+            register_rate_limit_per_hour: behavior.auth.register_rate_limit_per_hour,
+            password_change_rate_limit_per_hour: behavior.auth.password_change_rate_limit_per_hour,
+            passkey_register_rate_limit_per_hour: behavior
+                .auth
+                .passkey_register_rate_limit_per_hour,
+            passkey_login_rate_limit_per_hour: behavior.auth.passkey_login_rate_limit_per_hour,
+            refresh_rate_limit_per_hour: behavior.auth.refresh_rate_limit_per_hour,
+            rate_limit_backend,
+            redis_url,
+            max_totp_attempts: behavior.auth.max_totp_attempts,
+            max_email_code_attempts: behavior.auth.max_email_code_attempts,
+            max_backup_code_attempts: behavior.auth.max_backup_code_attempts,
+            totp_state_timeout: std::time::Duration::from_secs(
+                behavior.auth.totp_state_timeout_secs,
+            ),
+            email_state_timeout: std::time::Duration::from_secs(
+                behavior.auth.email_state_timeout_secs,
+            ),
+            verification_session_timeout: std::time::Duration::from_secs(
+                behavior.auth.verification_session_timeout_secs,
+            ),
+            rate_limit_cleanup_interval: std::time::Duration::from_secs(
+                behavior.auth.rate_limit_cleanup_interval_secs,
+            ),
+            absolute_session_timeout,
+            rate_limit_retry_after_short: std::time::Duration::from_secs(
+                behavior.auth.rate_limit_retry_after_short_secs,
+            ),
+            rate_limit_retry_after_long: std::time::Duration::from_secs(
+                behavior.auth.rate_limit_retry_after_long_secs,
+            ),
+            max_failed_logins: behavior.auth.max_failed_logins,
+            lockout_duration: std::time::Duration::from_secs(behavior.auth.lockout_duration_secs),
+            email_code_expiry: std::time::Duration::from_secs(behavior.auth.email_code_expiry_secs),
+            max_email_codes_per_hour: behavior.auth.max_email_codes_per_hour,
+        };
+
         let totp = TotpService::new(Some(TotpConfig {
-            issuer: "Acme".to_string(),
+            issuer: behavior.auth.totp_issuer.clone(),
             ..TotpConfig::default()
         }));
 
         // WebAuthn relying party configuration
-        let webauthn_rp_id =
-            std::env::var("WEBAUTHN_RP_ID").unwrap_or_else(|_| "localhost".to_string());
-        let webauthn_rp_origin = std::env::var("WEBAUTHN_RP_ORIGIN")
-            .unwrap_or_else(|_| "http://localhost:4174".to_string());
-        let webauthn_rp_name =
-            std::env::var("WEBAUTHN_RP_NAME").unwrap_or_else(|_| "Acme".to_string());
+        let webauthn_rp_id = env_behavior_override("WEBAUTHN_RP_ID")
+            .unwrap_or_else(|| behavior.auth.webauthn_rp_id.clone());
+        let webauthn_rp_origin = env_behavior_override("WEBAUTHN_RP_ORIGIN")
+            .unwrap_or_else(|| behavior.auth.webauthn_rp_origin.clone());
+        let webauthn_rp_name = env_behavior_override("WEBAUTHN_RP_NAME")
+            .unwrap_or_else(|| behavior.auth.webauthn_rp_name.clone());
 
         let webauthn = WebAuthnService::new(WebAuthnConfig {
             rp_id: webauthn_rp_id.clone(),
@@ -258,29 +302,6 @@ impl AcmeLocalAuthService {
         };
 
         let oauth_cipher = OAuthTokenCipher::from_env_optional().ok().flatten();
-
-        // Load auth configuration with environment overrides
-        let rate_limit_backend = std::env::var("RATE_LIMIT_BACKEND")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or_default();
-        let redis_url =
-            std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
-
-        // Absolute session timeout (default: 30 days)
-        let absolute_session_timeout_days: u64 = std::env::var("SESSION_MAX_ABSOLUTE_DAYS")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(30);
-        let absolute_session_timeout =
-            std::time::Duration::from_secs(absolute_session_timeout_days * 24 * 60 * 60);
-
-        let config = AuthConfig {
-            rate_limit_backend,
-            redis_url,
-            absolute_session_timeout,
-            ..AuthConfig::default()
-        };
 
         // Rate limiter with background cleanup
         let rate_limiter = match config.rate_limit_backend {
@@ -326,7 +347,8 @@ impl AcmeLocalAuthService {
             pool,
             jwt,
             password_hasher,
-            password_analyzer: PasswordStrengthAnalyzer::new().with_min_length(12),
+            password_analyzer: PasswordStrengthAnalyzer::new()
+                .with_min_length(behavior.auth.password_min_length),
             totp,
             webauthn,
             webauthn_rp_id,

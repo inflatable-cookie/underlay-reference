@@ -142,6 +142,31 @@ pub struct AppBehaviorConfig {
 
 #[derive(Debug, Clone)]
 pub struct AuthBehaviorDefaults {
+    pub totp_issuer: String,
+    pub password_min_length: usize,
+    pub login_rate_limit_per_hour: u32,
+    pub register_rate_limit_per_hour: u32,
+    pub password_change_rate_limit_per_hour: u32,
+    pub passkey_register_rate_limit_per_hour: u32,
+    pub passkey_login_rate_limit_per_hour: u32,
+    pub refresh_rate_limit_per_hour: u32,
+    pub max_totp_attempts: u32,
+    pub max_email_code_attempts: u32,
+    pub max_backup_code_attempts: u32,
+    pub totp_state_timeout_secs: u64,
+    pub email_state_timeout_secs: u64,
+    pub verification_session_timeout_secs: u64,
+    pub rate_limit_cleanup_interval_secs: u64,
+    pub absolute_session_timeout_days: u64,
+    pub rate_limit_retry_after_short_secs: u64,
+    pub rate_limit_retry_after_long_secs: u64,
+    pub max_failed_logins: u32,
+    pub lockout_duration_secs: u64,
+    pub email_code_expiry_secs: u64,
+    pub max_email_codes_per_hour: u32,
+    pub webauthn_rp_id: String,
+    pub webauthn_rp_origin: String,
+    pub webauthn_rp_name: String,
     pub argon2_memory_kb: u32,
     pub argon2_iterations: u32,
     pub argon2_parallelism: u32,
@@ -151,6 +176,31 @@ impl Default for AppBehaviorConfig {
     fn default() -> Self {
         Self {
             auth: AuthBehaviorDefaults {
+                totp_issuer: "Acme".to_string(),
+                password_min_length: 12,
+                login_rate_limit_per_hour: 10,
+                register_rate_limit_per_hour: 5,
+                password_change_rate_limit_per_hour: 5,
+                passkey_register_rate_limit_per_hour: 5,
+                passkey_login_rate_limit_per_hour: 10,
+                refresh_rate_limit_per_hour: 60,
+                max_totp_attempts: 5,
+                max_email_code_attempts: 5,
+                max_backup_code_attempts: 5,
+                totp_state_timeout_secs: 300,
+                email_state_timeout_secs: 600,
+                verification_session_timeout_secs: 300,
+                rate_limit_cleanup_interval_secs: 300,
+                absolute_session_timeout_days: 30,
+                rate_limit_retry_after_short_secs: 60,
+                rate_limit_retry_after_long_secs: 300,
+                max_failed_logins: 5,
+                lockout_duration_secs: 900,
+                email_code_expiry_secs: 600,
+                max_email_codes_per_hour: 5,
+                webauthn_rp_id: "localhost".to_string(),
+                webauthn_rp_origin: "http://localhost:4174".to_string(),
+                webauthn_rp_name: "Acme".to_string(),
                 argon2_memory_kb: 131072,
                 argon2_iterations: 4,
                 argon2_parallelism: 4,
@@ -166,6 +216,31 @@ struct FileBehaviorConfig {
 
 #[derive(Debug, Default, Deserialize)]
 struct FileAuthBehaviorDefaults {
+    totp_issuer: Option<String>,
+    password_min_length: Option<usize>,
+    login_rate_limit_per_hour: Option<u32>,
+    register_rate_limit_per_hour: Option<u32>,
+    password_change_rate_limit_per_hour: Option<u32>,
+    passkey_register_rate_limit_per_hour: Option<u32>,
+    passkey_login_rate_limit_per_hour: Option<u32>,
+    refresh_rate_limit_per_hour: Option<u32>,
+    max_totp_attempts: Option<u32>,
+    max_email_code_attempts: Option<u32>,
+    max_backup_code_attempts: Option<u32>,
+    totp_state_timeout_secs: Option<u64>,
+    email_state_timeout_secs: Option<u64>,
+    verification_session_timeout_secs: Option<u64>,
+    rate_limit_cleanup_interval_secs: Option<u64>,
+    absolute_session_timeout_days: Option<u64>,
+    rate_limit_retry_after_short_secs: Option<u64>,
+    rate_limit_retry_after_long_secs: Option<u64>,
+    max_failed_logins: Option<u32>,
+    lockout_duration_secs: Option<u64>,
+    email_code_expiry_secs: Option<u64>,
+    max_email_codes_per_hour: Option<u32>,
+    webauthn_rp_id: Option<String>,
+    webauthn_rp_origin: Option<String>,
+    webauthn_rp_name: Option<String>,
     argon2_memory_kb: Option<u32>,
     argon2_iterations: Option<u32>,
     argon2_parallelism: Option<u32>,
@@ -174,26 +249,106 @@ struct FileAuthBehaviorDefaults {
 impl AppBehaviorConfig {
     pub fn load() -> Self {
         let mut behavior = Self::default();
-        let config_path = Path::new("config/default.toml");
+        Self::merge_file(&mut behavior, Path::new("config/default.toml"));
+        Self::merge_file(&mut behavior, Path::new("config/local.toml"));
 
+        behavior
+    }
+
+    fn merge_file(behavior: &mut Self, config_path: &Path) {
         let raw = match fs::read_to_string(config_path) {
             Ok(contents) => contents,
-            Err(_) => return behavior,
+            Err(_) => return,
         };
 
         let parsed: FileBehaviorConfig = match toml::from_str(&raw) {
             Ok(parsed) => parsed,
             Err(err) => {
                 eprintln!(
-                    "warning: failed to parse {}: {}. Falling back to built-in behavior defaults.",
+                    "warning: failed to parse {}: {}. Skipping this config layer.",
                     config_path.display(),
                     err
                 );
-                return behavior;
+                return;
             }
         };
 
         if let Some(auth) = parsed.auth {
+            if let Some(v) = auth.totp_issuer {
+                behavior.auth.totp_issuer = v;
+            }
+            if let Some(v) = auth.password_min_length {
+                behavior.auth.password_min_length = v;
+            }
+            if let Some(v) = auth.login_rate_limit_per_hour {
+                behavior.auth.login_rate_limit_per_hour = v;
+            }
+            if let Some(v) = auth.register_rate_limit_per_hour {
+                behavior.auth.register_rate_limit_per_hour = v;
+            }
+            if let Some(v) = auth.password_change_rate_limit_per_hour {
+                behavior.auth.password_change_rate_limit_per_hour = v;
+            }
+            if let Some(v) = auth.passkey_register_rate_limit_per_hour {
+                behavior.auth.passkey_register_rate_limit_per_hour = v;
+            }
+            if let Some(v) = auth.passkey_login_rate_limit_per_hour {
+                behavior.auth.passkey_login_rate_limit_per_hour = v;
+            }
+            if let Some(v) = auth.refresh_rate_limit_per_hour {
+                behavior.auth.refresh_rate_limit_per_hour = v;
+            }
+            if let Some(v) = auth.max_totp_attempts {
+                behavior.auth.max_totp_attempts = v;
+            }
+            if let Some(v) = auth.max_email_code_attempts {
+                behavior.auth.max_email_code_attempts = v;
+            }
+            if let Some(v) = auth.max_backup_code_attempts {
+                behavior.auth.max_backup_code_attempts = v;
+            }
+            if let Some(v) = auth.totp_state_timeout_secs {
+                behavior.auth.totp_state_timeout_secs = v;
+            }
+            if let Some(v) = auth.email_state_timeout_secs {
+                behavior.auth.email_state_timeout_secs = v;
+            }
+            if let Some(v) = auth.verification_session_timeout_secs {
+                behavior.auth.verification_session_timeout_secs = v;
+            }
+            if let Some(v) = auth.rate_limit_cleanup_interval_secs {
+                behavior.auth.rate_limit_cleanup_interval_secs = v;
+            }
+            if let Some(v) = auth.absolute_session_timeout_days {
+                behavior.auth.absolute_session_timeout_days = v;
+            }
+            if let Some(v) = auth.rate_limit_retry_after_short_secs {
+                behavior.auth.rate_limit_retry_after_short_secs = v;
+            }
+            if let Some(v) = auth.rate_limit_retry_after_long_secs {
+                behavior.auth.rate_limit_retry_after_long_secs = v;
+            }
+            if let Some(v) = auth.max_failed_logins {
+                behavior.auth.max_failed_logins = v;
+            }
+            if let Some(v) = auth.lockout_duration_secs {
+                behavior.auth.lockout_duration_secs = v;
+            }
+            if let Some(v) = auth.email_code_expiry_secs {
+                behavior.auth.email_code_expiry_secs = v;
+            }
+            if let Some(v) = auth.max_email_codes_per_hour {
+                behavior.auth.max_email_codes_per_hour = v;
+            }
+            if let Some(v) = auth.webauthn_rp_id {
+                behavior.auth.webauthn_rp_id = v;
+            }
+            if let Some(v) = auth.webauthn_rp_origin {
+                behavior.auth.webauthn_rp_origin = v;
+            }
+            if let Some(v) = auth.webauthn_rp_name {
+                behavior.auth.webauthn_rp_name = v;
+            }
             if let Some(v) = auth.argon2_memory_kb {
                 behavior.auth.argon2_memory_kb = v;
             }
@@ -204,21 +359,11 @@ impl AppBehaviorConfig {
                 behavior.auth.argon2_parallelism = v;
             }
         }
-
-        behavior
     }
 }
 
 fn env_behavior_override(key: &str) -> Option<String> {
-    match env::var(key) {
-        Ok(value) => {
-            eprintln!(
-                "warning: {key} is deprecated for app-behavior config; move it to config/default.toml"
-            );
-            Some(value)
-        }
-        Err(_) => None,
-    }
+    env::var(key).ok()
 }
 
 /// Top-level application configuration.
