@@ -2,10 +2,7 @@
 
 use acme_db::infra::DbEmailStore;
 use acme_db::{create_pool, run_dev_seeds, run_migrations};
-use acme_infra::{
-    create_email_manager, create_template_engine, log_effective_config, AppConfig,
-    EmailAdapterType, EmailConfig,
-};
+use acme_infra::{create_email_manager, create_template_engine, log_effective_config, AppConfig};
 use std::sync::Arc;
 use tracing::info;
 use underlay_blob::{BlobAdapter, LocalAdapter, LocalConfig, NoopAdapter};
@@ -24,9 +21,11 @@ async fn main() -> anyhow::Result<()> {
     acme_infra::init_tracing(&app_config);
     log_effective_config(&app_config);
 
-    let db_url = std::env::var("DATABASE_URL")
-        .or_else(|_| std::env::var("ACME_DATABASE_URL"))
-        .map_err(|_| anyhow::anyhow!("DATABASE_URL must be set"))?;
+    let db_url = app_config
+        .database
+        .url
+        .clone()
+        .ok_or_else(|| anyhow::anyhow!("DATABASE_URL must be set"))?;
 
     let pool = create_pool(&db_url).await?;
     run_migrations(&pool).await?;
@@ -93,34 +92,7 @@ async fn main() -> anyhow::Result<()> {
         cookie_config = cookie_config.with_refresh_token_max_age(max_age);
     }
 
-    // Initialize email system with DevCapture adapter (captures emails to database)
-    let email_adapter = std::env::var("EMAIL_ADAPTER")
-        .map(|s| EmailAdapterType::parse(&s))
-        .unwrap_or_else(|_| {
-            // Default to DevCapture in local/dev, Noop otherwise
-            if app_config.env.is_development() {
-                EmailAdapterType::DevCapture
-            } else {
-                EmailAdapterType::Noop
-            }
-        });
-
-    let email_config = EmailConfig {
-        adapter: email_adapter,
-        default_from: std::env::var("EMAIL_DEFAULT_FROM")
-            .unwrap_or_else(|_| "noreply@acme.local".to_string()),
-        app_name: "Acme".to_string(),
-        app_url: std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:40012".to_string()),
-        support_email: std::env::var("SUPPORT_EMAIL")
-            .unwrap_or_else(|_| "support@acme.local".to_string()),
-        templates_dir: "templates/emails".to_string(),
-        smtp: None,
-        ses: None,
-        dev_capture: Some(acme_infra::DevCaptureEmailConfig {
-            whitelist: vec![],
-            fallback_adapter: None,
-        }),
-    };
+    let email_config = app_config.email.clone();
 
     // Create email manager with database-backed store for DevCapture
     let db_email_store = Arc::new(DbEmailStore::new(pool.clone()));

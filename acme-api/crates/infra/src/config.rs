@@ -424,7 +424,9 @@ impl AppConfig {
         let logging_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
 
         // Database
-        let database_url = env::var("DATABASE_URL").ok();
+        let database_url = env::var("DATABASE_URL")
+            .or_else(|_| env::var("ACME_DATABASE_URL"))
+            .ok();
 
         // CORS configuration
         let allowed_origins: Vec<String> = env::var("CORS_ORIGINS")

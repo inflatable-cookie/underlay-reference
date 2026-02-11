@@ -19,16 +19,15 @@ async fn main() {
     init_tracing(&app_config);
     log_effective_config(&app_config);
 
-    let db_url = match std::env::var("DATABASE_URL").or_else(|_| std::env::var("ACME_DATABASE_URL"))
-    {
-        Ok(url) => url,
-        Err(_) => {
+    let db_url = match app_config.database.url.as_deref() {
+        Some(url) => url,
+        None => {
             error!("DATABASE_URL is not set; job worker cannot start");
             return;
         }
     };
 
-    let pool = match create_pool(&db_url).await {
+    let pool = match create_pool(db_url).await {
         Ok(pool) => pool,
         Err(err) => {
             error!(%err, "failed to connect to database; job worker exiting");
