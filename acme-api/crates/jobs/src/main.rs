@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use acme_db::{create_pool, run_migrations};
-use acme_infra::{init_tracing, AppConfig};
+use acme_infra::{init_tracing, log_effective_config, AppConfig};
 use acme_jobs::{
     scheduled_task_definitions, JobRepository, JobRunner, JobRunnerConfig, PgJobNotifier,
     ScheduledTaskRepository, Scheduler,
@@ -17,6 +17,7 @@ async fn main() {
     // Load config first (includes dotenvy loading)
     let app_config = AppConfig::from_env();
     init_tracing(&app_config);
+    log_effective_config(&app_config);
 
     let db_url = match std::env::var("DATABASE_URL").or_else(|_| std::env::var("ACME_DATABASE_URL"))
     {

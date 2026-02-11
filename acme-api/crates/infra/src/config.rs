@@ -404,3 +404,23 @@ impl AppConfig {
         }
     }
 }
+
+/// Emit a redacted startup snapshot for effective configuration diagnostics.
+pub fn log_effective_config(config: &AppConfig) {
+    tracing::info!(
+        env = ?config.env,
+        bind_addr = %config.http.bind_addr,
+        port = config.http.port,
+        public_host = %config.http.public_host,
+        log_level = %config.logging.level,
+        db_configured = config.database.url.is_some(),
+        cors_origins = config.cors.allowed_origins.len(),
+        cookie_secure = config.cors.cookie_secure,
+        email_adapter = ?config.email.adapter,
+        email_templates_dir = %config.email.templates_dir,
+        argon2_memory_kb = config.behavior.auth.argon2_memory_kb,
+        argon2_iterations = config.behavior.auth.argon2_iterations,
+        argon2_parallelism = config.behavior.auth.argon2_parallelism,
+        "effective configuration loaded"
+    );
+}

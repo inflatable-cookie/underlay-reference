@@ -3,7 +3,8 @@
 use acme_db::infra::DbEmailStore;
 use acme_db::{create_pool, run_dev_seeds, run_migrations};
 use acme_infra::{
-    create_email_manager, create_template_engine, AppConfig, EmailAdapterType, EmailConfig,
+    create_email_manager, create_template_engine, log_effective_config, AppConfig,
+    EmailAdapterType, EmailConfig,
 };
 use std::sync::Arc;
 use tracing::info;
@@ -21,6 +22,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Initialize tracing with environment-appropriate format
     acme_infra::init_tracing(&app_config);
+    log_effective_config(&app_config);
 
     let db_url = std::env::var("DATABASE_URL")
         .or_else(|_| std::env::var("ACME_DATABASE_URL"))
