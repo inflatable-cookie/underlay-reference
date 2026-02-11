@@ -1,3 +1,10 @@
+[email]
+# default_from = "noreply@acme.local"
+# app_name = "Acme Local"
+# app_url = "http://localhost:41001"
+# support_email = "support@acme.local"
+# templates_dir = "templates/emails"
+
 [auth]
 # totp_issuer = "Acme"
 # password_min_length = 12

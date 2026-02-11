@@ -137,7 +137,17 @@ pub struct EmailConfig {
 
 #[derive(Debug, Clone)]
 pub struct AppBehaviorConfig {
+    pub email: EmailBehaviorDefaults,
     pub auth: AuthBehaviorDefaults,
+}
+
+#[derive(Debug, Clone)]
+pub struct EmailBehaviorDefaults {
+    pub default_from: String,
+    pub app_name: String,
+    pub app_url: String,
+    pub support_email: String,
+    pub templates_dir: String,
 }
 
 #[derive(Debug, Clone)]
@@ -175,6 +185,13 @@ pub struct AuthBehaviorDefaults {
 impl Default for AppBehaviorConfig {
     fn default() -> Self {
         Self {
+            email: EmailBehaviorDefaults {
+                default_from: "noreply@acme.example.com".to_string(),
+                app_name: "Acme".to_string(),
+                app_url: "https://acme.example.com".to_string(),
+                support_email: "support@acme.example.com".to_string(),
+                templates_dir: "templates/emails".to_string(),
+            },
             auth: AuthBehaviorDefaults {
                 totp_issuer: "Acme".to_string(),
                 password_min_length: 12,
@@ -211,7 +228,17 @@ impl Default for AppBehaviorConfig {
 
 #[derive(Debug, Default, Deserialize)]
 struct FileBehaviorConfig {
+    email: Option<FileEmailBehaviorDefaults>,
     auth: Option<FileAuthBehaviorDefaults>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileEmailBehaviorDefaults {
+    default_from: Option<String>,
+    app_name: Option<String>,
+    app_url: Option<String>,
+    support_email: Option<String>,
+    templates_dir: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -272,6 +299,24 @@ impl AppBehaviorConfig {
                 return;
             }
         };
+
+        if let Some(email) = parsed.email {
+            if let Some(v) = email.default_from {
+                behavior.email.default_from = v;
+            }
+            if let Some(v) = email.app_name {
+                behavior.email.app_name = v;
+            }
+            if let Some(v) = email.app_url {
+                behavior.email.app_url = v;
+            }
+            if let Some(v) = email.support_email {
+                behavior.email.support_email = v;
+            }
+            if let Some(v) = email.templates_dir {
+                behavior.email.templates_dir = v;
+            }
+        }
 
         if let Some(auth) = parsed.auth {
             if let Some(v) = auth.totp_issuer {
@@ -448,15 +493,16 @@ impl AppConfig {
         let email_adapter = EmailAdapterType::parse(&email_adapter_str);
 
         // Email branding
-        let default_from = env::var("EMAIL_DEFAULT_FROM")
-            .unwrap_or_else(|_| "noreply@acme.example.com".to_string());
-        let app_name = env::var("EMAIL_APP_NAME").unwrap_or_else(|_| "Acme".to_string());
-        let app_url =
-            env::var("EMAIL_APP_URL").unwrap_or_else(|_| "https://acme.example.com".to_string());
-        let support_email =
-            env::var("EMAIL_SUPPORT").unwrap_or_else(|_| "support@acme.example.com".to_string());
-        let templates_dir =
-            env::var("EMAIL_TEMPLATES_DIR").unwrap_or_else(|_| "templates/emails".to_string());
+        let default_from = env_behavior_override("EMAIL_DEFAULT_FROM")
+            .unwrap_or_else(|| behavior.email.default_from.clone());
+        let app_name = env_behavior_override("EMAIL_APP_NAME")
+            .unwrap_or_else(|| behavior.email.app_name.clone());
+        let app_url = env_behavior_override("EMAIL_APP_URL")
+            .unwrap_or_else(|| behavior.email.app_url.clone());
+        let support_email = env_behavior_override("EMAIL_SUPPORT")
+            .unwrap_or_else(|| behavior.email.support_email.clone());
+        let templates_dir = env_behavior_override("EMAIL_TEMPLATES_DIR")
+            .unwrap_or_else(|| behavior.email.templates_dir.clone());
 
         // SMTP config (when adapter=smtp)
         let smtp_config = if email_adapter == EmailAdapterType::Smtp {
