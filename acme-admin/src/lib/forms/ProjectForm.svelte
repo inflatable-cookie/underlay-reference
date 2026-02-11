@@ -2,6 +2,7 @@
   import {
     Field,
     FieldSet,
+    FieldSetGrid,
     FormActions,
     FormValidationProvider,
     SaveSplitButton,
@@ -166,7 +167,8 @@
 </script>
 
 <FormValidationProvider bind:isValid={isFormValid}>
-  <FieldSet legend="Organisation" columns={2}>
+  <FieldSet legend="Organisation">
+    <FieldSetGrid columns={2}>
     <Field label="Category" error={errors?.categoryId} hint="Optional: Organize projects into categories">
       <input type="hidden" name="categoryId" value={categoryId ?? ""} />
       <RelationSelector
@@ -215,9 +217,11 @@
         placeholder="Select status"
       />
     </Field>
+    </FieldSetGrid>
   </FieldSet>
 
-  <FieldSet legend="Basic Information" columns={1}>
+  <FieldSet legend="Basic Information">
+    <FieldSetGrid columns={1}>
     <Field label="Name" error={errors?.name} required>
       <TextInput
         name="name"
@@ -237,6 +241,7 @@
         maxlength={1000}
       />
     </Field>
+    </FieldSetGrid>
   </FieldSet>
 </FormValidationProvider>
 

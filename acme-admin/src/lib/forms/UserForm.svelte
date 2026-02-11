@@ -2,6 +2,7 @@
   import {
     Field,
     FieldSet,
+    FieldSetGrid,
     FormActions,
     FormValidationProvider,
     SaveSplitButton,
@@ -70,7 +71,8 @@
 </script>
 
 <FormValidationProvider bind:isValid={isFormValid}>
-  <FieldSet legend="User" columns={2}>
+  <FieldSet legend="User">
+    <FieldSetGrid columns={2}>
 	<Field label="Email" error={errors?.email} required>
 		<TextInput
 			name="email"
@@ -91,9 +93,11 @@
         maxlength={100}
       />
     </Field>
+    </FieldSetGrid>
   </FieldSet>
 
-  <FieldSet legend="Access" columns={2}>
+  <FieldSet legend="Access">
+    <FieldSetGrid columns={2}>
     <Field label="Role" error={errors?.role} required>
       <Select
         name="role"
@@ -113,10 +117,12 @@
         placeholder="Select status"
       />
     </Field>
+    </FieldSetGrid>
   </FieldSet>
 
   {#if mode === "create"}
-    <FieldSet legend="Onboarding" columns={1}>
+    <FieldSet legend="Onboarding">
+      <FieldSetGrid columns={1}>
       <Field
         label="Send password reset email"
         hint="Sends a password reset email so the user can set an initial password."
@@ -136,6 +142,7 @@
           rightVariant="success"
         />
       </Field>
+      </FieldSetGrid>
     </FieldSet>
   {/if}
 </FormValidationProvider>

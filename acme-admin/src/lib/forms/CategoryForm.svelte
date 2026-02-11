@@ -2,6 +2,7 @@
   import {
     Field,
     FieldSet,
+    FieldSetGrid,
     FormActions,
     FormValidationProvider,
     SaveSplitButton,
@@ -66,7 +67,8 @@
 </script>
 
 <FormValidationProvider bind:isValid={isFormValid}>
-  <FieldSet legend="Basic Information" columns={2}>
+  <FieldSet legend="Basic Information">
+    <FieldSetGrid columns={2}>
     <Field label="Name" error={errors?.name} required>
       <TextInput
         name="name"
@@ -96,9 +98,11 @@
         maxlength={500}
       />
     </Field>
+    </FieldSetGrid>
   </FieldSet>
 
-  <FieldSet legend="Display Settings" columns={2}>
+  <FieldSet legend="Display Settings">
+    <FieldSetGrid columns={2}>
     <Field label="Color" error={errors?.color}>
       <input
         type="color"
@@ -118,6 +122,7 @@
         rightVariant="success"
       />
     </Field>
+    </FieldSetGrid>
   </FieldSet>
 </FormValidationProvider>
 

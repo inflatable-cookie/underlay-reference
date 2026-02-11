@@ -5,6 +5,7 @@
     TextButton,
     Field,
     FieldSet,
+    FieldSetGrid,
     TextInput,
     Select,
     Switch,
@@ -295,17 +296,19 @@
           handleSubmit();
         }}
       >
-        <FieldSet legend="Identity" columns={2}>
+        <FieldSet legend="Identity">
+          <FieldSetGrid columns={2}>
           <Field label="Full Name" hint="Your full name as you wish to be known">
             <TextInput bind:value={fullName} placeholder="e.g. Alice Smith" maxlength={256} disabled={submitting} />
           </Field>
           <Field label="Display Name" hint="Short name shown in the UI">
             <TextInput bind:value={formDisplayName} placeholder="e.g. Alice" maxlength={64} disabled={submitting} />
           </Field>
+          </FieldSetGrid>
         </FieldSet>
 
         <FieldSet legend="Locale & Region">
-          <FieldSet columns={2}>
+          <FieldSetGrid columns={2}>
             <Field label="Time Zone">
               <div class="timezone-field">
                 <Select
@@ -329,8 +332,8 @@
                 disabled={submitting}
               />
             </Field>
-          </FieldSet>
-          <FieldSet columns={3}>
+          </FieldSetGrid>
+          <FieldSetGrid columns={3}>
             <Field label="Country" hint="ISO 3166-1 alpha-2">
               <TextInput bind:value={countryCode} placeholder="e.g. GB" maxlength={2} disabled={submitting} />
             </Field>
@@ -340,10 +343,11 @@
             <Field label="Currency" hint="ISO 4217">
               <TextInput bind:value={currencyPreference} placeholder="e.g. GBP" maxlength={3} disabled={submitting} />
             </Field>
-          </FieldSet>
+          </FieldSetGrid>
         </FieldSet>
 
-        <FieldSet legend="Communication Preferences" columns={3}>
+        <FieldSet legend="Communication Preferences">
+          <FieldSetGrid columns={3}>
           <Field label="Email Frequency">
             <Select bind:value={emailFrequency} items={emailFrequencyOptions} disabled={submitting} />
           </Field>
@@ -353,6 +357,7 @@
           <Field label="Transactional Emails">
             <Switch bind:checked={emailTransactionalOptIn} leftLabel="No" rightLabel="Yes" disabled={submitting} />
           </Field>
+          </FieldSetGrid>
         </FieldSet>
 
         <FormActions>
