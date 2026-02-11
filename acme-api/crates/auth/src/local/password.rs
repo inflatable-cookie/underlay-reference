@@ -1,5 +1,5 @@
-use super::*;
 use super::helpers::map_credential_row;
+use super::*;
 
 impl AcmeLocalAuthService {
     /// Validate password strength.
@@ -117,10 +117,7 @@ impl AcmeLocalAuthService {
         Ok(map_credential_row(row))
     }
 
-    pub(super) async fn update_credential_last_used(
-        &self,
-        credential_id: Uuid,
-    ) -> AuthResult<()> {
+    pub(super) async fn update_credential_last_used(&self, credential_id: Uuid) -> AuthResult<()> {
         let now = Utc::now();
         sqlx::query(
             r#"

@@ -10,7 +10,7 @@ impl AcmeLocalAuthService {
                     tracing::error!("Failed to encrypt TOTP secret: {}", e);
                     secret.to_string() // Fallback to plaintext on error
                 }
-            }
+            },
             None => secret.to_string(), // No encryption configured
         }
     }
@@ -37,10 +37,7 @@ impl AcmeLocalAuthService {
         }
     }
 
-    pub(super) async fn find_totp_details(
-        &self,
-        user_id: Uuid,
-    ) -> AuthResult<Option<TotpDetails>> {
+    pub(super) async fn find_totp_details(&self, user_id: Uuid) -> AuthResult<Option<TotpDetails>> {
         let row = sqlx::query(
             r#"
             SELECT c.id AS credential_id,

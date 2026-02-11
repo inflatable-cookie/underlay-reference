@@ -135,7 +135,10 @@ pub(crate) fn csrf_cookie_name(config: &underlay_http::AuthCookieConfig) -> Stri
     format!("{}csrf_token", config.cookie_prefix)
 }
 
-pub(crate) fn extract_csrf_token(headers: &HeaderMap, config: &underlay_http::AuthCookieConfig) -> Option<String> {
+pub(crate) fn extract_csrf_token(
+    headers: &HeaderMap,
+    config: &underlay_http::AuthCookieConfig,
+) -> Option<String> {
     let cookie_header = headers.get(header::COOKIE)?.to_str().ok()?;
     let cookie_name = csrf_cookie_name(config);
     let prefix = format!("{}=", cookie_name);
@@ -179,8 +182,8 @@ pub(crate) fn set_csrf_cookie(
         cookie.push_str(&format!("; Domain={}", domain));
     }
 
-    let value = HeaderValue::from_str(&cookie)
-        .map_err(|e| format!("invalid CSRF cookie header: {}", e))?;
+    let value =
+        HeaderValue::from_str(&cookie).map_err(|e| format!("invalid CSRF cookie header: {}", e))?;
     headers.append(header::SET_COOKIE, value);
     Ok(())
 }
@@ -203,7 +206,9 @@ pub async fn csrf_token(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 /// Convert validation errors to an ApiError response.
-pub(super) fn validation_error_response(validation_err: validator::ValidationErrors) -> impl IntoResponse {
+pub(super) fn validation_error_response(
+    validation_err: validator::ValidationErrors,
+) -> impl IntoResponse {
     let mut field_errors = std::collections::HashMap::new();
     for (field, errors) in validation_err.field_errors() {
         if let Some(err) = errors.first() {
@@ -231,7 +236,9 @@ pub(super) fn validation_error_response(validation_err: validator::ValidationErr
 /// - Forbidden -> 403 FORBIDDEN
 /// - Internal -> 500 INTERNAL_SERVER_ERROR
 /// - All others -> 400 BAD_REQUEST
-pub(super) fn map_auth_error_to_response(err: underlay_auth::AuthError) -> axum::response::Response {
+pub(super) fn map_auth_error_to_response(
+    err: underlay_auth::AuthError,
+) -> axum::response::Response {
     use underlay_auth::AuthError;
 
     let status = match &err {

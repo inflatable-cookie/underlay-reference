@@ -239,14 +239,12 @@ pub async fn get_task(
         ),
         Err(e) => {
             tracing::error!("Failed to get task: {}", e);
-            Err(
-                ApiError::internal("tasks.get_failed", "Failed to get task")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "tasks.get",
-                        "task_id": task_id
-                    })),
-            )
+            Err(ApiError::internal("tasks.get_failed", "Failed to get task")
+                .with_cause(&e)
+                .with_context(serde_json::json!({
+                    "operation": "tasks.get",
+                    "task_id": task_id
+                })))
         }
     }
 }
@@ -531,17 +529,15 @@ pub async fn create_label(
             // Check for unique constraint violation
             if let Some(db_err) = e.as_database_error() {
                 if db_err.code().as_deref() == Some("23505") {
-                    return Err(
-                        ApiError::conflict(
-                            "label.name_exists",
-                            "A label with this name already exists in this project",
-                        )
-                        .with_context(serde_json::json!({
-                            "operation": "labels.create",
-                            "project_id": project_id,
-                            "name": &req.name
-                        })),
-                    );
+                    return Err(ApiError::conflict(
+                        "label.name_exists",
+                        "A label with this name already exists in this project",
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "labels.create",
+                        "project_id": project_id,
+                        "name": &req.name
+                    })));
                 }
             }
 
@@ -745,19 +741,17 @@ pub async fn batch_update_task_status(
         }
         Err(e) => {
             tracing::error!("Failed to batch update task status: {}", e);
-            Err(
-                ApiError::internal(
-                    "tasks.batch_update_status_failed",
-                    "Failed to batch update task status",
-                )
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "tasks.batch_update_status",
-                    "project_id": project_id,
-                    "count": ids.len(),
-                    "status": &req.status
-                })),
+            Err(ApiError::internal(
+                "tasks.batch_update_status_failed",
+                "Failed to batch update task status",
             )
+            .with_cause(&e)
+            .with_context(serde_json::json!({
+                "operation": "tasks.batch_update_status",
+                "project_id": project_id,
+                "count": ids.len(),
+                "status": &req.status
+            })))
         }
     }
 }

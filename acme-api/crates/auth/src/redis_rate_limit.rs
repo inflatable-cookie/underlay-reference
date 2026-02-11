@@ -6,7 +6,9 @@
 use async_trait::async_trait;
 use redis::{AsyncCommands, Client};
 use std::time::{SystemTime, UNIX_EPOCH};
-use underlay_ratelimit::{RateLimitBackend, RateLimitConfig, RateLimitError, RateLimitResult, Result};
+use underlay_ratelimit::{
+    RateLimitBackend, RateLimitConfig, RateLimitError, RateLimitResult, Result,
+};
 
 /// Redis-backed rate limiter backend.
 #[derive(Debug, Clone)]
@@ -58,7 +60,9 @@ impl RateLimitBackend for RedisRateLimitBackend {
         let window_start = now / window_size_secs * window_size_secs;
         let redis_key = Self::build_key(key, window_start);
 
-        let count: Option<u64> = conn.get(&redis_key).await
+        let count: Option<u64> = conn
+            .get(&redis_key)
+            .await
             .map_err(|e| RateLimitError::Backend(format!("Redis GET error: {}", e)))?;
         let count = count.unwrap_or(0);
 
@@ -69,7 +73,7 @@ impl RateLimitBackend for RedisRateLimitBackend {
             Ok(RateLimitResult::allowed(remaining, count))
         } else {
             let reset_after = std::time::Duration::from_secs(
-                (window_start + window_size_secs).saturating_sub(now)
+                (window_start + window_size_secs).saturating_sub(now),
             );
             Ok(RateLimitResult::denied(count, reset_after))
         }
@@ -116,7 +120,9 @@ impl RateLimitBackend for RedisRateLimitBackend {
             })
             .collect();
 
-        let _: () = conn.del(&keys_to_delete).await
+        let _: () = conn
+            .del(&keys_to_delete)
+            .await
             .map_err(|e| RateLimitError::Backend(format!("Redis DEL error: {}", e)))?;
 
         Ok(())

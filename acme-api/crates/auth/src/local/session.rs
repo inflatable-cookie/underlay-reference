@@ -1,5 +1,5 @@
-use super::*;
 use super::helpers::{map_session_row, session_status_db, timestamp_to_datetime};
+use super::*;
 
 impl AcmeLocalAuthService {
     pub async fn refresh(&self, refresh_token: &str) -> AuthResult<AuthSession> {
@@ -42,8 +42,9 @@ impl AcmeLocalAuthService {
 
         // Check absolute session timeout
         let session_age = Utc::now() - session.created_at;
-        if session_age > chrono::Duration::from_std(self.config.absolute_session_timeout)
-            .unwrap_or(chrono::Duration::days(30))
+        if session_age
+            > chrono::Duration::from_std(self.config.absolute_session_timeout)
+                .unwrap_or(chrono::Duration::days(30))
         {
             // Session has exceeded absolute lifetime - revoke it
             tracing::info!(
@@ -403,11 +404,7 @@ impl AcmeLocalAuthService {
         ))
     }
 
-    pub(super) async fn revoke_session(
-        &self,
-        session_id: Uuid,
-        reason: &str,
-    ) -> AuthResult<()> {
+    pub(super) async fn revoke_session(&self, session_id: Uuid, reason: &str) -> AuthResult<()> {
         let now = Utc::now();
         sqlx::query(
             r#"

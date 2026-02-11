@@ -366,12 +366,14 @@ pub async fn update_media(
             let detail = MediaDetailDto::from_media(row, current_version, usage_count);
             Ok(Json(json!({ "data": detail })).into_response())
         }
-        Err(e) if e.to_string().contains("no rows") => Err(
-            ApiError::not_found("media.not_found", "Media item not found").with_context(json!({
-                "operation": "media.update",
-                "media_id": media_id
-            })),
-        ),
+        Err(e) if e.to_string().contains("no rows") => Err(ApiError::not_found(
+            "media.not_found",
+            "Media item not found",
+        )
+        .with_context(json!({
+            "operation": "media.update",
+            "media_id": media_id
+        }))),
         Err(e) => {
             tracing::error!("Failed to update media: {}", e);
             Err(

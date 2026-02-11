@@ -98,16 +98,15 @@ pub async fn email_totp_verify(
             "No active verification code found. Please request a new one.",
         )
         .into_response(),
-        Err(err) => ApiError::bad_request(
-            "auth.email_totp.verify_failed",
-            "Email verification failed",
-        )
-        .with_cause(&err)
-        .with_context(json!({
-            "operation": "auth.email_totp_verify.verify_code",
-            "user_id": user.user_id.0,
-            "purpose": format!("{purpose:?}"),
-        }))
-        .into_response(),
+        Err(err) => {
+            ApiError::bad_request("auth.email_totp.verify_failed", "Email verification failed")
+                .with_cause(&err)
+                .with_context(json!({
+                    "operation": "auth.email_totp_verify.verify_code",
+                    "user_id": user.user_id.0,
+                    "purpose": format!("{purpose:?}"),
+                }))
+                .into_response()
+        }
     }
 }

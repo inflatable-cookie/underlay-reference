@@ -15,8 +15,6 @@ mod redis_rate_limit;
 mod underlay;
 
 pub use config::{AuthConfig, AuthConfigBuilder};
-pub use rate_limiter::DynamicRateLimiter;
-pub use redis_rate_limit::{RateLimitBackendType, RedisRateLimitBackend};
 pub use email_totp::{
     EmailTotpConfig, EmailTotpError, EmailTotpResult, EmailTotpService, VerificationSession,
 };
@@ -28,4 +26,6 @@ pub use local::{
 };
 pub use principal::{UserId, UserPrincipal, UserRole};
 pub use provider::{AuthError, AuthProvider};
+pub use rate_limiter::DynamicRateLimiter;
+pub use redis_rate_limit::{RateLimitBackendType, RedisRateLimitBackend};
 pub use underlay::user_principal_from_underlay;

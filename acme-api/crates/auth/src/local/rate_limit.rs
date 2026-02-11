@@ -54,10 +54,7 @@ impl AcmeLocalAuthService {
     }
 
     /// Check rate limit for password change attempts.
-    pub(super) async fn check_password_change_rate_limit(
-        &self,
-        user_id: Uuid,
-    ) -> AuthResult<()> {
+    pub(super) async fn check_password_change_rate_limit(&self, user_id: Uuid) -> AuthResult<()> {
         let key = format!("password_change:{}", user_id);
 
         let rl_config =
@@ -79,10 +76,7 @@ impl AcmeLocalAuthService {
     }
 
     /// Check rate limit for passkey registration start.
-    pub(super) async fn check_passkey_register_rate_limit(
-        &self,
-        user_id: Uuid,
-    ) -> AuthResult<()> {
+    pub(super) async fn check_passkey_register_rate_limit(&self, user_id: Uuid) -> AuthResult<()> {
         let key = format!("passkey_register:{}", user_id);
 
         let rl_config =
@@ -156,8 +150,7 @@ impl AcmeLocalAuthService {
 
         let key = format!("refresh:{}:{}", ip_part, ua_part);
 
-        let rl_config =
-            RateLimitConfig::per_hour(self.config.refresh_rate_limit_per_hour.into());
+        let rl_config = RateLimitConfig::per_hour(self.config.refresh_rate_limit_per_hour.into());
 
         let result = self
             .rate_limiter

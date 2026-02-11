@@ -160,8 +160,10 @@ pub async fn list_scheduled_tasks(
 
     match rows {
         Ok(rows) => {
-            let data: Vec<ScheduledTaskSummaryDto> =
-                rows.into_iter().map(ScheduledTaskSummaryDto::from_row).collect();
+            let data: Vec<ScheduledTaskSummaryDto> = rows
+                .into_iter()
+                .map(ScheduledTaskSummaryDto::from_row)
+                .collect();
             Ok((StatusCode::OK, Json(ListResponse { data })).into_response())
         }
         Err(e) => Err(
@@ -187,7 +189,10 @@ pub async fn get_scheduled_task(
     let uuid = match Uuid::parse_str(&task_id) {
         Ok(id) => id.into_inner(),
         Err(_) => {
-            return Err(ApiError::bad_request("invalid_id", "Invalid scheduled task id"))
+            return Err(ApiError::bad_request(
+                "invalid_id",
+                "Invalid scheduled task id",
+            ))
         }
     };
 
@@ -247,7 +252,10 @@ pub async fn toggle_scheduled_task(
     let uuid = match Uuid::parse_str(&task_id) {
         Ok(id) => id.into_inner(),
         Err(_) => {
-            return Err(ApiError::bad_request("invalid_id", "Invalid scheduled task id"))
+            return Err(ApiError::bad_request(
+                "invalid_id",
+                "Invalid scheduled task id",
+            ))
         }
     };
 
@@ -306,7 +314,10 @@ pub async fn trigger_scheduled_task(
     let uuid = match Uuid::parse_str(&task_id) {
         Ok(id) => id.into_inner(),
         Err(_) => {
-            return Err(ApiError::bad_request("invalid_id", "Invalid scheduled task id"))
+            return Err(ApiError::bad_request(
+                "invalid_id",
+                "Invalid scheduled task id",
+            ))
         }
     };
 
@@ -374,14 +385,15 @@ pub async fn trigger_scheduled_task(
             };
             Ok((StatusCode::OK, Json(body)).into_response())
         }
-        Err(e) => Err(
-            ApiError::internal("scheduled_task_trigger_failed", "Failed to trigger task")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "scheduled_tasks.trigger",
-                    "task_id": uuid,
-                    "job_type": task.job_type
-                })),
-        ),
+        Err(e) => Err(ApiError::internal(
+            "scheduled_task_trigger_failed",
+            "Failed to trigger task",
+        )
+        .with_cause(&e)
+        .with_context(serde_json::json!({
+            "operation": "scheduled_tasks.trigger",
+            "task_id": uuid,
+            "job_type": task.job_type
+        }))),
     }
 }

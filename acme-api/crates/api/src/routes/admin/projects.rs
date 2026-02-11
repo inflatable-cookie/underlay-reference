@@ -490,18 +490,16 @@ pub async fn batch_delete_projects(
         }
         Err(e) => {
             tracing::error!("Failed to batch delete projects: {}", e);
-            Err(
-                ApiError::internal(
-                    "projects.batch_delete_failed",
-                    "Failed to batch delete projects",
-                )
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "projects.batch_delete",
-                    "count": ids.len(),
-                    "batch_id": batch_id
-                })),
+            Err(ApiError::internal(
+                "projects.batch_delete_failed",
+                "Failed to batch delete projects",
             )
+            .with_cause(&e)
+            .with_context(serde_json::json!({
+                "operation": "projects.batch_delete",
+                "count": ids.len(),
+                "batch_id": batch_id
+            })))
         }
     }
 }

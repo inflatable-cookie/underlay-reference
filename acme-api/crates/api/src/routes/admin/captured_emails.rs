@@ -149,19 +149,22 @@ pub async fn list_captured_emails(
 
     match infra::list_captured_emails(pool, filters).await {
         Ok(rows) => {
-            let data: Vec<CapturedEmailSummaryDto> =
-                rows.into_iter().map(CapturedEmailSummaryDto::from).collect();
+            let data: Vec<CapturedEmailSummaryDto> = rows
+                .into_iter()
+                .map(CapturedEmailSummaryDto::from)
+                .collect();
             Ok((StatusCode::OK, Json(ListResponse { data })).into_response())
         }
-        Err(e) => Err(
-            ApiError::internal("captured_email_query_failed", "Failed to list captured emails")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "captured_emails.list",
-                    "limit": query.limit.unwrap_or(50).clamp(1, 200),
-                    "offset": query.offset.unwrap_or(0).max(0)
-                })),
-        ),
+        Err(e) => Err(ApiError::internal(
+            "captured_email_query_failed",
+            "Failed to list captured emails",
+        )
+        .with_cause(&e)
+        .with_context(serde_json::json!({
+            "operation": "captured_emails.list",
+            "limit": query.limit.unwrap_or(50).clamp(1, 200),
+            "offset": query.offset.unwrap_or(0).max(0)
+        }))),
     }
 }
 
@@ -194,14 +197,15 @@ pub async fn get_captured_email(
             "captured_email_not_found",
             "Captured email not found",
         )),
-        Err(e) => Err(
-            ApiError::internal("captured_email_query_failed", "Failed to get captured email")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "captured_emails.get",
-                    "captured_email_id": uuid
-                })),
-        ),
+        Err(e) => Err(ApiError::internal(
+            "captured_email_query_failed",
+            "Failed to get captured email",
+        )
+        .with_cause(&e)
+        .with_context(serde_json::json!({
+            "operation": "captured_emails.get",
+            "captured_email_id": uuid
+        }))),
     }
 }
 
@@ -231,16 +235,14 @@ pub async fn delete_captured_email(
             "captured_email_not_found",
             "Captured email not found",
         )),
-        Err(e) => Err(
-            ApiError::internal(
-                "captured_email_delete_failed",
-                "Failed to delete captured email",
-            )
-            .with_cause(&e)
-            .with_context(serde_json::json!({
-                "operation": "captured_emails.delete",
-                "captured_email_id": uuid
-            })),
-        ),
+        Err(e) => Err(ApiError::internal(
+            "captured_email_delete_failed",
+            "Failed to delete captured email",
+        )
+        .with_cause(&e)
+        .with_context(serde_json::json!({
+            "operation": "captured_emails.delete",
+            "captured_email_id": uuid
+        }))),
     }
 }

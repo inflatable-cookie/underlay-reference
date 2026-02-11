@@ -1,5 +1,5 @@
-use super::*;
 use super::helpers::map_user_row;
+use super::*;
 
 impl AcmeLocalAuthService {
     pub(super) async fn get_user_role(&self, user_id: Uuid) -> AuthResult<Option<String>> {

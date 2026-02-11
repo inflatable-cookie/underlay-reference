@@ -2,7 +2,11 @@
 //!
 //! Provides aggregate statistics for the admin dashboard.
 
-use axum::{extract::State, response::{IntoResponse, Response}, Json};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Response},
+    Json,
+};
 use serde::Serialize;
 use underlay_http::ApiError;
 
@@ -61,11 +65,12 @@ pub async fn get_dashboard_stats(
         Ok(counts) => counts,
         Err(e) => {
             tracing::error!("Failed to get user counts: {}", e);
-            return Err(
-                ApiError::internal("dashboard.user_counts_failed", "Failed to load dashboard stats")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({ "operation": "stats.get_user_counts" })),
-            );
+            return Err(ApiError::internal(
+                "dashboard.user_counts_failed",
+                "Failed to load dashboard stats",
+            )
+            .with_cause(&e)
+            .with_context(serde_json::json!({ "operation": "stats.get_user_counts" })));
         }
     };
 
@@ -73,11 +78,12 @@ pub async fn get_dashboard_stats(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to get media count: {}", e);
-            return Err(
-                ApiError::internal("dashboard.media_count_failed", "Failed to load dashboard stats")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({ "operation": "stats.get_media_count" })),
-            );
+            return Err(ApiError::internal(
+                "dashboard.media_count_failed",
+                "Failed to load dashboard stats",
+            )
+            .with_cause(&e)
+            .with_context(serde_json::json!({ "operation": "stats.get_media_count" })));
         }
     };
 
@@ -85,17 +91,15 @@ pub async fn get_dashboard_stats(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to get recent registrations: {}", e);
-            return Err(
-                ApiError::internal(
-                    "dashboard.recent_registrations_failed",
-                    "Failed to load dashboard stats",
-                )
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "stats.get_recent_registrations",
-                    "days": 7
-                })),
-            );
+            return Err(ApiError::internal(
+                "dashboard.recent_registrations_failed",
+                "Failed to load dashboard stats",
+            )
+            .with_cause(&e)
+            .with_context(serde_json::json!({
+                "operation": "stats.get_recent_registrations",
+                "days": 7
+            })));
         }
     };
 
@@ -103,16 +107,14 @@ pub async fn get_dashboard_stats(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to get active sessions count: {}", e);
-            return Err(
-                ApiError::internal(
-                    "dashboard.active_sessions_failed",
-                    "Failed to load dashboard stats",
-                )
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "stats.get_active_sessions_count"
-                })),
-            );
+            return Err(ApiError::internal(
+                "dashboard.active_sessions_failed",
+                "Failed to load dashboard stats",
+            )
+            .with_cause(&e)
+            .with_context(serde_json::json!({
+                "operation": "stats.get_active_sessions_count"
+            })));
         }
     };
 

@@ -31,7 +31,12 @@ pub async fn initiate_upload(
     // Verify media exists
     let media_row = match media::get_media_admin(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "media.not_found",
+                "Media item not found",
+            ))
+        }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
             return Err(
@@ -58,15 +63,16 @@ pub async fn initiate_upload(
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Failed to create version: {}", e);
-            return Err(
-                ApiError::internal("media.version_create_failed", "Failed to initiate upload")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.initiate_upload",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(ApiError::internal(
+                "media.version_create_failed",
+                "Failed to initiate upload",
+            )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "media.initiate_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
@@ -86,15 +92,16 @@ pub async fn initiate_upload(
             tracing::error!("Failed to initiate upload: {}", e);
             // Mark version as failed
             let _ = media::fail_media_version(pool, version_id).await;
-            return Err(
-                ApiError::internal("media.upload_initiate_failed", "Failed to initiate upload")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.initiate_upload",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(ApiError::internal(
+                "media.upload_initiate_failed",
+                "Failed to initiate upload",
+            )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "media.initiate_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
@@ -123,19 +130,30 @@ pub async fn finalise_upload(
     // Verify version exists and belongs to this media
     let version = match media::get_media_version(pool, version_id).await {
         Ok(Some(v)) if v.media_id == media_id => v,
-        Ok(Some(_)) => return Err(ApiError::bad_request("version.wrong_media", "Version does not belong to this media")),
-        Ok(None) => return Err(ApiError::not_found("version.not_found", "Version not found")),
+        Ok(Some(_)) => {
+            return Err(ApiError::bad_request(
+                "version.wrong_media",
+                "Version does not belong to this media",
+            ))
+        }
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "version.not_found",
+                "Version not found",
+            ))
+        }
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
-            return Err(
-                ApiError::internal("media.version_get_failed", "Failed to finalise upload")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.finalise_upload",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(ApiError::internal(
+                "media.version_get_failed",
+                "Failed to finalise upload",
+            )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "media.finalise_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
@@ -149,7 +167,12 @@ pub async fn finalise_upload(
     // Get media for filename
     let media_row = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "media.not_found",
+                "Media item not found",
+            ))
+        }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
             return Err(
@@ -178,15 +201,16 @@ pub async fn finalise_upload(
         Err(e) => {
             tracing::error!("Failed to finalise upload: {}", e);
             let _ = media::fail_media_version(pool, version_id).await;
-            return Err(
-                ApiError::internal("media.upload_finalise_failed", "Failed to finalise upload")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.finalise_upload",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(ApiError::internal(
+                "media.upload_finalise_failed",
+                "Failed to finalise upload",
+            )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "media.finalise_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
@@ -269,8 +293,7 @@ pub async fn finalise_upload(
                     "media.content_type_mismatch",
                     format!(
                         "File content does not match declared type. Detected: {}, Declared: {}",
-                        detected_mime,
-                        declared_mime
+                        detected_mime, declared_mime
                     ),
                 ));
             }
@@ -294,30 +317,32 @@ pub async fn finalise_upload(
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Failed to finalise version: {}", e);
-            return Err(
-                ApiError::internal("media.version_finalise_failed", "Failed to finalise upload")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.finalise_upload",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(ApiError::internal(
+                "media.version_finalise_failed",
+                "Failed to finalise upload",
+            )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "media.finalise_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
     // Set as current version
     if let Err(e) = media::set_current_version(pool, media_id, version_id).await {
         tracing::error!("Failed to set current version: {}", e);
-        return Err(
-            ApiError::internal("media.set_current_version_failed", "Failed to finalise upload")
-                .with_cause(&e)
-                .with_context(json!({
-                    "operation": "media.finalise_upload",
-                    "media_id": media_id,
-                    "version_id": version_id
-                })),
-        );
+        return Err(ApiError::internal(
+            "media.set_current_version_failed",
+            "Failed to finalise upload",
+        )
+        .with_cause(&e)
+        .with_context(json!({
+            "operation": "media.finalise_upload",
+            "media_id": media_id,
+            "version_id": version_id
+        })));
     }
 
     // Enqueue thumbnail generation job for images
@@ -350,7 +375,12 @@ pub async fn finalise_upload(
     // Get updated media
     let updated_media = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "media.not_found",
+                "Media item not found",
+            ))
+        }
         Err(e) => {
             tracing::error!("Failed to get updated media: {}", e);
             return Err(

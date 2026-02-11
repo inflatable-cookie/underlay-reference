@@ -4,8 +4,8 @@ use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{info, warn};
 use underlay_blob::{BlobAdapter, MediaConfig};
-use underlay_media::image::{generate_thumbnail, ThumbnailConfig};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
+use underlay_media::image::{generate_thumbnail, ThumbnailConfig};
 use underlay_media::storage::rendition_key;
 
 // ============================================================================
@@ -118,8 +118,9 @@ impl JobHandler for GenerateThumbnailHandler {
         let thumb_size = self.media_config.thumbnail_max_dimension;
         let config = ThumbnailConfig::new(thumb_size, thumb_size).with_quality(85);
 
-        let result = generate_thumbnail(&original_bytes, &config)
-            .map_err(|e| JobHandlerError::permanent(format!("failed to generate thumbnail: {}", e)))?;
+        let result = generate_thumbnail(&original_bytes, &config).map_err(|e| {
+            JobHandlerError::permanent(format!("failed to generate thumbnail: {}", e))
+        })?;
 
         // Generate thumbnail object key using standardized storage pattern
         let thumb_object_key = rendition_key(payload.media_id, payload.version_id, "thumb");

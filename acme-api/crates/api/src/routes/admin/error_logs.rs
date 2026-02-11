@@ -11,7 +11,9 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use underlay_core::{SingleResponse, Uuid};
-use underlay_http::{count_error_logs, get_error_log_by_id, list_error_logs, ApiError, ErrorLogFilters};
+use underlay_http::{
+    count_error_logs, get_error_log_by_id, list_error_logs, ApiError, ErrorLogFilters,
+};
 
 use crate::state::{AdminUser, AppState, DB_POOL};
 

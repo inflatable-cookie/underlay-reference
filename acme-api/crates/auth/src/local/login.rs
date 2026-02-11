@@ -1,5 +1,5 @@
-use super::*;
 use super::helpers::roles_for_user;
+use super::*;
 
 impl AcmeLocalAuthService {
     pub async fn register(

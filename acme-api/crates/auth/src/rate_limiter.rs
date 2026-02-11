@@ -30,21 +30,14 @@ impl DynamicRateLimiter {
 
 #[async_trait]
 impl RateLimitBackend for DynamicRateLimiter {
-    async fn check(&self,
-        key: &str,
-        config: &RateLimitConfig,
-    ) -> Result<RateLimitResult> {
+    async fn check(&self, key: &str, config: &RateLimitConfig) -> Result<RateLimitResult> {
         match self {
             Self::InMemory(backend) => backend.check(key, config).await,
             Self::Redis(backend) => backend.check(key, config).await,
         }
     }
 
-    async fn increment(
-        &self,
-        key: &str,
-        config: &RateLimitConfig,
-    ) -> Result<u64> {
+    async fn increment(&self, key: &str, config: &RateLimitConfig) -> Result<u64> {
         match self {
             Self::InMemory(backend) => backend.increment(key, config).await,
             Self::Redis(backend) => backend.increment(key, config).await,

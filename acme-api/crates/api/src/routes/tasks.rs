@@ -49,7 +49,11 @@ impl From<tasks::ProjectRow> for ProjectResponse {
 #[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "snake_case")]
 pub struct CreateProjectRequest {
-    #[validate(length(min = 1, max = 255, message = "Name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Name must be between 1 and 255 characters"
+    ))]
     pub name: String,
     #[validate(length(max = 2000, message = "Description must not exceed 2000 characters"))]
     pub description: Option<String>,
@@ -58,7 +62,11 @@ pub struct CreateProjectRequest {
 #[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "snake_case")]
 pub struct UpdateProjectRequest {
-    #[validate(length(min = 1, max = 255, message = "Name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Name must be between 1 and 255 characters"
+    ))]
     pub name: Option<String>,
     #[validate(length(max = 2000, message = "Description must not exceed 2000 characters"))]
     pub description: Option<Option<String>>,
@@ -102,7 +110,11 @@ impl From<tasks::TaskRow> for TaskResponse {
 #[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "snake_case")]
 pub struct CreateTaskRequest {
-    #[validate(length(min = 1, max = 255, message = "Title must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Title must be between 1 and 255 characters"
+    ))]
     pub title: String,
     #[validate(length(max = 5000, message = "Description must not exceed 5000 characters"))]
     pub description: Option<String>,
@@ -113,7 +125,11 @@ pub struct CreateTaskRequest {
 #[derive(Debug, Deserialize, Validate)]
 #[serde(rename_all = "snake_case")]
 pub struct UpdateTaskRequest {
-    #[validate(length(min = 1, max = 255, message = "Title must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Title must be between 1 and 255 characters"
+    ))]
     pub title: Option<String>,
     #[validate(length(max = 5000, message = "Description must not exceed 5000 characters"))]
     pub description: Option<Option<String>>,

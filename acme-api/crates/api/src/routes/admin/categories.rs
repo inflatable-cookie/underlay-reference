@@ -230,16 +230,14 @@ pub async fn create_category(
             // Check for unique constraint violation
             if let Some(db_err) = e.as_database_error() {
                 if db_err.code().as_deref() == Some("23505") {
-                    return Err(
-                        ApiError::conflict(
-                            "category.slug_exists",
-                            "A category with this slug already exists",
-                        )
-                        .with_context(serde_json::json!({
-                            "operation": "categories.create",
-                            "slug": &req.slug
-                        })),
-                    );
+                    return Err(ApiError::conflict(
+                        "category.slug_exists",
+                        "A category with this slug already exists",
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "categories.create",
+                        "slug": &req.slug
+                    })));
                 }
             }
 

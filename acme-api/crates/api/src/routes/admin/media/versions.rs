@@ -17,11 +17,9 @@ pub async fn list_versions(
                 let renditions = media::list_media_renditions(pool, row.id)
                     .await
                     .unwrap_or_default();
-                let dto = MediaVersionDto::from_row_with_urls(
-                    row,
-                    renditions,
-                    |key| state.blob_adapter.public_url(key),
-                );
+                let dto = MediaVersionDto::from_row_with_urls(row, renditions, |key| {
+                    state.blob_adapter.public_url(key)
+                });
                 items.push(dto);
             }
             Ok(Json(json!({ "data": items })).into_response())
@@ -53,30 +51,49 @@ pub async fn activate_version(
     // Verify version exists, belongs to media, and is ready
     let version = match media::get_media_version(pool, version_id).await {
         Ok(Some(v)) if v.media_id == media_id => v,
-        Ok(Some(_)) => return Err(ApiError::bad_request("version.wrong_media", "Version does not belong to this media")),
-        Ok(None) => return Err(ApiError::not_found("version.not_found", "Version not found")),
+        Ok(Some(_)) => {
+            return Err(ApiError::bad_request(
+                "version.wrong_media",
+                "Version does not belong to this media",
+            ))
+        }
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "version.not_found",
+                "Version not found",
+            ))
+        }
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
-            return Err(
-                ApiError::internal("media.version_get_failed", "Failed to activate version")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.activate_version",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(ApiError::internal(
+                "media.version_get_failed",
+                "Failed to activate version",
+            )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "media.activate_version",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
     if version.state != "ready" {
-        return Err(ApiError::bad_request("version.not_ready", "Version is not ready"));
+        return Err(ApiError::bad_request(
+            "version.not_ready",
+            "Version is not ready",
+        ));
     }
 
     // Check if already current
     let media_row = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "media.not_found",
+                "Media item not found",
+            ))
+        }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
             return Err(
@@ -102,15 +119,16 @@ pub async fn activate_version(
         Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to set current version: {}", e);
-            Err(
-                ApiError::internal("media.set_current_version_failed", "Failed to activate version")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.activate_version",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
+            Err(ApiError::internal(
+                "media.set_current_version_failed",
+                "Failed to activate version",
             )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "media.activate_version",
+                "media_id": media_id,
+                "version_id": version_id
+            })))
         }
     }
 }
@@ -128,8 +146,18 @@ pub async fn delete_version(
     // Verify version exists and belongs to media
     let version = match media::get_media_version(pool, version_id).await {
         Ok(Some(v)) if v.media_id == media_id => v,
-        Ok(Some(_)) => return Err(ApiError::bad_request("version.wrong_media", "Version does not belong to this media")),
-        Ok(None) => return Err(ApiError::not_found("version.not_found", "Version not found")),
+        Ok(Some(_)) => {
+            return Err(ApiError::bad_request(
+                "version.wrong_media",
+                "Version does not belong to this media",
+            ))
+        }
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "version.not_found",
+                "Version not found",
+            ))
+        }
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
             return Err(
@@ -147,7 +175,12 @@ pub async fn delete_version(
     // Can't delete current version
     let media_row = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
-        Ok(None) => return Err(ApiError::not_found("media.not_found", "Media item not found")),
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "media.not_found",
+                "Media item not found",
+            ))
+        }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
             return Err(

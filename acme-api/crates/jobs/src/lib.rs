@@ -47,8 +47,8 @@ pub use underlay_jobs::{
     BackoffStrategy, Job, JobConfig, JobErrorRecord, JobFilters, JobHandler, JobHandlerError,
     JobId, JobProgress, JobRegistry, JobRepository, JobResult, JobRunner, JobRunnerConfig,
     JobStatus, JobStore, PgJobNotifier, RepoError, ScheduledTask, ScheduledTaskDefinition,
-    ScheduledTaskRepository, Scheduler, JOB_NOTIFY_CHANNEL, JOB_NOTIFY_SQL, JOB_TABLES_SQL,
-    DOMAIN_EVENT_NOTIFY_SQL,
+    ScheduledTaskRepository, Scheduler, DOMAIN_EVENT_NOTIFY_SQL, JOB_NOTIFY_CHANNEL,
+    JOB_NOTIFY_SQL, JOB_TABLES_SQL,
 };
 
 // Re-export outbox components from underlay-jobs
@@ -58,13 +58,20 @@ pub use underlay_jobs::outbox::{
 
 // Re-export standard platform maintenance tasks from underlay-jobs
 pub use underlay_jobs::tasks::{
-    // Auth cleanup
-    PurgeAuthStatesJob, PurgeEmailTotpCodesJob, PurgeExpiredSessionsJob, PurgeLoginAttemptsJob,
-    PurgeRateLimitEntriesJob, PurgeVerificationSessionsJob,
     // Job maintenance
-    ArchiveCompletedJobsJob, PurgeJobHistoryJob, RecoverAbandonedJobsJob,
+    ArchiveCompletedJobsJob,
+    // Auth cleanup
+    PurgeAuthStatesJob,
     // Log cleanup
-    PurgeCapturedEmailsJob, PurgeErrorLogsJob,
+    PurgeCapturedEmailsJob,
+    PurgeEmailTotpCodesJob,
+    PurgeErrorLogsJob,
+    PurgeExpiredSessionsJob,
+    PurgeJobHistoryJob,
+    PurgeLoginAttemptsJob,
+    PurgeRateLimitEntriesJob,
+    PurgeVerificationSessionsJob,
+    RecoverAbandonedJobsJob,
 };
 
 mod handlers;

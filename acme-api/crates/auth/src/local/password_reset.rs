@@ -1,5 +1,5 @@
-use super::*;
 use super::helpers::map_user_row;
+use super::*;
 
 impl AcmeLocalAuthService {
     // ========================================================================

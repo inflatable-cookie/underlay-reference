@@ -224,11 +224,8 @@ pub async fn login_finish(
     let state_id = match Uuid::parse_str(payload.login_state_id.trim()) {
         Ok(id) => id,
         Err(_) => {
-            return ApiError::bad_request(
-                "validation.invalid_login_state",
-                "Invalid login state",
-            )
-            .into_response();
+            return ApiError::bad_request("validation.invalid_login_state", "Invalid login state")
+                .into_response();
         }
     };
 

@@ -233,13 +233,11 @@ pub async fn create_user(
                 );
             }
         }
-        return Err(
-            ApiError::bad_request(
-                "admin.users.validation_failed",
-                "There is a problem with one or more fields.",
-            )
-            .with_field_errors(field_errors),
-        );
+        return Err(ApiError::bad_request(
+            "admin.users.validation_failed",
+            "There is a problem with one or more fields.",
+        )
+        .with_field_errors(field_errors));
     }
 
     let email = payload.email.trim().to_lowercase();
@@ -254,13 +252,11 @@ pub async fn create_user(
         field_errors.insert("status".to_string(), "Invalid status".to_string());
     }
     if !field_errors.is_empty() {
-        return Err(
-            ApiError::bad_request(
-                "admin.users.validation_failed",
-                "There is a problem with one or more fields.",
-            )
-            .with_field_errors(field_errors),
-        );
+        return Err(ApiError::bad_request(
+            "admin.users.validation_failed",
+            "There is a problem with one or more fields.",
+        )
+        .with_field_errors(field_errors));
     }
 
     let display_name = payload
@@ -287,10 +283,11 @@ pub async fn create_user(
             {
                 let mut field_errors = std::collections::HashMap::new();
                 field_errors.insert("email".to_string(), "Email is already in use".to_string());
-                return Err(
-                    ApiError::conflict("admin.users.email_not_unique", "Email is already in use.")
-                        .with_field_errors(field_errors),
-                );
+                return Err(ApiError::conflict(
+                    "admin.users.email_not_unique",
+                    "Email is already in use.",
+                )
+                .with_field_errors(field_errors));
             }
 
             tracing::error!("Failed to create user: {}", e);
@@ -339,7 +336,10 @@ pub async fn get_user(
             let response: UserDetailResponse = user.into();
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
+        Ok(None) => Err(ApiError::not_found(
+            "admin.users.not_found",
+            "User not found",
+        )),
         Err(e) => {
             tracing::error!("Failed to get user: {}", e);
             Err(
@@ -377,13 +377,11 @@ pub async fn update_user(
                 );
             }
         }
-        return Err(
-            ApiError::bad_request(
-                "admin.users.validation_failed",
-                "There is a problem with one or more fields.",
-            )
-            .with_field_errors(field_errors),
-        );
+        return Err(ApiError::bad_request(
+            "admin.users.validation_failed",
+            "There is a problem with one or more fields.",
+        )
+        .with_field_errors(field_errors));
     }
 
     let email = payload.email.as_deref().map(str::trim);
@@ -407,13 +405,11 @@ pub async fn update_user(
         }
     }
     if !field_errors.is_empty() {
-        return Err(
-            ApiError::bad_request(
-                "admin.users.validation_failed",
-                "There is a problem with one or more fields.",
-            )
-            .with_field_errors(field_errors),
-        );
+        return Err(ApiError::bad_request(
+            "admin.users.validation_failed",
+            "There is a problem with one or more fields.",
+        )
+        .with_field_errors(field_errors));
     }
 
     let email_update = payload.email.is_some();
@@ -440,8 +436,13 @@ pub async fn update_user(
     )
     .await
     {
-        Ok(Some(user)) => Ok(Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response()),
-        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
+        Ok(Some(user)) => {
+            Ok(Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response())
+        }
+        Ok(None) => Err(ApiError::not_found(
+            "admin.users.not_found",
+            "User not found",
+        )),
         Err(e) => {
             let msg = e.to_string();
             if msg.contains("duplicate key value violates unique constraint")
@@ -449,10 +450,11 @@ pub async fn update_user(
             {
                 let mut field_errors = std::collections::HashMap::new();
                 field_errors.insert("email".to_string(), "Email is already in use".to_string());
-                return Err(
-                    ApiError::conflict("admin.users.email_not_unique", "Email is already in use.")
-                        .with_field_errors(field_errors),
-                );
+                return Err(ApiError::conflict(
+                    "admin.users.email_not_unique",
+                    "Email is already in use.",
+                )
+                .with_field_errors(field_errors));
             }
 
             tracing::error!("Failed to update user: {}", e);
@@ -496,7 +498,11 @@ fn user_role_level(role: &acme_auth::UserRole) -> i32 {
 }
 
 /// Check if an admin can manage a target user based on roles.
-fn can_manage_user(admin: &UserPrincipal, target_role: &str, is_self: bool) -> Result<(), ApiError> {
+fn can_manage_user(
+    admin: &UserPrincipal,
+    target_role: &str,
+    is_self: bool,
+) -> Result<(), ApiError> {
     use axum::http::StatusCode;
 
     // No one can manage themselves (prevents self-demotion, self-suspension)
@@ -504,18 +510,23 @@ fn can_manage_user(admin: &UserPrincipal, target_role: &str, is_self: bool) -> R
         return Err(ApiError::new(
             StatusCode::FORBIDDEN,
             "admin.users.cannot_manage_self",
-            "You cannot modify your own account."
+            "You cannot modify your own account.",
         ));
     }
 
-    let admin_level = admin.roles.iter()
+    let admin_level = admin
+        .roles
+        .iter()
         .map(|r| user_role_level(r))
         .max()
         .unwrap_or(0);
     let target_level = role_level(target_role);
 
     // Check if admin is superadmin
-    let is_superadmin = admin.roles.iter().any(|r| matches!(r, acme_auth::UserRole::Superadmin));
+    let is_superadmin = admin
+        .roles
+        .iter()
+        .any(|r| matches!(r, acme_auth::UserRole::Superadmin));
 
     // Superadmin can manage anyone except other superadmins (unless self-check passed)
     if is_superadmin {
@@ -523,7 +534,7 @@ fn can_manage_user(admin: &UserPrincipal, target_role: &str, is_self: bool) -> R
             return Err(ApiError::new(
                 StatusCode::FORBIDDEN,
                 "admin.users.cannot_manage_superadmin",
-                "Only superadmins can manage other superadmins."
+                "Only superadmins can manage other superadmins.",
             ));
         }
         return Ok(());
@@ -534,7 +545,7 @@ fn can_manage_user(admin: &UserPrincipal, target_role: &str, is_self: bool) -> R
         return Err(ApiError::new(
             StatusCode::FORBIDDEN,
             "admin.users.insufficient_privileges",
-            "You can only manage users with lower privileges than your own."
+            "You can only manage users with lower privileges than your own.",
         ));
     }
 
@@ -543,7 +554,7 @@ fn can_manage_user(admin: &UserPrincipal, target_role: &str, is_self: bool) -> R
         return Err(ApiError::new(
             StatusCode::FORBIDDEN,
             "admin.users.cannot_promote_to_superadmin",
-            "Only superadmins can promote users to superadmin."
+            "Only superadmins can promote users to superadmin.",
         ));
     }
 
@@ -564,14 +575,7 @@ pub async fn update_user_role(
     }
 
     // Validate role value
-    let valid_roles = [
-        "user",
-        "tester",
-        "editor",
-        "admin",
-        "support",
-        "superadmin",
-    ];
+    let valid_roles = ["user", "tester", "editor", "admin", "support", "superadmin"];
     if !valid_roles.contains(&req.role.as_str()) {
         return Err(ApiError::bad_request(
             "validation.invalid_role",
@@ -585,8 +589,9 @@ pub async fn update_user_role(
 
     // Get current user to check their current role
     let pool = state.local_auth.pool();
-    let current_user = users::get_user_admin(pool, user_id).await
-        .map_err(|e| ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e))?;
+    let current_user = users::get_user_admin(pool, user_id).await.map_err(|e| {
+        ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e)
+    })?;
 
     if let Some(ref user) = current_user {
         // Check if trying to demote a higher-privileged user
@@ -615,18 +620,22 @@ pub async fn update_user_role(
             let response: UserResponse = user.into();
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
+        Ok(None) => Err(ApiError::not_found(
+            "admin.users.not_found",
+            "User not found",
+        )),
         Err(e) => {
             tracing::error!("Failed to update user role: {}", e);
-            Err(
-                ApiError::internal("admin.users.update_role_failed", "Failed to update user role")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "admin.users.update_role",
-                        "user_id": user_id,
-                        "role": &req.role
-                    })),
+            Err(ApiError::internal(
+                "admin.users.update_role_failed",
+                "Failed to update user role",
             )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "admin.users.update_role",
+                "user_id": user_id,
+                "role": &req.role
+            })))
         }
     }
 }
@@ -647,15 +656,16 @@ pub async fn suspend_user(
         return Err(ApiError::new(
             StatusCode::FORBIDDEN,
             "admin.users.cannot_suspend_self",
-            "You cannot suspend your own account."
+            "You cannot suspend your own account.",
         ));
     }
 
     let pool = state.local_auth.pool();
 
     // Get current user to check their role
-    let current_user = users::get_user_admin(pool, user_id).await
-        .map_err(|e| ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e))?;
+    let current_user = users::get_user_admin(pool, user_id).await.map_err(|e| {
+        ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e)
+    })?;
 
     if let Some(ref user) = current_user {
         // Prevent admins from suspending other admins
@@ -690,7 +700,10 @@ pub async fn suspend_user(
             let response: UserResponse = user.into();
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
+        Ok(None) => Err(ApiError::not_found(
+            "admin.users.not_found",
+            "User not found",
+        )),
         Err(e) => {
             tracing::error!("Failed to suspend user: {}", e);
             Err(
@@ -721,15 +734,16 @@ pub async fn unsuspend_user(
         return Err(ApiError::new(
             StatusCode::FORBIDDEN,
             "admin.users.cannot_unsuspend_self",
-            "You cannot unsuspend your own account."
+            "You cannot unsuspend your own account.",
         ));
     }
 
     let pool = state.local_auth.pool();
 
     // Get current user to check their role
-    let current_user = users::get_user_admin(pool, user_id).await
-        .map_err(|e| ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e))?;
+    let current_user = users::get_user_admin(pool, user_id).await.map_err(|e| {
+        ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e)
+    })?;
 
     if let Some(ref user) = current_user {
         // Prevent admins from unsuspending other admins
@@ -756,7 +770,10 @@ pub async fn unsuspend_user(
             let response: UserResponse = user.into();
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
-        Ok(None) => Err(ApiError::not_found("admin.users.not_found", "User not found")),
+        Ok(None) => Err(ApiError::not_found(
+            "admin.users.not_found",
+            "User not found",
+        )),
         Err(e) => {
             tracing::error!("Failed to unsuspend user: {}", e);
             Err(
@@ -836,17 +853,15 @@ pub async fn list_user_sessions(
         }
         Err(e) => {
             tracing::error!("Failed to list sessions for user: {}", e);
-            Err(
-                ApiError::internal(
-                    "admin.users.list_sessions_failed",
-                    "Failed to list user sessions",
-                )
-                .with_cause(&e)
-                .with_context(json!({
-                    "operation": "admin.users.list_sessions",
-                    "user_id": user_id
-                })),
+            Err(ApiError::internal(
+                "admin.users.list_sessions_failed",
+                "Failed to list user sessions",
             )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "admin.users.list_sessions",
+                "user_id": user_id
+            })))
         }
     }
 }
@@ -881,26 +896,22 @@ pub async fn revoke_user_session(
 
             Ok(Json(serde_json::json!({ "ok": true })).into_response())
         }
-        Ok(false) => {
-            Err(ApiError::not_found(
-                "session.not_found",
-                "Session not found or already revoked",
-            ))
-        }
+        Ok(false) => Err(ApiError::not_found(
+            "session.not_found",
+            "Session not found or already revoked",
+        )),
         Err(e) => {
             tracing::error!("Failed to revoke session: {}", e);
-            Err(
-                ApiError::internal(
-                    "admin.users.revoke_session_failed",
-                    "Failed to revoke session",
-                )
-                .with_cause(&e)
-                .with_context(json!({
-                    "operation": "admin.users.revoke_session",
-                    "user_id": path.user_id,
-                    "session_id": path.session_id
-                })),
+            Err(ApiError::internal(
+                "admin.users.revoke_session_failed",
+                "Failed to revoke session",
             )
+            .with_cause(&e)
+            .with_context(json!({
+                "operation": "admin.users.revoke_session",
+                "user_id": path.user_id,
+                "session_id": path.session_id
+            })))
         }
     }
 }

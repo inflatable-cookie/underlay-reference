@@ -44,8 +44,11 @@ pub async fn rename_passkey(
     let credential_uuid = match Uuid::parse_str(&credential_id) {
         Ok(id) => id,
         Err(_) => {
-            return ApiError::bad_request("validation.invalid_credential_id", "Invalid credential ID")
-                .into_response();
+            return ApiError::bad_request(
+                "validation.invalid_credential_id",
+                "Invalid credential ID",
+            )
+            .into_response();
         }
     };
 
@@ -68,8 +71,11 @@ pub async fn delete_passkey(
     let credential_uuid = match Uuid::parse_str(&credential_id) {
         Ok(id) => id,
         Err(_) => {
-            return ApiError::bad_request("validation.invalid_credential_id", "Invalid credential ID")
-                .into_response();
+            return ApiError::bad_request(
+                "validation.invalid_credential_id",
+                "Invalid credential ID",
+            )
+            .into_response();
         }
     };
 
