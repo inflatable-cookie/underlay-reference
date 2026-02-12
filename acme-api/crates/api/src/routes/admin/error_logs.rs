@@ -151,16 +151,17 @@ pub async fn list_error_logs_handler(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to count error logs: {}", e);
-            return Err(
-                ApiError::internal("error_log_count_failed", "Failed to count error logs")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "error_logs.count",
-                        "status_code": query.status_code,
-                        "limit": limit,
-                        "offset": offset
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "error_log_count_failed",
+                "Failed to count error logs",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "error_logs.count",
+                "status_code": query.status_code,
+                "limit": limit,
+                "offset": offset
+            })));
         }
     };
 
@@ -179,16 +180,17 @@ pub async fn list_error_logs_handler(
         }
         Err(e) => {
             tracing::error!("Failed to list error logs: {}", e);
-            Err(
-                ApiError::internal("error_log_list_failed", "Failed to list error logs")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "error_logs.list",
-                        "status_code": query.status_code,
-                        "limit": limit,
-                        "offset": offset
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "error_log_list_failed",
+                "Failed to list error logs",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "error_logs.list",
+                "status_code": query.status_code,
+                "limit": limit,
+                "offset": offset
+            })))
         }
     }
 }
@@ -220,14 +222,15 @@ pub async fn get_error_log_handler(
         )),
         Err(e) => {
             tracing::error!("Failed to get error log: {}", e);
-            Err(
-                ApiError::internal("error_log_get_failed", "Failed to get error log")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "error_logs.get",
-                        "error_log_id": id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "error_log_get_failed",
+                "Failed to get error log",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "error_logs.get",
+                "error_log_id": id
+            })))
         }
     }
 }

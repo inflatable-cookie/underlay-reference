@@ -155,11 +155,11 @@ pub async fn list_captured_emails(
                 .collect();
             Ok((StatusCode::OK, Json(ListResponse { data })).into_response())
         }
-        Err(e) => Err(ApiError::internal(
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
             "captured_email_query_failed",
             "Failed to list captured emails",
+            &e,
         )
-        .with_cause(&e)
         .with_context(serde_json::json!({
             "operation": "captured_emails.list",
             "limit": query.limit.unwrap_or(50).clamp(1, 200),
@@ -197,11 +197,11 @@ pub async fn get_captured_email(
             "captured_email_not_found",
             "Captured email not found",
         )),
-        Err(e) => Err(ApiError::internal(
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
             "captured_email_query_failed",
             "Failed to get captured email",
+            &e,
         )
-        .with_cause(&e)
         .with_context(serde_json::json!({
             "operation": "captured_emails.get",
             "captured_email_id": uuid
@@ -235,11 +235,11 @@ pub async fn delete_captured_email(
             "captured_email_not_found",
             "Captured email not found",
         )),
-        Err(e) => Err(ApiError::internal(
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
             "captured_email_delete_failed",
             "Failed to delete captured email",
+            &e,
         )
-        .with_cause(&e)
         .with_context(serde_json::json!({
             "operation": "captured_emails.delete",
             "captured_email_id": uuid

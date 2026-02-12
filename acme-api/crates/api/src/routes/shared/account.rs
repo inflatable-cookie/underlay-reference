@@ -37,14 +37,15 @@ pub async fn get_profile(
         }
         Err(e) => {
             tracing::error!(error = %e, user_id = %user_id, "Failed to get/create user profile");
-            Err(
-                ApiError::internal("profile.load_failed", "Failed to load profile")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "account.get_profile",
-                        "user_id": user_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "profile.load_failed",
+                "Failed to load profile",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "account.get_profile",
+                "user_id": user_id
+            })))
         }
     }
 }
@@ -78,14 +79,15 @@ pub async fn update_profile(
         }
         Err(e) => {
             tracing::error!(error = %e, user_id = %user_id, "Failed to update user profile");
-            Err(
-                ApiError::internal("profile.update_failed", "Failed to update profile")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "account.update_profile",
-                        "user_id": user_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "profile.update_failed",
+                "Failed to update profile",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "account.update_profile",
+                "user_id": user_id
+            })))
         }
     }
 }

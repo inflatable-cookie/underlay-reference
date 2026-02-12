@@ -26,14 +26,15 @@ pub async fn list_versions(
         }
         Err(e) => {
             tracing::error!("Failed to list versions: {}", e);
-            Err(
-                ApiError::internal("media.list_versions_failed", "Failed to list versions")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.list_versions",
-                        "media_id": media_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.list_versions_failed",
+                "Failed to list versions",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.list_versions",
+                "media_id": media_id
+            })))
         }
     }
 }
@@ -65,11 +66,11 @@ pub async fn activate_version(
         }
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "media.version_get_failed",
                 "Failed to activate version",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "media.activate_version",
                 "media_id": media_id,
@@ -96,15 +97,16 @@ pub async fn activate_version(
         }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            return Err(
-                ApiError::internal("media.get_failed", "Failed to activate version")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.activate_version",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.get_failed",
+                "Failed to activate version",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.activate_version",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
@@ -119,11 +121,11 @@ pub async fn activate_version(
         Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to set current version: {}", e);
-            Err(ApiError::internal(
+            Err(crate::db_errors::internal_with_diagnostics(
                 "media.set_current_version_failed",
                 "Failed to activate version",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "media.activate_version",
                 "media_id": media_id,
@@ -160,15 +162,16 @@ pub async fn delete_version(
         }
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
-            return Err(
-                ApiError::internal("media.version_get_failed", "Failed to delete version")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.delete_version",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.version_get_failed",
+                "Failed to delete version",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.delete_version",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
@@ -183,15 +186,16 @@ pub async fn delete_version(
         }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            return Err(
-                ApiError::internal("media.get_failed", "Failed to delete version")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.delete_version",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.get_failed",
+                "Failed to delete version",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.delete_version",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
@@ -213,15 +217,16 @@ pub async fn delete_version(
         Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to delete version: {}", e);
-            Err(
-                ApiError::internal("media.delete_version_failed", "Failed to delete version")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.delete_version",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.delete_version_failed",
+                "Failed to delete version",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.delete_version",
+                "media_id": media_id,
+                "version_id": version_id
+            })))
         }
     }
 }

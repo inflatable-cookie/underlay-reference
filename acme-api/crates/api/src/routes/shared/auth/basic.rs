@@ -185,11 +185,11 @@ pub async fn login_start(
                 .await
             {
                 tracing::error!("Failed to send email code: {}", e);
-                return ApiError::internal(
+                return crate::db_errors::internal_with_diagnostics(
                     "auth.email_send_failed",
                     "Failed to send verification email",
+                    &e,
                 )
-                .with_cause(&e)
                 .with_context(json!({
                     "operation": "auth.login_start",
                     "user_id": user_id

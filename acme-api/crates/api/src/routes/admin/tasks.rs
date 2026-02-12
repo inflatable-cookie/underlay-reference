@@ -203,14 +203,15 @@ pub async fn list_tasks(
         }
         Err(e) => {
             tracing::error!("Failed to list tasks: {}", e);
-            Err(
-                ApiError::internal("tasks.list_failed", "Failed to list tasks")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "tasks.list",
-                        "project_id": project_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "tasks.list_failed",
+                "Failed to list tasks",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "tasks.list",
+                "project_id": project_id
+            })))
         }
     }
 }
@@ -239,12 +240,15 @@ pub async fn get_task(
         ),
         Err(e) => {
             tracing::error!("Failed to get task: {}", e);
-            Err(ApiError::internal("tasks.get_failed", "Failed to get task")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "tasks.get",
-                    "task_id": task_id
-                })))
+            Err(crate::db_errors::internal_with_diagnostics(
+                "tasks.get_failed",
+                "Failed to get task",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "tasks.get",
+                "task_id": task_id
+            })))
         }
     }
 }
@@ -306,16 +310,17 @@ pub async fn create_task(
         }
         Err(e) => {
             tracing::error!("Failed to create task: {}", e);
-            Err(
-                ApiError::internal("tasks.create_failed", "Failed to create task")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "tasks.create",
-                        "task_id": task_id,
-                        "project_id": project_id,
-                        "title": &req.title
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "tasks.create_failed",
+                "Failed to create task",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "tasks.create",
+                "task_id": task_id,
+                "project_id": project_id,
+                "title": &req.title
+            })))
         }
     }
 }
@@ -378,14 +383,15 @@ pub async fn update_task(
         ),
         Err(e) => {
             tracing::error!("Failed to update task: {}", e);
-            Err(
-                ApiError::internal("tasks.update_failed", "Failed to update task")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "tasks.update",
-                        "task_id": task_id_inner
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "tasks.update_failed",
+                "Failed to update task",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "tasks.update",
+                "task_id": task_id_inner
+            })))
         }
     }
 }
@@ -429,15 +435,16 @@ pub async fn soft_delete_task(
         ),
         Err(e) => {
             tracing::error!("Failed to soft delete task: {}", e);
-            Err(
-                ApiError::internal("tasks.soft_delete_failed", "Failed to delete task")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "tasks.soft_delete",
-                        "task_id": tid,
-                        "batch_id": batch_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "tasks.soft_delete_failed",
+                "Failed to delete task",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "tasks.soft_delete",
+                "task_id": tid,
+                "batch_id": batch_id
+            })))
         }
     }
 }
@@ -457,15 +464,16 @@ pub async fn reorder_tasks(
         Ok(()) => Ok(Json(serde_json::json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to reorder tasks: {}", e);
-            Err(
-                ApiError::internal("tasks.reorder_failed", "Failed to reorder tasks")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "tasks.reorder",
-                        "project_id": project_id,
-                        "count": ids.len()
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "tasks.reorder_failed",
+                "Failed to reorder tasks",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "tasks.reorder",
+                "project_id": project_id,
+                "count": ids.len()
+            })))
         }
     }
 }
@@ -490,14 +498,15 @@ pub async fn list_labels(
         }
         Err(e) => {
             tracing::error!("Failed to list labels: {}", e);
-            Err(
-                ApiError::internal("labels.list_failed", "Failed to list labels")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "labels.list",
-                        "project_id": project_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "labels.list_failed",
+                "Failed to list labels",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "labels.list",
+                "project_id": project_id
+            })))
         }
     }
 }
@@ -541,15 +550,16 @@ pub async fn create_label(
                 }
             }
 
-            Err(
-                ApiError::internal("labels.create_failed", "Failed to create label")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "labels.create",
-                        "project_id": project_id,
-                        "name": &req.name
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "labels.create_failed",
+                "Failed to create label",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "labels.create",
+                "project_id": project_id,
+                "name": &req.name
+            })))
         }
     }
 }
@@ -570,14 +580,15 @@ pub async fn get_task_labels(
         }
         Err(e) => {
             tracing::error!("Failed to get task labels: {}", e);
-            Err(
-                ApiError::internal("labels.get_for_task_failed", "Failed to get task labels")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "labels.get_for_task",
-                        "task_id": task_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "labels.get_for_task_failed",
+                "Failed to get task labels",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "labels.get_for_task",
+                "task_id": task_id
+            })))
         }
     }
 }
@@ -609,15 +620,16 @@ pub async fn set_task_labels(
         }
         Err(e) => {
             tracing::error!("Failed to set task labels: {}", e);
-            Err(
-                ApiError::internal("labels.set_for_task_failed", "Failed to set task labels")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "labels.set_for_task",
-                        "task_id": task_id,
-                        "count": ids.len()
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "labels.set_for_task_failed",
+                "Failed to set task labels",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "labels.set_for_task",
+                "task_id": task_id,
+                "count": ids.len()
+            })))
         }
     }
 }
@@ -672,16 +684,17 @@ pub async fn batch_delete_tasks(
         }
         Err(e) => {
             tracing::error!("Failed to batch delete tasks: {}", e);
-            Err(
-                ApiError::internal("tasks.batch_delete_failed", "Failed to batch delete tasks")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "tasks.batch_delete",
-                        "project_id": project_id,
-                        "batch_id": batch_id,
-                        "count": ids.len()
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "tasks.batch_delete_failed",
+                "Failed to batch delete tasks",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "tasks.batch_delete",
+                "project_id": project_id,
+                "batch_id": batch_id,
+                "count": ids.len()
+            })))
         }
     }
 }
@@ -741,11 +754,11 @@ pub async fn batch_update_task_status(
         }
         Err(e) => {
             tracing::error!("Failed to batch update task status: {}", e);
-            Err(ApiError::internal(
+            Err(crate::db_errors::internal_with_diagnostics(
                 "tasks.batch_update_status_failed",
                 "Failed to batch update task status",
+                &e,
             )
-            .with_cause(&e)
             .with_context(serde_json::json!({
                 "operation": "tasks.batch_update_status",
                 "project_id": project_id,

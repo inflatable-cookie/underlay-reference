@@ -30,14 +30,15 @@ pub async fn check_duplicate(
         .into_response()),
         Err(e) => {
             tracing::error!("Failed to check for duplicate: {}", e);
-            Err(
-                ApiError::internal("media.duplicate_check_failed", "Failed to check duplicate")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.check_duplicate",
-                        "sha256": &req.sha256
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.duplicate_check_failed",
+                "Failed to check duplicate",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.check_duplicate",
+                "sha256": &req.sha256
+            })))
         }
     }
 }
@@ -104,15 +105,16 @@ pub async fn create_media(
         }
         Err(e) => {
             tracing::error!("Failed to create media: {}", e);
-            Err(
-                ApiError::internal("media.create_failed", "Failed to create media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.create",
-                        "media_id": media_id,
-                        "kind": &req.kind
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.create_failed",
+                "Failed to create media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.create",
+                "media_id": media_id,
+                "kind": &req.kind
+            })))
         }
     }
 }
@@ -147,13 +149,14 @@ pub async fn list_media(
         }
         Err(e) => {
             tracing::error!("Failed to list media: {}", e);
-            Err(
-                ApiError::internal("media.list_failed", "Failed to list media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.list"
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.list_failed",
+                "Failed to list media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.list"
+            })))
         }
     }
 }
@@ -190,13 +193,14 @@ pub async fn list_media_paginated(
         }
         Err(e) => {
             tracing::error!("Failed to list media paginated: {}", e);
-            Err(
-                ApiError::internal("media.list_paginated_failed", "Failed to list media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.list_paginated"
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.list_paginated_failed",
+                "Failed to list media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.list_paginated"
+            })))
         }
     }
 }
@@ -224,13 +228,14 @@ pub async fn list_media_trash(
         }
         Err(e) => {
             tracing::error!("Failed to list media trash: {}", e);
-            Err(
-                ApiError::internal("media.list_trash_failed", "Failed to list media trash")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.list_trash"
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.list_trash_failed",
+                "Failed to list media trash",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.list_trash"
+            })))
         }
     }
 }
@@ -288,14 +293,15 @@ pub async fn get_media(
         ),
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            Err(
-                ApiError::internal("media.get_failed", "Failed to get media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.get",
-                        "media_id": media_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.get_failed",
+                "Failed to get media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.get",
+                "media_id": media_id
+            })))
         }
     }
 }
@@ -376,14 +382,15 @@ pub async fn update_media(
         }))),
         Err(e) => {
             tracing::error!("Failed to update media: {}", e);
-            Err(
-                ApiError::internal("media.update_failed", "Failed to update media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.update",
-                        "media_id": media_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.update_failed",
+                "Failed to update media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.update",
+                "media_id": media_id
+            })))
         }
     }
 }
@@ -419,14 +426,15 @@ pub async fn soft_delete_media(
         }
         Err(e) => {
             tracing::error!("Failed to soft delete media: {}", e);
-            Err(
-                ApiError::internal("media.soft_delete_failed", "Failed to delete media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.soft_delete",
-                        "media_id": media_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.soft_delete_failed",
+                "Failed to delete media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.soft_delete",
+                "media_id": media_id
+            })))
         }
     }
 }
@@ -462,14 +470,15 @@ pub async fn restore_media(
         }
         Err(e) => {
             tracing::error!("Failed to restore media: {}", e);
-            Err(
-                ApiError::internal("media.restore_failed", "Failed to restore media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.restore",
-                        "media_id": media_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.restore_failed",
+                "Failed to restore media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.restore",
+                "media_id": media_id
+            })))
         }
     }
 }
@@ -489,14 +498,15 @@ pub async fn purge_media(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to get usage count: {}", e);
-            return Err(
-                ApiError::internal("media.usage_count_failed", "Failed to purge media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.purge",
-                        "media_id": media_id
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.usage_count_failed",
+                "Failed to purge media",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.purge",
+                "media_id": media_id
+            })));
         }
     };
 
@@ -512,14 +522,15 @@ pub async fn purge_media(
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Failed to list versions: {}", e);
-            return Err(
-                ApiError::internal("media.versions_list_failed", "Failed to purge media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.purge",
-                        "media_id": media_id
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.versions_list_failed",
+                "Failed to purge media",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.purge",
+                "media_id": media_id
+            })));
         }
     };
 
@@ -537,14 +548,15 @@ pub async fn purge_media(
         Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to purge media: {}", e);
-            Err(
-                ApiError::internal("media.purge_failed", "Failed to purge media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.purge",
-                        "media_id": media_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.purge_failed",
+                "Failed to purge media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.purge",
+                "media_id": media_id
+            })))
         }
     }
 }

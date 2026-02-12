@@ -39,14 +39,15 @@ pub async fn initiate_upload(
         }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            return Err(
-                ApiError::internal("media.get_failed", "Failed to initiate upload")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.initiate_upload",
-                        "media_id": media_id
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.get_failed",
+                "Failed to initiate upload",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.initiate_upload",
+                "media_id": media_id
+            })));
         }
     };
 
@@ -63,11 +64,11 @@ pub async fn initiate_upload(
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Failed to create version: {}", e);
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "media.version_create_failed",
                 "Failed to initiate upload",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "media.initiate_upload",
                 "media_id": media_id,
@@ -92,11 +93,11 @@ pub async fn initiate_upload(
             tracing::error!("Failed to initiate upload: {}", e);
             // Mark version as failed
             let _ = media::fail_media_version(pool, version_id).await;
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "media.upload_initiate_failed",
                 "Failed to initiate upload",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "media.initiate_upload",
                 "media_id": media_id,
@@ -144,11 +145,11 @@ pub async fn finalise_upload(
         }
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "media.version_get_failed",
                 "Failed to finalise upload",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "media.finalise_upload",
                 "media_id": media_id,
@@ -175,15 +176,16 @@ pub async fn finalise_upload(
         }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
-            return Err(
-                ApiError::internal("media.get_failed", "Failed to finalise upload")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.finalise_upload",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.get_failed",
+                "Failed to finalise upload",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.finalise_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 
@@ -201,11 +203,11 @@ pub async fn finalise_upload(
         Err(e) => {
             tracing::error!("Failed to finalise upload: {}", e);
             let _ = media::fail_media_version(pool, version_id).await;
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "media.upload_finalise_failed",
                 "Failed to finalise upload",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "media.finalise_upload",
                 "media_id": media_id,
@@ -317,11 +319,11 @@ pub async fn finalise_upload(
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Failed to finalise version: {}", e);
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "media.version_finalise_failed",
                 "Failed to finalise upload",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "media.finalise_upload",
                 "media_id": media_id,
@@ -333,11 +335,11 @@ pub async fn finalise_upload(
     // Set as current version
     if let Err(e) = media::set_current_version(pool, media_id, version_id).await {
         tracing::error!("Failed to set current version: {}", e);
-        return Err(ApiError::internal(
+        return Err(crate::db_errors::internal_with_diagnostics(
             "media.set_current_version_failed",
             "Failed to finalise upload",
+            &e,
         )
-        .with_cause(&e)
         .with_context(json!({
             "operation": "media.finalise_upload",
             "media_id": media_id,
@@ -383,15 +385,16 @@ pub async fn finalise_upload(
         }
         Err(e) => {
             tracing::error!("Failed to get updated media: {}", e);
-            return Err(
-                ApiError::internal("media.get_failed", "Failed to finalise upload")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.finalise_upload",
-                        "media_id": media_id,
-                        "version_id": version_id
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.get_failed",
+                "Failed to finalise upload",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.finalise_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            })));
         }
     };
 

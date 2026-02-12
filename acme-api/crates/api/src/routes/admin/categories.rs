@@ -135,13 +135,14 @@ pub async fn list_categories(
         }
         Err(e) => {
             tracing::error!("Failed to list categories: {}", e);
-            Err(
-                ApiError::internal("categories.list_failed", "Failed to list categories")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "categories.list"
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "categories.list_failed",
+                "Failed to list categories",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "categories.list"
+            })))
         }
     }
 }
@@ -170,14 +171,15 @@ pub async fn get_category(
         ),
         Err(e) => {
             tracing::error!("Failed to get category: {}", e);
-            Err(
-                ApiError::internal("categories.get_failed", "Failed to get category")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "categories.get",
-                        "category_id": category_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "categories.get_failed",
+                "Failed to get category",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "categories.get",
+                "category_id": category_id
+            })))
         }
     }
 }
@@ -241,14 +243,15 @@ pub async fn create_category(
                 }
             }
 
-            Err(
-                ApiError::internal("categories.create_failed", "Failed to create category")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "categories.create",
-                        "slug": &req.slug
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "categories.create_failed",
+                "Failed to create category",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "categories.create",
+                "slug": &req.slug
+            })))
         }
     }
 }
@@ -303,14 +306,15 @@ pub async fn update_category(
         ),
         Err(e) => {
             tracing::error!("Failed to update category: {}", e);
-            Err(
-                ApiError::internal("categories.update_failed", "Failed to update category")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "categories.update",
-                        "category_id": cid
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "categories.update_failed",
+                "Failed to update category",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "categories.update",
+                "category_id": cid
+            })))
         }
     }
 }
@@ -354,15 +358,16 @@ pub async fn soft_delete_category(
         ),
         Err(e) => {
             tracing::error!("Failed to soft delete category: {}", e);
-            Err(
-                ApiError::internal("categories.soft_delete_failed", "Failed to delete category")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "categories.soft_delete",
-                        "category_id": cid,
-                        "batch_id": batch_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "categories.soft_delete_failed",
+                "Failed to delete category",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "categories.soft_delete",
+                "category_id": cid,
+                "batch_id": batch_id
+            })))
         }
     }
 }
@@ -406,14 +411,15 @@ pub async fn restore_category(
         ),
         Err(e) => {
             tracing::error!("Failed to restore category: {}", e);
-            Err(
-                ApiError::internal("categories.restore_failed", "Failed to restore category")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "categories.restore",
-                        "category_id": cid
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "categories.restore_failed",
+                "Failed to restore category",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "categories.restore",
+                "category_id": cid
+            })))
         }
     }
 }
@@ -434,14 +440,15 @@ pub async fn reorder_categories(
         Ok(()) => Ok(Json(serde_json::json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to reorder categories: {}", e);
-            Err(
-                ApiError::internal("categories.reorder_failed", "Failed to reorder categories")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "categories.reorder",
-                        "count": ids.len()
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "categories.reorder_failed",
+                "Failed to reorder categories",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "categories.reorder",
+                "count": ids.len()
+            })))
         }
     }
 }

@@ -198,15 +198,16 @@ pub async fn list_users(
         }
         Err(e) => {
             tracing::error!("Failed to list users: {}", e);
-            Err(
-                ApiError::internal("admin.users.list_failed", "Failed to list users")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "admin.users.list",
-                        "limit": limit,
-                        "offset": offset
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "admin.users.list_failed",
+                "Failed to list users",
+                &e,
             )
+            .with_context(json!({
+                "operation": "admin.users.list",
+                "limit": limit,
+                "offset": offset
+            })))
         }
     }
 }
@@ -270,38 +271,38 @@ pub async fn create_user(
     let pool = state.local_auth.pool();
     let user_id = Uuid::now_v7();
 
-    let user = match users::create_user_admin(pool, user_id, &email, role, status, display_name)
-        .await
-    {
-        Ok(user) => user,
-        Err(e) => {
-            // Avoid coupling the API crate to sqlx just to match on error codes.
-            // This string match is intentionally defensive (schema/index names may differ).
-            let msg = e.to_string();
-            if msg.contains("duplicate key value violates unique constraint")
-                && (msg.contains("email") || msg.contains("users_email_key"))
-            {
-                let mut field_errors = std::collections::HashMap::new();
-                field_errors.insert("email".to_string(), "Email is already in use".to_string());
-                return Err(ApiError::conflict(
-                    "admin.users.email_not_unique",
-                    "Email is already in use.",
-                )
-                .with_field_errors(field_errors));
-            }
+    let user =
+        match users::create_user_admin(pool, user_id, &email, role, status, display_name).await {
+            Ok(user) => user,
+            Err(e) => {
+                // Avoid coupling the API crate to sqlx just to match on error codes.
+                // This string match is intentionally defensive (schema/index names may differ).
+                let msg = e.to_string();
+                if msg.contains("duplicate key value violates unique constraint")
+                    && (msg.contains("email") || msg.contains("users_email_key"))
+                {
+                    let mut field_errors = std::collections::HashMap::new();
+                    field_errors.insert("email".to_string(), "Email is already in use".to_string());
+                    return Err(ApiError::conflict(
+                        "admin.users.email_not_unique",
+                        "Email is already in use.",
+                    )
+                    .with_field_errors(field_errors));
+                }
 
-            tracing::error!("Failed to create user: {}", e);
-            return Err(
-                ApiError::internal("admin.users.create_failed", "Failed to create user")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "admin.users.create",
-                        "user_id": user_id,
-                        "email": &email
-                    })),
-            );
-        }
-    };
+                tracing::error!("Failed to create user: {}", e);
+                return Err(crate::db_errors::internal_with_diagnostics(
+                    "admin.users.create_failed",
+                    "Failed to create user",
+                    &e,
+                )
+                .with_context(json!({
+                    "operation": "admin.users.create",
+                    "user_id": user_id,
+                    "email": &email
+                })));
+            }
+        };
 
     if send_password_reset {
         // Let the user set an initial password via the existing password reset flow.
@@ -342,14 +343,15 @@ pub async fn get_user(
         )),
         Err(e) => {
             tracing::error!("Failed to get user: {}", e);
-            Err(
-                ApiError::internal("admin.users.get_failed", "Failed to get user")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "admin.users.get",
-                        "user_id": user_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "admin.users.get_failed",
+                "Failed to get user",
+                &e,
             )
+            .with_context(json!({
+                "operation": "admin.users.get",
+                "user_id": user_id
+            })))
         }
     }
 }
@@ -458,14 +460,15 @@ pub async fn update_user(
             }
 
             tracing::error!("Failed to update user: {}", e);
-            Err(
-                ApiError::internal("admin.users.update_failed", "Failed to update user")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "admin.users.update",
-                        "user_id": user_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "admin.users.update_failed",
+                "Failed to update user",
+                &e,
             )
+            .with_context(json!({
+                "operation": "admin.users.update",
+                "user_id": user_id
+            })))
         }
     }
 }
@@ -590,7 +593,11 @@ pub async fn update_user_role(
     // Get current user to check their current role
     let pool = state.local_auth.pool();
     let current_user = users::get_user_admin(pool, user_id).await.map_err(|e| {
-        ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e)
+        crate::db_errors::internal_with_diagnostics(
+            "admin.users.fetch_failed",
+            "Failed to fetch user",
+            &e,
+        )
     })?;
 
     if let Some(ref user) = current_user {
@@ -626,11 +633,11 @@ pub async fn update_user_role(
         )),
         Err(e) => {
             tracing::error!("Failed to update user role: {}", e);
-            Err(ApiError::internal(
+            Err(crate::db_errors::internal_with_diagnostics(
                 "admin.users.update_role_failed",
                 "Failed to update user role",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "admin.users.update_role",
                 "user_id": user_id,
@@ -664,7 +671,11 @@ pub async fn suspend_user(
 
     // Get current user to check their role
     let current_user = users::get_user_admin(pool, user_id).await.map_err(|e| {
-        ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e)
+        crate::db_errors::internal_with_diagnostics(
+            "admin.users.fetch_failed",
+            "Failed to fetch user",
+            &e,
+        )
     })?;
 
     if let Some(ref user) = current_user {
@@ -706,14 +717,15 @@ pub async fn suspend_user(
         )),
         Err(e) => {
             tracing::error!("Failed to suspend user: {}", e);
-            Err(
-                ApiError::internal("admin.users.suspend_failed", "Failed to suspend user")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "admin.users.suspend",
-                        "user_id": user_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "admin.users.suspend_failed",
+                "Failed to suspend user",
+                &e,
             )
+            .with_context(json!({
+                "operation": "admin.users.suspend",
+                "user_id": user_id
+            })))
         }
     }
 }
@@ -742,7 +754,11 @@ pub async fn unsuspend_user(
 
     // Get current user to check their role
     let current_user = users::get_user_admin(pool, user_id).await.map_err(|e| {
-        ApiError::internal("admin.users.fetch_failed", "Failed to fetch user").with_cause(&e)
+        crate::db_errors::internal_with_diagnostics(
+            "admin.users.fetch_failed",
+            "Failed to fetch user",
+            &e,
+        )
     })?;
 
     if let Some(ref user) = current_user {
@@ -776,14 +792,15 @@ pub async fn unsuspend_user(
         )),
         Err(e) => {
             tracing::error!("Failed to unsuspend user: {}", e);
-            Err(
-                ApiError::internal("admin.users.unsuspend_failed", "Failed to unsuspend user")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "admin.users.unsuspend",
-                        "user_id": user_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "admin.users.unsuspend_failed",
+                "Failed to unsuspend user",
+                &e,
             )
+            .with_context(json!({
+                "operation": "admin.users.unsuspend",
+                "user_id": user_id
+            })))
         }
     }
 }
@@ -853,11 +870,11 @@ pub async fn list_user_sessions(
         }
         Err(e) => {
             tracing::error!("Failed to list sessions for user: {}", e);
-            Err(ApiError::internal(
+            Err(crate::db_errors::internal_with_diagnostics(
                 "admin.users.list_sessions_failed",
                 "Failed to list user sessions",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "admin.users.list_sessions",
                 "user_id": user_id
@@ -902,11 +919,11 @@ pub async fn revoke_user_session(
         )),
         Err(e) => {
             tracing::error!("Failed to revoke session: {}", e);
-            Err(ApiError::internal(
+            Err(crate::db_errors::internal_with_diagnostics(
                 "admin.users.revoke_session_failed",
                 "Failed to revoke session",
+                &e,
             )
-            .with_cause(&e)
             .with_context(json!({
                 "operation": "admin.users.revoke_session",
                 "user_id": path.user_id,

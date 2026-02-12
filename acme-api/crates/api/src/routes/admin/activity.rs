@@ -101,15 +101,16 @@ pub async fn list_activity(
         }
         Err(e) => {
             tracing::error!("Failed to list activity: {}", e);
-            Err(
-                ApiError::internal("activity.list_failed", "Failed to list activity")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "activity.list",
-                        "limit": limit,
-                        "offset": offset
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "activity.list_failed",
+                "Failed to list activity",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "activity.list",
+                "limit": limit,
+                "offset": offset
+            })))
         }
     }
 }
@@ -140,17 +141,18 @@ pub async fn list_activity_for_entity(
         }
         Err(e) => {
             tracing::error!("Failed to list entity activity: {}", e);
-            Err(
-                ApiError::internal("activity.entity_list_failed", "Failed to list activity")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "activity.list_for_entity",
-                        "entity_type": entity_type,
-                        "entity_id": entity_id,
-                        "limit": limit,
-                        "offset": offset
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "activity.entity_list_failed",
+                "Failed to list activity",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "activity.list_for_entity",
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "limit": limit,
+                "offset": offset
+            })))
         }
     }
 }
@@ -181,16 +183,17 @@ pub async fn list_activity_for_user(
         }
         Err(e) => {
             tracing::error!("Failed to list user activity: {}", e);
-            Err(
-                ApiError::internal("activity.user_list_failed", "Failed to list activity")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "activity.list_for_user",
-                        "user_id": user_id,
-                        "limit": limit,
-                        "offset": offset
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "activity.user_list_failed",
+                "Failed to list activity",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "activity.list_for_user",
+                "user_id": user_id,
+                "limit": limit,
+                "offset": offset
+            })))
         }
     }
 }

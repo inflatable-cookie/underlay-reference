@@ -161,13 +161,16 @@ pub async fn list_jobs(
             let items: Vec<JobSummaryDto> = jobs.iter().map(JobSummaryDto::from_job).collect();
             Ok(Json(ListResponse { data: items }).into_response())
         }
-        Err(e) => Err(ApiError::internal("job_list_failed", "Failed to list jobs")
-            .with_cause(&e)
-            .with_context(serde_json::json!({
-                "operation": "jobs.list",
-                "status": query.status,
-                "job_type": query.job_type
-            }))),
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
+            "job_list_failed",
+            "Failed to list jobs",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "jobs.list",
+            "status": query.status,
+            "job_type": query.job_type
+        }))),
     }
 }
 
@@ -193,12 +196,15 @@ pub async fn get_job(
             Ok(Json(SingleResponse { data: dto }).into_response())
         }
         Ok(None) => Err(ApiError::not_found("not_found", "Job not found")),
-        Err(e) => Err(ApiError::internal("job_get_failed", "Failed to get job")
-            .with_cause(&e)
-            .with_context(serde_json::json!({
-                "operation": "jobs.get",
-                "job_id": job_id
-            }))),
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
+            "job_get_failed",
+            "Failed to get job",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "jobs.get",
+            "job_id": job_id
+        }))),
     }
 }
 
@@ -223,12 +229,15 @@ pub async fn cancel_job(
         Ok(Some(job)) => job,
         Ok(None) => return Err(ApiError::not_found("not_found", "Job not found")),
         Err(e) => {
-            return Err(ApiError::internal("job_get_failed", "Failed to get job")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "jobs.cancel.get",
-                    "job_id": job_id
-                })))
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "job_get_failed",
+                "Failed to get job",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "jobs.cancel.get",
+                "job_id": job_id
+            })))
         }
     };
 
@@ -255,25 +264,26 @@ pub async fn cancel_job(
                     "not_found",
                     "Job not found after cancel",
                 )),
-                Err(e) => Err(ApiError::internal(
+                Err(e) => Err(crate::db_errors::internal_with_diagnostics(
                     "job_get_failed",
                     "Failed to get job after cancel",
+                    &e,
                 )
-                .with_cause(&e)
                 .with_context(serde_json::json!({
                     "operation": "jobs.cancel.get_after",
                     "job_id": job_id
                 }))),
             }
         }
-        Err(e) => Err(
-            ApiError::internal("job_cancel_failed", "Failed to cancel job")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "jobs.cancel",
-                    "job_id": job_id
-                })),
-        ),
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
+            "job_cancel_failed",
+            "Failed to cancel job",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "jobs.cancel",
+            "job_id": job_id
+        }))),
     }
 }
 
@@ -298,12 +308,15 @@ pub async fn retry_job(
         Ok(Some(job)) => job,
         Ok(None) => return Err(ApiError::not_found("not_found", "Job not found")),
         Err(e) => {
-            return Err(ApiError::internal("job_get_failed", "Failed to get job")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "jobs.retry.get",
-                    "job_id": job_id
-                })))
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "job_get_failed",
+                "Failed to get job",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "jobs.retry.get",
+                "job_id": job_id
+            })))
         }
     };
 
@@ -339,24 +352,26 @@ pub async fn retry_job(
                     "not_found",
                     "New job not found after create",
                 )),
-                Err(e) => Err(
-                    ApiError::internal("job_get_failed", "Failed to get new job")
-                        .with_cause(&e)
-                        .with_context(serde_json::json!({
-                            "operation": "jobs.retry.get_new",
-                            "job_id": new_job_id
-                        })),
-                ),
+                Err(e) => Err(crate::db_errors::internal_with_diagnostics(
+                    "job_get_failed",
+                    "Failed to get new job",
+                    &e,
+                )
+                .with_context(serde_json::json!({
+                    "operation": "jobs.retry.get_new",
+                    "job_id": new_job_id
+                }))),
             }
         }
-        Err(e) => Err(
-            ApiError::internal("job_create_failed", "Failed to create retry job")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "jobs.retry.create",
-                    "job_id": job_id
-                })),
-        ),
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
+            "job_create_failed",
+            "Failed to create retry job",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "jobs.retry.create",
+            "job_id": job_id
+        }))),
     }
 }
 

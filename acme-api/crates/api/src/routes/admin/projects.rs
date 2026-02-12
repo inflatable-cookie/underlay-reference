@@ -147,13 +147,14 @@ pub async fn list_projects(
         }
         Err(e) => {
             tracing::error!("Failed to list projects: {}", e);
-            Err(
-                ApiError::internal("projects.list_failed", "Failed to list projects")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "projects.list"
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "projects.list_failed",
+                "Failed to list projects",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "projects.list"
+            })))
         }
     }
 }
@@ -182,14 +183,15 @@ pub async fn get_project(
         ),
         Err(e) => {
             tracing::error!("Failed to get project: {}", e);
-            Err(
-                ApiError::internal("projects.get_failed", "Failed to get project")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "projects.get",
-                        "project_id": project_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "projects.get_failed",
+                "Failed to get project",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "projects.get",
+                "project_id": project_id
+            })))
         }
     }
 }
@@ -245,16 +247,17 @@ pub async fn create_project(
         }
         Err(e) => {
             tracing::error!("Failed to create project: {}", e);
-            Err(
-                ApiError::internal("projects.create_failed", "Failed to create project")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "projects.create",
-                        "owner_id": owner_id,
-                        "category_id": req.category_id.map(|id| id.into_inner()),
-                        "name": &req.name
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "projects.create_failed",
+                "Failed to create project",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "projects.create",
+                "owner_id": owner_id,
+                "category_id": req.category_id.map(|id| id.into_inner()),
+                "name": &req.name
+            })))
         }
     }
 }
@@ -310,14 +313,15 @@ pub async fn update_project(
         ),
         Err(e) => {
             tracing::error!("Failed to update project: {}", e);
-            Err(
-                ApiError::internal("projects.update_failed", "Failed to update project")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "projects.update",
-                        "project_id": pid
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "projects.update_failed",
+                "Failed to update project",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "projects.update",
+                "project_id": pid
+            })))
         }
     }
 }
@@ -361,15 +365,16 @@ pub async fn soft_delete_project(
         ),
         Err(e) => {
             tracing::error!("Failed to soft delete project: {}", e);
-            Err(
-                ApiError::internal("projects.soft_delete_failed", "Failed to delete project")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "projects.soft_delete",
-                        "project_id": pid,
-                        "batch_id": batch_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "projects.soft_delete_failed",
+                "Failed to delete project",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "projects.soft_delete",
+                "project_id": pid,
+                "batch_id": batch_id
+            })))
         }
     }
 }
@@ -413,14 +418,15 @@ pub async fn restore_project(
         ),
         Err(e) => {
             tracing::error!("Failed to restore project: {}", e);
-            Err(
-                ApiError::internal("projects.restore_failed", "Failed to restore project")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "projects.restore",
-                        "project_id": pid
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "projects.restore_failed",
+                "Failed to restore project",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "projects.restore",
+                "project_id": pid
+            })))
         }
     }
 }
@@ -438,14 +444,15 @@ pub async fn reorder_projects(
         Ok(()) => Ok(Json(serde_json::json!({ "ok": true })).into_response()),
         Err(e) => {
             tracing::error!("Failed to reorder projects: {}", e);
-            Err(
-                ApiError::internal("projects.reorder_failed", "Failed to reorder projects")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "projects.reorder",
-                        "count": ids.len()
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "projects.reorder_failed",
+                "Failed to reorder projects",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "projects.reorder",
+                "count": ids.len()
+            })))
         }
     }
 }
@@ -490,11 +497,11 @@ pub async fn batch_delete_projects(
         }
         Err(e) => {
             tracing::error!("Failed to batch delete projects: {}", e);
-            Err(ApiError::internal(
+            Err(crate::db_errors::internal_with_diagnostics(
                 "projects.batch_delete_failed",
                 "Failed to batch delete projects",
+                &e,
             )
-            .with_cause(&e)
             .with_context(serde_json::json!({
                 "operation": "projects.batch_delete",
                 "count": ids.len(),

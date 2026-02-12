@@ -65,11 +65,11 @@ pub async fn get_dashboard_stats(
         Ok(counts) => counts,
         Err(e) => {
             tracing::error!("Failed to get user counts: {}", e);
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "dashboard.user_counts_failed",
                 "Failed to load dashboard stats",
+                &e,
             )
-            .with_cause(&e)
             .with_context(serde_json::json!({ "operation": "stats.get_user_counts" })));
         }
     };
@@ -78,11 +78,11 @@ pub async fn get_dashboard_stats(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to get media count: {}", e);
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "dashboard.media_count_failed",
                 "Failed to load dashboard stats",
+                &e,
             )
-            .with_cause(&e)
             .with_context(serde_json::json!({ "operation": "stats.get_media_count" })));
         }
     };
@@ -91,11 +91,11 @@ pub async fn get_dashboard_stats(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to get recent registrations: {}", e);
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "dashboard.recent_registrations_failed",
                 "Failed to load dashboard stats",
+                &e,
             )
-            .with_cause(&e)
             .with_context(serde_json::json!({
                 "operation": "stats.get_recent_registrations",
                 "days": 7
@@ -107,11 +107,11 @@ pub async fn get_dashboard_stats(
         Ok(count) => count,
         Err(e) => {
             tracing::error!("Failed to get active sessions count: {}", e);
-            return Err(ApiError::internal(
+            return Err(crate::db_errors::internal_with_diagnostics(
                 "dashboard.active_sessions_failed",
                 "Failed to load dashboard stats",
+                &e,
             )
-            .with_cause(&e)
             .with_context(serde_json::json!({
                 "operation": "stats.get_active_sessions_count"
             })));

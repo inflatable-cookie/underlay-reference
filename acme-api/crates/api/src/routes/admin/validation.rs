@@ -89,15 +89,16 @@ pub async fn validate_field(
         Ok(response) => Ok(Json(response).into_response()),
         Err(e) => {
             tracing::error!("Validation error: {}", e);
-            Err(
-                ApiError::internal("validation.failed", "Field validation failed")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "validation.validate_field",
-                        "entity": req.entity,
-                        "field": req.field
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "validation.failed",
+                "Field validation failed",
+                &e,
             )
+            .with_context(serde_json::json!({
+                "operation": "validation.validate_field",
+                "entity": req.entity,
+                "field": req.field
+            })))
         }
     }
 }

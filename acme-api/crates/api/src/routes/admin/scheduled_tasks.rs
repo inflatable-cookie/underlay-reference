@@ -166,16 +166,17 @@ pub async fn list_scheduled_tasks(
                 .collect();
             Ok((StatusCode::OK, Json(ListResponse { data })).into_response())
         }
-        Err(e) => Err(
-            ApiError::internal("scheduled_tasks_list_failed", "Failed to list tasks")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "scheduled_tasks.list",
-                    "enabled": query.enabled,
-                    "limit": limit,
-                    "offset": offset
-                })),
-        ),
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
+            "scheduled_tasks_list_failed",
+            "Failed to list tasks",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "scheduled_tasks.list",
+            "enabled": query.enabled,
+            "limit": limit,
+            "offset": offset
+        }))),
     }
 }
 
@@ -224,14 +225,15 @@ pub async fn get_scheduled_task(
             Ok((StatusCode::OK, Json(SingleResponse { data: dto })).into_response())
         }
         Ok(None) => Err(ApiError::not_found("not_found", "Scheduled task not found")),
-        Err(e) => Err(
-            ApiError::internal("scheduled_task_get_failed", "Failed to get task")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "scheduled_tasks.get",
-                    "task_id": uuid
-                })),
-        ),
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
+            "scheduled_task_get_failed",
+            "Failed to get task",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "scheduled_tasks.get",
+            "task_id": uuid
+        }))),
     }
 }
 
@@ -285,15 +287,16 @@ pub async fn toggle_scheduled_task(
     match result {
         Ok(result) if result.rows_affected() > 0 => Ok(StatusCode::NO_CONTENT.into_response()),
         Ok(_) => Err(ApiError::not_found("not_found", "Scheduled task not found")),
-        Err(e) => Err(
-            ApiError::internal("scheduled_task_toggle_failed", "Failed to toggle task")
-                .with_cause(&e)
-                .with_context(serde_json::json!({
-                    "operation": "scheduled_tasks.toggle",
-                    "task_id": uuid,
-                    "enabled": payload.enabled
-                })),
-        ),
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
+            "scheduled_task_toggle_failed",
+            "Failed to toggle task",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "scheduled_tasks.toggle",
+            "task_id": uuid,
+            "enabled": payload.enabled
+        }))),
     }
 }
 
@@ -357,14 +360,15 @@ pub async fn trigger_scheduled_task(
             return Err(ApiError::not_found("not_found", "Scheduled task not found"));
         }
         Err(e) => {
-            return Err(
-                ApiError::internal("scheduled_task_get_failed", "Failed to get task")
-                    .with_cause(&e)
-                    .with_context(serde_json::json!({
-                        "operation": "scheduled_tasks.trigger",
-                        "task_id": uuid
-                    })),
-            );
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "scheduled_task_get_failed",
+                "Failed to get task",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "scheduled_tasks.trigger",
+                "task_id": uuid
+            })));
         }
     };
 
@@ -385,11 +389,11 @@ pub async fn trigger_scheduled_task(
             };
             Ok((StatusCode::OK, Json(body)).into_response())
         }
-        Err(e) => Err(ApiError::internal(
+        Err(e) => Err(crate::db_errors::internal_with_diagnostics(
             "scheduled_task_trigger_failed",
             "Failed to trigger task",
+            &e,
         )
-        .with_cause(&e)
         .with_context(serde_json::json!({
             "operation": "scheduled_tasks.trigger",
             "task_id": uuid,

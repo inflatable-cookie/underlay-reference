@@ -47,14 +47,15 @@ pub async fn batch_delete_media(
         }
         Err(e) => {
             tracing::error!("Failed to batch delete media: {}", e);
-            Err(
-                ApiError::internal("media.batch_delete_failed", "Failed to batch delete media")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.batch_delete",
-                        "count": req.ids.len()
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.batch_delete_failed",
+                "Failed to batch delete media",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.batch_delete",
+                "count": req.ids.len()
+            })))
         }
     }
 }

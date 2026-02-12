@@ -17,14 +17,15 @@ pub async fn list_usage(
         }
         Err(e) => {
             tracing::error!("Failed to list usage: {}", e);
-            Err(
-                ApiError::internal("media.list_usage_failed", "Failed to list media usage")
-                    .with_cause(&e)
-                    .with_context(json!({
-                        "operation": "media.list_usage",
-                        "media_id": media_id
-                    })),
+            Err(crate::db_errors::internal_with_diagnostics(
+                "media.list_usage_failed",
+                "Failed to list media usage",
+                &e,
             )
+            .with_context(json!({
+                "operation": "media.list_usage",
+                "media_id": media_id
+            })))
         }
     }
 }
