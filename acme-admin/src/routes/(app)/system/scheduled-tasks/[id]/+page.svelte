@@ -409,7 +409,7 @@
     border-radius: 0.5rem;
   }
 
-  .jobs-list :global(.table-body > .table-row) {
+  .jobs-list :global(.underlay-table-body > .underlay-table-row) {
     cursor: pointer;
   }
 </style>

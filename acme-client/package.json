@@ -13,7 +13,7 @@
         "@decodelabs/underlay": "file:../underlay"
     },
     "devDependencies": {
-        "@types/node": "^22.19.7",
+        "@types/node": "^25.2.3",
         "typescript": "^5.9.3"
     }
 }

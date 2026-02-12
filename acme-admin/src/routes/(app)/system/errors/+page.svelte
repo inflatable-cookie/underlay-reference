@@ -330,20 +330,20 @@
     border-radius: 0.5rem;
   }
 
-  .logs-list :global(.table-cell) {
+  .logs-list :global(.underlay-table-cell) {
     padding: 0.75rem 1rem;
   }
 
-  .logs-list :global(.table-body > .table-row.has-extended > .table-cell) {
+  .logs-list :global(.underlay-table-body > .underlay-table-row.underlay-has-extended > .underlay-table-cell) {
     background: var(--admin-color-surface-subtle);
   }
 
-  .logs-list :global(.table-row--extended > .table-cell) {
+  .logs-list :global(.underlay-table-row--extended > .underlay-table-cell) {
     padding: 0;
     background: var(--admin-color-surface-subtle);
   }
 
-  .logs-list :global(.empty-state) {
+  .logs-list :global(.underlay-empty-state) {
     display: flex;
     flex-direction: column;
     align-items: center;
