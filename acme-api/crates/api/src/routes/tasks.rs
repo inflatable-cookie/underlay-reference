@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use underlay_http::ApiError;
 
 use acme_core::Uuid;
-use acme_db::tasks;
+use acme_db::{activity, tasks};
 
 use crate::state::{AppState, AuthenticatedUser};
 use validator::Validate;
@@ -293,6 +293,23 @@ pub async fn create_project(
     .await
     {
         Ok(project) => {
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user_id),
+                    action: "create",
+                    resource_type: "project",
+                    resource_id: project_id,
+                    details: Some(serde_json::json!({
+                        "name": project.name,
+                        "status": project.status,
+                    })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: ProjectResponse = project.into();
             Ok((
                 StatusCode::CREATED,
@@ -393,6 +410,23 @@ pub async fn update_project(
     .await
     {
         Ok(Some(project)) => {
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user_id),
+                    action: "update",
+                    resource_type: "project",
+                    resource_id: project_id,
+                    details: Some(serde_json::json!({
+                        "name": project.name,
+                        "status": project.status,
+                    })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: ProjectResponse = project.into();
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
@@ -432,7 +466,23 @@ pub async fn delete_project(
     ensure_project_owned(pool, user_id, project_id, "projects.delete").await?;
 
     match tasks::delete_project(pool, project_id).await {
-        Ok(true) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Ok(true) => {
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user_id),
+                    action: "delete",
+                    resource_type: "project",
+                    resource_id: project_id,
+                    details: None,
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Ok(StatusCode::NO_CONTENT.into_response())
+        }
         Ok(false) => Err(
             ApiError::not_found("projects.not_found", "Project not found").with_context(
                 serde_json::json!({
@@ -526,6 +576,25 @@ pub async fn create_task(
     .await
     {
         Ok(task) => {
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user_id),
+                    action: "create",
+                    resource_type: "task",
+                    resource_id: task_id,
+                    details: Some(serde_json::json!({
+                        "project_id": project_id,
+                        "title": task.title,
+                        "status": task.status,
+                        "priority": task.priority,
+                    })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: TaskResponse = task.into();
             Ok((
                 StatusCode::CREATED,
@@ -582,6 +651,25 @@ pub async fn update_task(
     .await
     {
         Ok(Some(task)) => {
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user_id),
+                    action: "update",
+                    resource_type: "task",
+                    resource_id: task_id,
+                    details: Some(serde_json::json!({
+                        "project_id": project_id,
+                        "title": task.title,
+                        "status": task.status,
+                        "priority": task.priority,
+                    })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
             let response: TaskResponse = task.into();
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
@@ -622,7 +710,25 @@ pub async fn delete_task(
     ensure_project_owned(pool, user_id, project_id, "tasks.delete").await?;
 
     match tasks::delete_task(pool, task_id, project_id).await {
-        Ok(true) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Ok(true) => {
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user_id),
+                    action: "delete",
+                    resource_type: "task",
+                    resource_id: task_id,
+                    details: Some(serde_json::json!({
+                        "project_id": project_id,
+                    })),
+                    correlation_id: None,
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Ok(StatusCode::NO_CONTENT.into_response())
+        }
         Ok(false) => Err(
             ApiError::not_found("tasks.not_found", "Task not found").with_context(
                 serde_json::json!({

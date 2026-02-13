@@ -157,8 +157,8 @@ Priority: **High/Medium**
 
 ### 3.1 Add durable audit logging for user-facing mutations
 
-- [ ] Emit activity/audit events for project/task create/update/delete in user routes
-- [ ] Include actor/resource/action consistently
+- [x] Emit activity/audit events for project/task create/update/delete in user routes
+- [x] Include actor/resource/action consistently
 
 Files:
 - `acme-api/crates/api/src/routes/tasks.rs`
