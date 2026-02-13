@@ -203,7 +203,8 @@ Files:
 
 ### 4.2 Raise automated test coverage on critical paths
 
-- [ ] Add real integration tests for admin jobs/scheduled-task APIs
+- [ ] Add real integration tests for admin jobs APIs
+- [x] Add real integration tests for scheduled-task APIs
 - [ ] Add app-router tests for critical auth/admin route boundaries
 - [ ] Add frontend test harness and critical flow tests for `acme-front`
 
