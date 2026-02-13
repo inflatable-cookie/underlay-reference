@@ -139,6 +139,7 @@ version = "0.1.0"
 dependencies = [
  "acme-db",
  "acme-infra",
+ "acme-test-utils",
  "async-trait",
  "chrono",
  "dotenvy",

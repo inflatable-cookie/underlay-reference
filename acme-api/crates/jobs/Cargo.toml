@@ -20,3 +20,6 @@ underlay-media = { workspace = true }
 
 acme-db = { path = "../db" }
 acme-infra = { path = "../infra" }
+
+[dev-dependencies]
+acme-test-utils = { path = "../test-utils" }
