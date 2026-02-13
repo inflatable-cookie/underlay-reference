@@ -551,4 +551,39 @@ mod tests {
 
         delete_scheduled_task(pool, task_id).await;
     }
+
+    #[tokio::test]
+    async fn get_scheduled_task_rejects_invalid_uuid() {
+        let result = get_scheduled_task(admin_user(), Path("not-a-uuid".to_string())).await;
+
+        let error = result.expect_err("invalid task id should fail");
+        let response = error.into_response();
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn get_scheduled_task_returns_inserted_task() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        let db = setup_test_db().await;
+        let pool = db.pool();
+        let _ = DB_POOL.set(db.pool_clone());
+
+        let task_id = insert_scheduled_task(pool, true).await;
+
+        let response = get_scheduled_task(admin_user(), Path(task_id.to_string()))
+            .await
+            .expect("get should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_json(response).await;
+        assert_eq!(body["data"]["id"], task_id.to_string());
+
+        delete_scheduled_task(pool, task_id).await;
+    }
 }
