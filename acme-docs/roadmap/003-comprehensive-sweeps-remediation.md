@@ -243,8 +243,8 @@ Files:
 
 ### 5.3 Reduce styling drift from hardcoded colors
 
-- [ ] Migrate repeated semantic hex values to shared tokenized helpers
-- [ ] Start with `accents.ts` and system/media pages
+- [x] Migrate repeated semantic hex values to shared tokenized helpers
+- [x] Start with `accents.ts` and system/media pages
 
 Files:
 - `acme-admin/src/lib/utils/accents.ts`

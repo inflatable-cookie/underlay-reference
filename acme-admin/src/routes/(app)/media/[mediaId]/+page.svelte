@@ -53,6 +53,7 @@
   } from "acme-client";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { getMediaMetaAccent, getMediaVisibilityPillAccent } from "$lib/utils/accents";
   import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";
   import Check from "lucide-svelte/icons/check";
   import Plus from "lucide-svelte/icons/plus";
@@ -351,11 +352,11 @@
         </PageHeaderMetaItem>
         <PageHeaderMetaSeparator />
         <Pill accent={getMediaKindAccent(media.kind)}>{getMediaKindLabel(media.kind)}</Pill>
-        <Pill accent={media.visibility === MediaVisibility.Restricted ? "#f59e0b" : "#3b82f6"}>
+        <Pill accent={getMediaVisibilityPillAccent(media.visibility)}>
           {getMediaVisibilityLabel(media.visibility)}
         </Pill>
         {#if media.deletedAt}
-          <Pill accent="#ef4444">Deleted</Pill>
+          <Pill accent={getMediaMetaAccent("deleted")}>Deleted</Pill>
         {/if}
       </PageHeaderMetaRow>
     </PageHeaderMeta>
@@ -448,7 +449,7 @@
                     {getMediaVersionStateLabel(version.state)}
                   </Pill>
                   {#if isCurrentVersion(version)}
-                    <Pill accent="#3b82f6">Current</Pill>
+                    <Pill accent={getMediaMetaAccent("current")}>Current</Pill>
                   {/if}
                 {/snippet}
                 {#snippet actions()}
@@ -548,7 +549,7 @@
             {#each usages as usage}
               <InlineListItem
                 label={usage.usedByType}
-                accent="#6366f1"
+                accent={getMediaMetaAccent("usage")}
               >
                 {#snippet sublabelContent()}
                   <Code>{usage.usedById}</Code>
