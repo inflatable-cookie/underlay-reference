@@ -13,7 +13,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use underlay_http::{query::QueryParams, ApiError};
+use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
 
 use acme_core::Uuid;
 use acme_db::{activity, categories};
@@ -188,6 +188,7 @@ pub async fn get_category(
 pub async fn create_category(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Json(req): Json<CreateCategoryRequest>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -213,7 +214,7 @@ pub async fn create_category(
                     resource_type: "category",
                     resource_id: category_id,
                     details: Some(serde_json::json!({ "name": req.name, "slug": req.slug })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -260,6 +261,7 @@ pub async fn create_category(
 pub async fn update_category(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(category_id): Path<Uuid>,
     Json(req): Json<UpdateCategoryRequest>,
 ) -> Result<Response, ApiError> {
@@ -287,7 +289,7 @@ pub async fn update_category(
                     resource_type: "category",
                     resource_id: cid,
                     details: Some(serde_json::json!({ "name": category.name })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -323,6 +325,7 @@ pub async fn update_category(
 pub async fn soft_delete_category(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(category_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -340,7 +343,7 @@ pub async fn soft_delete_category(
                     resource_type: "category",
                     resource_id: cid,
                     details: None,
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -376,6 +379,7 @@ pub async fn soft_delete_category(
 pub async fn restore_category(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(category_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -392,7 +396,7 @@ pub async fn restore_category(
                     resource_type: "category",
                     resource_id: cid,
                     details: Some(serde_json::json!({ "name": category.name })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )

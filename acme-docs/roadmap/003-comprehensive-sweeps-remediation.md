@@ -166,8 +166,8 @@ Files:
 
 ### 3.2 Persist request correlation IDs into audit entries
 
-- [ ] Thread request ID from middleware into route context
-- [ ] Populate `correlation_id` in activity log writes
+- [x] Thread request ID from middleware into route context
+- [x] Populate `correlation_id` in activity log writes
 
 Files:
 - `acme-api/crates/api/src/main.rs`

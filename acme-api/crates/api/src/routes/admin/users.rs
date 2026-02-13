@@ -9,7 +9,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use underlay_http::ApiError;
+use underlay_http::{context::RequestContext, ApiError};
 use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
@@ -578,6 +578,7 @@ fn can_manage_user(
 pub async fn update_user_role(
     AdminUser(admin): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(user_id): Path<Uuid>,
     Json(req): Json<UpdateUserRoleRequest>,
 ) -> Result<Response, ApiError> {
@@ -634,7 +635,7 @@ pub async fn update_user_role(
                     resource_type: "user",
                     resource_id: user_id,
                     details: Some(serde_json::json!({ "new_role": req.role })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -669,6 +670,7 @@ pub async fn update_user_role(
 pub async fn suspend_user(
     AdminUser(admin): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(user_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     use axum::http::StatusCode;
@@ -718,7 +720,7 @@ pub async fn suspend_user(
                     resource_type: "user",
                     resource_id: user_id,
                     details: None,
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -752,6 +754,7 @@ pub async fn suspend_user(
 pub async fn unsuspend_user(
     AdminUser(admin): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(user_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     use axum::http::StatusCode;
@@ -793,7 +796,7 @@ pub async fn unsuspend_user(
                     resource_type: "user",
                     resource_id: user_id,
                     details: None,
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -905,6 +908,7 @@ pub async fn list_user_sessions(
 pub async fn revoke_user_session(
     AdminUser(admin): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(path): Path<UserSessionPath>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -921,7 +925,7 @@ pub async fn revoke_user_session(
                     resource_type: "user",
                     resource_id: path.user_id,
                     details: Some(serde_json::json!({ "session_id": path.session_id.to_string() })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )

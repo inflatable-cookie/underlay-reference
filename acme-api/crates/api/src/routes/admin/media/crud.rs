@@ -69,6 +69,7 @@ pub async fn check_duplicate(
 pub async fn create_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Json(req): Json<CreateMediaRequest>,
 ) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
@@ -114,7 +115,7 @@ pub async fn create_media(
                     resource_type: "media",
                     resource_id: media_id,
                     details: Some(json!({ "title": req.title, "kind": req.kind })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -332,6 +333,7 @@ pub async fn get_media(
 pub async fn update_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(media_id): Path<Uuid>,
     Json(req): Json<UpdateMediaRequest>,
 ) -> Result<Response, ApiError> {
@@ -368,7 +370,7 @@ pub async fn update_media(
                     resource_type: "media",
                     resource_id: media_id,
                     details: Some(json!({ "title": req.title })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -421,6 +423,7 @@ pub async fn update_media(
 pub async fn soft_delete_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(media_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -436,7 +439,7 @@ pub async fn soft_delete_media(
                     resource_type: "media",
                     resource_id: media_id,
                     details: None,
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -465,6 +468,7 @@ pub async fn soft_delete_media(
 pub async fn restore_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(media_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -480,7 +484,7 @@ pub async fn restore_media(
                     resource_type: "media",
                     resource_id: media_id,
                     details: None,
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )

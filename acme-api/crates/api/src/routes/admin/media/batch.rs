@@ -13,6 +13,7 @@ pub struct BatchDeleteMediaRequest {
 pub async fn batch_delete_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Json(req): Json<BatchDeleteMediaRequest>,
 ) -> Result<Response, ApiError> {
     if req.ids.is_empty() {
@@ -37,7 +38,7 @@ pub async fn batch_delete_media(
                     resource_type: "media",
                     resource_id: batch_id,
                     details: Some(json!({ "count": count, "ids": req.ids })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )

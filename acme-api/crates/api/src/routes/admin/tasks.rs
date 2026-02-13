@@ -14,7 +14,7 @@ use axum::{
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use underlay_http::{query::QueryParams, ApiError};
+use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
 
 use acme_core::Uuid;
 use acme_db::{activity, tasks};
@@ -257,6 +257,7 @@ pub async fn get_task(
 pub async fn create_task(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<Response, ApiError> {
@@ -295,7 +296,7 @@ pub async fn create_task(
                     resource_type: "task",
                     resource_id: task_id,
                     details: Some(serde_json::json!({ "title": req.title, "project_id": project_id.to_string() })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -329,6 +330,7 @@ pub async fn create_task(
 pub async fn update_task(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path((project_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Response, ApiError> {
@@ -366,7 +368,7 @@ pub async fn update_task(
                     resource_type: "task",
                     resource_id: task_id_inner,
                     details: Some(serde_json::json!({ "title": task.title })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -402,6 +404,7 @@ pub async fn update_task(
 pub async fn soft_delete_task(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -419,7 +422,7 @@ pub async fn soft_delete_task(
                     resource_type: "task",
                     resource_id: tid,
                     details: None,
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -646,6 +649,7 @@ pub async fn set_task_labels(
 pub async fn batch_delete_tasks(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
     Json(req): Json<BatchDeleteTasksRequest>,
 ) -> Result<Response, ApiError> {
@@ -676,7 +680,7 @@ pub async fn batch_delete_tasks(
                         "ids": req.ids,
                         "project_id": project_id.to_string()
                     })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -707,6 +711,7 @@ pub async fn batch_delete_tasks(
 pub async fn batch_update_task_status(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
     Json(req): Json<BatchUpdateTaskStatusRequest>,
 ) -> Result<Response, ApiError> {
@@ -746,7 +751,7 @@ pub async fn batch_update_task_status(
                         "status": req.status,
                         "project_id": project_id.to_string()
                     })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )

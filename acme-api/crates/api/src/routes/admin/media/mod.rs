@@ -23,7 +23,7 @@ use axum::{
 use serde_json::json;
 use underlay_blob::UploadRequest;
 use underlay_db::pagination::PaginationParams;
-use underlay_http::{query::QueryParams, ApiError};
+use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
 use underlay_jobs::JobConfig;
 use underlay_media::storage::version_key;
 use uuid::Uuid;

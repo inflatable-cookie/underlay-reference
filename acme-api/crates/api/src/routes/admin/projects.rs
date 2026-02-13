@@ -13,7 +13,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use underlay_http::{query::QueryParams, ApiError};
+use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
 
 use acme_core::Uuid;
 use acme_db::{activity, tasks};
@@ -203,6 +203,7 @@ pub async fn get_project(
 pub async fn create_project(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Json(req): Json<CreateProjectRequest>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -232,7 +233,7 @@ pub async fn create_project(
                     resource_type: "project",
                     resource_id: project_id,
                     details: Some(serde_json::json!({ "name": req.name })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -266,6 +267,7 @@ pub async fn create_project(
 pub async fn update_project(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
     Json(req): Json<UpdateProjectRequest>,
 ) -> Result<Response, ApiError> {
@@ -294,7 +296,7 @@ pub async fn update_project(
                     resource_type: "project",
                     resource_id: pid,
                     details: Some(serde_json::json!({ "name": project.name })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -330,6 +332,7 @@ pub async fn update_project(
 pub async fn soft_delete_project(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -347,7 +350,7 @@ pub async fn soft_delete_project(
                     resource_type: "project",
                     resource_id: pid,
                     details: None,
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -383,6 +386,7 @@ pub async fn soft_delete_project(
 pub async fn restore_project(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -399,7 +403,7 @@ pub async fn restore_project(
                     resource_type: "project",
                     resource_id: pid,
                     details: Some(serde_json::json!({ "name": project.name })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
@@ -463,6 +467,7 @@ pub async fn reorder_projects(
 pub async fn batch_delete_projects(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Json(req): Json<BatchDeleteRequest>,
 ) -> Result<Response, ApiError> {
     if req.ids.is_empty() {
@@ -487,7 +492,7 @@ pub async fn batch_delete_projects(
                     resource_type: "project",
                     resource_id: batch_id,
                     details: Some(json!({ "count": count, "ids": req.ids })),
-                    correlation_id: None,
+                    correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
             )
