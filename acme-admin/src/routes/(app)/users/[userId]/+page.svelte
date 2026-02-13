@@ -58,37 +58,56 @@
   const defaultBackHref = "/users";
   const { backInfo } = consumeNavigationContext("Back to users", defaultBackHref);
 
-  const pageData = useAuthenticatedData(
+  const userData = useAuthenticatedData(
     async (fetch, token) => {
-      const [user, sessions, activity] = await Promise.all([
-        adminCommands.getUser(data.userId, fetch, token),
-        adminCommands.listUserSessions(data.userId, fetch, token),
-        adminCommands.listActivityForUser(data.userId, fetch, token, { limit: 10 })
-      ]);
-
-      return {
-        user,
-        sessions,
-        activity: activity.data
-      };
+      return adminCommands.getUser(data.userId, fetch, token);
     },
     {
       getToken: () => auth.getToken(),
-      defaultValue: {
-        user: null as UserDetail | null,
-        sessions: [] as Session[],
-        activity: [] as ActivityEntry[]
-      }
+      defaultValue: null as UserDetail | null
     }
   );
 
+  const sessionsData = useAuthenticatedData(
+    async (fetch, token) => adminCommands.listUserSessions(data.userId, fetch, token),
+    {
+      getToken: () => auth.getToken(),
+      defaultValue: [] as Session[]
+    }
+  );
+
+  const activityData = useAuthenticatedData(
+    async (fetch, token) => {
+      const activity = await adminCommands.listActivityForUser(data.userId, fetch, token, { limit: 10 });
+      return activity.data;
+    },
+    {
+      getToken: () => auth.getToken(),
+      defaultValue: [] as ActivityEntry[]
+    }
+  );
+
+  let activeTab = $state("details");
+
   $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
+    userData.tryFetch($authLoading, $currentUser);
   });
 
-  const user = $derived(pageData.data?.user ?? null);
-  const sessions = $derived(pageData.data?.sessions ?? []);
-  const activity = $derived(pageData.data?.activity ?? []);
+  $effect(() => {
+    if (activeTab === "sessions") {
+      sessionsData.tryFetch($authLoading, $currentUser);
+    }
+  });
+
+  $effect(() => {
+    if (activeTab === "activity") {
+      activityData.tryFetch($authLoading, $currentUser);
+    }
+  });
+
+  const user = $derived(userData.data ?? null);
+  const sessions = $derived(sessionsData.data ?? []);
+  const activity = $derived(activityData.data ?? []);
 
   const computedBackInfo = $derived(
     computeBackInfo(
@@ -113,7 +132,6 @@
   let showRoleDialog = $state(false);
   let selectedRole = $state<UserRole>(UserRoleConst.User);
   let updatingRole = $state(false);
-  let activeTab = $state("details");
 
   $effect(() => {
     if (user) {
@@ -235,7 +253,7 @@
       await adminCommands.revokeUserSession(user.id, sessionToRevoke.id, fetch, token);
       toastStore.push({ variant: "success", message: "Session revoked" });
       sessionToRevoke = null;
-      await pageData.refetch();
+      await Promise.all([userData.refetch(), sessionsData.refetch()]);
     } catch (err) {
       toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to revoke session" });
     } finally {
@@ -251,7 +269,7 @@
     try {
       await adminCommands.suspendUser(user.id, fetch, token);
       toastStore.push({ variant: "success", message: "User suspended" });
-      await pageData.refetch();
+      await userData.refetch();
     } catch (err) {
       toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to suspend user" });
     }
@@ -265,7 +283,7 @@
     try {
       await adminCommands.unsuspendUser(user.id, fetch, token);
       toastStore.push({ variant: "success", message: "User reactivated" });
-      await pageData.refetch();
+      await userData.refetch();
     } catch (err) {
       toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to reactivate user" });
     }
@@ -281,7 +299,7 @@
       await adminCommands.updateUserRole(user.id, { role: selectedRole }, fetch, token);
       toastStore.push({ variant: "success", message: "Role updated" });
       showRoleDialog = false;
-      await pageData.refetch();
+      await userData.refetch();
     } catch (err) {
       toastStore.push({ variant: "error", message: err instanceof Error ? err.message : "Failed to update role" });
     } finally {
@@ -343,10 +361,10 @@
   }
 </script>
 
-{#if pageData.loading}
+{#if userData.loading}
   <PageLoading message="Loading user..." />
-{:else if pageData.error}
-  <FormError message={pageData.error} />
+{:else if userData.error}
+  <FormError message={userData.error} />
 {:else if user}
   <PageHeader
     section="User"
@@ -401,43 +419,55 @@
       </TabsContent>
 
       <TabsContent value="sessions">
-        <DataTable
-          data={sessions}
-          columns={sessionColumns}
-          actions={sessionActions}
-          emptyMessage="No sessions found"
-          showLimitSelector={false}
-        >
-          {#snippet cell({ column, value })}
-            {#if column.key === "status"}
-              <Pill accent={getSessionStatusAccent(value)}>{value}</Pill>
-            {:else if column.key === "ipAddress"}
-              <code>{value || "—"}</code>
-            {:else}
-              {value}
-            {/if}
-          {/snippet}
-        </DataTable>
+        {#if activeTab === "sessions" && sessionsData.loading}
+          <PageLoading message="Loading sessions..." />
+        {:else if sessionsData.error}
+          <FormError message={sessionsData.error} />
+        {:else}
+          <DataTable
+            data={sessions}
+            columns={sessionColumns}
+            actions={sessionActions}
+            emptyMessage="No sessions found"
+            showLimitSelector={false}
+          >
+            {#snippet cell({ column, value })}
+              {#if column.key === "status"}
+                <Pill accent={getSessionStatusAccent(value)}>{value}</Pill>
+              {:else if column.key === "ipAddress"}
+                <code>{value || "—"}</code>
+              {:else}
+                {value}
+              {/if}
+            {/snippet}
+          </DataTable>
+        {/if}
       </TabsContent>
 
       <TabsContent value="activity">
-        <DataTable
-          data={activity}
-          columns={activityColumns}
-          actions={activityActions}
-          emptyMessage="No activity recorded for this user"
-          showLimitSelector={false}
-        >
-          {#snippet cell({ column, value })}
-            {#if column.key === "action"}
-              <Pill accent={getActivityAccent(value)}>{value}</Pill>
-            {:else if column.key === "resourceId"}
-              <code>{value}</code>
-            {:else}
-              {value}
-            {/if}
-          {/snippet}
-        </DataTable>
+        {#if activeTab === "activity" && activityData.loading}
+          <PageLoading message="Loading activity..." />
+        {:else if activityData.error}
+          <FormError message={activityData.error} />
+        {:else}
+          <DataTable
+            data={activity}
+            columns={activityColumns}
+            actions={activityActions}
+            emptyMessage="No activity recorded for this user"
+            showLimitSelector={false}
+          >
+            {#snippet cell({ column, value })}
+              {#if column.key === "action"}
+                <Pill accent={getActivityAccent(value)}>{value}</Pill>
+              {:else if column.key === "resourceId"}
+                <code>{value}</code>
+              {:else}
+                {value}
+              {/if}
+            {/snippet}
+          </DataTable>
+        {/if}
       </TabsContent>
     </TabsRoot>
   </div>

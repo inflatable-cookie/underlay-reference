@@ -68,29 +68,50 @@
   const toastStore = useToasts();
   const mediaId = $derived(data.mediaId);
 
-  // Load media detail, versions, and usages
-  const pageData = useAuthenticatedData(
-    async (fetchFn, token) => {
-      const [media, versions, usages] = await Promise.all([
-        mediaCommands.getMedia(mediaId, fetchFn, token),
-        mediaCommands.listVersions(mediaId, fetchFn, token),
-        mediaCommands.listUsages(mediaId, fetchFn, token)
-      ]);
-      return { media, versions, usages };
-    },
+  // Load media detail first; load heavy tab data lazily.
+  const mediaData = useAuthenticatedData(
+    async (fetchFn, token) => mediaCommands.getMedia(mediaId, fetchFn, token),
     { getToken: () => auth.getToken() }
   );
 
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
+  const versionsData = useAuthenticatedData(
+    async (fetchFn, token) => mediaCommands.listVersions(mediaId, fetchFn, token),
+    {
+      getToken: () => auth.getToken(),
+      defaultValue: [] as MediaVersion[]
+    }
+  );
 
-  const media = $derived(pageData.data?.media);
-  const versions = $derived(pageData.data?.versions ?? []);
-  const usages = $derived(pageData.data?.usages ?? []);
+  const usagesData = useAuthenticatedData(
+    async (fetchFn, token) => mediaCommands.listUsages(mediaId, fetchFn, token),
+    {
+      getToken: () => auth.getToken(),
+      defaultValue: [] as MediaUsage[]
+    }
+  );
 
   let activeTab = $state("details");
+
+  // Trigger fetch when auth is ready
+  $effect(() => {
+    mediaData.tryFetch($authLoading, $currentUser);
+  });
+
+  $effect(() => {
+    if (activeTab === "details") {
+      versionsData.tryFetch($authLoading, $currentUser);
+    }
+  });
+
+  $effect(() => {
+    if (activeTab === "usage") {
+      usagesData.tryFetch($authLoading, $currentUser);
+    }
+  });
+
+  const media = $derived(mediaData.data);
+  const versions = $derived(versionsData.data ?? []);
+  const usages = $derived(usagesData.data ?? []);
   const usageCount = $derived(media?.usageCount ?? 0);
 
   const backInfo = getBackButtonInfo("Back to media", "/media");
@@ -144,7 +165,7 @@
       );
       toastStore.push({ variant: "success", message: "Media updated" });
       closeEditDialog();
-      await pageData.refetch();
+      await mediaData.refetch();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to update media";
       editDialogError = message;
@@ -195,7 +216,7 @@
       toastStore.push({ variant: "success", message: "Version activated" });
       activateDialogOpen = false;
       selectedVersion = null;
-      await pageData.refetch();
+      await Promise.all([mediaData.refetch(), versionsData.refetch()]);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to activate version";
       toastStore.push({ variant: "error", message });
@@ -221,7 +242,7 @@
       toastStore.push({ variant: "success", message: "Version deleted" });
       deleteDialogOpen = false;
       selectedVersion = null;
-      await pageData.refetch();
+      await Promise.all([mediaData.refetch(), versionsData.refetch()]);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to delete version";
       toastStore.push({ variant: "error", message });
@@ -310,10 +331,10 @@
   );
 </script>
 
-{#if pageData.loading}
+{#if mediaData.loading}
   <PageLoading message="Loading media..." />
-{:else if pageData.error}
-  <FormError message={pageData.error} />
+{:else if mediaData.error}
+  <FormError message={mediaData.error} />
 {:else if media}
   <PageHeader
     section="Media"
@@ -349,7 +370,7 @@
         }}
         onEditRequest={openEditDialog}
         onSoftDeleteSuccess={() => goto("/media")}
-        onRestoreSuccess={() => pageData.refetch()}
+        onRestoreSuccess={() => mediaData.refetch()}
       />
     {/snippet}
   </PageHeader>
@@ -408,43 +429,49 @@
               <Plus size={14} />
             </Button>
           {/snippet}
-          {#each versions as version (version.id)}
-            <InlineListItem
-              label={version.sha256 ?? "No hash"}
-              accent={getMediaVersionStateAccent(version.state)}
-              onclick={canPreviewVersion(version) ? () => openVersionPreview(version) : undefined}
-            >
-              {#snippet sublabelContent()}
-                {formatFileSize(version.byteSize)} · <Code>{version.mimeType ?? "Unknown type"}</Code> · <TimeAgo date={version.createdAt} short />
-              {/snippet}
-              {#snippet trailing()}
-                <Pill accent={getMediaVersionStateAccent(version.state)}>
-                  {getMediaVersionStateLabel(version.state)}
-                </Pill>
-                {#if isCurrentVersion(version)}
-                  <Pill accent="#3b82f6">Current</Pill>
-                {/if}
-              {/snippet}
-              {#snippet actions()}
-                <button
-                  type="button"
-                  onclick={() => requestActivate(version)}
-                  disabled={!canActivateVersion(version)}
-                  aria-label="Activate version"
-                >
-                  <Check size={14} />
-                </button>
-                <button
-                  type="button"
-                  onclick={() => requestDelete(version)}
-                  disabled={!canDeleteVersion(version)}
-                  aria-label="Delete version"
-                >
-                  <Trash2 size={14} />
-                </button>
-              {/snippet}
-            </InlineListItem>
-          {/each}
+          {#if activeTab === "details" && versionsData.loading}
+            <PageLoading message="Loading versions..." />
+          {:else if versionsData.error}
+            <FormError message={versionsData.error} />
+          {:else}
+            {#each versions as version (version.id)}
+              <InlineListItem
+                label={version.sha256 ?? "No hash"}
+                accent={getMediaVersionStateAccent(version.state)}
+                onclick={canPreviewVersion(version) ? () => openVersionPreview(version) : undefined}
+              >
+                {#snippet sublabelContent()}
+                  {formatFileSize(version.byteSize)} · <Code>{version.mimeType ?? "Unknown type"}</Code> · <TimeAgo date={version.createdAt} short />
+                {/snippet}
+                {#snippet trailing()}
+                  <Pill accent={getMediaVersionStateAccent(version.state)}>
+                    {getMediaVersionStateLabel(version.state)}
+                  </Pill>
+                  {#if isCurrentVersion(version)}
+                    <Pill accent="#3b82f6">Current</Pill>
+                  {/if}
+                {/snippet}
+                {#snippet actions()}
+                  <button
+                    type="button"
+                    onclick={() => requestActivate(version)}
+                    disabled={!canActivateVersion(version)}
+                    aria-label="Activate version"
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onclick={() => requestDelete(version)}
+                    disabled={!canDeleteVersion(version)}
+                    aria-label="Delete version"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                {/snippet}
+              </InlineListItem>
+            {/each}
+          {/if}
         </InlineListCard>
 
         <!-- Renditions -->
@@ -505,7 +532,11 @@
 
     <TabsContent value="usage">
       <div class="underlay-details-content">
-        {#if usages.length === 0}
+        {#if activeTab === "usage" && usagesData.loading}
+          <PageLoading message="Loading usage..." />
+        {:else if usagesData.error}
+          <FormError message={usagesData.error} />
+        {:else if usages.length === 0}
           <div class="empty-state">
             <p>This media is not used anywhere yet.</p>
           </div>
