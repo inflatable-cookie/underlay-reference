@@ -199,7 +199,12 @@
       <ul class="task-list">
         {#each tasks as task}
           <li class="task-item" class:completed={task.status === "completed"}>
-            <button class="task-checkbox" onclick={() => handleToggleTask(task)} type="button">
+            <button
+              class="task-checkbox"
+              onclick={() => handleToggleTask(task)}
+              type="button"
+              aria-label={task.status === "completed" ? `Mark \"${task.title}\" as pending` : `Mark \"${task.title}\" as completed`}
+            >
               {#if task.status === "completed"}
                 <CheckSquare size={20} />
               {:else}
@@ -219,7 +224,12 @@
               >
                 {task.priority}
               </Badge>
-              <button class="delete-btn" onclick={() => handleDeleteTask(task.id)} type="button">
+              <button
+                class="delete-btn"
+                onclick={() => handleDeleteTask(task.id)}
+                type="button"
+                aria-label={`Delete task \"${task.title}\"`}
+              >
                 <Trash2 size={14} />
               </button>
             </div>
@@ -398,8 +408,19 @@
     opacity: 1;
   }
 
+  .task-item:focus-within .delete-btn {
+    opacity: 1;
+  }
+
   .delete-btn:hover {
     color: var(--danger-color, #ef4444);
+  }
+
+  .delete-btn:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--primary-color, #2563eb);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
   }
 
   .dialog-fields {

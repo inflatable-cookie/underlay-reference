@@ -406,6 +406,11 @@
 			color: var(--admin-color-text);
 		}
 
+		.admin-context-panel__toggle:focus-visible {
+			outline: 2px solid var(--admin-color-accent);
+			outline-offset: -2px;
+		}
+
 		:global(.admin-context-panel__toggle-icon) {
 			width: 1.25rem;
 			height: 1.25rem;
@@ -440,6 +445,11 @@
 		.admin-context-panel--open .admin-context-panel__close:hover {
 			background: rgba(148, 163, 184, 0.16);
 			color: var(--admin-color-text);
+		}
+
+		.admin-context-panel--open .admin-context-panel__close:focus-visible {
+			outline: 2px solid var(--admin-color-accent);
+			outline-offset: 2px;
 		}
 
 		:global(.admin-context-panel--open .admin-context-panel__close-icon) {
@@ -539,6 +549,11 @@
 			background: rgba(148, 163, 184, 0.16);
 		}
 
+		.admin-mobile-header__icon-btn:focus-visible {
+			outline: 2px solid var(--admin-color-accent);
+			outline-offset: 2px;
+		}
+
 		:global(.admin-mobile-header__icon) {
 			width: 1.5rem;
 			height: 1.5rem;
@@ -625,6 +640,11 @@
 		.admin-context-panel__close:hover {
 			background: rgba(148, 163, 184, 0.16);
 			color: var(--admin-color-text);
+		}
+
+		.admin-context-panel__close:focus-visible {
+			outline: 2px solid var(--admin-color-accent);
+			outline-offset: 2px;
 		}
 
 		:global(.admin-context-panel__close-icon) {

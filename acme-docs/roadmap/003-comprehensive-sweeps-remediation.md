@@ -232,9 +232,9 @@ Files:
 
 ### 5.2 Resolve remaining a11y keyboard/label issues
 
-- [ ] Add explicit accessible names for icon-only controls
-- [ ] Ensure action reveal behavior supports keyboard focus, not just hover
-- [ ] Remove fake-button wrappers where native controls can be used
+- [x] Add explicit accessible names for icon-only controls
+- [x] Ensure action reveal behavior supports keyboard focus, not just hover
+- [x] Remove fake-button wrappers where native controls can be used
 
 Files:
 - `acme-front/src/routes/(app)/projects/[projectId]/+page.svelte`
