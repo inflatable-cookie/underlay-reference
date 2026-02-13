@@ -329,15 +329,17 @@ pub async fn create_task(
 pub async fn update_task(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
-    Path((_project_id, task_id)): Path<(Uuid, Uuid)>,
+    Path((project_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let project_id = project_id.into_inner();
     let task_id_inner = task_id.into_inner();
 
     match tasks::update_task(
         pool,
         task_id_inner,
+        project_id,
         req.title.as_deref(),
         req.description.as_ref().map(|d| d.as_deref()),
         req.status.as_deref(),

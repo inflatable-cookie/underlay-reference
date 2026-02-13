@@ -552,6 +552,7 @@ pub async fn update_task(
     match tasks::update_task(
         pool,
         task_id,
+        project_id,
         req.title.as_deref(),
         req.description.as_ref().map(|d| d.as_deref()),
         req.status.as_deref(),
@@ -600,7 +601,7 @@ pub async fn delete_task(
 
     ensure_project_owned(pool, user_id, project_id, "tasks.delete").await?;
 
-    match tasks::delete_task(pool, task_id).await {
+    match tasks::delete_task(pool, task_id, project_id).await {
         Ok(true) => Ok(StatusCode::NO_CONTENT.into_response()),
         Ok(false) => Err(
             ApiError::not_found("tasks.not_found", "Task not found").with_context(

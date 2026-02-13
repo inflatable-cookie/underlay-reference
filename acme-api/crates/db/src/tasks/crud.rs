@@ -190,6 +190,7 @@ pub async fn list_tasks_admin(
 pub async fn update_task(
     pool: &DbPool,
     id: Uuid,
+    project_id: Uuid,
     title: Option<&str>,
     description: Option<Option<&str>>,
     status: Option<&str>,
@@ -207,14 +208,14 @@ pub async fn update_task(
         r#"
         UPDATE acme.tasks
         SET
-            title = COALESCE($2, title),
-            description = CASE WHEN $3 THEN $4 ELSE description END,
-            status = COALESCE($5, status),
-            priority = COALESCE($6, priority),
-            due_date = CASE WHEN $7 THEN $8 ELSE due_date END,
+            title = COALESCE($3, title),
+            description = CASE WHEN $4 THEN $5 ELSE description END,
+            status = COALESCE($6, status),
+            priority = COALESCE($7, priority),
+            due_date = CASE WHEN $8 THEN $9 ELSE due_date END,
             completed_at = {},
             updated_at = NOW()
-        WHERE id = $1 AND deleted_at IS NULL
+        WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL
         RETURNING id, project_id, title, description, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
         "#,
         completed_at_expr
@@ -222,6 +223,7 @@ pub async fn update_task(
 
     sqlx::query_as::<_, TaskRow>(&query)
         .bind(id)
+        .bind(project_id)
         .bind(title)
         .bind(description.is_some())
         .bind(description.flatten())
@@ -254,9 +256,10 @@ pub async fn soft_delete_task(
 }
 
 /// Hard delete a task.
-pub async fn delete_task(pool: &DbPool, id: Uuid) -> Result<bool, sqlx::Error> {
-    let result = sqlx::query("DELETE FROM acme.tasks WHERE id = $1")
+pub async fn delete_task(pool: &DbPool, id: Uuid, project_id: Uuid) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query("DELETE FROM acme.tasks WHERE id = $1 AND project_id = $2")
         .bind(id)
+        .bind(project_id)
         .execute(pool)
         .await?;
     Ok(result.rows_affected() > 0)

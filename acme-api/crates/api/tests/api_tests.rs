@@ -567,4 +567,93 @@ mod database_tests {
             .await
             .expect("cleanup should succeed");
     }
+
+    #[tokio::test]
+    async fn task_update_requires_matching_project_scope() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        use acme_db::tasks;
+        use acme_test_utils::{
+            cleanup,
+            fixtures::{create_test_project, create_test_task, create_test_user},
+            setup_test_db,
+        };
+
+        let db = setup_test_db().await;
+
+        let user = create_test_user(db.pool(), Default::default()).await;
+        let project_a = create_test_project(db.pool(), user.id, Default::default()).await;
+        let project_b = create_test_project(db.pool(), user.id, Default::default()).await;
+        let task = create_test_task(db.pool(), project_a.id, Default::default()).await;
+
+        let updated = tasks::update_task(
+            db.pool(),
+            task.id,
+            project_b.id,
+            Some("unauthorized update"),
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        .expect("update query should succeed");
+
+        assert!(updated.is_none());
+
+        let title: (String,) = sqlx::query_as("SELECT title FROM acme.tasks WHERE id = $1")
+            .bind(task.id)
+            .fetch_one(db.pool())
+            .await
+            .expect("task should still exist");
+
+        assert_ne!(title.0, "unauthorized update");
+
+        cleanup::delete_user(db.pool(), user.id)
+            .await
+            .expect("cleanup should succeed");
+    }
+
+    #[tokio::test]
+    async fn task_delete_requires_matching_project_scope() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        use acme_db::tasks;
+        use acme_test_utils::{
+            cleanup,
+            fixtures::{create_test_project, create_test_task, create_test_user},
+            setup_test_db,
+        };
+
+        let db = setup_test_db().await;
+
+        let user = create_test_user(db.pool(), Default::default()).await;
+        let project_a = create_test_project(db.pool(), user.id, Default::default()).await;
+        let project_b = create_test_project(db.pool(), user.id, Default::default()).await;
+        let task = create_test_task(db.pool(), project_a.id, Default::default()).await;
+
+        let deleted = tasks::delete_task(db.pool(), task.id, project_b.id)
+            .await
+            .expect("delete query should succeed");
+
+        assert!(!deleted);
+
+        let exists: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM acme.tasks WHERE id = $1")
+            .bind(task.id)
+            .fetch_one(db.pool())
+            .await
+            .expect("existence query should succeed");
+
+        assert_eq!(exists.0, 1);
+
+        cleanup::delete_user(db.pool(), user.id)
+            .await
+            .expect("cleanup should succeed");
+    }
 }
