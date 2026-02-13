@@ -10,6 +10,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use underlay_core::{ListResponse, SingleResponse, Uuid};
 use underlay_http::ApiError;
 use underlay_jobs::{Job, JobFilters, JobStatus};
@@ -61,6 +62,14 @@ pub struct JobProgressDto {
     pub total: u64,
     pub percent: f64,
     pub message: Option<String>,
+}
+
+#[derive(Debug, FromRow)]
+struct RetryPolicyRow {
+    max_attempts: i32,
+    timeout_seconds: Option<i32>,
+    allow_overlap: bool,
+    priority: i32,
 }
 
 impl JobSummaryDto {
@@ -331,11 +340,48 @@ pub async fn retry_job(
         }
     }
 
-    // Create a new job with the same payload and execution policy fields
-    let config = underlay_jobs::JobConfig {
-        max_attempts: job.max_attempts as u32,
-        priority: job.priority,
-        ..Default::default()
+    // Preserve execution policy metadata where possible.
+    // For scheduled jobs, source timeout/overlap/priority from scheduled_task.
+    let pool = state.local_auth.pool();
+    let scheduled_policy: Option<RetryPolicyRow> = sqlx::query_as(
+        r#"
+        SELECT max_attempts, timeout_seconds, allow_overlap, priority
+        FROM platform.scheduled_task
+        WHERE job_type = $1
+        ORDER BY updated_at DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(&job.job_type)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| {
+        crate::db_errors::internal_with_diagnostics(
+            "job_retry_policy_fetch_failed",
+            "Failed to load retry policy",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "jobs.retry.policy",
+            "job_id": job_id,
+            "job_type": job.job_type,
+        }))
+    })?;
+
+    let config = if let Some(policy) = scheduled_policy {
+        underlay_jobs::JobConfig {
+            max_attempts: policy.max_attempts as u32,
+            timeout_seconds: policy.timeout_seconds.map(|s| s as u32),
+            allow_overlap: policy.allow_overlap,
+            priority: policy.priority,
+            ..Default::default()
+        }
+    } else {
+        underlay_jobs::JobConfig {
+            max_attempts: job.max_attempts as u32,
+            priority: job.priority,
+            ..Default::default()
+        }
     };
 
     match job_repo

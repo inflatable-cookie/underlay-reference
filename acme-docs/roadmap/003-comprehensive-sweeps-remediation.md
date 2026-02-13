@@ -192,7 +192,7 @@ Priority: **High/Medium**
 
 - [x] Make batch handlers fail job when item failures occur (or mark degraded explicitly)
 - [x] Add dedupe/idempotency key for due reminder fan-out
-- [ ] Preserve full execution policy on retry (timeout/priority/overlap metadata)
+- [x] Preserve full execution policy on retry (timeout/priority/overlap metadata)
 
 Files:
 - `acme-api/crates/jobs/src/handlers/tasks.rs`
