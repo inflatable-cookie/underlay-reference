@@ -47,9 +47,9 @@ Priority: **Critical**
 
 ### 0.1 Close task ownership mutation bypass
 
-- [ ] Constrain user task update/delete queries by both `task_id` and `project_id` (and owner scope)
-- [ ] Add explicit task-to-project ownership check before mutations
-- [ ] Add regression tests for cross-project/cross-user mutation attempts
+- [x] Constrain user task update/delete queries by both `task_id` and `project_id` (and owner scope)
+- [x] Add explicit task-to-project ownership check before mutations
+- [x] Add regression tests for cross-project/cross-user mutation attempts
 
 Primary files:
 - `acme-api/crates/api/src/routes/tasks.rs`
@@ -65,9 +65,9 @@ Priority: **High**
 
 ### 1.1 Enforce API version policy on server
 
-- [ ] Add middleware to validate/interpret `X-Api-Version`
-- [ ] Reject unsupported versions with explicit error codes
-- [ ] Document supported/deprecated version behavior
+- [x] Add middleware to validate/interpret `X-Api-Version`
+- [x] Reject unsupported versions with explicit error codes
+- [x] Document supported/deprecated version behavior
 
 Files:
 - `acme-api/crates/api/src/routes/mod.rs`
@@ -75,9 +75,9 @@ Files:
 
 ### 1.2 Remove refresh token from default browser response payloads
 
-- [ ] Keep refresh token cookie-based for web flows
-- [ ] Restrict body refresh token mode to explicit non-browser clients
-- [ ] Update client contracts accordingly
+- [x] Keep refresh token cookie-based for web flows
+- [x] Restrict body refresh token mode to explicit non-browser clients
+- [x] Update client contracts accordingly
 
 Files:
 - `acme-api/crates/api/src/dto/auth.rs`
@@ -86,9 +86,9 @@ Files:
 
 ### 1.3 Require encryption key in non-dev environments
 
-- [ ] Fail startup when `ENCRYPTION_KEY` is missing outside local/dev
-- [ ] Keep dev fallback behavior only for local reference use
-- [ ] Add deployment check docs
+- [x] Fail startup when `ENCRYPTION_KEY` is missing outside local/dev
+- [x] Keep dev fallback behavior only for local reference use
+- [x] Add deployment check docs
 
 Files:
 - `acme-api/crates/auth/src/local/mod.rs`
@@ -96,8 +96,8 @@ Files:
 
 ### 1.4 Remove/complete drifted auth endpoints
 
-- [ ] Either implement login email fallback/resend routes or remove command/UI usage
-- [ ] Either implement OAuth routes or remove/stub exports with clear deprecation path
+- [x] Either implement login email fallback/resend routes or remove command/UI usage
+- [x] Either implement OAuth routes or remove/stub exports with clear deprecation path
 
 Files:
 - `acme-client/src/commands/auth/core-commands.ts`
@@ -107,8 +107,8 @@ Files:
 
 ### 1.5 Redact PII in password reset logs
 
-- [ ] Remove plaintext email from reset-request log line
-- [ ] Log hashed/redacted identifier instead
+- [x] Remove plaintext email from reset-request log line
+- [x] Log hashed/redacted identifier instead
 
 Files:
 - `acme-api/crates/api/src/routes/shared/auth/password_reset.rs`
@@ -121,7 +121,7 @@ Priority: **High/Medium**
 
 ### 2.1 Fix admin task batch endpoint path drift
 
-- [ ] Align client command paths with API routes (`tasks/batch-*`)
+- [x] Align client command paths with API routes (`tasks/batch-*`)
 - [ ] Add command integration tests covering batch delete/update
 
 Files:
@@ -219,8 +219,8 @@ Priority: **Medium/Low**
 
 ### 5.1 Centralize client configuration setup
 
-- [ ] Remove duplicate `configureAcmeClient(...)` calls from stores
-- [ ] Keep one canonical init path per runtime boundary
+- [x] Remove duplicate `configureAcmeClient(...)` calls from stores
+- [x] Keep one canonical init path per runtime boundary
 
 Files:
 - `acme-admin/src/hooks.server.ts`
