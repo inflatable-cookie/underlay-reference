@@ -26,6 +26,7 @@ Scope reviewed:
 - **Remediation plan:** Replace native color input with `ColorPicker`, keep field name/value contract unchanged.
 - **Owner:** Frontend/platform
 - **Target date:** Next UI consistency pass
+- **Status:** Resolved (migrated to shared color picker pattern)
 
 ### [FORM DIALOGS] [HIGH] Create-project flow uses `AlertDialog` for form input
 
@@ -36,6 +37,7 @@ Scope reviewed:
 - **Remediation plan:** Switch to `FormDialog` and shared submit/cancel action layout.
 - **Owner:** Frontend/platform
 - **Target date:** Next frontend sweep batch
+- **Status:** Resolved (migrated to form-dialog pattern)
 
 ### [FORM DIALOGS] [HIGH] Create-task flow uses `AlertDialog` for form input
 
@@ -46,6 +48,7 @@ Scope reviewed:
 - **Remediation plan:** Replace with `FormDialog` and shared form action slots.
 - **Owner:** Frontend/platform
 - **Target date:** Next frontend sweep batch
+- **Status:** Resolved (migrated to form-dialog pattern)
 
 ### [FORM DIALOGS] [MEDIUM] Custom dialog footer bypasses shared form actions
 
@@ -56,6 +59,7 @@ Scope reviewed:
 - **Remediation plan:** Move role-change modal to `FormDialog` or use `FormActions` in footer snippet.
 - **Owner:** Frontend/platform
 - **Target date:** Next admin UX consistency pass
+- **Status:** Resolved (uses `FormActions` pattern)
 
 ### [LIST SELECTION] [LOW] Inline checkbox selection in list cards
 
@@ -68,6 +72,12 @@ Scope reviewed:
 - **Remediation plan:** Keep local implementation; optionally evaluate extending Underlay with a reusable selectable-list-card pattern.
 - **Owner:** Frontend/platform
 - **Target date:** Backlog (optional enhancement)
+- **Status:** Accepted exception (unchanged)
+
+## Resolution update (2026-02-13)
+
+- Must-migrate findings from this sweep were remediated in the current roadmap execution.
+- The remaining low-severity selectable-card behavior remains an accepted exception pending potential Underlay extraction.
 
 ## Reuse sweep summary
 

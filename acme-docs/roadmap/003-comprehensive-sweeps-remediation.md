@@ -122,7 +122,7 @@ Priority: **High/Medium**
 ### 2.1 Fix admin task batch endpoint path drift
 
 - [x] Align client command paths with API routes (`tasks/batch-*`)
-- [ ] Add command integration tests covering batch delete/update
+- [x] Add command integration tests covering batch delete/update
 
 Files:
 - `acme-client/src/commands/admin/task-commands.ts`
@@ -258,10 +258,10 @@ Files:
 
 ## Definition of Done
 
-- [ ] Critical + high findings resolved
-- [ ] Medium findings either resolved or accepted with documented exceptions
-- [ ] Regression tests added for all fixed high-impact flows
-- [ ] Sweep reports updated with resolution status
+- [x] Critical + high findings resolved
+- [x] Medium findings either resolved or accepted with documented exceptions
+- [x] Regression tests added for all fixed high-impact flows
+- [x] Sweep reports updated with resolution status
 
 ## Execution Order Recommendation
 

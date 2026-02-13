@@ -47,7 +47,7 @@ Scope reviewed:
 - **Recommended normalization:** Keep client configuration in hooks only; remove store-level duplicate setup unless there is a documented fallback requirement.
 - **Owner:** Frontend/platform
 - **Target date:** Next frontend architecture cleanup
-- **Status:** Open
+- **Status:** Resolved (client configuration centralized to hooks/runtime boundaries)
 
 ### [STATE/UX] [LOW] URL-backed UI state is richer in admin than front
 
@@ -60,7 +60,7 @@ Scope reviewed:
 - **Recommended normalization:** For front pages that gain tabs/filters/pagination, align with URL-backed patterns early (`historyKey`, `page`, `sort`, `limit`).
 - **Owner:** Frontend
 - **Target date:** As front list pages expand
-- **Status:** Note
+- **Status:** Accepted note (front scope remains intentionally simpler)
 
 ### [STYLING] [MEDIUM] Hardcoded color values are spread across feature modules
 
@@ -75,7 +75,7 @@ Scope reviewed:
 - **Recommended normalization:** Move repeated semantic colors into shared token map utilities and consume token variables in components.
 - **Owner:** Frontend/platform
 - **Target date:** Incremental (start with `accents.ts` + system/media pages)
-- **Status:** Open
+- **Status:** Partial resolved (semantic-token migration completed for targeted system/media scope)
 
 ### [ACCESSIBILITY] [LOW] Buttons without explicit `type` inside detail view
 
@@ -101,7 +101,12 @@ Scope reviewed:
 - Immediate fixes:
   - Completed: explicit `type="button"` on email detail copy buttons.
 - Follow-up refactors:
-  - Consolidate `configureAcmeClient(...)` initialization to hooks/runtime boundary.
-  - Centralize repeated hardcoded semantic colors.
+  - Continue incremental hardcoded-color migration in remaining admin surfaces.
 - Accepted exceptions:
   - Front app currently has simpler in-memory list state due lower feature complexity.
+
+## Resolution update (2026-02-13)
+
+- API boundary duplication finding is closed.
+- Accessibility issue remains closed.
+- Styling drift is reduced for priority areas and tracked as incremental follow-up for remaining surfaces.
