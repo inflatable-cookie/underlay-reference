@@ -6,12 +6,13 @@
 //! - `admin/` - Admin-only routes with enhanced features
 
 use axum::extract::State;
-use axum::http::{header::HeaderName, Method, Request, StatusCode};
+use axum::http::{header::HeaderName, HeaderValue, Method, Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
-use underlay_http::{cors_layer, CorsConfig};
+use std::sync::OnceLock;
+use underlay_http::{cors_layer, ApiError, CorsConfig};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -439,6 +440,86 @@ fn parse_cors_origins() -> Vec<axum::http::HeaderValue> {
         .filter(|s| !s.is_empty())
         .filter_map(|s| axum::http::HeaderValue::from_str(s).ok())
         .collect()
+}
+
+fn supported_api_versions() -> &'static Vec<String> {
+    static SUPPORTED: OnceLock<Vec<String>> = OnceLock::new();
+    SUPPORTED.get_or_init(|| {
+        let configured = std::env::var("SUPPORTED_API_VERSIONS").unwrap_or_default();
+        let parsed: Vec<String> = configured
+            .split(',')
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+            .map(ToString::to_string)
+            .collect();
+
+        if parsed.is_empty() {
+            vec!["2025-01-01".to_string()]
+        } else {
+            parsed
+        }
+    })
+}
+
+fn default_api_version() -> &'static String {
+    static DEFAULT: OnceLock<String> = OnceLock::new();
+    DEFAULT.get_or_init(|| {
+        let supported = supported_api_versions();
+        let fallback = supported
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "2025-01-01".to_string());
+
+        match std::env::var("DEFAULT_API_VERSION") {
+            Ok(version) if supported.contains(&version) => version,
+            Ok(version) => {
+                tracing::warn!(
+                    default_api_version = %version,
+                    supported_versions = ?supported,
+                    "DEFAULT_API_VERSION is not in SUPPORTED_API_VERSIONS; falling back"
+                );
+                fallback
+            }
+            Err(_) => fallback,
+        }
+    })
+}
+
+pub async fn api_version_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
+    if !req.uri().path().starts_with("/v1/") {
+        return next.run(req).await;
+    }
+
+    let supported = supported_api_versions();
+    let requested = req
+        .headers()
+        .get("x-api-version")
+        .and_then(|v| v.to_str().ok())
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .unwrap_or(default_api_version().as_str())
+        .to_string();
+
+    if !supported.iter().any(|v| v == &requested) {
+        return ApiError::bad_request(
+            "api.unsupported_version",
+            "Unsupported API version. Set X-Api-Version to a supported version.",
+        )
+        .with_context(serde_json::json!({
+            "requested_version": requested,
+            "supported_versions": supported,
+            "default_version": default_api_version(),
+        }))
+        .into_response();
+    }
+
+    let mut response = next.run(req).await;
+    if let Ok(version_header) = HeaderValue::from_str(&requested) {
+        response
+            .headers_mut()
+            .insert(HeaderName::from_static("x-api-version"), version_header);
+    }
+    response
 }
 
 pub async fn csrf_protection_middleware(

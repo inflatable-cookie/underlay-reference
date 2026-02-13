@@ -184,6 +184,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = routes::build_router()
         .with_state(state.clone())
+        .layer(axum::middleware::from_fn(routes::api_version_middleware))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             routes::csrf_protection_middleware,

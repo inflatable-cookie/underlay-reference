@@ -59,6 +59,74 @@ mod health_tests {
     }
 }
 
+mod api_version_tests {
+    use axum::{
+        body::Body,
+        http::{header, Request, StatusCode},
+        routing::get,
+        Router,
+    };
+    use tower::util::ServiceExt;
+
+    async fn ping() -> &'static str {
+        "pong"
+    }
+
+    fn test_router() -> Router {
+        Router::new()
+            .route("/v1/ping", get(ping))
+            .layer(axum::middleware::from_fn(
+                acme_api::routes::api_version_middleware,
+            ))
+    }
+
+    #[tokio::test]
+    async fn accepts_default_api_version_when_header_missing() {
+        let app = test_router();
+
+        let request = Request::builder()
+            .uri("/v1/ping")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response
+                .headers()
+                .get("x-api-version")
+                .and_then(|v| v.to_str().ok()),
+            Some("2025-01-01")
+        );
+    }
+
+    #[tokio::test]
+    async fn rejects_unsupported_api_version() {
+        let app = test_router();
+
+        let request = Request::builder()
+            .uri("/v1/ping")
+            .header("x-api-version", "1900-01-01")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(
+            response.headers().get(header::CONTENT_TYPE).unwrap(),
+            "application/json"
+        );
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let body_text = String::from_utf8(body.to_vec()).unwrap();
+        assert!(body_text.contains("api.unsupported_version"));
+    }
+}
+
 mod json_response_tests {
     //! Tests demonstrating JSON response handling patterns.
 
