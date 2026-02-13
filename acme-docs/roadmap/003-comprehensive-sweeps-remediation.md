@@ -177,7 +177,7 @@ Files:
 ### 3.3 Make non-idempotent migration step safe
 
 - [x] Guard `media_current_version_fk` constraint creation with existence check
-- [ ] Validate rollback/re-apply behavior in dev reset flow
+- [x] Validate rollback/re-apply behavior in dev reset flow
 
 Files:
 - `acme-api/migrations/202601301205__baseline_media.sql`
