@@ -10,19 +10,9 @@ import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
 import {
   createAuthManager,
-  configureAcmeClient,
   type LoginUser,
   type LoginResponse
 } from '@api-client';
-import { env } from '$env/dynamic/public';
-
-// Configure api-client (safe to call multiple times - it's idempotent)
-if (browser) {
-  configureAcmeClient({
-    baseUrl: env.PUBLIC_API_URL ?? 'http://localhost:40011',
-    apiVersion: env.PUBLIC_API_VERSION ?? '2025-01-01'
-  });
-}
 
 export interface AuthState {
   initialized: boolean;
