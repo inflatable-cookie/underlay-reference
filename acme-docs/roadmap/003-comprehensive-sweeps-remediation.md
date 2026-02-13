@@ -206,7 +206,7 @@ Files:
 - [x] Add real integration tests for admin jobs APIs
 - [x] Add real integration tests for scheduled-task APIs
 - [x] Add app-router tests for critical auth/admin route boundaries
-- [ ] Add frontend test harness and critical flow tests for `acme-front`
+- [x] Add frontend test harness and critical flow tests for `acme-front`
 
 Files:
 - `acme-api/crates/jobs/`

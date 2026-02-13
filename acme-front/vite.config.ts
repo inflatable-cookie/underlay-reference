@@ -62,5 +62,9 @@ export default defineConfig({
 				"!**/node_modules/@acme/api-client/**"
 			]
 		}
+	},
+	test: {
+		include: ["src/**/*.{test,spec}.ts"],
+		environment: "node"
 	}
 });
