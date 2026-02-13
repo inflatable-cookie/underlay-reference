@@ -381,8 +381,8 @@
     <TabsRoot bind:value={activeTab} variant="boxed" size="sm" historyKey="tab">
       <TabsList>
         <TabsTrigger value="details">Details</TabsTrigger>
-        <TabsTrigger value="sessions" count={sessions.length}>Sessions</TabsTrigger>
-        <TabsTrigger value="activity" count={activity.length}>Activity</TabsTrigger>
+        <TabsTrigger value="sessions" count={user.activeSessionCount}>Sessions</TabsTrigger>
+        <TabsTrigger value="activity">Activity</TabsTrigger>
       </TabsList>
 
       <TabsContent value="details">

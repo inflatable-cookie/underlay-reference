@@ -91,7 +91,7 @@
   const usages = $derived(pageData.data?.usages ?? []);
 
   let activeTab = $state("details");
-  const usageCount = $derived(usages.length);
+  const usageCount = $derived(media?.usageCount ?? 0);
 
   const backInfo = getBackButtonInfo("Back to media", "/media");
 
