@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError, JobRepository};
 
 // ============================================================================
@@ -103,6 +103,12 @@ impl JobHandler for CleanupCompletedTasksHandler {
                 errors = errors,
                 "cleanup completed tasks batch completed"
             );
+
+            if errors > 0 {
+                return Err(JobHandlerError::new(format!(
+                    "cleanup completed with {errors} project failures"
+                )));
+            }
 
             return Ok(());
         };
@@ -284,23 +290,54 @@ impl JobHandler for CheckDueRemindersHandler {
         // Enqueue individual reminder jobs
         let job_repo = JobRepository::new((*self.pool).clone());
         let mut enqueued = 0;
+        let mut skipped_existing = 0;
+        let mut enqueue_errors = 0;
 
         for task in &due_tasks {
+            let existing_job_id: Option<uuid::Uuid> = sqlx::query_scalar(
+                r#"
+                SELECT id
+                FROM platform.job
+                WHERE job_type = 'tasks.send_reminder'
+                  AND status IN ('pending', 'claimed', 'running')
+                  AND payload->>'task_id' = $1
+                  AND payload->>'user_email' = $2
+                LIMIT 1
+                "#,
+            )
+            .bind(task.id.to_string())
+            .bind(&task.user_email)
+            .fetch_optional(self.pool.as_ref())
+            .await
+            .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+
+            if let Some(existing_job_id) = existing_job_id {
+                skipped_existing += 1;
+                debug!(
+                    task_id = %task.id,
+                    existing_job_id = %existing_job_id,
+                    "skipping duplicate reminder job"
+                );
+                continue;
+            }
+
             let reminder_payload = serde_json::json!({
                 "task_id": task.id,
                 "user_email": task.user_email,
             });
 
+            let reminder_config = JobConfig {
+                max_attempts: 5,
+                ..Default::default()
+            };
+
             match job_repo
-                .create(
-                    "tasks.send_reminder",
-                    reminder_payload,
-                    &JobConfig::default(),
-                )
+                .create("tasks.send_reminder", reminder_payload, &reminder_config)
                 .await
             {
                 Ok(_) => enqueued += 1,
                 Err(e) => {
+                    enqueue_errors += 1;
                     warn!(
                         task_id = %task.id,
                         error = %e,
@@ -314,9 +351,17 @@ impl JobHandler for CheckDueRemindersHandler {
             job_id = %job.id,
             tasks_found = due_tasks.len(),
             reminders_enqueued = enqueued,
+            reminders_skipped_existing = skipped_existing,
+            enqueue_errors = enqueue_errors,
             target_date = %target_date,
             "due date reminder check completed"
         );
+
+        if enqueue_errors > 0 {
+            return Err(JobHandlerError::new(format!(
+                "failed to enqueue {enqueue_errors} reminder jobs"
+            )));
+        }
 
         Ok(())
     }

@@ -104,6 +104,12 @@ impl JobHandler for GenerateProjectReportsHandler {
             "project report batch completed"
         );
 
+        if errors > 0 {
+            return Err(JobHandlerError::new(format!(
+                "project report batch had {errors} generation failures"
+            )));
+        }
+
         Ok(())
     }
 }
@@ -282,6 +288,12 @@ impl JobHandler for GenerateProjectReportHandler {
                 errors = errors,
                 "project report batch completed"
             );
+
+            if errors > 0 {
+                return Err(JobHandlerError::new(format!(
+                    "project report batch had {errors} generation failures"
+                )));
+            }
 
             return Ok(());
         };

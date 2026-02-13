@@ -331,14 +331,20 @@ pub async fn retry_job(
         }
     }
 
-    // Create a new job with the same payload
+    // Create a new job with the same payload and execution policy fields
     let config = underlay_jobs::JobConfig {
         max_attempts: job.max_attempts as u32,
+        priority: job.priority,
         ..Default::default()
     };
 
     match job_repo
-        .create(&job.job_type, job.payload.clone(), &config)
+        .create_scheduled(
+            &job.job_type,
+            job.payload.clone(),
+            &config,
+            job.scheduled_for,
+        )
         .await
     {
         Ok(new_job_id) => {

@@ -190,8 +190,8 @@ Priority: **High/Medium**
 
 ### 4.1 Enforce idempotency and failure semantics in jobs
 
-- [ ] Make batch handlers fail job when item failures occur (or mark degraded explicitly)
-- [ ] Add dedupe/idempotency key for due reminder fan-out
+- [x] Make batch handlers fail job when item failures occur (or mark degraded explicitly)
+- [x] Add dedupe/idempotency key for due reminder fan-out
 - [ ] Preserve full execution policy on retry (timeout/priority/overlap metadata)
 
 Files:
