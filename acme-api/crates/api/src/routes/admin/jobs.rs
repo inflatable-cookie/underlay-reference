@@ -72,6 +72,27 @@ struct RetryPolicyRow {
     priority: i32,
 }
 
+fn retry_job_config(
+    job: &Job,
+    scheduled_policy: Option<&RetryPolicyRow>,
+) -> underlay_jobs::JobConfig {
+    if let Some(policy) = scheduled_policy {
+        return underlay_jobs::JobConfig {
+            max_attempts: policy.max_attempts as u32,
+            timeout_seconds: policy.timeout_seconds.map(|s| s as u32),
+            allow_overlap: policy.allow_overlap,
+            priority: policy.priority,
+            ..Default::default()
+        };
+    }
+
+    underlay_jobs::JobConfig {
+        max_attempts: job.max_attempts as u32,
+        priority: job.priority,
+        ..Default::default()
+    }
+}
+
 impl JobSummaryDto {
     fn from_job(job: &Job) -> Self {
         Self {
@@ -368,21 +389,7 @@ pub async fn retry_job(
         }))
     })?;
 
-    let config = if let Some(policy) = scheduled_policy {
-        underlay_jobs::JobConfig {
-            max_attempts: policy.max_attempts as u32,
-            timeout_seconds: policy.timeout_seconds.map(|s| s as u32),
-            allow_overlap: policy.allow_overlap,
-            priority: policy.priority,
-            ..Default::default()
-        }
-    } else {
-        underlay_jobs::JobConfig {
-            max_attempts: job.max_attempts as u32,
-            priority: job.priority,
-            ..Default::default()
-        }
-    };
+    let config = retry_job_config(&job, scheduled_policy.as_ref());
 
     match job_repo
         .create_scheduled(
@@ -424,6 +431,65 @@ pub async fn retry_job(
             "operation": "jobs.retry.create",
             "job_id": job_id
         }))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+
+    fn make_job(max_attempts: i32, priority: i32) -> Job {
+        let now = Utc::now();
+        Job {
+            id: Uuid::new_v7(),
+            job_type: "projects.generate_reports".to_string(),
+            status: JobStatus::Failed,
+            payload: serde_json::json!({}),
+            attempts: 1,
+            max_attempts,
+            scheduled_for: None,
+            priority,
+            claimed_at: None,
+            claimed_by: None,
+            started_at: None,
+            finished_at: None,
+            heartbeat_at: None,
+            progress: None,
+            last_error: Some("boom".to_string()),
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    #[test]
+    fn retry_job_config_uses_scheduled_policy_when_present() {
+        let job = make_job(2, 1);
+        let policy = RetryPolicyRow {
+            max_attempts: 7,
+            timeout_seconds: Some(900),
+            allow_overlap: true,
+            priority: 42,
+        };
+
+        let config = retry_job_config(&job, Some(&policy));
+
+        assert_eq!(config.max_attempts, 7);
+        assert_eq!(config.timeout_seconds, Some(900));
+        assert!(config.allow_overlap);
+        assert_eq!(config.priority, 42);
+    }
+
+    #[test]
+    fn retry_job_config_falls_back_to_job_values_without_policy() {
+        let job = make_job(4, 3);
+
+        let config = retry_job_config(&job, None);
+
+        assert_eq!(config.max_attempts, 4);
+        assert_eq!(config.timeout_seconds, None);
+        assert!(!config.allow_overlap);
+        assert_eq!(config.priority, 3);
     }
 }
 
