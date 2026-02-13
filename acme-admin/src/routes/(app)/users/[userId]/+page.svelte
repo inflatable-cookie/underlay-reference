@@ -3,15 +3,14 @@
   import {
     AlertDialog,
     Button,
-    Card,
     Code,
     DataTable,
     DetailsCard,
     DetailsItem,
     DetailsSection,
-    Dialog,
     DropdownMenu,
     Field,
+    FormActions,
     FormError,
     PageLoading,
     Pill,
@@ -20,10 +19,12 @@
     TabsList,
     TabsRoot,
     TabsTrigger,
+    TextButton,
     type DataTableAction,
     type DataTableColumn
   } from "@decodelabs/underlay/components";
   import {
+    FormDialog,
     PageHeader,
     PageHeaderMeta,
     PageHeaderMetaRow,
@@ -442,32 +443,43 @@
   </div>
 {/if}
 
-<Dialog
+<FormDialog
   bind:open={showRoleDialog}
   title="Change role"
-  description="Select a new role for this user."
-  showTrigger={false}
+  subtitle="Select a new role for this user."
+  submitting={updatingRole}
+  onCancel={() => (showRoleDialog = false)}
 >
-  <Field label="Role">
-    <Select
-      value={selectedRole}
-      onchange={(v) => { selectedRole = v as UserRole; }}
-      items={roleItems}
-      placeholder="Select role"
-    />
-  </Field>
+  {#snippet children(submitting)}
+    <form
+      onsubmit={(event) => {
+        event.preventDefault();
+        void handleRoleChange();
+      }}
+    >
+      <Field label="Role">
+        <Select
+          value={selectedRole}
+          onchange={(v) => { selectedRole = v as UserRole; }}
+          items={roleItems}
+          placeholder="Select role"
+          disabled={submitting}
+        />
+      </Field>
 
-  {#snippet footer()}
-    <div class="user-view__dialog-footer">
-      <Button type="button" variant="secondary" onclick={() => (showRoleDialog = false)} disabled={updatingRole}>
-        Cancel
-      </Button>
-      <Button type="button" variant="primary" onclick={() => void handleRoleChange()} disabled={updatingRole}>
-        Save
-      </Button>
-    </div>
+      <FormActions align="end">
+        {#snippet danger()}
+          <TextButton type="button" onclick={() => (showRoleDialog = false)} disabled={submitting}>
+            Cancel
+          </TextButton>
+        {/snippet}
+        <Button type="submit" variant="primary" disabled={submitting}>
+          {submitting ? "Saving..." : "Save"}
+        </Button>
+      </FormActions>
+    </form>
   {/snippet}
-</Dialog>
+</FormDialog>
 
 <AlertDialog
   bind:open={showRevokeDialog}
@@ -486,9 +498,4 @@
     gap: 1rem;
   }
 
-  .user-view__dialog-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-  }
 </style>

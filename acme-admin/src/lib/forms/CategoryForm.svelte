@@ -6,6 +6,7 @@
     FormActions,
     FormValidationProvider,
     SaveSplitButton,
+    ColorPicker,
     Switch,
     TextButton,
     TextInput,
@@ -104,11 +105,10 @@
   <FieldSet legend="Display Settings">
     <FieldSetGrid columns={2}>
     <Field label="Color" error={errors?.color}>
-      <input
-        type="color"
+      <ColorPicker
         name="color"
         bind:value={colorValue}
-        class="color-picker"
+        size="md"
       />
     </Field>
 
@@ -142,14 +142,3 @@
     bind:intent
   />
 </FormActions>
-
-<style>
-  .color-picker {
-    width: 4rem;
-    height: 2.5rem;
-    padding: 0.25rem;
-    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
-    border-radius: 0.375rem;
-    cursor: pointer;
-  }
-</style>

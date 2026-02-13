@@ -3,8 +3,22 @@
   import { goto } from "$app/navigation";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { userCommands, type UserProject, type UserTask } from "@api-client";
-  import { useAuthenticatedData, useToasts, PageHeader } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Field, TextInput, TextArea, Select, Badge, ListCard, ListGrid, ConfirmAction, AlertDialog } from "@decodelabs/underlay/components";
+  import { FormDialog, useAuthenticatedData, useToasts, PageHeader } from "@decodelabs/underlay/patterns";
+  import {
+    Button,
+    PageLoading,
+    FormActions,
+    FormError,
+    Field,
+    TextInput,
+    TextArea,
+    Select,
+    Badge,
+    ListCard,
+    ListGrid,
+    ConfirmAction,
+    TextButton,
+  } from "@decodelabs/underlay/components";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -218,27 +232,45 @@
   <FormError message="Project not found" />
 {/if}
 
-<AlertDialog
+<FormDialog
   bind:open={showCreateDialog}
-  showTrigger={false}
   title="Add Task"
-  confirmLabel={creating ? "Adding..." : "Add Task"}
-  cancelLabel="Cancel"
-  onConfirm={handleCreateTask}
+  subtitle="Add a new task to this project."
+  submitting={creating}
   onCancel={() => { showCreateDialog = false; }}
 >
-  <div class="dialog-fields">
-    <Field label="Task Title" required>
-      <TextInput bind:value={newTaskTitle} placeholder="What needs to be done?" disabled={creating} />
-    </Field>
-    <Field label="Description">
-      <TextArea bind:value={newTaskDescription} placeholder="Optional details" rows={3} disabled={creating} />
-    </Field>
-    <Field label="Priority">
-      <Select value={newTaskPriority} onchange={(val) => { newTaskPriority = val; }} items={priorityOptions} disabled={creating} />
-    </Field>
-  </div>
-</AlertDialog>
+  {#snippet children(submitting)}
+    <form
+      onsubmit={(event) => {
+        event.preventDefault();
+        void handleCreateTask();
+      }}
+    >
+      <div class="dialog-fields">
+        <Field label="Task Title" required>
+          <TextInput bind:value={newTaskTitle} placeholder="What needs to be done?" disabled={submitting} />
+        </Field>
+        <Field label="Description">
+          <TextArea bind:value={newTaskDescription} placeholder="Optional details" rows={3} disabled={submitting} />
+        </Field>
+        <Field label="Priority">
+          <Select value={newTaskPriority} onchange={(val) => { newTaskPriority = val; }} items={priorityOptions} disabled={submitting} />
+        </Field>
+      </div>
+
+      <FormActions align="end">
+        {#snippet danger()}
+          <TextButton type="button" onclick={() => (showCreateDialog = false)} disabled={submitting}>
+            Cancel
+          </TextButton>
+        {/snippet}
+        <Button type="submit" variant="primary" disabled={submitting || !newTaskTitle.trim()}>
+          {submitting ? "Adding..." : "Add Task"}
+        </Button>
+      </FormActions>
+    </form>
+  {/snippet}
+</FormDialog>
 
 <style>
   .description {

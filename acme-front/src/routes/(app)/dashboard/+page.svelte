@@ -2,9 +2,18 @@
   import { goto } from "$app/navigation";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { userCommands, type UserProject } from "@api-client";
-  import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Field, TextInput, ListCard, ListGrid } from "@decodelabs/underlay/components";
-  import { AlertDialog } from "@decodelabs/underlay/components";
+  import { FormDialog, useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
+  import {
+    Button,
+    PageLoading,
+    FormActions,
+    FormError,
+    Field,
+    TextInput,
+    ListCard,
+    ListGrid,
+    TextButton,
+  } from "@decodelabs/underlay/components";
   import Plus from "lucide-svelte/icons/plus";
   import FolderOpen from "lucide-svelte/icons/folder-open";
 
@@ -110,25 +119,42 @@
   </ListGrid>
 {/if}
 
-<AlertDialog
+<FormDialog
   bind:open={showCreateDialog}
-  showTrigger={false}
   title="Create Project"
-  description="Create a new project to organize your tasks."
-  confirmLabel={creating ? "Creating..." : "Create"}
-  cancelLabel="Cancel"
-  onConfirm={handleCreateProject}
+  subtitle="Create a new project to organize your tasks."
+  submitting={creating}
   onCancel={() => { showCreateDialog = false; }}
 >
-  <div class="dialog-fields">
-    <Field label="Project Name" required>
-      <TextInput bind:value={newProjectName} placeholder="My Project" disabled={creating} />
-    </Field>
-    <Field label="Description">
-      <TextInput bind:value={newProjectDescription} placeholder="Optional description" disabled={creating} />
-    </Field>
-  </div>
-</AlertDialog>
+  {#snippet children(submitting)}
+    <form
+      onsubmit={(event) => {
+        event.preventDefault();
+        void handleCreateProject();
+      }}
+    >
+      <div class="dialog-fields">
+        <Field label="Project Name" required>
+          <TextInput bind:value={newProjectName} placeholder="My Project" disabled={submitting} />
+        </Field>
+        <Field label="Description">
+          <TextInput bind:value={newProjectDescription} placeholder="Optional description" disabled={submitting} />
+        </Field>
+      </div>
+
+      <FormActions align="end">
+        {#snippet danger()}
+          <TextButton type="button" onclick={() => (showCreateDialog = false)} disabled={submitting}>
+            Cancel
+          </TextButton>
+        {/snippet}
+        <Button type="submit" variant="primary" disabled={submitting || !newProjectName.trim()}>
+          {submitting ? "Creating..." : "Create"}
+        </Button>
+      </FormActions>
+    </form>
+  {/snippet}
+</FormDialog>
 
 <style>
   .header {
