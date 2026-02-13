@@ -176,7 +176,7 @@ Files:
 
 ### 3.3 Make non-idempotent migration step safe
 
-- [ ] Guard `media_current_version_fk` constraint creation with existence check
+- [x] Guard `media_current_version_fk` constraint creation with existence check
 - [ ] Validate rollback/re-apply behavior in dev reset flow
 
 Files:

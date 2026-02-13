@@ -108,11 +108,24 @@ CREATE UNIQUE INDEX IF NOT EXISTS media_version_storage_unique
     WHERE object_key IS NOT NULL;
 
 -- Add foreign key from media to current_version after media_version exists
-ALTER TABLE media.media
-    ADD CONSTRAINT media_current_version_fk
-    FOREIGN KEY (current_version_id)
-    REFERENCES media.media_version(id)
-    ON DELETE SET NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint c
+        JOIN pg_class t ON t.oid = c.conrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        WHERE c.conname = 'media_current_version_fk'
+          AND n.nspname = 'media'
+          AND t.relname = 'media'
+    ) THEN
+        ALTER TABLE media.media
+            ADD CONSTRAINT media_current_version_fk
+            FOREIGN KEY (current_version_id)
+            REFERENCES media.media_version(id)
+            ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- =========================================
 -- media.media_rendition
