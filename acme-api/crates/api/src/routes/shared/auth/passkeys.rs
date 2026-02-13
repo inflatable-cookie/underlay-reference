@@ -205,7 +205,8 @@ pub async fn passkey_login_finish(
                 .unwrap_or_else(|_| "user".to_string());
 
             let refresh_token = session.refresh_token.clone();
-            let dto = auth_session_dto_from_session(session, role);
+            let include_refresh_token = include_refresh_token_in_body(&headers);
+            let dto = auth_session_dto_from_session(session, role, include_refresh_token);
 
             let mut response_headers = HeaderMap::new();
             if let Err(e) =

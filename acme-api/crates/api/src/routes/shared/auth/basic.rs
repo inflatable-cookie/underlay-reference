@@ -38,7 +38,9 @@ pub async fn register(
             }
 
             let refresh_token = session.refresh_token.clone();
-            let dto = auth_session_dto_from_session(session, "user".to_string());
+            let include_refresh_token = include_refresh_token_in_body(&headers);
+            let dto =
+                auth_session_dto_from_session(session, "user".to_string(), include_refresh_token);
 
             let mut response_headers = HeaderMap::new();
             if let Err(e) =
@@ -92,7 +94,8 @@ pub async fn login(
                 .unwrap_or_else(|_| "user".to_string());
 
             let refresh_token = session.refresh_token.clone();
-            let dto = auth_session_dto_from_session(session, role);
+            let include_refresh_token = include_refresh_token_in_body(&headers);
+            let dto = auth_session_dto_from_session(session, role, include_refresh_token);
 
             let mut response_headers = HeaderMap::new();
             if let Err(e) =
@@ -142,7 +145,8 @@ pub async fn login_start(
     {
         Ok(acme_auth::LoginStartOutcome::Complete { session, role }) => {
             let refresh_token = session.refresh_token.clone();
-            let dto = auth_session_dto_from_session(*session, role);
+            let include_refresh_token = include_refresh_token_in_body(&headers);
+            let dto = auth_session_dto_from_session(*session, role, include_refresh_token);
             let response = LoginStartResponse {
                 requires_two_factor: false,
                 is_email_verification: None,
@@ -240,7 +244,8 @@ pub async fn login_finish(
     {
         Ok((session, role)) => {
             let refresh_token = session.refresh_token.clone();
-            let dto = auth_session_dto_from_session(session, role);
+            let include_refresh_token = include_refresh_token_in_body(&headers);
+            let dto = auth_session_dto_from_session(session, role, include_refresh_token);
 
             let mut response_headers = HeaderMap::new();
             if let Err(e) =
@@ -290,7 +295,8 @@ pub async fn login_finish(
             {
                 Ok((session, role)) => {
                     let refresh_token = session.refresh_token.clone();
-                    let dto = auth_session_dto_from_session(session, role);
+                    let include_refresh_token = include_refresh_token_in_body(&headers);
+                    let dto = auth_session_dto_from_session(session, role, include_refresh_token);
 
                     let mut response_headers = HeaderMap::new();
                     if let Err(e) = set_auth_cookies(
@@ -384,7 +390,8 @@ pub async fn refresh(
                 .unwrap_or_else(|_| "user".to_string());
 
             let new_refresh_token = session.refresh_token.clone();
-            let dto = auth_session_dto_from_session(session, role);
+            let include_refresh_token = include_refresh_token_in_body(&headers);
+            let dto = auth_session_dto_from_session(session, role, include_refresh_token);
 
             let mut response_headers = HeaderMap::new();
             if let Err(e) = set_auth_cookies(

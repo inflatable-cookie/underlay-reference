@@ -50,21 +50,6 @@ export interface LoginFinishRequest {
   code: string;
 }
 
-export interface LoginEmailFallbackRequest {
-  loginStateId: string;
-}
-
-export interface LoginEmailFallbackResponse {
-  /** New login state ID for email verification */
-  loginStateId: string;
-  /** Masked email address (for display) */
-  email: string;
-}
-
-export interface LoginEmailResendRequest {
-  loginStateId: string;
-}
-
 export interface RefreshRequest {
   refreshToken: string;
 }
@@ -131,28 +116,6 @@ export interface PasskeyCredential {
 
 export interface PasskeyRenameRequest {
   displayName: string;
-}
-
-export interface GoogleOAuthStartResponse {
-  authorizationUrl: string;
-  stateId: string;
-}
-
-export interface GoogleOAuthCallbackRequest {
-  stateId: string;
-  code: string;
-  state: string;
-}
-
-export interface GoogleOAuthStatusResponse {
-  connected: boolean;
-}
-
-export interface GoogleOAuthTokenResponse {
-  accessToken: string;
-  expiresInSeconds?: number | null;
-  scope?: string | null;
-  tokenType?: string | null;
 }
 
 // ============================================================================
@@ -225,7 +188,7 @@ export interface LoginUser {
 export interface LoginResponse {
   sessionId: string;
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
   user: LoginUser;
 }
 

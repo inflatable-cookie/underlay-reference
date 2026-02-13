@@ -414,6 +414,7 @@ fn build_cors_layer() -> tower_http::cors::CorsLayer {
     // Add it explicitly to allowed headers.
     let mut config = CorsConfig::default()
         .with_header(HeaderName::from_static("x-api-version"))
+        .with_header(HeaderName::from_static("x-auth-token-mode"))
         .with_header(HeaderName::from_static("x-csrf-token"))
         .with_credentials(true);
 

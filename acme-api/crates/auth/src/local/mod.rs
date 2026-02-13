@@ -85,6 +85,18 @@ fn map_auth_state_error(err: AuthStateError) -> AuthError {
     }
 }
 
+fn is_local_or_dev_environment() -> bool {
+    let environment = std::env::var("ENVIRONMENT")
+        .or_else(|_| std::env::var("ACME_ENV"))
+        .unwrap_or_else(|_| "local".to_string())
+        .to_ascii_lowercase();
+
+    matches!(
+        environment.as_str(),
+        "local" | "dev" | "development" | "test"
+    )
+}
+
 #[derive(Debug, Clone)]
 pub enum LoginStartOutcome {
     Complete {
@@ -336,10 +348,18 @@ impl AcmeLocalAuthService {
         let password_hasher =
             Argon2Hasher::with_params(argon2_memory_kb, argon2_iterations, argon2_parallelism);
 
-        // Initialize encryption service for TOTP secrets (optional - will work without it for backward compatibility)
+        // Initialize encryption service for TOTP secrets.
         let encryption = acme_infra::EncryptionService::from_env();
         if encryption.is_none() {
-            tracing::warn!("ENCRYPTION_KEY not set - TOTP secrets will be stored in plaintext. Set ENCRYPTION_KEY for production.");
+            if is_local_or_dev_environment() {
+                tracing::warn!(
+                    "ENCRYPTION_KEY not set - TOTP secrets will be stored in plaintext in local/dev"
+                );
+            } else {
+                return Err(AuthError::Internal(
+                    "ENCRYPTION_KEY must be set outside local/dev/test environments".into(),
+                ));
+            }
         }
 
         Ok(Self {

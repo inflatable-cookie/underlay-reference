@@ -169,10 +169,8 @@ export function createAuthManager(config: AuthManagerConfig = {}): AuthManager {
 		// The API returns expiresIn in the session, but we'll use a default if not present
 		const expiresIn = 900; // 15 minutes default, matching Acme config
 
-		// Store both access token and refresh token (hybrid approach)
-		// The refresh token is also set as an httpOnly cookie by the backend,
-		// but we store it in memory to support cross-origin requests where
-		// SameSite=Lax cookies aren't sent.
+		// Store access token and optional refresh token.
+		// Browser flows are cookie-first; refresh token is usually httpOnly-only.
 		store.setToken(response.accessToken, expiresIn, response.refreshToken);
 		state = {
 			...state,
@@ -200,11 +198,10 @@ export function createAuthManager(config: AuthManagerConfig = {}): AuthManager {
 	}
 
 	/**
-	 * Attempt to refresh the access token using the stored refresh token.
+	 * Attempt to refresh the access token.
 	 *
-	 * Uses a hybrid approach: sends the refresh token in the request body if
-	 * available (for cross-origin support), otherwise relies on the httpOnly
-	 * cookie (for same-origin requests after page refresh).
+	 * Browser flows rely on the httpOnly refresh cookie. If a refresh token is
+	 * present in memory (non-browser body-token mode), it is sent in the body.
 	 *
 	 * @param fetchFn - The fetch implementation to use
 	 * @param triggerLogoutCallback - If true, calls the onLogout callback on failure.
@@ -216,8 +213,7 @@ export function createAuthManager(config: AuthManagerConfig = {}): AuthManager {
 		triggerLogoutCallback: boolean = true
 	): Promise<LoginUser | null> {
 		try {
-			// Use stored refresh token if available (hybrid approach for cross-origin),
-			// otherwise send empty string and let the backend try the httpOnly cookie
+			// Use stored refresh token if available, otherwise rely on httpOnly cookie
 			const storedRefreshToken = store.getRefreshToken() ?? '';
 			const response = await authCommands.refresh({ refreshToken: storedRefreshToken }, fetchFn);
 			return handleLoginResponse(response);
@@ -356,8 +352,7 @@ export function createAuthManager(config: AuthManagerConfig = {}): AuthManager {
 			state = { ...state, loading: true };
 
 			try {
-				// Send refresh token in body if available (hybrid approach),
-				// otherwise rely on cookie
+				// Send refresh token in body if available, otherwise rely on cookie
 				const storedRefreshToken = store.getRefreshToken() ?? '';
 				await authCommands.logout({ refreshToken: storedRefreshToken }, fetchFn, store.getToken() ?? undefined);
 			} catch {

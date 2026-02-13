@@ -5,12 +5,13 @@
 //!
 //! ## Hybrid Token Auth
 //!
-//! Auth endpoints support a hybrid token approach for browser and mobile clients:
+//! Auth endpoints use cookie-first refresh token handling:
 //! - Access token: Returned in response body, sent as `Authorization: Bearer` header
-//! - Refresh token: Returned in response body AND set as httpOnly cookie (browser)
+//! - Refresh token: Set as httpOnly cookie by default
+//! - Optional body refresh token: only returned when `X-Auth-Token-Mode: body` is sent
 //! - `logged_in` cookie: UI flag for CSS switching (not httpOnly)
 //!
-//! The refresh endpoint accepts the refresh token from EITHER the request body OR cookie.
+//! The refresh endpoint accepts the refresh token from EITHER request body or cookie.
 
 mod basic;
 mod email_totp;
@@ -289,4 +290,11 @@ pub(super) fn login_client_fingerprint(headers: &HeaderMap) -> String {
     let mut h = Sha256::new();
     h.update(raw.as_bytes());
     hex::encode(h.finalize())
+}
+
+pub(super) fn include_refresh_token_in_body(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-auth-token-mode")
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.eq_ignore_ascii_case("body"))
 }

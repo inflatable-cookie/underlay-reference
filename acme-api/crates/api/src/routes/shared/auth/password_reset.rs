@@ -60,6 +60,7 @@ pub async fn password_reset_request(
     }
 
     let email = payload.email.trim();
+    let email_identifier = redact_email_identifier(email);
 
     // Check if user exists (without revealing to the client)
     match state.local_auth.get_user_for_password_reset(email).await {
@@ -80,7 +81,10 @@ pub async fn password_reset_request(
         }
         Ok(None) => {
             // User doesn't exist - don't reveal this to the client
-            tracing::debug!("Password reset requested for non-existent email: {}", email);
+            tracing::debug!(
+                "Password reset requested for unknown account: {}",
+                email_identifier
+            );
         }
         Err(e) => {
             // Error looking up user - don't reveal to client
@@ -91,6 +95,14 @@ pub async fn password_reset_request(
     // Always return success to prevent email enumeration
     ensure_min_response_time(start).await;
     StatusCode::NO_CONTENT.into_response()
+}
+
+fn redact_email_identifier(email: &str) -> String {
+    let normalized = email.trim().to_ascii_lowercase();
+    let mut hasher = Sha256::new();
+    hasher.update(normalized.as_bytes());
+    let digest = hex::encode(hasher.finalize());
+    format!("sha256:{}", &digest[..12])
 }
 
 /// Verify a password reset code.

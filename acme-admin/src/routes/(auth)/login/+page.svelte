@@ -2,7 +2,6 @@
   import { browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { authCommands } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { LoginPage } from "@decodelabs/underlay/components";
   import { toPublicKeyRequestOptions, assertionToJson } from "@decodelabs/underlay/utils";
@@ -45,18 +44,6 @@
   // 2FA verification handler
   async function handleTwoFactorVerify(stateId: string, code: string) {
     await auth.loginFinish(stateId, code);
-  }
-
-  // Request email fallback (for TOTP users who want email verification)
-  async function handleRequestEmailCode(stateId: string) {
-    const result = await authCommands.loginEmailFallback({ loginStateId: stateId }, fetch);
-    inSetupPrompt = true; // Email verification means we should show setup prompt after
-    return result;
-  }
-
-  // Resend email code (for already-in-email-verification state)
-  async function handleResendEmailCode(stateId: string) {
-    await authCommands.loginEmailResend({ loginStateId: stateId }, fetch);
   }
 
   // Passkey login handler
@@ -108,8 +95,6 @@
   methods={['password', 'passkey']}
   onPasswordLogin={handlePasswordLogin}
   onTwoFactorVerify={handleTwoFactorVerify}
-  onRequestEmailCode={handleRequestEmailCode}
-  onResendEmailCode={handleResendEmailCode}
   onPasskeyLogin={handlePasskeyLogin}
   showPasskeyEmailField={true}
   onComplete={handleComplete}

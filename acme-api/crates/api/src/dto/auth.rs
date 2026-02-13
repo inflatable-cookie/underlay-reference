@@ -193,7 +193,8 @@ pub struct AuthSessionDto {
     pub user: AuthUserDto,
     pub session_id: String,
     pub access_token: String,
-    pub refresh_token: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh_token: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -318,6 +319,7 @@ pub struct GoogleOAuthTokenDto {
 pub fn auth_session_dto_from_session(
     session: acme_auth::AuthSession,
     role: String,
+    include_refresh_token: bool,
 ) -> AuthSessionDto {
     // Use display_name if present, otherwise fall back to email username
     let display_name = session
@@ -334,7 +336,7 @@ pub fn auth_session_dto_from_session(
         },
         session_id: session.session.id.to_string(),
         access_token: session.access_token,
-        refresh_token: session.refresh_token,
+        refresh_token: include_refresh_token.then_some(session.refresh_token),
     }
 }
 
