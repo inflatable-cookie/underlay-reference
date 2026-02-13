@@ -127,6 +127,116 @@ mod api_version_tests {
     }
 }
 
+mod auth_boundary_router_tests {
+    use std::sync::Arc;
+
+    use axum::{
+        body::Body,
+        http::{header, Request, StatusCode},
+        routing::get,
+        Router,
+    };
+    use tower::util::ServiceExt;
+    use underlay_auth::{AuthError, AuthProvider, HasAuthProvider, Principal, RoleSet};
+
+    use acme_api::state::AdminUser;
+    use acme_core::Uuid;
+
+    #[derive(Clone)]
+    struct MockAuthProvider;
+
+    #[axum::async_trait]
+    impl AuthProvider for MockAuthProvider {
+        async fn authenticate_bearer(
+            &self,
+            bearer_token: &str,
+        ) -> underlay_auth::AuthResult<Principal> {
+            let principal = match bearer_token {
+                "admin-token" => Principal {
+                    user_id: Uuid::new_v7(),
+                    roles: RoleSet::new(["admin"]),
+                },
+                "user-token" => Principal {
+                    user_id: Uuid::new_v7(),
+                    roles: RoleSet::new(["user"]),
+                },
+                _ => return Err(AuthError::TokenInvalid),
+            };
+
+            Ok(principal)
+        }
+    }
+
+    #[derive(Clone)]
+    struct TestState {
+        auth_provider: Arc<dyn AuthProvider>,
+    }
+
+    impl HasAuthProvider for TestState {
+        fn auth_provider(&self) -> &dyn AuthProvider {
+            self.auth_provider.as_ref()
+        }
+    }
+
+    async fn admin_route(_admin: AdminUser) -> &'static str {
+        "ok"
+    }
+
+    fn test_router() -> Router {
+        let state = TestState {
+            auth_provider: Arc::new(MockAuthProvider),
+        };
+
+        Router::new()
+            .route("/v1/admin-only", get(admin_route))
+            .with_state(state)
+    }
+
+    #[tokio::test]
+    async fn admin_route_rejects_missing_bearer_token() {
+        let app = test_router();
+
+        let request = Request::builder()
+            .uri("/v1/admin-only")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn admin_route_rejects_non_admin_principal() {
+        let app = test_router();
+
+        let request = Request::builder()
+            .uri("/v1/admin-only")
+            .header(header::AUTHORIZATION, "Bearer user-token")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    #[tokio::test]
+    async fn admin_route_accepts_admin_principal() {
+        let app = test_router();
+
+        let request = Request::builder()
+            .uri("/v1/admin-only")
+            .header(header::AUTHORIZATION, "Bearer admin-token")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+}
+
 mod json_response_tests {
     //! Tests demonstrating JSON response handling patterns.
 
