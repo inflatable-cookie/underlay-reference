@@ -10,6 +10,7 @@ use axum::{
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use underlay_http::context::RequestContext;
 use underlay_http::ApiError;
 
 use acme_core::Uuid;
@@ -271,6 +272,7 @@ pub async fn list_projects(
 pub async fn create_project(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Json(req): Json<CreateProjectRequest>,
 ) -> Result<Response, ApiError> {
     // Validate request
@@ -293,6 +295,7 @@ pub async fn create_project(
     .await
     {
         Ok(project) => {
+            let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
                 activity::LogActivityParams {
@@ -304,8 +307,8 @@ pub async fn create_project(
                         "name": project.name,
                         "status": project.status,
                     })),
-                    correlation_id: None,
-                    ip_address: None,
+                    correlation_id: Some(ctx.request_id()),
+                    ip_address: ip_address.as_deref(),
                 },
             )
             .await;
@@ -384,6 +387,7 @@ pub async fn get_project(
 pub async fn update_project(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
     Json(req): Json<UpdateProjectRequest>,
 ) -> Result<Response, ApiError> {
@@ -410,6 +414,7 @@ pub async fn update_project(
     .await
     {
         Ok(Some(project)) => {
+            let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
                 activity::LogActivityParams {
@@ -421,8 +426,8 @@ pub async fn update_project(
                         "name": project.name,
                         "status": project.status,
                     })),
-                    correlation_id: None,
-                    ip_address: None,
+                    correlation_id: Some(ctx.request_id()),
+                    ip_address: ip_address.as_deref(),
                 },
             )
             .await;
@@ -457,6 +462,7 @@ pub async fn update_project(
 pub async fn delete_project(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -467,6 +473,7 @@ pub async fn delete_project(
 
     match tasks::delete_project(pool, project_id).await {
         Ok(true) => {
+            let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
                 activity::LogActivityParams {
@@ -475,8 +482,8 @@ pub async fn delete_project(
                     resource_type: "project",
                     resource_id: project_id,
                     details: None,
-                    correlation_id: None,
-                    ip_address: None,
+                    correlation_id: Some(ctx.request_id()),
+                    ip_address: ip_address.as_deref(),
                 },
             )
             .await;
@@ -546,6 +553,7 @@ pub async fn list_tasks(
 pub async fn create_task(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path(project_id): Path<Uuid>,
     Json(req): Json<CreateTaskRequest>,
 ) -> Result<Response, ApiError> {
@@ -576,6 +584,7 @@ pub async fn create_task(
     .await
     {
         Ok(task) => {
+            let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
                 activity::LogActivityParams {
@@ -589,8 +598,8 @@ pub async fn create_task(
                         "status": task.status,
                         "priority": task.priority,
                     })),
-                    correlation_id: None,
-                    ip_address: None,
+                    correlation_id: Some(ctx.request_id()),
+                    ip_address: ip_address.as_deref(),
                 },
             )
             .await;
@@ -622,6 +631,7 @@ pub async fn create_task(
 pub async fn update_task(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path((project_id, task_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<UpdateTaskRequest>,
 ) -> Result<Response, ApiError> {
@@ -651,6 +661,7 @@ pub async fn update_task(
     .await
     {
         Ok(Some(task)) => {
+            let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
                 activity::LogActivityParams {
@@ -664,8 +675,8 @@ pub async fn update_task(
                         "status": task.status,
                         "priority": task.priority,
                     })),
-                    correlation_id: None,
-                    ip_address: None,
+                    correlation_id: Some(ctx.request_id()),
+                    ip_address: ip_address.as_deref(),
                 },
             )
             .await;
@@ -700,6 +711,7 @@ pub async fn update_task(
 pub async fn delete_task(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
+    ctx: RequestContext,
     Path((project_id, task_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -711,6 +723,7 @@ pub async fn delete_task(
 
     match tasks::delete_task(pool, task_id, project_id).await {
         Ok(true) => {
+            let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
                 activity::LogActivityParams {
@@ -721,8 +734,8 @@ pub async fn delete_task(
                     details: Some(serde_json::json!({
                         "project_id": project_id,
                     })),
-                    correlation_id: None,
-                    ip_address: None,
+                    correlation_id: Some(ctx.request_id()),
+                    ip_address: ip_address.as_deref(),
                 },
             )
             .await;
