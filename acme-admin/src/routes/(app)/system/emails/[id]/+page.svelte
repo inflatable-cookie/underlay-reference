@@ -131,7 +131,11 @@
         <DetailsItem label="From">
           <span class="email-detail__value">
             {email.fromAddress}
-            <button class="copy-btn" onclick={() => copyToClipboard(email.fromAddress, "from address")}>
+            <button
+              type="button"
+              class="copy-btn"
+              onclick={() => copyToClipboard(email.fromAddress, "from address")}
+            >
               <Copy size={14} />
             </button>
           </span>
@@ -139,7 +143,11 @@
         <DetailsItem label="To">
           <span class="email-detail__value">
             {email.toAddresses.join(", ")}
-            <button class="copy-btn" onclick={() => copyToClipboard(email.toAddresses.join(", "), "to addresses")}>
+            <button
+              type="button"
+              class="copy-btn"
+              onclick={() => copyToClipboard(email.toAddresses.join(", "), "to addresses")}
+            >
               <Copy size={14} />
             </button>
           </span>
