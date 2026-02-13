@@ -1,5 +1,25 @@
 use super::*;
 
+fn validation_failed(err: validator::ValidationErrors) -> ApiError {
+    let mut field_errors = std::collections::HashMap::new();
+    for (field, errors) in err.field_errors() {
+        if let Some(first) = errors.first() {
+            let message = first
+                .message
+                .clone()
+                .unwrap_or_else(|| "Invalid value".into())
+                .to_string();
+            field_errors.insert(field.to_string(), message);
+        }
+    }
+
+    ApiError::bad_request(
+        "validation.failed",
+        "There is a problem with one or more fields.",
+    )
+    .with_field_errors(field_errors)
+}
+
 /// Check if a file with the given hash already exists.
 ///
 /// POST /v1/admin/media/check-duplicate
@@ -9,7 +29,7 @@ pub async fn check_duplicate(
     Json(req): Json<CheckDuplicateRequest>,
 ) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+        return Err(validation_failed(e));
     }
 
     let pool = state.local_auth.pool();
@@ -52,7 +72,7 @@ pub async fn create_media(
     Json(req): Json<CreateMediaRequest>,
 ) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+        return Err(validation_failed(e));
     }
 
     // Validate kind and visibility
@@ -316,7 +336,7 @@ pub async fn update_media(
     Json(req): Json<UpdateMediaRequest>,
 ) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+        return Err(validation_failed(e));
     }
 
     let Some(_visibility) = req.media_visibility() else {

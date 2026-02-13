@@ -582,7 +582,15 @@ pub async fn update_user_role(
     Json(req): Json<UpdateUserRoleRequest>,
 ) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
-        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+        let mut field_errors = std::collections::HashMap::new();
+        if e.field_errors().contains_key("role") {
+            field_errors.insert("role".to_string(), "Role is required".to_string());
+        }
+        return Err(ApiError::bad_request(
+            "admin.users.validation_failed",
+            "There is a problem with one or more fields.",
+        )
+        .with_field_errors(field_errors));
     }
 
     // Validate role value

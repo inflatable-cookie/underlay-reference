@@ -141,8 +141,8 @@ Files:
 
 ### 2.3 Remove unsafe DB string matching and raw `to_string()` error responses
 
-- [ ] Replace string contains logic with typed DB diagnostics
-- [ ] Map validation errors to structured field errors consistently
+- [x] Replace string contains logic with typed DB diagnostics
+- [x] Map validation errors to structured field errors consistently
 
 Files:
 - `acme-api/crates/api/src/routes/admin/media/crud.rs`

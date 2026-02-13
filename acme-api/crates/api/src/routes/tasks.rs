@@ -176,6 +176,26 @@ fn validate_task_input(status: Option<&str>, priority: Option<&str>) -> Result<(
     Ok(())
 }
 
+fn validation_failed(err: validator::ValidationErrors) -> ApiError {
+    let mut field_errors = std::collections::HashMap::new();
+    for (field, errors) in err.field_errors() {
+        if let Some(first) = errors.first() {
+            let message = first
+                .message
+                .clone()
+                .unwrap_or_else(|| "Invalid value".into())
+                .to_string();
+            field_errors.insert(field.to_string(), message);
+        }
+    }
+
+    ApiError::bad_request(
+        "validation.failed",
+        "There is a problem with one or more fields.",
+    )
+    .with_field_errors(field_errors)
+}
+
 // ============================================================================
 // Project Handlers
 // ============================================================================
@@ -255,7 +275,7 @@ pub async fn create_project(
 ) -> Result<Response, ApiError> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+        return Err(validation_failed(e));
     }
 
     let pool = state.local_auth.pool();
@@ -352,7 +372,7 @@ pub async fn update_project(
 ) -> Result<Response, ApiError> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+        return Err(validation_failed(e));
     }
     validate_project_status_input(req.status.as_deref())?;
 
@@ -481,7 +501,7 @@ pub async fn create_task(
 ) -> Result<Response, ApiError> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+        return Err(validation_failed(e));
     }
     validate_task_input(None, req.priority.as_deref())?;
 
@@ -538,7 +558,7 @@ pub async fn update_task(
 ) -> Result<Response, ApiError> {
     // Validate request
     if let Err(e) = req.validate() {
-        return Err(ApiError::bad_request("validation.failed", e.to_string()));
+        return Err(validation_failed(e));
     }
     validate_task_input(req.status.as_deref(), req.priority.as_deref())?;
 
