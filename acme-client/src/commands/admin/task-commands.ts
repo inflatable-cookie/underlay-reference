@@ -134,7 +134,7 @@ export async function batchDeleteTasks(
 ): Promise<BatchDeleteResult> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   return await http.post<BatchDeleteResult>(
-    `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks:batch-delete`,
+    `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks/batch-delete`,
     payload
   );
 }
@@ -150,7 +150,7 @@ export async function batchUpdateTaskStatus(
 ): Promise<BatchUpdateResult> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   return await http.post<BatchUpdateResult>(
-    `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks:batch-update`,
+    `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks/batch-update`,
     payload
   );
 }
