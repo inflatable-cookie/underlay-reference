@@ -20,6 +20,22 @@ use acme_db::{activity, users};
 
 use crate::state::{AdminUser, AppState};
 
+fn is_email_unique_violation(err: &sqlx::Error) -> bool {
+    let Some(db_err) = err.as_database_error() else {
+        return false;
+    };
+
+    if db_err.code().as_deref() != Some("23505") {
+        return false;
+    }
+
+    if let Some(constraint) = db_err.constraint() {
+        return constraint == "users_email_key";
+    }
+
+    db_err.message().to_ascii_lowercase().contains("email")
+}
+
 // ============================================================================
 // DTOs
 // ============================================================================
@@ -275,12 +291,7 @@ pub async fn create_user(
         match users::create_user_admin(pool, user_id, &email, role, status, display_name).await {
             Ok(user) => user,
             Err(e) => {
-                // Avoid coupling the API crate to sqlx just to match on error codes.
-                // This string match is intentionally defensive (schema/index names may differ).
-                let msg = e.to_string();
-                if msg.contains("duplicate key value violates unique constraint")
-                    && (msg.contains("email") || msg.contains("users_email_key"))
-                {
+                if is_email_unique_violation(&e) {
                     let mut field_errors = std::collections::HashMap::new();
                     field_errors.insert("email".to_string(), "Email is already in use".to_string());
                     return Err(ApiError::conflict(
@@ -446,10 +457,7 @@ pub async fn update_user(
             "User not found",
         )),
         Err(e) => {
-            let msg = e.to_string();
-            if msg.contains("duplicate key value violates unique constraint")
-                && (msg.contains("email") || msg.contains("users_email_key"))
-            {
+            if is_email_unique_violation(&e) {
                 let mut field_errors = std::collections::HashMap::new();
                 field_errors.insert("email".to_string(), "Email is already in use".to_string());
                 return Err(ApiError::conflict(
