@@ -130,7 +130,7 @@ Files:
 
 ### 2.2 Move tab badges to detail DTO counts; lazy-load heavy tabs
 
-- [ ] Use detail count fields for tab badges instead of eager list length
+- [x] Use detail count fields for tab badges instead of eager list length
 - [ ] Fetch sessions/activity/usages/versions only on tab activation
 
 Files:
