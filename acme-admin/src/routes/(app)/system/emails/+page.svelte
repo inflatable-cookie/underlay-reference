@@ -5,6 +5,7 @@
   import { FilterBar } from "@decodelabs/underlay/patterns";
   import {
     Button,
+    EmptyState,
     Field,
     FormError,
     ListCard,
@@ -147,9 +148,7 @@
   {:else if pageData.error}
     <FormError message={pageData.error} />
   {:else if entries.length === 0}
-    <p class="emails-page__empty">
-      No captured emails found. Emails will appear here when sent in development mode.
-    </p>
+    <EmptyState title="No captured emails" description="Emails will appear here when sent in development mode." variant="compact" />
   {:else}
     <ListGrid minItemWidth={26}>
       {#each entries as entry}
@@ -211,12 +210,6 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-  }
-
-  .emails-page__empty {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--admin-color-text-muted);
   }
 
   .emails-page__filters {

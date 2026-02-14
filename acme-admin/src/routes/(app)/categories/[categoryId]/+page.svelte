@@ -5,17 +5,16 @@
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import {
     useAuthenticatedData,
-    PageHeader,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
-    PageHeaderMetaSeparator,
     useToasts,
-    Banner
+    EntityActionsMenu,
+    DetailPageShell,
+    DetailMeta,
+    DetailMetaId,
+    DetailMetaStatus,
+    DetailMetaSeparator
   } from "@decodelabs/underlay/patterns";
-  import { Code, PageLoading, FormError, Badge, Pill, DetailsCard, DetailsSection, DetailsItem, TimeAgo, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
+  import { PageLoading, FormError, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
-  import MoreVertical from "lucide-svelte/icons/more-vertical";
 
   interface Props {
     data: PageData;
@@ -24,7 +23,6 @@
   let { data }: Props = $props();
 
   const toastStore = useToasts();
-  let confirmDeleteOpen = $state(false);
 
   // Fetch category data
   const pageData = useAuthenticatedData(
@@ -53,35 +51,6 @@
       type: "detail"
     });
   }
-
-  async function handleDelete() {
-    if (!category) return;
-
-    const token = auth.getToken();
-    if (!token) {
-      toastStore.push({ variant: "error", message: "Not authenticated" });
-      return;
-    }
-
-    try {
-      await adminCommands.softDeleteCategory(category.id, fetch, token);
-      toastStore.push({ variant: "success", message: "Category deleted" });
-      await goto("/categories");
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to delete category";
-      toastStore.push({ variant: "error", message });
-    }
-  }
-
-  const menuItems = $derived([
-    { label: "Edit", onSelect: handleEdit },
-    { separator: true },
-    {
-      label: "Delete",
-      destructive: true,
-      onSelect: () => (confirmDeleteOpen = true)
-    }
-  ]);
 </script>
 
 {#if pageData.loading}
@@ -89,67 +58,62 @@
 {:else if pageData.error}
   <FormError message={pageData.error} />
 {:else if category}
-  <PageHeader
+  <DetailPageShell
     section="Category"
     title={category.name}
     backHref="/categories"
     backLabel="Back to categories"
     subtitle={category.description ?? undefined}
+    bannerMessage={!category.isActive ? "This category is inactive and won't appear in selection lists." : undefined}
+    bannerVariant={!category.isActive ? "warning" : undefined}
   >
-    <PageHeaderMeta>
-      <PageHeaderMetaRow>
-        <PageHeaderMetaItem label="ID">
-          <Code copy>{category.id}</Code>
-        </PageHeaderMetaItem>
-        <PageHeaderMetaSeparator />
-        <Pill accent={category.isActive ? "#10b981" : "#6b7280"}>
-          {category.isActive ? "Active" : "Inactive"}
-        </Pill>
-      </PageHeaderMetaRow>
-    </PageHeaderMeta>
+    {#snippet meta()}
+      <DetailMeta>
+        <DetailMetaId value={category.id} />
+        <DetailMetaSeparator />
+        <DetailMetaStatus value={category.isActive} trueLabel="Active" falseLabel="Inactive" />
+      </DetailMeta>
+    {/snippet}
 
     {#snippet actions()}
-      <DropdownMenu items={menuItems} triggerAriaLabel="Category actions">
-        {#snippet trigger()}
-          <MoreVertical size={16} aria-hidden="true" />
-        {/snippet}
-      </DropdownMenu>
+      <EntityActionsMenu
+        toastStore={toastStore}
+        copies={[{ label: "Copy ID", text: category.id, successMessage: "Copied category ID" }]}
+        onEdit={handleEdit}
+        deleteConfig={{
+          entityLabel: category.name,
+          title: "Delete Category",
+          description: `Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`,
+          confirmLabel: "Delete",
+          execute: async () => {
+            const token = auth.getToken();
+            if (!token) throw new Error("Not authenticated");
+            await adminCommands.softDeleteCategory(category.id, fetch, token);
+          }
+        }}
+        onDeleteSuccess={() => goto("/categories")}
+      />
     {/snippet}
-  </PageHeader>
 
-  <AlertDialog
-    bind:open={confirmDeleteOpen}
-    showTrigger={false}
-    title="Delete Category"
-    description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
-    confirmLabel="Delete"
-    onConfirm={handleDelete}
-  />
+    <DetailsCard>
+      <DetailsSection legend="Details">
+        <DetailsItem label="Slug" value={category.slug} code />
+        <DetailsItem label="Color">
+          <span class="color-swatch" style:background={category.color ?? "#6366f1"}></span>
+          <span class="color-value">{category.color ?? "#6366f1"}</span>
+        </DetailsItem>
+      </DetailsSection>
 
-  {#if !category.isActive}
-    <div class="category-banner">
-      <Banner variant="warning" message="This category is inactive and won't appear in selection lists." />
-    </div>
-  {/if}
-
-  <DetailsCard>
-    <DetailsSection legend="Details">
-      <DetailsItem label="Slug" value={category.slug} code />
-      <DetailsItem label="Color">
-        <span class="color-swatch" style:background={category.color ?? "#6366f1"}></span>
-        <span class="color-value">{category.color ?? "#6366f1"}</span>
-      </DetailsItem>
-    </DetailsSection>
-
-    <DetailsSection legend="Metadata">
-      <DetailsItem label="Created">
-        <TimeAgo date={category.createdAt} tooltipFormat="datetime" />
-      </DetailsItem>
-      <DetailsItem label="Updated">
-        <TimeAgo date={category.updatedAt} tooltipFormat="datetime" />
-      </DetailsItem>
-    </DetailsSection>
-  </DetailsCard>
+      <DetailsSection legend="Metadata">
+        <DetailsItem label="Created">
+          <TimeAgo date={category.createdAt} tooltipFormat="datetime" />
+        </DetailsItem>
+        <DetailsItem label="Updated">
+          <TimeAgo date={category.updatedAt} tooltipFormat="datetime" />
+        </DetailsItem>
+      </DetailsSection>
+    </DetailsCard>
+  </DetailPageShell>
 {:else}
   <FormError message="Category not found" />
 {/if}
@@ -167,9 +131,5 @@
 
   .color-value {
     vertical-align: middle;
-  }
-
-  .category-banner {
-    margin-bottom: 1rem;
   }
 </style>

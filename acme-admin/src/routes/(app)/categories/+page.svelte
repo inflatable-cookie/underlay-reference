@@ -11,6 +11,7 @@
   } from "@decodelabs/underlay/patterns";
   import {
     Button,
+    EmptyState,
     Field,
     FormError,
     ListGrid,
@@ -254,7 +255,7 @@
 {:else if pageData.error}
   <FormError message={pageData.error} />
 {:else if (pageData.data?.categories ?? []).length === 0}
-  <p class="empty-state">No categories found. Create your first category to get started.</p>
+  <EmptyState title="No categories found" description="Create your first category to get started." actionLabel="Add category" actionHref="/categories/new" />
 {:else if isReorderMode}
   <ReorderableList controller={reorderController} oncancel={exitReorderMode} onsuccess={handleReorderSuccess}>
     {#snippet item(category)}
@@ -278,10 +279,3 @@
   </ListGrid>
 {/if}
 
-<style>
-  .empty-state {
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-secondary, #6b7280);
-  }
-</style>

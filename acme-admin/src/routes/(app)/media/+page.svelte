@@ -19,6 +19,7 @@
   } from "@decodelabs/underlay/patterns";
   import {
     Button,
+    EmptyState,
     Field,
     FormError,
     ListGrid,
@@ -333,14 +334,7 @@
 {:else if pageData.error}
   <FormError message={pageData.error} />
 {:else if (pageData.data?.items ?? []).length === 0}
-  <div class="media-list__empty">
-    <Image size={56} />
-    <p class="media-list__empty-text">No media found.</p>
-    <Button variant="primary" onclick={() => goto("/media/upload")}>
-      <Upload size={16} />
-      Upload your first media
-    </Button>
-  </div>
+  <EmptyState title="No media found" actionLabel="Upload your first media" actionHref="/media/upload" />
 {:else}
   <ListGrid minItemWidth={26}>
     {#each pageData.data?.items ?? [] as item}
@@ -427,19 +421,6 @@
 />
 
 <style>
-  .media-list__empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    padding: 3rem;
-    text-align: center;
-  }
-
-  .media-list__empty-text {
-    color: var(--underlay-color-text-muted, #9ca3af);
-  }
-
   .media-pills {
     display: flex;
     flex-wrap: wrap;

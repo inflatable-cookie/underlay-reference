@@ -5,7 +5,7 @@
 	import { setContext, onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { page } from "$app/stores";
-	import { ToastHost } from "@decodelabs/underlay/components";
+	import { ErrorBoundary, ToastHost } from "@decodelabs/underlay/components";
 	import {
 		UNDERLAY_TOASTS_CONTEXT_KEY,
 		createToastStore,
@@ -132,7 +132,9 @@
 
 		<div class="admin-content">
 			<main class="admin-content__body">
-				{@render children()}
+				<ErrorBoundary>
+					{@render children()}
+				</ErrorBoundary>
 			</main>
 		</div>
 

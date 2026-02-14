@@ -10,6 +10,7 @@
   } from "@decodelabs/underlay/patterns";
   import {
     Button,
+    EmptyState,
     FormError,
     ListGrid,
     ListCard,
@@ -85,14 +86,7 @@
 {:else if pageData.error}
   <FormError message={pageData.error} />
 {:else if (pageData.data?.media ?? []).length === 0}
-  <div class="empty-state">
-    <Trash2 size="fill" />
-    <h2>Trash is empty</h2>
-    <p>Deleted media items will appear here.</p>
-    <Button type="button" variant="subtle" onclick={() => goto("/media")}>
-      Back to Media Library
-    </Button>
-  </div>
+  <EmptyState title="Trash is empty" description="Deleted media items will appear here." actionLabel="Back to Media Library" actionHref="/media" />
 {:else}
   <p class="trash-info">
     Items in trash can be restored or permanently deleted. Permanently deleted items cannot be recovered.
@@ -156,26 +150,6 @@
 {/if}
 
 <style>
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    text-align: center;
-    color: var(--admin-color-text-muted, #6b7280);
-  }
-
-  .empty-state h2 {
-    margin: 1rem 0 0.5rem;
-    font-size: 1.25rem;
-    color: var(--admin-color-text, #111827);
-  }
-
-  .empty-state p {
-    margin: 0 0 1.5rem;
-  }
-
   .trash-info {
     margin: 0 0 1.5rem;
     padding: 0.75rem 1rem;

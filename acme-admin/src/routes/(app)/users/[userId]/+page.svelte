@@ -3,7 +3,6 @@
   import {
     AlertDialog,
     Button,
-    Code,
     DataTable,
     DetailsCard,
     DetailsItem,
@@ -15,21 +14,16 @@
     PageLoading,
     Pill,
     Select,
-    TabsContent,
-    TabsList,
-    TabsRoot,
-    TabsTrigger,
     TextButton,
     type DataTableAction,
     type DataTableColumn
   } from "@decodelabs/underlay/components";
   import {
     FormDialog,
-    PageHeader,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
-    PageHeaderMetaSeparator,
+    DetailPageShell,
+    DetailMeta,
+    DetailMetaId,
+    DetailMetaSeparator,
     computeBackInfo,
     consumeNavigationContext,
     useAuthenticatedData,
@@ -366,7 +360,7 @@
 {:else if userData.error}
   <FormError message={userData.error} />
 {:else if user}
-  <PageHeader
+  <DetailPageShell
     section="User"
     title={user.email}
     subtitle={user.displayName ?? undefined}
@@ -374,7 +368,22 @@
     backLabel={computedBackInfo.label}
     backIsContextual={computedBackInfo.isContextual ?? false}
     bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
+    tabs={[
+      { value: "details", label: "Details" },
+      { value: "sessions", label: "Sessions", count: user.activeSessionCount },
+      { value: "activity", label: "Activity" }
+    ]}
+    bind:activeTab
   >
+    {#snippet meta()}
+      <DetailMeta>
+        <DetailMetaId value={user.id} />
+        <DetailMetaSeparator />
+        <Pill accent={getUserRoleAccent(user.role)}>{user.role}</Pill>
+        <Pill accent={getUserStatusAccent(user.status)}>{user.status}</Pill>
+      </DetailMeta>
+    {/snippet}
+
     {#snippet actions()}
       <DropdownMenu items={getUserMenuItems(user)}>
         {#snippet trigger()}
@@ -383,27 +392,8 @@
       </DropdownMenu>
     {/snippet}
 
-    <PageHeaderMeta>
-      <PageHeaderMetaRow>
-        <PageHeaderMetaItem label="ID">
-          <Code copy>{user.id}</Code>
-        </PageHeaderMetaItem>
-        <PageHeaderMetaSeparator />
-        <Pill accent={getUserRoleAccent(user.role)}>{user.role}</Pill>
-        <Pill accent={getUserStatusAccent(user.status)}>{user.status}</Pill>
-      </PageHeaderMetaRow>
-    </PageHeaderMeta>
-  </PageHeader>
-
-  <div class="user-view">
-    <TabsRoot bind:value={activeTab} variant="boxed" size="sm" historyKey="tab">
-      <TabsList>
-        <TabsTrigger value="details">Details</TabsTrigger>
-        <TabsTrigger value="sessions" count={user.activeSessionCount}>Sessions</TabsTrigger>
-        <TabsTrigger value="activity">Activity</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="details">
+    {#snippet tabContent(tab)}
+      {#if tab === "details"}
         <DetailsCard>
           <DetailsSection legend="Account">
             <DetailsItem label="Created" value={formatDate(user.createdAt)} />
@@ -416,9 +406,7 @@
             <DetailsItem label="Lockout until" value={user.lockoutUntil ? formatDate(user.lockoutUntil) : null} />
           </DetailsSection>
         </DetailsCard>
-      </TabsContent>
-
-      <TabsContent value="sessions">
+      {:else if tab === "sessions"}
         {#if activeTab === "sessions" && sessionsData.loading}
           <PageLoading message="Loading sessions..." />
         {:else if sessionsData.error}
@@ -442,9 +430,7 @@
             {/snippet}
           </DataTable>
         {/if}
-      </TabsContent>
-
-      <TabsContent value="activity">
+      {:else if tab === "activity"}
         {#if activeTab === "activity" && activityData.loading}
           <PageLoading message="Loading activity..." />
         {:else if activityData.error}
@@ -468,9 +454,9 @@
             {/snippet}
           </DataTable>
         {/if}
-      </TabsContent>
-    </TabsRoot>
-  </div>
+      {/if}
+    {/snippet}
+  </DetailPageShell>
 {/if}
 
 <FormDialog
@@ -521,11 +507,3 @@
   onCancel={() => (sessionToRevoke = null)}
 />
 
-<style>
-  .user-view {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-</style>

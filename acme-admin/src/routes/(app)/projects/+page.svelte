@@ -12,6 +12,7 @@
   } from "@decodelabs/underlay/patterns";
   import {
     Button,
+    EmptyState,
     Field,
     FormError,
     ListGrid,
@@ -367,7 +368,7 @@
 {:else if pageData.error}
   <FormError message={pageData.error} />
 {:else if (pageData.data?.projects ?? []).length === 0}
-  <p class="empty-state">No projects found. Create your first project to get started.</p>
+  <EmptyState title="No projects found" description="Create your first project to get started." actionLabel="Add project" actionHref="/projects/new" />
 {:else if isReorderMode}
   <ReorderableList controller={reorderController} oncancel={exitReorderMode} onsuccess={handleReorderSuccess}>
     {#snippet item(project)}
@@ -405,10 +406,3 @@
   onBatchDelete={handleBatchDelete}
 />
 
-<style>
-  .empty-state {
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-secondary, #6b7280);
-  }
-</style>

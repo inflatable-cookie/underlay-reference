@@ -3,11 +3,10 @@
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
   import {
-    PageHeader,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
-    PageHeaderMetaSeparator,
+    DetailPageShell,
+    DetailMeta,
+    DetailMetaId,
+    DetailMetaSeparator,
     getBackButtonInfo,
     useToasts,
     useAuthenticatedData,
@@ -27,6 +26,7 @@
     DetailsCard,
     DetailsItem,
     DetailsSection,
+    EmptyState,
     Field,
     FormError,
     InlineListCard,
@@ -34,10 +34,6 @@
     PageLoading,
     Pill,
     Select,
-    TabsRoot,
-    TabsList,
-    TabsTrigger,
-    TabsContent,
     TextButton,
     TextInput,
     TimeAgo
@@ -330,6 +326,12 @@
     canPreview(media.kind, media.currentVersion?.mimeType ?? null) &&
     !!mediaPreviewUrl
   );
+
+  const mediaTabs = $derived([
+    { value: "details", label: "Details" },
+    ...(showPreviewTab ? [{ value: "preview", label: "Preview" }] : []),
+    { value: "usage", label: "Usage", count: usageCount }
+  ]);
 </script>
 
 {#if mediaData.loading}
@@ -337,20 +339,21 @@
 {:else if mediaData.error}
   <FormError message={mediaData.error} />
 {:else if media}
-  <PageHeader
+  <DetailPageShell
     section="Media"
     title={media.title || media.originalFilename || "Untitled"}
     backHref={backInfo.href}
     backLabel={backInfo.label}
     backIsContextual={backInfo.isContextual ?? false}
     bannerMessage={media.deletedAt ? "This media has been soft-deleted." : undefined}
+    tabs={mediaTabs}
+    bind:activeTab
+    tabsHistoryKey="tab"
   >
-    <PageHeaderMeta>
-      <PageHeaderMetaRow>
-        <PageHeaderMetaItem label="ID">
-          <Code copy>{media.id}</Code>
-        </PageHeaderMetaItem>
-        <PageHeaderMetaSeparator />
+    {#snippet meta()}
+      <DetailMeta>
+        <DetailMetaId value={media.id} />
+        <DetailMetaSeparator />
         <Pill accent={getMediaKindAccent(media.kind)}>{getMediaKindLabel(media.kind)}</Pill>
         <Pill accent={getMediaVisibilityPillAccent(media.visibility)}>
           {getMediaVisibilityLabel(media.visibility)}
@@ -358,8 +361,8 @@
         {#if media.deletedAt}
           <Pill accent={getMediaMetaAccent("deleted")}>Deleted</Pill>
         {/if}
-      </PageHeaderMetaRow>
-    </PageHeaderMeta>
+      </DetailMeta>
+    {/snippet}
 
     {#snippet actions()}
       <MediaActionsMenu
@@ -374,139 +377,127 @@
         onRestoreSuccess={() => mediaData.refetch()}
       />
     {/snippet}
-  </PageHeader>
 
-  <TabsRoot bind:value={activeTab} variant="boxed" size="sm" historyKey="tab">
-    <TabsList>
-      <TabsTrigger value="details">Details</TabsTrigger>
-      {#if showPreviewTab}
-        <TabsTrigger value="preview">Preview</TabsTrigger>
-      {/if}
-      <TabsTrigger value="usage" count={usageCount}>Usage</TabsTrigger>
-    </TabsList>
+    {#snippet tabContent(tab)}
+      {#if tab === "details"}
+        <div class="underlay-details-content">
+          <DetailsCard>
+            <DetailsSection legend="File Details">
+              <DetailsItem label="Original Filename" value={media.originalFilename} />
+              {#if media.currentVersion}
+                <DetailsItem label="File Size" value={formatFileSize(media.currentVersion.byteSize)} />
+                <DetailsItem label="MIME Type">
+                  <Code>{media.currentVersion.mimeType ?? "—"}</Code>
+                </DetailsItem>
+              {/if}
+            </DetailsSection>
 
-    <TabsContent value="details">
-      <div class="underlay-details-content">
-        <DetailsCard>
-          <DetailsSection legend="File Details">
-            <DetailsItem label="Original Filename" value={media.originalFilename} />
-            {#if media.currentVersion}
-              <DetailsItem label="File Size" value={formatFileSize(media.currentVersion.byteSize)} />
-              <DetailsItem label="MIME Type">
-                <Code>{media.currentVersion.mimeType ?? "—"}</Code>
+            <DetailsSection legend="Timestamps">
+              <DetailsItem label="Created">
+                <TimeAgo date={media.createdAt} short />
               </DetailsItem>
-            {/if}
-          </DetailsSection>
-
-          <DetailsSection legend="Timestamps">
-            <DetailsItem label="Created">
-              <TimeAgo date={media.createdAt} short />
-            </DetailsItem>
-            <DetailsItem label="Last Updated">
-              <TimeAgo date={media.updatedAt} short />
-            </DetailsItem>
-            {#if media.deletedAt}
-              <DetailsItem label="Deleted">
-                <span class="deleted-date"><TimeAgo date={media.deletedAt} short /></span>
+              <DetailsItem label="Last Updated">
+                <TimeAgo date={media.updatedAt} short />
               </DetailsItem>
-            {/if}
-          </DetailsSection>
-        </DetailsCard>
+              {#if media.deletedAt}
+                <DetailsItem label="Deleted">
+                  <span class="deleted-date"><TimeAgo date={media.deletedAt} short /></span>
+                </DetailsItem>
+              {/if}
+            </DetailsSection>
+          </DetailsCard>
 
-        <!-- Versions -->
-        <InlineListCard
-          title="Versions"
-          emptyMessage="No versions uploaded yet."
-          hasItems={versions.length > 0}
-        >
-          {#snippet action()}
-            <Button
-              type="button"
-              variant="primary"
-              size="icon-sm"
-              onclick={() => goto(`/media/upload?replace=${media.id}`)}
-              aria-label="Upload new version"
-            >
-              <Plus size={14} />
-            </Button>
-          {/snippet}
-          {#if activeTab === "details" && versionsData.loading}
-            <PageLoading message="Loading versions..." />
-          {:else if versionsData.error}
-            <FormError message={versionsData.error} />
-          {:else}
-            {#each versions as version (version.id)}
-              <InlineListItem
-                label={version.sha256 ?? "No hash"}
-                accent={getMediaVersionStateAccent(version.state)}
-                onclick={canPreviewVersion(version) ? () => openVersionPreview(version) : undefined}
+          <!-- Versions -->
+          <InlineListCard
+            title="Versions"
+            emptyMessage="No versions uploaded yet."
+            hasItems={versions.length > 0}
+          >
+            {#snippet action()}
+              <Button
+                type="button"
+                variant="primary"
+                size="icon-sm"
+                onclick={() => goto(`/media/upload?replace=${media.id}`)}
+                aria-label="Upload new version"
               >
-                {#snippet sublabelContent()}
-                  {formatFileSize(version.byteSize)} · <Code>{version.mimeType ?? "Unknown type"}</Code> · <TimeAgo date={version.createdAt} short />
-                {/snippet}
-                {#snippet trailing()}
-                  <Pill accent={getMediaVersionStateAccent(version.state)}>
-                    {getMediaVersionStateLabel(version.state)}
-                  </Pill>
-                  {#if isCurrentVersion(version)}
-                    <Pill accent={getMediaMetaAccent("current")}>Current</Pill>
-                  {/if}
-                {/snippet}
-                {#snippet actions()}
-                  <button
-                    type="button"
-                    onclick={() => requestActivate(version)}
-                    disabled={!canActivateVersion(version)}
-                    aria-label="Activate version"
-                  >
-                    <Check size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onclick={() => requestDelete(version)}
-                    disabled={!canDeleteVersion(version)}
-                    aria-label="Delete version"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                {/snippet}
-              </InlineListItem>
-            {/each}
-          {/if}
-        </InlineListCard>
-
-        <!-- Renditions -->
-        {#if media.currentVersion?.renditions && media.currentVersion.renditions.length > 0}
-          <section class="renditions-section span-full">
-            <h3>Renditions</h3>
-            <div class="renditions-grid">
-              {#each media.currentVersion.renditions as rendition}
-                <div class="rendition-card">
-                  {#if rendition.url && rendition.mimeType?.startsWith("image/")}
-                    <img src={rendition.url} alt={rendition.kind} class="rendition-preview" />
-                  {:else}
-                    <div class="rendition-placeholder">
-                      <span>No preview</span>
-                    </div>
-                  {/if}
-                  <div class="rendition-info">
-                    <span class="rendition-kind">{rendition.kind}</span>
-                    <span class="rendition-size">
-                      {rendition.width && rendition.height
-                        ? `${rendition.width}×${rendition.height}`
-                        : formatFileSize(rendition.byteSize)}
-                    </span>
-                  </div>
-                </div>
+                <Plus size={14} />
+              </Button>
+            {/snippet}
+            {#if activeTab === "details" && versionsData.loading}
+              <PageLoading message="Loading versions..." />
+            {:else if versionsData.error}
+              <FormError message={versionsData.error} />
+            {:else}
+              {#each versions as version (version.id)}
+                <InlineListItem
+                  label={version.sha256 ?? "No hash"}
+                  accent={getMediaVersionStateAccent(version.state)}
+                  onclick={canPreviewVersion(version) ? () => openVersionPreview(version) : undefined}
+                >
+                  {#snippet sublabelContent()}
+                    {formatFileSize(version.byteSize)} · <Code>{version.mimeType ?? "Unknown type"}</Code> · <TimeAgo date={version.createdAt} short />
+                  {/snippet}
+                  {#snippet trailing()}
+                    <Pill accent={getMediaVersionStateAccent(version.state)}>
+                      {getMediaVersionStateLabel(version.state)}
+                    </Pill>
+                    {#if isCurrentVersion(version)}
+                      <Pill accent={getMediaMetaAccent("current")}>Current</Pill>
+                    {/if}
+                  {/snippet}
+                  {#snippet actions()}
+                    <button
+                      type="button"
+                      onclick={() => requestActivate(version)}
+                      disabled={!canActivateVersion(version)}
+                      aria-label="Activate version"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onclick={() => requestDelete(version)}
+                      disabled={!canDeleteVersion(version)}
+                      aria-label="Delete version"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  {/snippet}
+                </InlineListItem>
               {/each}
-            </div>
-          </section>
-        {/if}
-      </div>
-    </TabsContent>
+            {/if}
+          </InlineListCard>
 
-    {#if showPreviewTab}
-      <TabsContent value="preview">
+          <!-- Renditions -->
+          {#if media.currentVersion?.renditions && media.currentVersion.renditions.length > 0}
+            <section class="renditions-section span-full">
+              <h3>Renditions</h3>
+              <div class="renditions-grid">
+                {#each media.currentVersion.renditions as rendition}
+                  <div class="rendition-card">
+                    {#if rendition.url && rendition.mimeType?.startsWith("image/")}
+                      <img src={rendition.url} alt={rendition.kind} class="rendition-preview" />
+                    {:else}
+                      <div class="rendition-placeholder">
+                        <span>No preview</span>
+                      </div>
+                    {/if}
+                    <div class="rendition-info">
+                      <span class="rendition-kind">{rendition.kind}</span>
+                      <span class="rendition-size">
+                        {rendition.width && rendition.height
+                          ? `${rendition.width}×${rendition.height}`
+                          : formatFileSize(rendition.byteSize)}
+                      </span>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            </section>
+          {/if}
+        </div>
+      {:else if tab === "preview"}
         <div class="media-preview-container">
           {#if mediaPreviewUrl}
             {#if isImage(media.kind)}
@@ -523,47 +514,41 @@
               ></iframe>
             {/if}
           {:else}
-            <div class="empty-state">
-              <p>Preview not available for this version.</p>
-            </div>
+            <EmptyState title="Preview not available" description="Preview is not available for this version." variant="compact" />
           {/if}
         </div>
-      </TabsContent>
-    {/if}
-
-    <TabsContent value="usage">
-      <div class="underlay-details-content">
-        {#if activeTab === "usage" && usagesData.loading}
-          <PageLoading message="Loading usage..." />
-        {:else if usagesData.error}
-          <FormError message={usagesData.error} />
-        {:else if usages.length === 0}
-          <div class="empty-state">
-            <p>This media is not used anywhere yet.</p>
-          </div>
-        {:else}
-          <InlineListCard
-            title="Usages"
-            hasItems={true}
-          >
-            {#each usages as usage}
-              <InlineListItem
-                label={usage.usedByType}
-                accent={getMediaMetaAccent("usage")}
-              >
-                {#snippet sublabelContent()}
-                  <Code>{usage.usedById}</Code>
-                  {#if usage.field}
-                    <span class="usage-field"> · {usage.field}</span>
-                  {/if}
-                {/snippet}
-              </InlineListItem>
-            {/each}
-          </InlineListCard>
-        {/if}
-      </div>
-    </TabsContent>
-  </TabsRoot>
+      {:else if tab === "usage"}
+        <div class="underlay-details-content">
+          {#if activeTab === "usage" && usagesData.loading}
+            <PageLoading message="Loading usage..." />
+          {:else if usagesData.error}
+            <FormError message={usagesData.error} />
+          {:else if usages.length === 0}
+            <EmptyState title="No usage found" description="This media is not used anywhere yet." variant="compact" />
+          {:else}
+            <InlineListCard
+              title="Usages"
+              hasItems={true}
+            >
+              {#each usages as usage}
+                <InlineListItem
+                  label={usage.usedByType}
+                  accent={getMediaMetaAccent("usage")}
+                >
+                  {#snippet sublabelContent()}
+                    <Code>{usage.usedById}</Code>
+                    {#if usage.field}
+                      <span class="usage-field"> · {usage.field}</span>
+                    {/if}
+                  {/snippet}
+                </InlineListItem>
+              {/each}
+            </InlineListCard>
+          {/if}
+        </div>
+      {/if}
+    {/snippet}
+  </DetailPageShell>
 
   <!-- Edit Dialog -->
   <FormDialog
@@ -679,16 +664,6 @@
 <style>
   .deleted-date {
     color: var(--color-danger, #ef4444);
-  }
-
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    padding: 3rem;
-    text-align: center;
-    color: var(--admin-color-text-muted);
   }
 
   .usage-field {
