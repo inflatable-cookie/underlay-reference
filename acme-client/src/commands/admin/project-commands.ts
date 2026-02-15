@@ -14,10 +14,6 @@ import {
   appendQueryParams,
   type QueryParams,
 } from "@decodelabs/underlay/client";
-import {
-  appendSuggestionParams,
-  type SuggestionRequestOptions,
-} from "@decodelabs/underlay/patterns";
 import { toSnakeQueryParams } from "./utils.js";
 
 /**
@@ -37,20 +33,6 @@ export async function listProjects(
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const path = appendQueryParams("/v1/admin/projects", toSnakeQueryParams(query));
   const response = await http.get<ListResponse<ProjectWithCounts>>(path);
-  return response.data;
-}
-
-/**
- * List projects for suggestions (RelationSelector).
- */
-export async function listProjectsForSuggestions(
-  fetchFn: typeof fetch,
-  accessToken: string,
-  options?: SuggestionRequestOptions
-): Promise<Project[]> {
-  const http = getAdminHttpClient({ fetchFn, accessToken });
-  const path = appendSuggestionParams("/v1/admin/projects", options);
-  const response = await http.get<ListResponse<Project>>(path);
   return response.data;
 }
 
@@ -112,22 +94,6 @@ export async function softDeleteProject(
 ): Promise<void> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   await http.delete(`/v1/admin/projects/${encodeURIComponent(projectId)}`);
-}
-
-/**
- * Restore a soft-deleted project.
- */
-export async function restoreProject(
-  projectId: string,
-  fetchFn: typeof fetch,
-  accessToken: string
-): Promise<Project> {
-  const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.post<SingleResponse<Project>>(
-    `/v1/admin/projects/${encodeURIComponent(projectId)}/restore`,
-    {}
-  );
-  return response.data;
 }
 
 /**

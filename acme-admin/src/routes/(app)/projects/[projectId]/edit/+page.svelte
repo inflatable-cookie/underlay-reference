@@ -1,7 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import type { PageData } from "./$types";
-  import type { Project, Category, CategoryWithCounts } from "acme-client";
+  import type { Project, Category } from "acme-client";
   import { adminCommands } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
@@ -25,21 +25,18 @@
 
   let { data }: Props = $props();
 
-  // Fetch project and categories data
+  // Fetch project data
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const [project, categories] = await Promise.all([
-        adminCommands.getProject(data.projectId, fetch, token),
-        adminCommands.listCategories(fetch, token)
-      ]);
+      const project = await adminCommands.getProject(data.projectId, fetch, token);
       if (!project) {
         throw new Error("Project not found");
       }
-      return { project, categories };
+      return { project };
     },
     {
       getToken: () => auth.getToken(),
-      defaultValue: { project: null as Project | null, categories: [] as CategoryWithCounts[] }
+      defaultValue: { project: null as Project | null }
     }
   );
 
@@ -49,7 +46,13 @@
   });
 
   const project = $derived(pageData.data?.project);
-  const categories = $derived(pageData.data?.categories ?? []);
+
+  // Lazy-load categories for the RelationSelector
+  async function fetchCategories(): Promise<Category[]> {
+    const token = auth.getToken();
+    if (!token) return [];
+    return adminCommands.listCategoriesForSuggestions(fetch, token);
+  }
 
   // Function to create categories inline
   async function createCategoryInline(
@@ -61,16 +64,11 @@
     const token = auth.getToken();
     if (!token) throw new Error("Not authenticated");
 
-    const category = await adminCommands.createCategory(
+    return adminCommands.createCategory(
       { name, slug, description, color },
       fetch,
       token
     );
-
-    // Refresh the categories list
-    await pageData.refetch();
-
-    return category;
   }
 
   // Navigation context
@@ -201,7 +199,7 @@
     <ProjectForm
       mode="edit"
       projectId={project.id}
-      {categories}
+      {fetchCategories}
       createCategory={createCategoryInline}
       values={{
         name: typeof formValues?.name === "string" ? formValues.name : project.name,

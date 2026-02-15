@@ -23,18 +23,15 @@
   let submitting = $state(false);
   let error = $state<string | null>(null);
 
-  // Fetch project and labels data
+  // Fetch project data
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const [project, labels] = await Promise.all([
-        adminCommands.getProject(data.projectId, fetch, token),
-        adminCommands.listLabels(data.projectId, fetch, token)
-      ]);
-      return { project, labels };
+      const project = await adminCommands.getProject(data.projectId, fetch, token);
+      return { project };
     },
     {
       getToken: () => auth.getToken(),
-      defaultValue: { project: null as Project | null, labels: [] as Label[] }
+      defaultValue: { project: null as Project | null }
     }
   );
 
@@ -44,7 +41,18 @@
   });
 
   const project = $derived(pageData.data?.project);
-  const labels = $derived(pageData.data?.labels ?? []);
+
+  // Lazy-load labels (non-blocking, fetched after page renders)
+  let labels = $state<Label[]>([]);
+
+  $effect(() => {
+    if (!project) return;
+    const token = auth.getToken();
+    if (!token) return;
+    adminCommands.listLabels(data.projectId, fetch, token).then((result) => {
+      labels = result;
+    });
+  });
 
   const priorityItems = [
     { value: TaskPriority.Low, label: "Low" },

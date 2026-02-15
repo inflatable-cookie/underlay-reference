@@ -111,22 +111,6 @@ export async function softDeleteCategory(
 }
 
 /**
- * Restore a soft-deleted category.
- */
-export async function restoreCategory(
-  categoryId: string,
-  fetchFn: typeof fetch,
-  accessToken: string
-): Promise<Category> {
-  const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.post<SingleResponse<Category>>(
-    `/v1/admin/categories/${encodeURIComponent(categoryId)}/restore`,
-    {}
-  );
-  return response.data;
-}
-
-/**
  * Reorder categories.
  */
 export async function reorderCategories(

@@ -25,20 +25,18 @@
   let error = $state<string | null>(null);
   let initialized = $state(false);
 
-  // Fetch task, project, labels data
+  // Fetch task and project data
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const [task, project, allLabels, taskLabels] = await Promise.all([
+      const [task, project] = await Promise.all([
         adminCommands.getTask(data.projectId, data.taskId, fetch, token),
-        adminCommands.getProject(data.projectId, fetch, token),
-        adminCommands.listLabels(data.projectId, fetch, token),
-        adminCommands.getTaskLabels(data.projectId, data.taskId, fetch, token)
+        adminCommands.getProject(data.projectId, fetch, token)
       ]);
-      return { task, project, allLabels, taskLabels };
+      return { task, project };
     },
     {
       getToken: () => auth.getToken(),
-      defaultValue: { task: null as Task | null, project: null as Project | null, allLabels: [] as Label[], taskLabels: [] as Label[] }
+      defaultValue: { task: null as Task | null, project: null as Project | null }
     }
   );
 
@@ -47,24 +45,40 @@
     pageData.tryFetch($authLoading, $currentUser);
   });
 
-  // Initialize form when data loads
+  const task = $derived(pageData.data?.task);
+  const project = $derived(pageData.data?.project);
+
+  // Initialize form when task data loads
   $effect(() => {
-    const task = pageData.data?.task;
-    const taskLabels = pageData.data?.taskLabels ?? [];
     if (task && !initialized) {
       title = task.title;
       description = task.description ?? "";
       status = task.status;
       priority = task.priority;
       dueDate = task.dueDate?.split("T")[0] ?? "";
-      selectedLabelIds = taskLabels.map((l: Label) => l.id);
       initialized = true;
     }
   });
 
-  const task = $derived(pageData.data?.task);
-  const project = $derived(pageData.data?.project);
-  const allLabels = $derived(pageData.data?.allLabels ?? []);
+  // Lazy-load labels (non-blocking, fetched after page renders)
+  let allLabels = $state<Label[]>([]);
+  let labelsInitialized = $state(false);
+
+  $effect(() => {
+    if (!task) return;
+    const token = auth.getToken();
+    if (!token) return;
+    Promise.all([
+      adminCommands.listLabels(data.projectId, fetch, token),
+      adminCommands.getTaskLabels(data.projectId, data.taskId, fetch, token)
+    ]).then(([labels, taskLabels]) => {
+      allLabels = labels;
+      if (!labelsInitialized) {
+        selectedLabelIds = taskLabels.map((l: Label) => l.id);
+        labelsInitialized = true;
+      }
+    });
+  });
 
   const statusItems = [
     { value: TaskStatus.Pending, label: "Pending" },

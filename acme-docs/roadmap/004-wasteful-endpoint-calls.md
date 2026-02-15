@@ -24,142 +24,82 @@ This codebase is relatively clean. The reference app has no N+1 fan-out, no exha
 
 ---
 
-## Phase 1 - Eager Filter Data Fetches (Pattern G + B)
+## Phase 1 - Eager Filter Data Fetches (Pattern G + B) ✓
 
-Priority: **High**
+Priority: **High** — Completed
 
 These are the most impactful fixes — removing unnecessary API calls from page load.
 
-### 1.1 Projects list: lazy-load category filter dropdown
+### 1.1 Projects list: lazy-load category filter dropdown ✓
 
-- [ ] Remove `adminCommands.listCategories()` from `useAuthenticatedData` callback
-- [ ] Switch category filter `Select` to use `loadItems` prop with async loader
-- [ ] Use `listCategoriesForSuggestions` (already exists, currently unused) for lighter payload
+- [x] Remove `adminCommands.listCategories()` from `useAuthenticatedData` callback
+- [x] Switch category filter `Select` to use `loadItems` prop with async loader
+- [x] Use `listCategoriesForSuggestions` for lighter payload
 
-Files:
-- `acme-admin/src/routes/(app)/projects/+page.svelte` (lines 46-49, 165-171)
+### 1.2 Project edit/new forms: lazy-load category dropdown ✓
 
-Current behavior: `listCategories()` returns `CategoryWithCounts[]` (with `projectCount` subquery) on every page load. Categories are only used for the filter dropdown — the `projectCount` field is discarded at line 167.
+- [x] Remove `adminCommands.listCategories()` from `useAuthenticatedData` callback
+- [x] Switch to `fetchCategories` prop path using `listCategoriesForSuggestions`
+- [x] New project page: removed `useAuthenticatedData` entirely (was only used for categories)
 
-Expected behavior: Category options load on first dropdown open via `Select.loadItems`. No category API call on page load.
+### 1.3 Task edit/new forms: lazy-load label selector ✓
 
-### 1.2 Project edit form: lazy-load category dropdown
-
-- [ ] Remove `adminCommands.listCategories()` from `useAuthenticatedData` callback
-- [ ] Switch `ProjectForm` category selector to use `loadItems` or pass a loader function
-- [ ] Use `listCategoriesForSuggestions` for lighter payload
-
-Files:
-- `acme-admin/src/routes/(app)/projects/[projectId]/edit/+page.svelte` (line 33)
-- `acme-admin/src/routes/(app)/projects/new/+page.svelte` (likely same pattern)
-- `acme-admin/src/lib/forms/ProjectForm.svelte`
-
-Current behavior: Full `CategoryWithCounts[]` fetched eagerly on page load. `ProjectForm.categoryToSelectable()` only uses `id`, `name`, `description`.
-
-Expected behavior: Category options lazy-load when user opens the selector.
-
-### 1.3 Task edit/new forms: lazy-load label selector
-
-- [ ] Remove `adminCommands.listLabels()` from `useAuthenticatedData` callback
-- [ ] Defer label loading until label section is visible or interacted with
-
-Files:
-- `acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/edit/+page.svelte` (line 34)
-- `acme-admin/src/routes/(app)/projects/[projectId]/tasks/new/+page.svelte` (line 31)
-
-Current behavior: All project labels fetched on page load even though labels are an optional section of the form.
-
-Expected behavior: Labels load lazily when the label section is expanded or first interacted with.
+- [x] Remove `adminCommands.listLabels()` from `useAuthenticatedData` `Promise.all`
+- [x] Labels now load non-blocking after page renders via separate `$effect`
+- [x] Task edit: `getTaskLabels` also deferred with separate `labelsInitialized` flag
 
 ---
 
-## Phase 2 - DTO Right-Sizing (Pattern I)
+## Phase 2 - DTO Right-Sizing (Pattern I) ✓
 
-Priority: **Medium**
+Priority: **Medium** — Completed (addressed as part of Phase 1)
 
-### 2.1 Use suggestion endpoints for dropdowns
+### 2.1 Use suggestion endpoints for dropdowns ✓
 
-- [ ] Replace `listCategories()` calls in filter/form contexts with `listCategoriesForSuggestions()`
-- [ ] Audit `ProjectForm` to accept `Category[]` instead of `CategoryWithCounts[]`
-
-Files:
-- `acme-admin/src/routes/(app)/projects/+page.svelte`
-- `acme-admin/src/routes/(app)/projects/[projectId]/edit/+page.svelte`
-- `acme-admin/src/routes/(app)/projects/new/+page.svelte`
-- `acme-admin/src/lib/forms/ProjectForm.svelte`
-
-Current behavior: `listCategories()` returns `CategoryWithCounts` with a `projectCount` subquery. Filter dropdowns and form selectors discard `projectCount`.
-
-Expected behavior: Dropdown/form contexts use `listCategoriesForSuggestions()` which returns lightweight `Category[]` without count subqueries.
+- [x] All category filter/form contexts now use `listCategoriesForSuggestions()` instead of `listCategories()`
+- [x] Projects list, project edit, project new — all three switched
 
 ---
 
-## Phase 3 - Tab Content Lazy-Mount (Pattern A)
+## Phase 3 - Tab Content Lazy-Mount (Pattern A) ✓
 
-Priority: **Low**
+Priority: **Low** — Completed
 
-### 3.1 Emails detail: migrate to DetailPageShell or add lazy-mount
+### 3.1 Emails detail: migrated to DetailPageShell ✓
 
-- [ ] Either migrate to DetailPageShell (which has built-in lazy-mount) or add conditional rendering
+- [x] Migrated from PageHeader + TabsRoot/TabsList/TabsTrigger/TabsContent to DetailPageShell
+- [x] Replaced manual AlertDialog + DropdownMenu delete flow with EntityActionsMenu
+- [x] Dynamic `emailTabs` array computed from email content (conditional html/text/source/headers)
+- [x] Copy actions for ID, from address, and to addresses moved to EntityActionsMenu copies
 
-File:
-- `acme-admin/src/routes/(app)/system/emails/[id]/+page.svelte`
+### 3.2 Scheduled tasks detail: migrated to DetailPageShell ✓
 
-Current behavior: All four tab panels (html, text, source, headers) mount simultaneously. Uses raw `TabsRoot`/`TabsContent` without lazy-mount guards.
-
-Mitigating factor: Single API call returns all tab data — no wasted network requests. The waste is purely DOM rendering (inactive tabs render hidden content). Impact is low because email data is typically small.
-
-Expected behavior: Only the active tab's content renders. DetailPageShell migration would fix this automatically.
-
-### 3.2 Scheduled tasks detail: migrate to DetailPageShell
-
-- [ ] Migrate to DetailPageShell for consistency (data deferral is already correct)
-
-File:
-- `acme-admin/src/routes/(app)/system/scheduled-tasks/[id]/+page.svelte`
-
-Current behavior: Uses raw `TabsRoot`/`TabsContent` but data fetching is already properly deferred (jobs tab data only loads on tab activation). However, the `TabsContent` for job-runs still mounts its DOM even when the tab is inactive.
-
-Expected behavior: Migrate to DetailPageShell for lazy-mount and consistent patterns.
+- [x] Migrated from PageHeader + TabsRoot to DetailPageShell with tabs + tabContent
+- [x] DetailMeta with ID and enabled/disabled Pill replaces PageHeaderMeta
+- [x] Tab lazy-mount now automatic via DetailPageShell's mountedTabsSet pattern
 
 ---
 
-## Phase 4 - Dead Endpoint Cleanup (Pattern D)
+## Phase 4 - Dead Endpoint Cleanup (Pattern D) ✓
 
-Priority: **Low**
+Priority: **Low** — Completed
 
-### 4.1 Remove or implement unused suggestion endpoints
+### 4.1 Suggestion endpoints ✓
 
-- [ ] Decide: use `listCategoriesForSuggestions` in dropdown contexts (see Phase 1) or remove
-- [ ] Decide: use `listProjectsForSuggestions` somewhere or remove
+- [x] `listCategoriesForSuggestions` — now actively used (3 callers after Phase 1). Kept.
+- [x] `listProjectsForSuggestions` — removed (no callers, no planned use)
 
-Files:
-- `acme-client/src/commands/admin/category-commands.ts` (`listCategoriesForSuggestions`)
-- `acme-client/src/commands/admin/project-commands.ts` (`listProjectsForSuggestions`)
+### 4.2 Unused restore commands ✓
 
-Status: Both exported from `admin-commands.ts` but never called from acme-admin or acme-front.
+- [x] `restoreCategory` — removed (no restore UI exists)
+- [x] `restoreProject` — removed (no restore UI exists)
+- `restoreTask` — does not exist (roadmap entry was incorrect)
 
-### 4.2 Remove or implement unused restore commands
+Note: Media has a working restore flow via `MediaActionsMenu`. If restore is needed for categories/projects in the future, the commands can be re-added following that pattern.
 
-- [ ] Decide: implement restore UI for soft-deleted categories, projects, and tasks, or remove commands
+### 4.3 Unused activity endpoint ✓
 
-Files:
-- `acme-client/src/commands/admin/category-commands.ts` (`restoreCategory`)
-- `acme-client/src/commands/admin/project-commands.ts` (`restoreProject`)
-- `acme-client/src/commands/admin/task-commands.ts` (`restoreTask`)
-
-Status: All three exported but no UI path exists to invoke them. Categories and projects can be soft-deleted via the admin UI but there is no restore action.
-
-Note: Media has a working restore flow via `MediaActionsMenu`. The pattern exists but wasn't extended to categories/projects.
-
-### 4.3 Remove or implement unused activity endpoint
-
-- [ ] Decide: implement entity-specific activity view or remove
-
-Files:
-- `acme-client/src/commands/admin/activity-commands.ts` (`listActivityForEntity`)
-
-Status: Exported but never called. Only `listActivity` (global feed) and `listActivityForUser` (user-specific) are used.
+- [x] `listActivityForEntity` — removed (only `listActivity` and `listActivityForUser` are used)
 
 ---
 
@@ -180,7 +120,7 @@ The following patterns from the sweep were audited and found clean:
 
 ### Note 1: DetailPageShell lazy-mount is well-implemented
 
-The `DetailPageShell` component uses a `mountedTabsSet` pattern that properly lazy-mounts tab content on first activation and keeps it mounted thereafter. All three pages migrated to DetailPageShell (users, categories, media) benefit from this automatically.
+The `DetailPageShell` component uses a `mountedTabsSet` pattern that properly lazy-mounts tab content on first activation and keeps it mounted thereafter. All five pages now using DetailPageShell (users, categories, media, emails, scheduled tasks) benefit from this automatically.
 
 ### Note 2: Data deferral patterns are well-structured
 

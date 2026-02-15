@@ -25,29 +25,6 @@ export async function listActivity(
 }
 
 /**
- * List activity for a specific entity.
- */
-export async function listActivityForEntity(
-  entityType: string,
-  entityId: string,
-  fetchFn: typeof fetch,
-  accessToken: string,
-  query?: ListActivityQuery
-): Promise<ActivityListResponse> {
-  const http = getAdminHttpClient({ fetchFn, accessToken });
-
-  const params = new URLSearchParams();
-  if (query?.limit !== undefined) params.set("limit", String(query.limit));
-  if (query?.offset !== undefined) params.set("offset", String(query.offset));
-
-  const queryString = params.toString();
-  const basePath = `/v1/admin/activity/entity/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}`;
-  const path = queryString ? `${basePath}?${queryString}` : basePath;
-
-  return await http.get<ActivityListResponse>(path);
-}
-
-/**
  * List activity performed by a specific user.
  */
 export async function listActivityForUser(

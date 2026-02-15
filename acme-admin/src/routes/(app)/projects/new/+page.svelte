@@ -1,37 +1,25 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { adminCommands, type Category, type CategoryWithCounts } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { adminCommands, type Category } from "acme-client";
+  import { auth } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
   import ProjectForm from "$lib/forms/ProjectForm.svelte";
   import {
     SpaFormShell,
     consumeNavigationContext,
-    useAuthenticatedData,
     type SpaFormResult
   } from "@decodelabs/underlay/patterns";
-  import { PageLoading, FormError } from "@decodelabs/underlay/components";
 
   // Navigation context
   const defaultBackHref = "/projects";
   const { backInfo, returnTo } = consumeNavigationContext("Back to projects", defaultBackHref);
 
-  // Fetch categories for the selector
-  const pageData = useAuthenticatedData(
-    async (fetch, token) => {
-      const categories = await adminCommands.listCategories(fetch, token);
-      return { categories };
-    },
-    {
-      getToken: () => auth.getToken(),
-      defaultValue: { categories: [] as CategoryWithCounts[] }
-    }
-  );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
+  // Lazy-load categories for the RelationSelector
+  async function fetchCategories(): Promise<Category[]> {
+    const token = auth.getToken();
+    if (!token) return [];
+    return adminCommands.listCategoriesForSuggestions(fetch, token);
+  }
 
   // Function to create categories inline
   async function createCategoryInline(
@@ -43,16 +31,11 @@
     const token = auth.getToken();
     if (!token) throw new Error("Not authenticated");
 
-    const category = await adminCommands.createCategory(
+    return adminCommands.createCategory(
       { name, slug, description, color },
       fetch,
       token
     );
-
-    // Refresh the categories list
-    await pageData.refetch();
-
-    return category;
   }
 
   // Form state
@@ -135,39 +118,33 @@
   }
 </script>
 
-{#if pageData.loading}
-  <PageLoading message="Loading..." />
-{:else if pageData.error}
-  <FormError message={pageData.error} />
-{:else}
-  <SpaFormShell
-    section="New Project"
-    subtitle="Create a new project to organize your tasks"
-    backHref={backInfo.href}
-    backLabel={backInfo.label}
-    backIsContextual={backInfo.isContextual ?? false}
-    success={success === true}
-    successMessage="Project created successfully."
-    error={success === false && !fieldErrors ? error : null}
-    {fieldErrors}
-    onSubmit={handleSubmit}
-    onResult={handleResult}
-    navigate={goto}
-  >
-    <ProjectForm
-      mode="create"
-      categories={pageData.data?.categories ?? []}
-      createCategory={createCategoryInline}
-      values={{
-        name: typeof formValues?.name === "string" ? formValues.name : "",
-        description: typeof formValues?.description === "string" ? formValues.description : "",
-        categoryId: typeof formValues?.categoryId === "string" ? formValues.categoryId : null,
-        status: "active"
-      }}
-      errors={fieldErrors}
-      cancelHref={backInfo.href}
-      {returnTo}
-      bind:intent
-    />
-  </SpaFormShell>
-{/if}
+<SpaFormShell
+  section="New Project"
+  subtitle="Create a new project to organize your tasks"
+  backHref={backInfo.href}
+  backLabel={backInfo.label}
+  backIsContextual={backInfo.isContextual ?? false}
+  success={success === true}
+  successMessage="Project created successfully."
+  error={success === false && !fieldErrors ? error : null}
+  {fieldErrors}
+  onSubmit={handleSubmit}
+  onResult={handleResult}
+  navigate={goto}
+>
+  <ProjectForm
+    mode="create"
+    {fetchCategories}
+    createCategory={createCategoryInline}
+    values={{
+      name: typeof formValues?.name === "string" ? formValues.name : "",
+      description: typeof formValues?.description === "string" ? formValues.description : "",
+      categoryId: typeof formValues?.categoryId === "string" ? formValues.categoryId : null,
+      status: "active"
+    }}
+    errors={fieldErrors}
+    cancelHref={backInfo.href}
+    {returnTo}
+    bind:intent
+  />
+</SpaFormShell>

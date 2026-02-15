@@ -27,7 +27,7 @@
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { ProjectListCard } from "$lib/cards";
   import { BatchActionBar } from "$lib/components";
-  import { adminCommands, type ProjectWithCounts, type CategoryWithCounts } from "acme-client";
+  import { adminCommands, type ProjectWithCounts } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
   import Plus from "lucide-svelte/icons/plus";
@@ -39,19 +39,16 @@
   // Track URL for refetching when filters change
   let previousUrl = $state<string | null>(null);
 
-  // Fetch projects and categories using authenticated data pattern
+  // Fetch projects
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
       const query = parseQueryParams($page.url.searchParams);
-      const [projects, categories] = await Promise.all([
-        adminCommands.listProjects(fetch, token, query),
-        adminCommands.listCategories(fetch, token)
-      ]);
-      return { projects, categories };
+      const projects = await adminCommands.listProjects(fetch, token, query);
+      return { projects };
     },
     {
       getToken: () => auth.getToken(),
-      defaultValue: { projects: [] as ProjectWithCounts[], categories: [] as CategoryWithCounts[] },
+      defaultValue: { projects: [] as ProjectWithCounts[] },
       onSuccess: () => {
         previousUrl = $page.url.search;
       }
@@ -162,13 +159,15 @@
     { value: "on_hold", label: "On Hold" }
   ];
 
-  const categoryItems = $derived([
-    { value: "All", label: "All categories" },
-    ...(pageData.data?.categories ?? []).map((c) => ({
-      value: c.id,
-      label: c.name
-    }))
-  ]);
+  async function loadCategoryItems() {
+    const token = auth.getToken();
+    if (!token) return [{ value: "All", label: "All categories" }];
+    const categories = await adminCommands.listCategoriesForSuggestions(fetch, token);
+    return [
+      { value: "All", label: "All categories" },
+      ...categories.map((c) => ({ value: c.id, label: c.name }))
+    ];
+  }
 
   // Update URL when sort changes
   function handleSortChange(newOrderBy: OrderByValue) {
@@ -340,7 +339,7 @@
         id="category"
         value={selectedCategoryId}
         onchange={handleCategoryChange}
-        items={categoryItems}
+        loadItems={loadCategoryItems}
         placeholder="All categories"
         clearable
         defaultValue="All"

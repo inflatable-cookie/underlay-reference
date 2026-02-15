@@ -2,27 +2,21 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
-    PageHeader,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
-    PageHeaderMetaSeparator,
+    DetailPageShell,
+    DetailMeta,
+    DetailMetaId,
+    DetailMetaSeparator,
     useToasts,
     useAuthenticatedData
   } from "@decodelabs/underlay/patterns";
   import {
     Badge,
     Card,
-    Code,
     DataTable,
     DropdownMenu,
     FormError,
     PageLoading,
     Pill,
-    TabsRoot,
-    TabsList,
-    TabsTrigger,
-    TabsContent,
     TimeAgo,
     type DataTableColumn
   } from "@decodelabs/underlay/components";
@@ -184,45 +178,38 @@
   ];
 </script>
 
-<section class="task-detail-page">
-  <PageHeader
+{#if pageData.loading && !task}
+  <PageLoading message="Loading task details..." />
+{:else if pageData.error}
+  <FormError message={pageData.error} />
+{:else if task}
+  <DetailPageShell
     section="Scheduled Task"
-    title={task ? formatTaskName(task.name) : "Not Found"}
+    title={formatTaskName(task.name)}
     backHref="/system/scheduled-tasks"
     backLabel="Back to tasks"
+    tabs={[
+      { value: "details", label: "Details" },
+      { value: "job-runs", label: "Job Runs" }
+    ]}
+    bind:activeTab
   >
-    {#if task}
-      <PageHeaderMeta>
-        <PageHeaderMetaRow>
-          <PageHeaderMetaItem label="ID">
-            <Code copy>{task.id}</Code>
-          </PageHeaderMetaItem>
-          <PageHeaderMetaSeparator />
-          <Pill accent={task.enabled ? "#10b981" : "#6b7280"}>
-            {task.enabled ? "Enabled" : "Disabled"}
-          </Pill>
-        </PageHeaderMetaRow>
-      </PageHeaderMeta>
-    {/if}
-    {#snippet actions()}
-      {#if task}
-        <DropdownMenu items={menuItems} triggerAriaLabel="Task actions" />
-      {/if}
+    {#snippet meta()}
+      <DetailMeta>
+        <DetailMetaId value={task.id} />
+        <DetailMetaSeparator />
+        <Pill accent={task.enabled ? "#10b981" : "#6b7280"}>
+          {task.enabled ? "Enabled" : "Disabled"}
+        </Pill>
+      </DetailMeta>
     {/snippet}
-  </PageHeader>
 
-  {#if pageData.loading && !task}
-    <PageLoading message="Loading task details..." />
-  {:else if pageData.error}
-    <FormError message={pageData.error} />
-  {:else if task}
-    <TabsRoot bind:value={activeTab} variant="boxed" size="sm" historyKey="tab">
-      <TabsList>
-        <TabsTrigger value="details">Details</TabsTrigger>
-        <TabsTrigger value="job-runs">Job Runs</TabsTrigger>
-      </TabsList>
+    {#snippet actions()}
+      <DropdownMenu items={menuItems} triggerAriaLabel="Task actions" />
+    {/snippet}
 
-      <TabsContent value="details">
+    {#snippet tabContent(tab)}
+      {#if tab === "details"}
         <div class="details-content">
         <div class="task-detail-page__grid">
           <Card>
@@ -282,9 +269,7 @@
           </div>
         </Card>
         </div>
-      </TabsContent>
-
-      <TabsContent value="job-runs">
+      {:else if tab === "job-runs"}
         <div class="jobs-list">
           <DataTable
             data={jobs}
@@ -315,18 +300,12 @@
             {/snippet}
           </DataTable>
         </div>
-      </TabsContent>
-    </TabsRoot>
-  {/if}
-</section>
+      {/if}
+    {/snippet}
+  </DetailPageShell>
+{/if}
 
 <style>
-  .task-detail-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
   .details-content {
     display: flex;
     flex-direction: column;
