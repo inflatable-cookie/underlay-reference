@@ -3,7 +3,7 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { adminCommands, type Project, type TaskWithLabels, TaskStatus, TaskPriority } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import {
     useAuthenticatedData,
     PageHeader,
@@ -49,18 +49,12 @@
       return { project, tasks };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { project: null as Project | null, tasks: [] as TaskWithLabels[] },
       onSuccess: () => {
         previousUrl = $page.url.search;
       }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // Refetch when URL changes (for sorting/filtering)
   $effect(() => {

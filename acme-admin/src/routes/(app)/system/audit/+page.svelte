@@ -4,10 +4,7 @@
   import { PageHeader, useAuthenticatedData } from "@decodelabs/underlay/patterns";
   import { LogList, type LogEntry, type LogFilter, type LogActor } from "@decodelabs/underlay/components";
   import { adminCommands } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
-
-  // Track URL for refetching when filters change
-  let previousUrl = $state<string | null>(null);
+  import { auth } from "$lib/stores/auth";
 
   // Derive filters from URL
   const filterValues = $derived({
@@ -53,27 +50,9 @@
       return { entries: response.data };
     },
     {
-      getToken: () => auth.getToken(),
-      defaultValue: { entries: [] },
-      onSuccess: () => {
-        previousUrl = $page.url.search;
-      }
+      defaultValue: { entries: [] }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
-
-  // Refetch when URL changes (for filtering)
-  $effect(() => {
-    const currentUrl = $page.url.search;
-    if (previousUrl !== null && previousUrl !== currentUrl) {
-      previousUrl = currentUrl;
-      pageData.refetch();
-    }
-  });
 
   // Transform activity entries to LogEntry format
   const logEntries = $derived<LogEntry[]>(

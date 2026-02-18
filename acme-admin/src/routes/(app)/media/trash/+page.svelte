@@ -20,7 +20,7 @@
     ConfirmAction
   } from "@decodelabs/underlay/components";
   import { mediaCommands, type MediaSummary } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Trash2 from "lucide-svelte/icons/trash-2";
 
@@ -33,15 +33,9 @@
       return { media };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { media: [] as MediaSummary[] }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   async function handleRestore(mediaId: string) {
     const token = auth.getToken();

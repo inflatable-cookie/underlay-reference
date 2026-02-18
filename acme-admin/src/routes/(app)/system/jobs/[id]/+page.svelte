@@ -25,7 +25,7 @@
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Ban from "lucide-svelte/icons/ban";
   import { adminCommands, type JobDetail } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { getJobStatusAccent } from "$lib/utils/accents";
 
   const toastStore = useToasts();
@@ -39,15 +39,9 @@
       return { job };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { job: undefined as JobDetail | undefined }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   const job = $derived(pageData.data?.job);
 

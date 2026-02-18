@@ -37,7 +37,6 @@
       return { task };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { task: undefined as ScheduledTaskDetail | undefined }
     }
   );
@@ -54,15 +53,10 @@
       return { jobs };
     },
     {
-      getToken: () => auth.getToken(),
+      getAuthLoading: () => true,
       defaultValue: { jobs: [] as JobSummary[] }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // Fetch jobs when task is loaded and tab is job-runs
   $effect(() => {

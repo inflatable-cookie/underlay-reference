@@ -28,7 +28,7 @@
   import { ProjectListCard } from "$lib/cards";
   import { BatchActionBar } from "$lib/components";
   import { adminCommands, type ProjectWithCounts } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
   import Plus from "lucide-svelte/icons/plus";
   import Briefcase from "lucide-svelte/icons/briefcase";
@@ -47,18 +47,12 @@
       return { projects };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { projects: [] as ProjectWithCounts[] },
       onSuccess: () => {
         previousUrl = $page.url.search;
       }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // Refetch when URL changes (for sorting/filtering)
   $effect(() => {

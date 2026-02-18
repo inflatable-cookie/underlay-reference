@@ -3,7 +3,7 @@
   import type { PageData } from "./$types";
   import type { Project, Category } from "acme-client";
   import { adminCommands } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
   import ProjectForm from "$lib/forms/ProjectForm.svelte";
   import { goto } from "$app/navigation";
@@ -35,15 +35,9 @@
       return { project };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { project: null as Project | null }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   const project = $derived(pageData.data?.project);
 

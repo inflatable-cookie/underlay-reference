@@ -11,7 +11,7 @@
     PageLoading
   } from "@decodelabs/underlay/components";
   import { authCommands } from "acme-client";
-  import { auth, currentUser, authLoading } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
   import { toPublicKeyCreationOptions, credentialCreationToJson } from "@decodelabs/underlay/utils";
 
@@ -31,15 +31,9 @@
       return { passkeys: passkeyList as PasskeyCredential[] };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { passkeys: [] as PasskeyCredential[] }
     }
   );
-
-  // Fetch data when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // Passkey state
   type PasskeyStartResponse = {

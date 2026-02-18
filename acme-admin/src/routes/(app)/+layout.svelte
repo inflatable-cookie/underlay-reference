@@ -16,10 +16,12 @@
 	import AdminUserMenu from "$lib/ui/AdminUserMenu.svelte";
 
 	// Configure global auth handlers for useAuthenticatedData
-	// This enables automatic token refresh on 401 errors
+	// Enables automatic token refresh on 401 errors and auto-fetch on auth readiness
 	configureAuth({
 		getToken: () => auth.getToken(),
-		onRefresh: auth.getRefreshHandler()
+		onRefresh: auth.getRefreshHandler(),
+		getAuthLoading: () => $authLoading,
+		getCurrentUser: () => $currentUser
 	});
 
 	let { children } = $props();

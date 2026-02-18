@@ -19,7 +19,7 @@
     Pill
   } from "@decodelabs/underlay/components";
   import { adminCommands } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import type { CapturedEmailDetail } from "acme-client";
 
   const toastStore = useToasts();
@@ -31,14 +31,8 @@
       const email = await adminCommands.getCapturedEmail(id, fetch, token);
       return { email };
     },
-    {
-      getToken: () => auth.getToken()
-    }
+    {}
   );
-
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   const email = $derived(pageData.data?.email as CapturedEmailDetail | undefined);
 

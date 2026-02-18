@@ -21,9 +21,9 @@ This codebase is relatively clean. The reference app has no N+1 fan-out, no exha
 2. ~~Emails detail page mounts all tab content simultaneously~~ — Fixed
 3. ~~Heavy DTO used where lightweight suggestion endpoints already exist~~ — Fixed
 4. ~~Several dead/vestigial command exports~~ — Fixed
-5. Redundant per-page `getToken` and manual `tryFetch` $effect on all 27 pages (Pattern K)
-6. Unguarded filter-change `$effect` calling `refetch()` on 3 pages (Pattern J variant)
-7. Audit page wasteful refetch on URL filter change when filtering is client-side
+5. ~~Redundant per-page `getToken` and manual `tryFetch` $effect on all 27 pages (Pattern K)~~ — Fixed
+6. ~~Unguarded filter-change `$effect` calling `refetch()` on 3 pages (Pattern J variant)~~ — Fixed
+7. ~~Audit page wasteful refetch on URL filter change when filtering is client-side~~ — Fixed
 
 ---
 
@@ -106,15 +106,15 @@ Note: Media has a working restore flow via `MediaActionsMenu`. If restore is nee
 
 ---
 
-## Phase 5 - Enable Global Auto-Fetch (Pattern K)
+## Phase 5 - Enable Global Auto-Fetch (Pattern K) ✓
 
-Priority: **High**
+Priority: **High** — Completed
 
 Every page (27 total) has both a redundant `getToken` option and a manual `tryFetch` `$effect`, because `configureAuth()` in the layout does not yet provide `getAuthLoading`/`getCurrentUser`. The `getToken` option is already redundant (global config provides it), and enabling auto-fetch would eliminate all 27 manual `$effect` blocks.
 
-### 5.1 Extend `configureAuth()` in layout
+### 5.1 Extend `configureAuth()` in layout ✓
 
-- [ ] Add `getAuthLoading` and `getCurrentUser` to the `configureAuth()` call in `+layout.svelte`
+- [x] Add `getAuthLoading` and `getCurrentUser` to the `configureAuth()` call in `+layout.svelte`
 
 File: `acme-admin/src/routes/(app)/+layout.svelte` (lines 20-23)
 
@@ -136,13 +136,13 @@ configureAuth({
 });
 ```
 
-### 5.2 Remove redundant per-page `getToken` and manual `tryFetch` from all pages
+### 5.2 Remove redundant per-page `getToken` and manual `tryFetch` from all pages ✓
 
-- [ ] Remove `getToken: () => auth.getToken()` from every `useAuthenticatedData` options object
-- [ ] Remove every `$effect(() => { pageData.tryFetch($authLoading, $currentUser); })` block
-- [ ] Remove every `$effect(() => { *.tryFetch($authLoading, $currentUser); })` block (secondary data like `sessionsData`, `activityData`, `jobsData`) — replace with conditional `activeTab` gating via `queryKey` or keep as-is if tab-gated
-- [ ] Remove `authLoading` and `currentUser` from imports where no longer needed
-- [ ] Keep `import { auth }` where `auth.getToken()` is used for mutations
+- [x] Remove `getToken: () => auth.getToken()` from every `useAuthenticatedData` options object
+- [x] Remove every `$effect(() => { pageData.tryFetch($authLoading, $currentUser); })` block
+- [x] For tab-gated secondary data (sessions, activity, jobs, versions, usages): suppress auto-fetch via `getAuthLoading: () => true`, keep manual tab-gated `tryFetch` for lazy loading
+- [x] Remove `authLoading` and `currentUser` from imports where no longer needed
+- [x] Keep `import { auth }` where `auth.getToken()` is used for mutations
 
 Affected files (27):
 
@@ -178,15 +178,15 @@ Affected files (27):
 
 ---
 
-## Phase 6 - Guard Filter-Change Refetch Effects (Pattern J variant)
+## Phase 6 - Guard Filter-Change Refetch Effects (Pattern J variant) ✓
 
-Priority: **High**
+Priority: **High** — Completed
 
 Three pages use local state filters (not URL params) with an unguarded `$effect` that calls `refetch()` whenever `$currentUser` is truthy. This fires on mount alongside `tryFetch`, causing a double-fetch on initial page load.
 
-### 6.1 Users list: guard filter-change refetch
+### 6.1 Users list: guard filter-change refetch ✓
 
-- [ ] Add previous-value guard or use `queryKey` option to prevent mount-time double-fetch
+- [x] Added `hasFetched` flag set when `pageData.data && !pageData.loading` — filter $effect skips until initial fetch completes
 
 File: `acme-admin/src/routes/(app)/users/+page.svelte` (lines 56-65)
 
@@ -206,31 +206,29 @@ $effect(() => {
 
 The `refetch()` call fires on mount when `$currentUser` is already set, racing with `tryFetch`. Fix: add an `initialized` flag set after first successful fetch, or use `queryKey` option on `useAuthenticatedData`.
 
-### 6.2 Error logs list: guard filter-change refetch
+### 6.2 Error logs list: guard filter-change refetch ✓
 
-- [ ] Same pattern — add previous-value guard
+- [x] Same `hasFetched` pattern applied
 
 File: `acme-admin/src/routes/(app)/system/errors/+page.svelte` (lines 47-52)
 
-### 6.3 Jobs list: guard filter-change refetch
+### 6.3 Jobs list: guard filter-change refetch ✓
 
-- [ ] Same pattern — add previous-value guard
+- [x] Same `hasFetched` pattern applied
 
 File: `acme-admin/src/routes/(app)/system/jobs/+page.svelte` (lines 55-60)
 
 ---
 
-## Phase 7 - Audit Page Wasteful Refetch (Note)
+## Phase 7 - Audit Page Wasteful Refetch (Note) ✓
 
-Priority: **Low**
+Priority: **Low** — Completed
 
 File: `acme-admin/src/routes/(app)/system/audit/+page.svelte`
 
 The audit page has a correctly guarded URL-change `$effect` that calls `refetch()`, but the `useAuthenticatedData` fetcher ignores URL params — it always fetches `{ limit: 100 }` with no filtering. Filtering for `action` and `resource_type` is done client-side. This means every URL filter change triggers a full round-trip API refetch that returns the same data.
 
-Options:
-- [ ] Remove the URL-change refetch `$effect` (since filtering is client-side, refetch is a no-op)
-- [ ] OR move filtering to the API (add query params to `listActivity`) and keep the refetch
+Resolution: Removed the URL-change refetch `$effect`, `previousUrl` tracking state, and `onSuccess` callback since filtering is client-side. The `$derived` logEntries already applies client-side filters reactively when URL params change.
 
 ---
 

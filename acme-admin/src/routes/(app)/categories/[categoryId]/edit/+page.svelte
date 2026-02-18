@@ -3,7 +3,7 @@
   import type { PageData } from "./$types";
   import type { Category } from "acme-client";
   import { adminCommands } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
   import CategoryForm from "$lib/forms/CategoryForm.svelte";
   import { goto } from "$app/navigation";
@@ -35,15 +35,9 @@
       return { category };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { category: null as Category | null }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   const category = $derived(pageData.data?.category);
 

@@ -16,7 +16,7 @@
   import Mail from "lucide-svelte/icons/mail";
   import Filter from "lucide-svelte/icons/filter";
   import { adminCommands } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import type { CapturedEmailSummary } from "acme-client";
 
   const toastStore = useToasts();
@@ -52,18 +52,12 @@
       return { entries };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { entries: [] as CapturedEmailSummary[] },
       onSuccess: () => {
         previousUrl = $page.url.search;
       }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // Refetch when URL changes (for filtering)
   $effect(() => {

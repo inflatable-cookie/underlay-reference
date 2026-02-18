@@ -12,7 +12,7 @@
     PageLoading
   } from "@decodelabs/underlay/components";
   import { authCommands } from "acme-client";
-  import { auth, currentUser, authLoading } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
 
   // Page data - fetched when auth is ready
@@ -22,15 +22,9 @@
       return { totpEnabled: totpStatus.enabled };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { totpEnabled: false }
     }
   );
-
-  // Fetch data when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // State machine: "verify" | "password" | "success"
   type PasswordStep = "verify" | "password" | "success";

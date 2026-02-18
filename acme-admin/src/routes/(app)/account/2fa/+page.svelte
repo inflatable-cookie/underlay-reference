@@ -9,7 +9,7 @@
     PageLoading
   } from "@decodelabs/underlay/components";
   import { authCommands } from "acme-client";
-  import { auth, currentUser, authLoading } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
 
   // Page data - fetched when auth is ready
@@ -19,7 +19,6 @@
       return { totpEnabled: totpStatus.enabled };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { totpEnabled: false },
       onSuccess: (data) => {
         // Auto-trigger TOTP setup if not enabled
@@ -29,11 +28,6 @@
       }
     }
   );
-
-  // Fetch data when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // TOTP state
   let totpError = $state<string | null>(null);

@@ -3,7 +3,7 @@
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
   import { adminCommands, type UserDetail, type UserRole, type UserStatus } from "@api-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
   import UserForm from "$lib/forms/UserForm.svelte";
   import {
@@ -31,14 +31,9 @@
       return { user };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { user: null as UserDetail | null }
     }
   );
-
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   const user = $derived(pageData.data?.user);
 

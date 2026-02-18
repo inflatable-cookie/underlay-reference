@@ -2,7 +2,7 @@
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Project, type Label, TaskPriority } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
   import { Button, PageLoading, FormError, TextInput, TextArea, Select, Field } from "@decodelabs/underlay/components";
 
@@ -30,15 +30,9 @@
       return { project };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { project: null as Project | null }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   const project = $derived(pageData.data?.project);
 

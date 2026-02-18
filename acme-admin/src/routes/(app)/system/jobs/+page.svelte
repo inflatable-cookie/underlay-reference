@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { adminCommands, type JobSummary, type JobStats, type JobStatus } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
   import {
     Button,
@@ -41,20 +41,22 @@
       return { jobs, stats };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { jobs: [] as JobSummary[], stats: null as JobStats | null }
     }
   );
 
-  // Trigger fetch when auth is ready
+  // Track whether initial fetch has completed
+  let hasFetched = $state(false);
   $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
+    if (pageData.data && !pageData.loading) {
+      hasFetched = true;
+    }
   });
 
-  // Refetch when filter changes
+  // Refetch when filter changes (skip first run to avoid double-fetch on mount)
   $effect(() => {
     void statusFilter;
-    if ($currentUser) {
+    if (hasFetched) {
       pageData.refetch();
     }
   });

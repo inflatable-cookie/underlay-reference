@@ -36,7 +36,7 @@
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { mediaCommands, type MediaSummary } from "acme-client";
   import { BatchActionBar } from "$lib/components";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import Upload from "lucide-svelte/icons/upload";
   import Image from "lucide-svelte/icons/image";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -55,18 +55,12 @@
       return { items };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { items: [] as MediaSummary[] },
       onSuccess: () => {
         previousUrl = $page.url.search;
       }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // Refetch when URL changes (for sorting/filtering)
   $effect(() => {

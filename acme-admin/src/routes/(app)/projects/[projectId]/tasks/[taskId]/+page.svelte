@@ -2,7 +2,7 @@
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Task, type Label, type Project } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import {
     useAuthenticatedData,
     PageHeader,
@@ -39,15 +39,9 @@
       return { task, project, labels };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { task: null as Task | null, project: null as Project | null, labels: [] as Label[] }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   const task = $derived(pageData.data?.task);
   const project = $derived(pageData.data?.project);

@@ -13,7 +13,7 @@
 	import { PageHeader, useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
 	import { gotoWithContext } from "@decodelabs/underlay/client";
 	import Plus from "lucide-svelte/icons/plus";
-	import { auth, authLoading, currentUser } from "$lib/stores/auth";
+	import { auth } from "$lib/stores/auth";
 	import { getUserRoleAccent, getUserStatusAccent } from "$lib/utils/accents";
 
 	const PAGE_SIZE = 20;
@@ -42,24 +42,26 @@
 			return result;
 		},
 		{
-			getToken: () => auth.getToken(),
 			defaultValue: { data: [] as User[], total: 0, hasMore: false }
 		}
 	);
 
-	// Trigger fetch when auth is ready
+	// Track whether initial fetch has completed
+	let hasFetched = $state(false);
 	$effect(() => {
-		pageData.tryFetch($authLoading, $currentUser);
+		if (pageData.data && !pageData.loading) {
+			hasFetched = true;
+		}
 	});
 
-	// Refetch when filters change
+	// Refetch when filters change (skip first run to avoid double-fetch on mount)
 	$effect(() => {
 		void page;
 		void roleFilter;
 		void statusFilter;
 		void searchQuery;
 		void displayNameQuery;
-		if ($currentUser) {
+		if (hasFetched) {
 			pageData.refetch();
 		}
 	});

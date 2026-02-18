@@ -57,7 +57,6 @@
       return adminCommands.getUser(data.userId, fetch, token);
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: null as UserDetail | null
     }
   );
@@ -65,7 +64,7 @@
   const sessionsData = useAuthenticatedData(
     async (fetch, token) => adminCommands.listUserSessions(data.userId, fetch, token),
     {
-      getToken: () => auth.getToken(),
+      getAuthLoading: () => true,
       defaultValue: [] as Session[]
     }
   );
@@ -76,16 +75,12 @@
       return activity.data;
     },
     {
-      getToken: () => auth.getToken(),
+      getAuthLoading: () => true,
       defaultValue: [] as ActivityEntry[]
     }
   );
 
   let activeTab = $state("details");
-
-  $effect(() => {
-    userData.tryFetch($authLoading, $currentUser);
-  });
 
   $effect(() => {
     if (activeTab === "sessions") {

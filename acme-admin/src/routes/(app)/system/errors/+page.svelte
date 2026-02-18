@@ -1,6 +1,6 @@
 <script lang="ts">
   import { adminCommands, type ErrorLogSummary, type ErrorLogStats, type ErrorLogDetail } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
   import { Button, PageLoading, FormError, Badge, Select, Card, DataTable, TimeAgo, type DataTableColumn } from "@decodelabs/underlay/components";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
@@ -33,20 +33,22 @@
       return { logs: logsResponse.data, total: logsResponse.total, stats };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { logs: [] as ErrorLogSummary[], total: 0, stats: null as ErrorLogStats | null }
     }
   );
 
-  // Trigger fetch when auth is ready
+  // Track whether initial fetch has completed
+  let hasFetched = $state(false);
   $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
+    if (pageData.data && !pageData.loading) {
+      hasFetched = true;
+    }
   });
 
-  // Refetch when filter changes
+  // Refetch when filter changes (skip first run to avoid double-fetch on mount)
   $effect(() => {
     void statusCodeFilter;
-    if ($currentUser) {
+    if (hasFetched) {
       pageData.refetch();
     }
   });

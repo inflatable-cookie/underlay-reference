@@ -68,13 +68,13 @@
   // Load media detail first; load heavy tab data lazily.
   const mediaData = useAuthenticatedData(
     async (fetchFn, token) => mediaCommands.getMedia(mediaId, fetchFn, token),
-    { getToken: () => auth.getToken() }
+    {}
   );
 
   const versionsData = useAuthenticatedData(
     async (fetchFn, token) => mediaCommands.listVersions(mediaId, fetchFn, token),
     {
-      getToken: () => auth.getToken(),
+      getAuthLoading: () => true,
       defaultValue: [] as MediaVersion[]
     }
   );
@@ -82,17 +82,12 @@
   const usagesData = useAuthenticatedData(
     async (fetchFn, token) => mediaCommands.listUsages(mediaId, fetchFn, token),
     {
-      getToken: () => auth.getToken(),
+      getAuthLoading: () => true,
       defaultValue: [] as MediaUsage[]
     }
   );
 
   let activeTab = $state("details");
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    mediaData.tryFetch($authLoading, $currentUser);
-  });
 
   $effect(() => {
     if (activeTab === "details") {

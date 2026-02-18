@@ -17,7 +17,7 @@
   } from "@decodelabs/underlay/components";
   import { FormDialog, detectBrowserTimezone } from "@decodelabs/underlay/patterns";
   import { accountCommands, type UserProfile, type UserProfileUpdate } from "acme-client";
-  import { auth, currentUser, authLoading } from "$lib/stores/auth";
+  import { auth, currentUser } from "$lib/stores/auth";
   import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
   import { Settings } from "lucide-svelte";
 
@@ -27,14 +27,9 @@
       return await accountCommands.getProfile(fetch, token);
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: null as UserProfile | null
     }
   );
-
-  $effect(() => {
-    profileData.tryFetch($authLoading, $currentUser);
-  });
 
   const profile = $derived(profileData.data);
 

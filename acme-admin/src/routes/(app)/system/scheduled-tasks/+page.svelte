@@ -14,7 +14,7 @@
   } from "@decodelabs/underlay/components";
   import Calendar from "lucide-svelte/icons/calendar";
   import { adminCommands } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { auth } from "$lib/stores/auth";
   import type { ScheduledTaskSummary } from "acme-client";
 
   const toastStore = useToasts();
@@ -40,18 +40,12 @@
       return { tasks };
     },
     {
-      getToken: () => auth.getToken(),
       defaultValue: { tasks: [] as ScheduledTaskSummary[] },
       onSuccess: () => {
         previousUrl = $page.url.search;
       }
     }
   );
-
-  // Trigger fetch when auth is ready
-  $effect(() => {
-    pageData.tryFetch($authLoading, $currentUser);
-  });
 
   // Refetch when URL changes (for filtering)
   $effect(() => {
