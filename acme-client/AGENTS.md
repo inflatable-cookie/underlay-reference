@@ -1,125 +1,26 @@
 # Agents Guide: acme-client
 
-TypeScript API client library for frontend applications.
+## Scope
 
-## Structure
+`acme-client` is the typed API client boundary shared by admin/front apps.
 
-```
-src/
-├── index.ts              # Public exports
-├── commands/             # API command functions
-│   ├── auth-commands.ts  # Login, logout, refresh, register
-│   ├── account-commands.ts # Profile, password, 2FA
-│   └── health-commands.ts  # Health check
-├── types/                # TypeScript type definitions
-│   ├── common-types.ts   # Shared types (User, Session, etc.)
-│   └── account-types.ts  # Account-specific types
-└── utils/                # Client infrastructure
-    ├── client-factory.ts # Client configuration
-    ├── http-client.ts    # HTTP request handling
-    ├── auth-manager.ts   # Token refresh logic
-    └── token-store.ts    # Token storage abstraction
-```
+## Hard Rules
 
-## Usage in Frontend Apps
+- Keep this package transport-focused and app-agnostic.
+- Do not add UI concerns here.
+- Keep command and type exports stable and explicit.
+- Use Underlay JSON naming conventions at the wire boundary.
+- Use `bun` for all JS/TS operations.
 
-### Configuration
-
-```typescript
-import { configureAcmeClient } from 'acme-client';
-
-// In hooks.server.ts or app initialization
-configureAcmeClient({
-  baseUrl: 'http://localhost:3000',
-  // Optional: custom fetch for SSR
-  fetch: event.fetch,
-});
-```
-
-### Making API Calls
-
-```typescript
-import { login, getCurrentUser, changePassword } from 'acme-client';
-
-// Login
-const session = await login({ email, password });
-
-// Get current user
-const user = await getCurrentUser();
-
-// Change password
-await changePassword({ currentPassword, newPassword });
-```
-
-### Auth Manager
-
-The `AuthManager` handles automatic token refresh:
-
-```typescript
-import { AuthManager } from 'acme-client';
-
-const authManager = new AuthManager({
-  onTokenRefresh: (tokens) => {
-    // Store new tokens
-  },
-  onAuthError: () => {
-    // Redirect to login
-  },
-});
-
-// Wrap fetch calls
-const response = await authManager.fetch('/api/protected');
-```
-
-## Adding New Commands
-
-1. **Define types** in `src/types/`:
-   ```typescript
-   export interface Widget {
-     id: string;
-     name: string;
-   }
-   ```
-
-2. **Create command file** `src/commands/widget-commands.ts`:
-   ```typescript
-   import { httpClient } from '../utils/http-client';
-   import type { Widget } from '../types/widget-types';
-
-   export async function createWidget(name: string): Promise<Widget> {
-     return httpClient.post('/api/widgets', { name });
-   }
-
-   export async function getWidgets(): Promise<Widget[]> {
-     return httpClient.get('/api/widgets');
-   }
-   ```
-
-3. **Export from index.ts**:
-   ```typescript
-   export * from './commands/widget-commands';
-   export type { Widget } from './types/widget-types';
-   ```
-
-## Commands
+## Validation
 
 ```bash
-# Install dependencies
-bun install
-
-# Build
-bun run build
-
-# Type check
-bun run check
-
-# Watch mode
-bun run dev
+cd acme-client && bun check
+cd acme-client && bun run build
 ```
 
-## Integration Notes
+## Reference Docs
 
-- Cookie-based auth tokens are set by the backend
-- `token-store.ts` provides abstraction for token access
-- SSR requires passing `fetch` from the request event
-- All API errors are typed as `ApiError`
+- `/Users/betterthanclay/Dev/apps/underlay-reference/docs/reference-implementation-notes.md`
+- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/071-json-naming.md`
+- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/080-typescript-client.md`

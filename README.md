@@ -14,6 +14,14 @@ underlay-reference/
 └── underlay -> ...    # Symlink to underlay library
 ```
 
+## Reference Notes
+
+Detailed package maps and implementation task notes are documented in:
+
+- `/Users/betterthanclay/Dev/apps/underlay-reference/docs/reference-implementation-notes.md`
+
+`AGENTS.md` files in this repository are intentionally kept lean and link here for details.
+
 ## Development Setup
 
 This repository uses a **symlink** to reference the Underlay library for development:
