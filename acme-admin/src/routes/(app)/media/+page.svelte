@@ -51,8 +51,11 @@
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
       const query = parseQueryParams($page.url.searchParams);
-      const items = await mediaCommands.listMediaAdmin(fetch, token, query);
-      return { items };
+      const response = await mediaCommands.listMedia(fetch, token, {
+        profile: "list",
+        query,
+      });
+      return { items: response.data };
     },
     {
       defaultValue: { items: [] as MediaSummary[] },

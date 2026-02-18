@@ -26,6 +26,14 @@ import {
   type PaginationParams,
 } from "@decodelabs/underlay/patterns";
 
+export type MediaListProfile = "list" | "filter";
+
+export interface ListMediaOptions {
+  profile?: MediaListProfile;
+  query?: QueryParams;
+  pagination?: PaginationParams;
+}
+
 // ============================================================================
 // Deduplication
 // ============================================================================
@@ -61,35 +69,33 @@ export async function checkDuplicate(
  * - `filter[title][like]` - Search by title (use %value% for contains)
  * - `sort` - Sort order (e.g., "title:asc,updatedAt:desc")
  */
+export async function listMedia(
+  fetchFn: typeof fetch,
+  accessToken: string,
+  options?: ListMediaOptions
+): Promise<PaginatedResponse<MediaSummary>> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  let path = "/v1/admin/media";
+  if (options?.query) {
+    path = appendQueryParams(path, options.query);
+  }
+  if (options?.profile) {
+    path += `${path.includes("?") ? "&" : "?"}profile=${encodeURIComponent(options.profile)}`;
+  }
+  path = appendPaginationParams(path, options?.pagination ?? {});
+  return await http.get<PaginatedResponse<MediaSummary>>(path);
+}
+
 export async function listMediaAdmin(
   fetchFn: typeof fetch,
   accessToken: string,
   query?: QueryParams
 ): Promise<MediaSummary[]> {
-  const http = getAdminHttpClient({ fetchFn, accessToken });
-  const path = appendQueryParams("/v1/admin/media", query ?? {});
-  const response = await http.get<ListResponse<MediaSummary>>(path);
+  const response = await listMedia(fetchFn, accessToken, {
+    profile: "list",
+    query,
+  });
   return response.data;
-}
-
-/**
- * List media items with pagination (admin view).
- *
- * Supports the same filtering and sorting as listMediaAdmin, plus pagination.
- */
-export async function listMediaPaginatedAdmin(
-  fetchFn: typeof fetch,
-  accessToken: string,
-  pagination?: PaginationParams,
-  query?: QueryParams
-): Promise<PaginatedResponse<MediaSummary>> {
-  const http = getAdminHttpClient({ fetchFn, accessToken });
-  let path = "/v1/admin/media/paginated";
-  if (query) {
-    path = appendQueryParams(path, query);
-  }
-  path = appendPaginationParams(path, pagination ?? {});
-  return await http.get<PaginatedResponse<MediaSummary>>(path);
 }
 
 /**

@@ -300,10 +300,6 @@ pub fn build_router() -> Router<AppState> {
             "/v1/admin/media",
             get(admin::media::list_media).post(admin::media::create_media),
         )
-        .route(
-            "/v1/admin/media/paginated",
-            get(admin::media::list_media_paginated),
-        )
         .route("/v1/admin/media/trash", get(admin::media::list_media_trash))
         .route(
             "/v1/admin/media/:media_id",
