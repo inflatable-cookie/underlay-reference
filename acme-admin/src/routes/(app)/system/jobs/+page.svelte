@@ -264,7 +264,10 @@
         {:else if column.key === "actions"}
           <div
             class="actions-cell"
+            role="button"
+            tabindex="0"
             onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => e.stopPropagation()}
           >
             <DropdownMenu items={getMenuItems(row)} triggerAriaLabel="Job actions">
               {#snippet trigger()}

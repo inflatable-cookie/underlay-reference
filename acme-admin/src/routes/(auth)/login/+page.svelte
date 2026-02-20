@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { authCommands } from "acme-client";
   import { LoginPage } from "@decodelabs/underlay/components";
   import { toPublicKeyRequestOptions, assertionToJson } from "@decodelabs/underlay/utils";
 

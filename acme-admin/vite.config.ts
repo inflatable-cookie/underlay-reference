@@ -1,5 +1,6 @@
 import { sveltekit } from "@sveltejs/kit/vite";
-import { defineConfig, type PluginOption } from "vite";
+import { defineConfig } from "vitest/config";
+import type { PluginOption } from "vite";
 import devtoolsJson from "vite-plugin-devtools-json";
 
 export default defineConfig({
