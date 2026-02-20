@@ -21,8 +21,8 @@ cd acme-api && cargo test
 
 ## Reference Docs
 
-- `/Users/betterthanclay/Dev/apps/underlay-reference/docs/reference-implementation-notes.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/040-rust-backend.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/050-database.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/055-background-jobs.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/070-api-handlers.md`
+- `../docs/reference-implementation-notes.md`
+- `../../../libraries/underlay/docs/guides/040-rust-backend.md`
+- `../../../libraries/underlay/docs/guides/050-database.md`
+- `../../../libraries/underlay/docs/guides/055-background-jobs.md`
+- `../../../libraries/underlay/docs/guides/070-api-handlers.md`

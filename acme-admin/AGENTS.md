@@ -19,7 +19,7 @@ cd acme-admin && bun check
 
 ## Reference Docs
 
-- `/Users/betterthanclay/Dev/apps/underlay-reference/docs/reference-implementation-notes.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/090-ui-kit.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/098-shared-admin-patterns.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/110-admin.md`
+- `../docs/reference-implementation-notes.md`
+- `../../../libraries/underlay/docs/guides/090-ui-kit.md`
+- `../../../libraries/underlay/docs/guides/098-shared-admin-patterns.md`
+- `../../../libraries/underlay/docs/guides/110-admin.md`

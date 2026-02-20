@@ -19,6 +19,6 @@ cd acme-front && bun check
 
 ## Reference Docs
 
-- `/Users/betterthanclay/Dev/apps/underlay-reference/docs/reference-implementation-notes.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/066-spa-deployment-and-static-auth.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/100-frontend-web.md`
+- `../docs/reference-implementation-notes.md`
+- `../../../libraries/underlay/docs/guides/066-spa-deployment-and-static-auth.md`
+- `../../../libraries/underlay/docs/guides/100-frontend-web.md`

@@ -14,8 +14,8 @@ This repository is a **reference template** for bootstrapping Underlay-based app
 4. Links to detailed docs
 
 Detailed implementation notes are documented in:
-- `/Users/betterthanclay/Dev/apps/underlay-reference/docs/reference-implementation-notes.md`
-- `/Users/betterthanclay/Dev/apps/underlay-reference/README.md`
+- `docs/reference-implementation-notes.md`
+- `README.md`
 
 ## Hard Rules
 
@@ -37,4 +37,4 @@ cd acme-front && bun check
 
 ## Source of Truth
 
-For architecture and conventions, prefer Underlay docs in `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/`.
+For architecture and conventions, prefer Underlay docs in `../../libraries/underlay/docs/guides/`.

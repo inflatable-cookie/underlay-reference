@@ -21,6 +21,6 @@ cd acme-client && bun run build
 
 ## Reference Docs
 
-- `/Users/betterthanclay/Dev/apps/underlay-reference/docs/reference-implementation-notes.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/071-json-naming.md`
-- `/Users/betterthanclay/Dev/libraries/underlay/docs/guides/080-typescript-client.md`
+- `../docs/reference-implementation-notes.md`
+- `../../../libraries/underlay/docs/guides/071-json-naming.md`
+- `../../../libraries/underlay/docs/guides/080-typescript-client.md`
