@@ -22,7 +22,7 @@ cd acme-api && cargo test
 ## Reference Docs
 
 - `../docs/reference-implementation-notes.md`
-- `../../../libraries/underlay/docs/guides/040-rust-backend.md`
-- `../../../libraries/underlay/docs/guides/050-database.md`
-- `../../../libraries/underlay/docs/guides/055-background-jobs.md`
-- `../../../libraries/underlay/docs/guides/070-api-handlers.md`
+- `../underlay/docs/guides/040-rust-backend.md`
+- `../underlay/docs/guides/050-database.md`
+- `../underlay/docs/guides/055-background-jobs.md`
+- `../underlay/docs/guides/070-api-handlers.md`

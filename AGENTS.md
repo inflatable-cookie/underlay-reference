@@ -37,4 +37,4 @@ cd acme-front && bun check
 
 ## Source of Truth
 
-For architecture and conventions, prefer Underlay docs in `../../libraries/underlay/docs/guides/`.
+For architecture and conventions, prefer Underlay docs in `underlay/docs/guides/`.

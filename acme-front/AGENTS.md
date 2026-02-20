@@ -20,5 +20,5 @@ cd acme-front && bun check
 ## Reference Docs
 
 - `../docs/reference-implementation-notes.md`
-- `../../../libraries/underlay/docs/guides/066-spa-deployment-and-static-auth.md`
-- `../../../libraries/underlay/docs/guides/100-frontend-web.md`
+- `../underlay/docs/guides/066-spa-deployment-and-static-auth.md`
+- `../underlay/docs/guides/100-frontend-web.md`

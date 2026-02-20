@@ -22,5 +22,5 @@ cd acme-client && bun run build
 ## Reference Docs
 
 - `../docs/reference-implementation-notes.md`
-- `../../../libraries/underlay/docs/guides/071-json-naming.md`
-- `../../../libraries/underlay/docs/guides/080-typescript-client.md`
+- `../underlay/docs/guides/071-json-naming.md`
+- `../underlay/docs/guides/080-typescript-client.md`

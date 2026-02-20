@@ -20,6 +20,6 @@ cd acme-admin && bun check
 ## Reference Docs
 
 - `../docs/reference-implementation-notes.md`
-- `../../../libraries/underlay/docs/guides/090-ui-kit.md`
-- `../../../libraries/underlay/docs/guides/098-shared-admin-patterns.md`
-- `../../../libraries/underlay/docs/guides/110-admin.md`
+- `../underlay/docs/guides/090-ui-kit.md`
+- `../underlay/docs/guides/098-shared-admin-patterns.md`
+- `../underlay/docs/guides/110-admin.md`
