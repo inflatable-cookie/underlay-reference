@@ -4,7 +4,7 @@
   import type { PageData } from "./$types";
   import { adminCommands, type UserDetail, type UserRole, type UserStatus } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { extractApiError } from "$lib/utils/api-errors";
+  import { extractApiError, isPreconditionFailed } from "$lib/utils/api-errors";
   import UserForm from "$lib/forms/UserForm.svelte";
   import {
     SpaFormShell,
@@ -27,15 +27,22 @@
 
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const user = await adminCommands.getUser(data.userId, fetch, token);
-      return { user };
+      const { data: user, etag } = await adminCommands.getUserWithEtag(data.userId, fetch, token);
+      return { user, etag };
     },
     {
-      defaultValue: { user: null as UserDetail | null }
+      defaultValue: { user: null as UserDetail | null, etag: null as string | null }
     }
   );
 
   const user = $derived(pageData.data?.user);
+  let currentEtag = $state<string | null>(null);
+
+  $effect(() => {
+    if (pageData.data?.etag) {
+      currentEtag = pageData.data.etag;
+    }
+  });
 
   const defaultBackHref = untrack(() => `/users/${data.userId}`);
   const { backInfo, returnTo } = consumeNavigationContext("Back to user", defaultBackHref);
@@ -99,12 +106,14 @@
     }
 
     try {
-      await adminCommands.updateUser(
+      const result = await adminCommands.updateUserWithEtag(
         user.id,
         { email, displayName, role: role as UserRole, status: status as UserStatus },
         fetch,
-        token
+        token,
+        { ifMatch: currentEtag ?? undefined }
       );
+      currentEtag = result.etag;
 
       if (formIntent === "save-close") {
         const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
@@ -115,6 +124,23 @@
 
       return { success: true, values: buildValues() };
     } catch (e) {
+      if (isPreconditionFailed(e)) {
+        const latest = await adminCommands.getUserWithEtag(user.id, fetch, token);
+        currentEtag = latest.etag;
+        formValues = {
+          email: latest.data.email,
+          displayName: latest.data.displayName ?? "",
+          role: latest.data.role,
+          status: latest.data.status,
+          intent: formIntent
+        };
+        await pageData.refetch();
+        return {
+          success: false,
+          error: "This user was changed in another session. Review the latest values, reapply your edits, and save again.",
+          values: formValues
+        };
+      }
       const { message, fieldErrors: apiFieldErrors } = extractApiError(e, "Failed to update user");
       return {
         success: false,

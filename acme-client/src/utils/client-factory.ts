@@ -39,9 +39,23 @@ function validatePath(path: string, audience: Audience): void {
 
 interface GuardedHttpClient {
   get<T>(path: string, headers?: Record<string, string>): Promise<T>;
+  getWithMeta<T>(
+    path: string,
+    headers?: Record<string, string>
+  ): Promise<{ status: number; headers: Record<string, string>; body: T | null }>;
   post<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T>;
   put<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T>;
+  putWithMeta<T>(
+    path: string,
+    body: unknown,
+    headers?: Record<string, string>
+  ): Promise<{ status: number; headers: Record<string, string>; body: T | null }>;
   patch<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T>;
+  patchWithMeta<T>(
+    path: string,
+    body: unknown,
+    headers?: Record<string, string>
+  ): Promise<{ status: number; headers: Record<string, string>; body: T | null }>;
   delete<T>(path: string, headers?: Record<string, string>): Promise<T>;
 }
 
@@ -84,6 +98,13 @@ function createGuardedClient(options: HttpClientOptions, audience: Audience): Gu
       validatePath(path, audience);
       return baseClient.get<T>(path, headers);
     },
+    async getWithMeta<T>(
+      path: string,
+      headers?: Record<string, string>
+    ): Promise<{ status: number; headers: Record<string, string>; body: T | null }> {
+      validatePath(path, audience);
+      return baseClient.getWithMeta<T>(path, headers);
+    },
     async post<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
       validatePath(path, audience);
       return baseClient.post<T>(path, body, headers);
@@ -92,9 +113,25 @@ function createGuardedClient(options: HttpClientOptions, audience: Audience): Gu
       validatePath(path, audience);
       return baseClient.put<T>(path, body, headers);
     },
+    async putWithMeta<T>(
+      path: string,
+      body: unknown,
+      headers?: Record<string, string>
+    ): Promise<{ status: number; headers: Record<string, string>; body: T | null }> {
+      validatePath(path, audience);
+      return baseClient.putWithMeta<T>(path, body, headers);
+    },
     async patch<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
       validatePath(path, audience);
       return baseClient.patch<T>(path, body, headers);
+    },
+    async patchWithMeta<T>(
+      path: string,
+      body: unknown,
+      headers?: Record<string, string>
+    ): Promise<{ status: number; headers: Record<string, string>; body: T | null }> {
+      validatePath(path, audience);
+      return baseClient.patchWithMeta<T>(path, body, headers);
     },
     async delete<T>(path: string, headers?: Record<string, string>): Promise<T> {
       validatePath(path, audience);

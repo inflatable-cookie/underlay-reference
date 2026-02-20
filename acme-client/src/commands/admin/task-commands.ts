@@ -16,7 +16,11 @@ import {
   appendQueryParams,
   type QueryParams,
 } from "@decodelabs/underlay/client";
-import { toSnakeQueryParams } from "./utils.js";
+import {
+  getHeaderValueCaseInsensitive,
+  toSnakeQueryParams,
+  type WithEtag,
+} from "./utils.js";
 
 /**
  * List tasks for a project (admin).
@@ -50,11 +54,24 @@ export async function getTask(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<Task> {
+  const result = await getTaskWithEtag(projectId, taskId, fetchFn, accessToken);
+  return result.data;
+}
+
+export async function getTaskWithEtag(
+  projectId: string,
+  taskId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<WithEtag<Task>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<SingleResponse<Task>>(
+  const response = await http.getWithMeta<SingleResponse<Task>>(
     `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`
   );
-  return response.data;
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**
@@ -84,12 +101,35 @@ export async function updateTask(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<Task> {
-  const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.patch<SingleResponse<Task>>(
-    `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`,
-    payload
+  const result = await updateTaskWithEtag(
+    projectId,
+    taskId,
+    payload,
+    fetchFn,
+    accessToken
   );
-  return response.data;
+  return result.data;
+}
+
+export async function updateTaskWithEtag(
+  projectId: string,
+  taskId: string,
+  payload: UpdateTaskPayload,
+  fetchFn: typeof fetch,
+  accessToken: string,
+  options?: { ifMatch?: string }
+): Promise<WithEtag<Task>> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const headers = options?.ifMatch ? { "If-Match": options.ifMatch } : undefined;
+  const response = await http.patchWithMeta<SingleResponse<Task>>(
+    `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(taskId)}`,
+    payload,
+    headers
+  );
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**

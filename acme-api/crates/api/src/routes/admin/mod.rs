@@ -12,6 +12,7 @@ pub mod captured_emails;
 pub mod categories;
 pub mod dashboard;
 pub mod error_logs;
+pub mod freshness;
 pub mod jobs;
 pub mod media;
 pub mod projects;

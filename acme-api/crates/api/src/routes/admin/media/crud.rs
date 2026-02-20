@@ -1,4 +1,9 @@
 use super::*;
+use crate::routes::admin::freshness::{
+    build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
+    precondition_failed_error,
+};
+use axum::http::HeaderMap;
 
 fn validation_failed(err: validator::ValidationErrors) -> ApiError {
     let mut field_errors = std::collections::HashMap::new();
@@ -238,7 +243,9 @@ pub async fn list_media(
 
     let mut query = params.query.clone();
     if query.sort.is_empty() && matches!(params.profile, MediaListProfile::Filter) {
-        query.sort.push(underlay_http::query::SortField::asc("title"));
+        query
+            .sort
+            .push(underlay_http::query::SortField::asc("title"));
     }
 
     match media::list_media_admin(pool, &query).await {
@@ -319,12 +326,17 @@ pub async fn list_media_trash(
 pub async fn get_media(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     Path(media_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match media::get_media_admin(pool, media_id).await {
         Ok(Some(row)) => {
+            let etag = detail_etag("media", &row.id.to_string(), &row.updated_at.to_rfc3339());
+            if let Some(not_modified) = maybe_not_modified(&headers, &etag) {
+                return Ok(not_modified);
+            }
             // Get current version if set
             let current_version = if let Some(version_id) = row.current_version_id {
                 media::get_media_version(pool, version_id)
@@ -356,7 +368,8 @@ pub async fn get_media(
                 usage_count,
                 |key| state.blob_adapter.public_url(key),
             );
-            Ok(Json(json!({ "data": detail })).into_response())
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((response_headers, Json(json!({ "data": detail }))).into_response())
         }
         Ok(None) => Err(
             ApiError::not_found("media.not_found", "Media item not found").with_context(json!({
@@ -385,6 +398,7 @@ pub async fn get_media(
 pub async fn update_media(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     ctx: RequestContext,
     Path(media_id): Path<Uuid>,
     Json(req): Json<UpdateMediaRequest>,
@@ -401,6 +415,42 @@ pub async fn update_media(
     };
 
     let pool = state.local_auth.pool();
+    let current = match media::get_media_admin(pool, media_id).await {
+        Ok(Some(row)) => row,
+        Ok(None) => {
+            return Err(
+                ApiError::not_found("media.not_found", "Media item not found").with_context(
+                    json!({
+                        "operation": "media.update",
+                        "media_id": media_id
+                    }),
+                ),
+            );
+        }
+        Err(e) => {
+            tracing::error!("Failed to load current media before update: {}", e);
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "media.update_failed",
+                "Failed to update media",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.update",
+                "media_id": media_id
+            })));
+        }
+    };
+    let current_etag = detail_etag(
+        "media",
+        &current.id.to_string(),
+        &current.updated_at.to_rfc3339(),
+    );
+    if if_match_mismatch(&headers, &current_etag) {
+        return Err(precondition_failed_error().with_context(json!({
+            "operation": "media.update",
+            "media_id": media_id
+        })));
+    }
 
     match media::update_media(
         pool,
@@ -444,7 +494,13 @@ pub async fn update_media(
                 .unwrap_or(0);
 
             let detail = MediaDetailDto::from_media(row, current_version, usage_count);
-            Ok(Json(json!({ "data": detail })).into_response())
+            let etag = detail_etag(
+                "media",
+                &detail.id.to_string(),
+                &detail.updated_at.to_rfc3339(),
+            );
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((response_headers, Json(json!({ "data": detail }))).into_response())
         }
         Err(sqlx::Error::RowNotFound) => Err(ApiError::not_found(
             "media.not_found",

@@ -8,6 +8,7 @@
 
 use axum::{
     extract::{Path, Query, State},
+    http::HeaderMap,
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -18,6 +19,10 @@ use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
 use acme_core::Uuid;
 use acme_db::{activity, categories};
 
+use crate::routes::admin::freshness::{
+    build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
+    precondition_failed_error,
+};
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -151,6 +156,7 @@ pub async fn list_categories(
 pub async fn get_category(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     Path(category_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -158,8 +164,21 @@ pub async fn get_category(
 
     match categories::get_category(pool, category_id).await {
         Ok(Some(category)) => {
+            let etag = detail_etag(
+                "category",
+                &category.id.to_string(),
+                &category.updated_at.to_rfc3339(),
+            );
+            if let Some(not_modified) = maybe_not_modified(&headers, &etag) {
+                return Ok(not_modified);
+            }
             let response: CategoryResponse = category.into();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((
+                response_headers,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response())
         }
         Ok(None) => Err(
             ApiError::not_found("categories.not_found", "Category not found").with_context(
@@ -261,12 +280,51 @@ pub async fn create_category(
 pub async fn update_category(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     ctx: RequestContext,
     Path(category_id): Path<Uuid>,
     Json(req): Json<UpdateCategoryRequest>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let cid = category_id.into_inner();
+
+    let current = match categories::get_category(pool, cid).await {
+        Ok(Some(category)) => category,
+        Ok(None) => {
+            return Err(
+                ApiError::not_found("categories.not_found", "Category not found").with_context(
+                    serde_json::json!({
+                        "operation": "categories.update",
+                        "category_id": cid
+                    }),
+                ),
+            );
+        }
+        Err(e) => {
+            tracing::error!("Failed to load current category before update: {}", e);
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "categories.update_failed",
+                "Failed to update category",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "categories.update",
+                "category_id": cid
+            })));
+        }
+    };
+
+    let current_etag = detail_etag(
+        "category",
+        &current.id.to_string(),
+        &current.updated_at.to_rfc3339(),
+    );
+    if if_match_mismatch(&headers, &current_etag) {
+        return Err(precondition_failed_error().with_context(serde_json::json!({
+            "operation": "categories.update",
+            "category_id": cid
+        })));
+    }
 
     match categories::update_category(
         pool,
@@ -296,7 +354,13 @@ pub async fn update_category(
             .await;
 
             let response: CategoryResponse = category.into();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+            let etag = detail_etag("category", &response.id, &response.updated_at);
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((
+                response_headers,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response())
         }
         Ok(None) => Err(
             ApiError::not_found("categories.not_found", "Category not found").with_context(

@@ -31,6 +31,15 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 - `acme-api/crates/infra/src/config.rs`
 - `acme-api/migrations/`
 
+### HTTP freshness contract (admin detail/edit flows)
+
+- Detail GET endpoints should emit:
+  - `ETag`
+  - `Cache-Control: private, no-cache, must-revalidate`
+- Detail GET endpoints should support `If-None-Match` and return `304` when unchanged.
+- Conflict-prone update endpoints should accept `If-Match` and return `412` with code `resource.precondition_failed` on mismatch.
+- Successful updates should return fresh payload + fresh `ETag` + admin cache-control header.
+
 ## acme-client details
 
 ### Main areas
@@ -45,6 +54,7 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 - Keep client code transport-focused and reusable.
 - Keep command behavior typed and predictable.
 - Avoid app-specific UI concerns in the shared client package.
+- For admin edit entities, provide `get*WithEtag` and `update*WithEtag(..., { ifMatch })` helpers while keeping legacy wrappers that return `.data`.
 
 ## acme-admin details
 
@@ -58,6 +68,7 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 
 - Prefer Underlay components and patterns over one-off UI implementations.
 - Keep page-level data loading close to route boundaries.
+- For edit forms of canonical entities, track current ETag, send `If-Match` on save, and on `412` reload latest values and prompt users to reapply edits.
 
 ## acme-front details
 
@@ -99,6 +110,9 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 ```bash
 # API
 cd acme-api && cargo build
+
+# Freshness rollout audit
+./scripts/check-admin-freshness-rollout.sh
 
 # Client
 cd acme-client && bun check

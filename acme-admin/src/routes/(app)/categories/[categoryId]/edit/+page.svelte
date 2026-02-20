@@ -4,7 +4,7 @@
   import type { Category } from "acme-client";
   import { adminCommands } from "acme-client";
   import { auth } from "$lib/stores/auth";
-  import { extractApiError } from "$lib/utils/api-errors";
+  import { extractApiError, isPreconditionFailed } from "$lib/utils/api-errors";
   import CategoryForm from "$lib/forms/CategoryForm.svelte";
   import { goto } from "$app/navigation";
   import {
@@ -28,18 +28,25 @@
   // Fetch category data
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const category = await adminCommands.getCategory(data.categoryId, fetch, token);
+      const { data: category, etag } = await adminCommands.getCategoryWithEtag(data.categoryId, fetch, token);
       if (!category) {
         throw new Error("Category not found");
       }
-      return { category };
+      return { category, etag };
     },
     {
-      defaultValue: { category: null as Category | null }
+      defaultValue: { category: null as Category | null, etag: null as string | null }
     }
   );
 
   const category = $derived(pageData.data?.category);
+  let currentEtag = $state<string | null>(null);
+
+  $effect(() => {
+    if (pageData.data?.etag) {
+      currentEtag = pageData.data.etag;
+    }
+  });
 
   // Navigation context
   const defaultBackHref = untrack(() => `/categories/${data.categoryId}`);
@@ -119,12 +126,14 @@
     }
 
     try {
-      await adminCommands.updateCategory(
+      const result = await adminCommands.updateCategoryWithEtag(
         data.categoryId,
         { name, slug, description, color, isActive },
         fetch,
-        token
+        token,
+        { ifMatch: currentEtag ?? undefined }
       );
+      currentEtag = result.etag;
 
       if (formIntent === "save-close") {
         const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
@@ -135,6 +144,24 @@
 
       return { success: true, values: buildValues() };
     } catch (e) {
+      if (isPreconditionFailed(e)) {
+        const latest = await adminCommands.getCategoryWithEtag(data.categoryId, fetch, token);
+        currentEtag = latest.etag;
+        formValues = {
+          name: latest.data.name,
+          slug: latest.data.slug,
+          description: latest.data.description ?? "",
+          color: latest.data.color ?? "#6366f1",
+          isActive: latest.data.isActive,
+          intent: formIntent
+        };
+        await pageData.refetch();
+        return {
+          success: false,
+          error: "This category was changed in another session. Review the latest values, reapply your edits, and save again.",
+          values: formValues
+        };
+      }
       const { message, fieldErrors: apiFieldErrors } = extractApiError(e, "Failed to update category");
       return {
         success: false,

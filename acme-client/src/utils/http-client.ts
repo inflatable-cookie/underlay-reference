@@ -25,6 +25,12 @@ export interface AcmeClientConfig {
   enableCsrf?: boolean;
 }
 
+export interface HttpResponseMeta<T> {
+  status: number;
+  headers: Record<string, string>;
+  body: T | null;
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && value.constructor === Object;
 }
@@ -69,18 +75,19 @@ function toCamelCaseValue<T>(value: T): T {
 
 function convertError(error: unknown): never {
   if (error instanceof UnderlayHttpError) {
-    const rawError = error.envelope?.error as Record<string, unknown> | undefined;
+    const underlayError = error as UnderlayHttpError;
+    const rawError = underlayError.envelope?.error as Record<string, unknown> | undefined;
     const requestId = rawError?.request_id as string | undefined;
     const fieldErrors = rawError?.field_errors as Record<string, unknown> | undefined;
 
-    const apiError: ApiError = Object.assign(new Error(error.message), {
-      status: error.status,
-      code: error.envelope?.error.code ?? "unknown_error",
+    const apiError: ApiError = Object.assign(new Error(underlayError.message), {
+      status: underlayError.status,
+      code: underlayError.envelope?.error.code ?? "unknown_error",
       details: fieldErrors
         ? { fieldErrors }
         : undefined,
       requestId,
-      raw: error.envelope,
+      raw: underlayError.envelope,
     });
 
     throw apiError;
@@ -138,6 +145,22 @@ export class HttpClient {
     }
   }
 
+  async getWithMeta<T>(
+    path: string,
+    headers?: Record<string, string>
+  ): Promise<HttpResponseMeta<T>> {
+    try {
+      const response = await this.underlayClient.getWithMeta<unknown>(path, headers);
+      return {
+        status: response.status,
+        headers: response.headers,
+        body: response.body ? (toCamelCaseValue(response.body) as T) : null,
+      };
+    } catch (error) {
+      convertError(error);
+    }
+  }
+
   async post<T>(path: string, body: unknown, headers?: Record<string, string>): Promise<T> {
     try {
       // Auto-inject CSRF token for mutating requests when using cookies
@@ -152,7 +175,7 @@ export class HttpClient {
       return toCamelCaseValue(response) as T;
     } catch (error) {
       // Clear CSRF token on auth errors (session might be invalid)
-      if (error instanceof UnderlayHttpError && error.status === 401) {
+      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
         clearCsrfToken();
       }
       convertError(error);
@@ -171,7 +194,35 @@ export class HttpClient {
       );
       return toCamelCaseValue(response) as T;
     } catch (error) {
-      if (error instanceof UnderlayHttpError && error.status === 401) {
+      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
+        clearCsrfToken();
+      }
+      convertError(error);
+    }
+  }
+
+  async putWithMeta<T>(
+    path: string,
+    body: unknown,
+    headers?: Record<string, string>
+  ): Promise<HttpResponseMeta<T>> {
+    try {
+      const csrfHeaders = this.enableCsrf ? await getCsrfHeaders(this.fetchFn) : {};
+      const mergedHeaders = { ...csrfHeaders, ...headers };
+
+      const response = await this.underlayClient.requestWithMeta<unknown>({
+        method: "PUT",
+        path,
+        body: toSnakeCaseValue(body),
+        headers: mergedHeaders,
+      });
+      return {
+        status: response.status,
+        headers: response.headers,
+        body: response.body ? (toCamelCaseValue(response.body) as T) : null,
+      };
+    } catch (error) {
+      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
         clearCsrfToken();
       }
       convertError(error);
@@ -190,7 +241,35 @@ export class HttpClient {
       );
       return toCamelCaseValue(response) as T;
     } catch (error) {
-      if (error instanceof UnderlayHttpError && error.status === 401) {
+      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
+        clearCsrfToken();
+      }
+      convertError(error);
+    }
+  }
+
+  async patchWithMeta<T>(
+    path: string,
+    body: unknown,
+    headers?: Record<string, string>
+  ): Promise<HttpResponseMeta<T>> {
+    try {
+      const csrfHeaders = this.enableCsrf ? await getCsrfHeaders(this.fetchFn) : {};
+      const mergedHeaders = { ...csrfHeaders, ...headers };
+
+      const response = await this.underlayClient.requestWithMeta<unknown>({
+        method: "PATCH",
+        path,
+        body: toSnakeCaseValue(body),
+        headers: mergedHeaders,
+      });
+      return {
+        status: response.status,
+        headers: response.headers,
+        body: response.body ? (toCamelCaseValue(response.body) as T) : null,
+      };
+    } catch (error) {
+      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
         clearCsrfToken();
       }
       convertError(error);
@@ -205,7 +284,7 @@ export class HttpClient {
       const response = await this.underlayClient.delete<unknown>(path, mergedHeaders);
       return toCamelCaseValue(response) as T;
     } catch (error) {
-      if (error instanceof UnderlayHttpError && error.status === 401) {
+      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
         clearCsrfToken();
       }
       convertError(error);

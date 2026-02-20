@@ -4267,9 +4267,11 @@ version = "0.0.1"
 dependencies = [
  "axum",
  "chrono",
+ "hex",
  "http 1.4.0",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "tokio",
  "tower-http",

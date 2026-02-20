@@ -16,7 +16,11 @@ import {
   appendSuggestionParams,
   type SuggestionRequestOptions,
 } from "@decodelabs/underlay/patterns";
-import { toSnakeQueryParams } from "./utils.js";
+import {
+  getHeaderValueCaseInsensitive,
+  toSnakeQueryParams,
+  type WithEtag,
+} from "./utils.js";
 
 /**
  * List categories with counts (admin).
@@ -58,11 +62,23 @@ export async function getCategory(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<Category> {
+  const result = await getCategoryWithEtag(categoryId, fetchFn, accessToken);
+  return result.data;
+}
+
+export async function getCategoryWithEtag(
+  categoryId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<WithEtag<Category>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<SingleResponse<Category>>(
+  const response = await http.getWithMeta<SingleResponse<Category>>(
     `/v1/admin/categories/${encodeURIComponent(categoryId)}`
   );
-  return response.data;
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**
@@ -90,12 +106,28 @@ export async function updateCategory(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<Category> {
+  const result = await updateCategoryWithEtag(categoryId, payload, fetchFn, accessToken);
+  return result.data;
+}
+
+export async function updateCategoryWithEtag(
+  categoryId: string,
+  payload: UpdateCategoryPayload,
+  fetchFn: typeof fetch,
+  accessToken: string,
+  options?: { ifMatch?: string }
+): Promise<WithEtag<Category>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.patch<SingleResponse<Category>>(
+  const headers = options?.ifMatch ? { "If-Match": options.ifMatch } : undefined;
+  const response = await http.patchWithMeta<SingleResponse<Category>>(
     `/v1/admin/categories/${encodeURIComponent(categoryId)}`,
-    payload
+    payload,
+    headers
   );
-  return response.data;
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**

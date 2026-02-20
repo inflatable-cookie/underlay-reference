@@ -1,5 +1,24 @@
 import type { QueryParams } from "@decodelabs/underlay/client";
 
+export interface WithEtag<T> {
+  data: T;
+  etag: string | null;
+}
+
+export function getHeaderValueCaseInsensitive(
+  headers: Record<string, string> | undefined,
+  name: string
+): string | null {
+  if (!headers) return null;
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === target) {
+      return value;
+    }
+  }
+  return null;
+}
+
 export function camelToSnake(value: string): string {
   return value.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 }

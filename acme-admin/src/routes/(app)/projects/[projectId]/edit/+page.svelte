@@ -4,7 +4,7 @@
   import type { Project, Category } from "acme-client";
   import { adminCommands } from "acme-client";
   import { auth } from "$lib/stores/auth";
-  import { extractApiError } from "$lib/utils/api-errors";
+  import { extractApiError, isPreconditionFailed } from "$lib/utils/api-errors";
   import ProjectForm from "$lib/forms/ProjectForm.svelte";
   import { goto } from "$app/navigation";
   import {
@@ -28,18 +28,25 @@
   // Fetch project data
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const project = await adminCommands.getProject(data.projectId, fetch, token);
+      const { data: project, etag } = await adminCommands.getProjectWithEtag(data.projectId, fetch, token);
       if (!project) {
         throw new Error("Project not found");
       }
-      return { project };
+      return { project, etag };
     },
     {
-      defaultValue: { project: null as Project | null }
+      defaultValue: { project: null as Project | null, etag: null as string | null }
     }
   );
 
   const project = $derived(pageData.data?.project);
+  let currentEtag = $state<string | null>(null);
+
+  $effect(() => {
+    if (pageData.data?.etag) {
+      currentEtag = pageData.data.etag;
+    }
+  });
 
   // Lazy-load categories for the RelationSelector
   async function fetchCategories(): Promise<Category[]> {
@@ -122,12 +129,14 @@
     }
 
     try {
-      await adminCommands.updateProject(
+      const result = await adminCommands.updateProjectWithEtag(
         data.projectId,
         { name, description, categoryId, status },
         fetch,
-        token
+        token,
+        { ifMatch: currentEtag ?? undefined }
       );
+      currentEtag = result.etag;
 
       if (formIntent === "save-close") {
         const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
@@ -138,6 +147,23 @@
 
       return { success: true, values: buildValues() };
     } catch (e) {
+      if (isPreconditionFailed(e)) {
+        const latest = await adminCommands.getProjectWithEtag(data.projectId, fetch, token);
+        currentEtag = latest.etag;
+        formValues = {
+          name: latest.data.name,
+          description: latest.data.description ?? "",
+          categoryId: latest.data.categoryId ?? "",
+          status: latest.data.status,
+          intent: formIntent
+        };
+        await pageData.refetch();
+        return {
+          success: false,
+          error: "This project was changed in another session. Review the latest values, reapply your edits, and save again.",
+          values: formValues
+        };
+      }
       const { message, fieldErrors: apiFieldErrors } = extractApiError(e, "Failed to update project");
       return {
         success: false,

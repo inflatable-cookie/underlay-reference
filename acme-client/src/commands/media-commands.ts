@@ -25,6 +25,7 @@ import {
   type PaginatedResponse,
   type PaginationParams,
 } from "@decodelabs/underlay/patterns";
+import { getHeaderValueCaseInsensitive, type WithEtag } from "./admin/utils.js";
 
 export type MediaListProfile = "list" | "filter";
 
@@ -136,11 +137,23 @@ export async function getMedia(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<MediaDetail> {
+  const result = await getMediaWithEtag(mediaId, fetchFn, accessToken);
+  return result.data;
+}
+
+export async function getMediaWithEtag(
+  mediaId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<WithEtag<MediaDetail>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<SingleResponse<MediaDetail>>(
+  const response = await http.getWithMeta<SingleResponse<MediaDetail>>(
     `/v1/admin/media/${encodeURIComponent(mediaId)}`
   );
-  return response.data;
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**
@@ -152,12 +165,33 @@ export async function updateMedia(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<MediaDetail> {
-  const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.put<SingleResponse<MediaDetail>>(
-    `/v1/admin/media/${encodeURIComponent(mediaId)}`,
-    request
+  const result = await updateMediaWithEtag(
+    mediaId,
+    request,
+    fetchFn,
+    accessToken
   );
-  return response.data;
+  return result.data;
+}
+
+export async function updateMediaWithEtag(
+  mediaId: string,
+  request: UpdateMediaRequest,
+  fetchFn: typeof fetch,
+  accessToken: string,
+  options?: { ifMatch?: string }
+): Promise<WithEtag<MediaDetail>> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  const headers = options?.ifMatch ? { "If-Match": options.ifMatch } : undefined;
+  const response = await http.putWithMeta<SingleResponse<MediaDetail>>(
+    `/v1/admin/media/${encodeURIComponent(mediaId)}`,
+    request,
+    headers
+  );
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**

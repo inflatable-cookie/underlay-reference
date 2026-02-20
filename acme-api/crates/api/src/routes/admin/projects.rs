@@ -8,6 +8,7 @@
 
 use axum::{
     extract::{Path, Query, State},
+    http::HeaderMap,
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -19,6 +20,10 @@ use acme_core::Uuid;
 use acme_db::{activity, tasks};
 use serde_json::json;
 
+use crate::routes::admin::freshness::{
+    build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
+    precondition_failed_error,
+};
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -163,6 +168,7 @@ pub async fn list_projects(
 pub async fn get_project(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     Path(project_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
@@ -170,8 +176,21 @@ pub async fn get_project(
 
     match tasks::get_project_admin(pool, project_id).await {
         Ok(Some(project)) => {
+            let etag = detail_etag(
+                "project",
+                &project.id.to_string(),
+                &project.updated_at.to_rfc3339(),
+            );
+            if let Some(not_modified) = maybe_not_modified(&headers, &etag) {
+                return Ok(not_modified);
+            }
             let response: ProjectResponse = project.into();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((
+                response_headers,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response())
         }
         Ok(None) => Err(
             ApiError::not_found("projects.not_found", "Project not found").with_context(
@@ -267,12 +286,51 @@ pub async fn create_project(
 pub async fn update_project(
     AdminUser(user): AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     ctx: RequestContext,
     Path(project_id): Path<Uuid>,
     Json(req): Json<UpdateProjectRequest>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let pid = project_id.into_inner();
+
+    let current = match tasks::get_project_admin(pool, pid).await {
+        Ok(Some(project)) => project,
+        Ok(None) => {
+            return Err(
+                ApiError::not_found("projects.not_found", "Project not found").with_context(
+                    serde_json::json!({
+                        "operation": "projects.update",
+                        "project_id": pid
+                    }),
+                ),
+            );
+        }
+        Err(e) => {
+            tracing::error!("Failed to load current project before update: {}", e);
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "projects.update_failed",
+                "Failed to update project",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "projects.update",
+                "project_id": pid
+            })));
+        }
+    };
+
+    let current_etag = detail_etag(
+        "project",
+        &current.id.to_string(),
+        &current.updated_at.to_rfc3339(),
+    );
+    if if_match_mismatch(&headers, &current_etag) {
+        return Err(precondition_failed_error().with_context(serde_json::json!({
+            "operation": "projects.update",
+            "project_id": pid
+        })));
+    }
 
     match tasks::update_project(
         pool,
@@ -303,7 +361,13 @@ pub async fn update_project(
             .await;
 
             let response: ProjectResponse = project.into();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+            let etag = detail_etag("project", &response.id, &response.updated_at);
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((
+                response_headers,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response())
         }
         Ok(None) => Err(
             ApiError::not_found("projects.not_found", "Project not found").with_context(

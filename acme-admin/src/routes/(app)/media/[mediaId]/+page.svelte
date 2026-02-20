@@ -49,6 +49,7 @@
   } from "acme-client";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { isPreconditionFailed } from "$lib/utils/api-errors";
   import { getMediaMetaAccent, getMediaVisibilityPillAccent } from "$lib/utils/accents";
   import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";
   import Check from "lucide-svelte/icons/check";
@@ -67,7 +68,10 @@
 
   // Load media detail first; load heavy tab data lazily.
   const mediaData = useAuthenticatedData(
-    async (fetchFn, token) => mediaCommands.getMedia(mediaId, fetchFn, token),
+    async (fetchFn, token) => {
+      const result = await mediaCommands.getMediaWithEtag(mediaId, fetchFn, token);
+      return { media: result.data, etag: result.etag };
+    },
     {}
   );
 
@@ -101,7 +105,14 @@
     }
   });
 
-  const media = $derived(mediaData.data);
+  const media = $derived(mediaData.data?.media);
+  let currentEtag = $state<string | null>(null);
+
+  $effect(() => {
+    if (mediaData.data?.etag) {
+      currentEtag = mediaData.data.etag;
+    }
+  });
   const versions = $derived(versionsData.data ?? []);
   const usages = $derived(usagesData.data ?? []);
   const usageCount = $derived(media?.usageCount ?? 0);
@@ -145,7 +156,7 @@
     editDialogError = null;
 
     try {
-      await mediaCommands.updateMedia(
+      const result = await mediaCommands.updateMediaWithEtag(
         media.id,
         {
           title: editTitle || null,
@@ -153,12 +164,28 @@
           visibility: editVisibility as MediaVisibility
         },
         window.fetch.bind(window),
-        token
+        token,
+        { ifMatch: currentEtag ?? undefined }
       );
+      currentEtag = result.etag;
       toastStore.push({ variant: "success", message: "Media updated" });
       closeEditDialog();
       await mediaData.refetch();
     } catch (e) {
+      if (isPreconditionFailed(e)) {
+        const latest = await mediaCommands.getMediaWithEtag(
+          media.id,
+          window.fetch.bind(window),
+          token
+        );
+        currentEtag = latest.etag;
+        editTitle = latest.data.title || "";
+        editFilename = latest.data.originalFilename || "";
+        editVisibility = latest.data.visibility;
+        await mediaData.refetch();
+        editDialogError = "This media item was changed in another session. Review the latest values, reapply your edits, and save again.";
+        return;
+      }
       const message = e instanceof Error ? e.message : "Failed to update media";
       editDialogError = message;
     } finally {

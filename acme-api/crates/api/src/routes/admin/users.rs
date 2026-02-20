@@ -4,6 +4,7 @@
 
 use axum::{
     extract::{Path, Query, State},
+    http::HeaderMap,
     response::{IntoResponse, Response},
     Json,
 };
@@ -18,6 +19,10 @@ use acme_auth::UserPrincipal;
 use acme_core::Uuid as UnderlayUuid;
 use acme_db::{activity, users};
 
+use crate::routes::admin::freshness::{
+    build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
+    precondition_failed_error,
+};
 use crate::state::{AdminUser, AppState};
 
 fn is_email_unique_violation(err: &sqlx::Error) -> bool {
@@ -339,14 +344,24 @@ pub async fn create_user(
 pub async fn get_user(
     AdminUser(_admin): AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     Path(user_id): Path<Uuid>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
     match users::get_user_with_session_count(pool, user_id).await {
         Ok(Some(user)) => {
+            let etag = detail_etag("user", &user.id.to_string(), &user.updated_at.to_rfc3339());
+            if let Some(not_modified) = maybe_not_modified(&headers, &etag) {
+                return Ok(not_modified);
+            }
             let response: UserDetailResponse = user.into();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((
+                response_headers,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response())
         }
         Ok(None) => Err(ApiError::not_found(
             "admin.users.not_found",
@@ -373,6 +388,7 @@ pub async fn get_user(
 pub async fn update_user(
     AdminUser(_admin): AdminUser,
     State(state): State<AppState>,
+    headers: HeaderMap,
     Path(user_id): Path<Uuid>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> Result<Response, ApiError> {
@@ -437,6 +453,40 @@ pub async fn update_user(
         .and_then(|s| if s.is_empty() { None } else { Some(s) });
 
     let pool = state.local_auth.pool();
+    let current = match users::get_user_admin(pool, user_id).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            return Err(ApiError::not_found(
+                "admin.users.not_found",
+                "User not found",
+            ));
+        }
+        Err(e) => {
+            tracing::error!("Failed to load current user before update: {}", e);
+            return Err(crate::db_errors::internal_with_diagnostics(
+                "admin.users.update_failed",
+                "Failed to update user",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "admin.users.update",
+                "user_id": user_id
+            })));
+        }
+    };
+
+    let current_etag = detail_etag(
+        "user",
+        &current.id.to_string(),
+        &current.updated_at.to_rfc3339(),
+    );
+    if if_match_mismatch(&headers, &current_etag) {
+        return Err(precondition_failed_error().with_context(json!({
+            "operation": "admin.users.update",
+            "user_id": user_id
+        })));
+    }
+
     match users::update_user_admin(
         pool,
         user_id,
@@ -450,7 +500,14 @@ pub async fn update_user(
     .await
     {
         Ok(Some(user)) => {
-            Ok(Json(serde_json::json!({ "data": UserResponse::from(user) })).into_response())
+            let response = UserResponse::from(user);
+            let etag = detail_etag("user", &response.id, &response.updated_at);
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((
+                response_headers,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response())
         }
         Ok(None) => Err(ApiError::not_found(
             "admin.users.not_found",

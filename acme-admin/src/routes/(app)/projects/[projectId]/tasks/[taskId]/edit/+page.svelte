@@ -3,6 +3,7 @@
   import { goto } from "$app/navigation";
   import { adminCommands, type Task, type Project, type Label, TaskStatus, TaskPriority } from "acme-client";
   import { auth } from "$lib/stores/auth";
+  import { isPreconditionFailed } from "$lib/utils/api-errors";
   import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
   import { Button, PageLoading, FormError, TextInput, TextArea, Select, Field } from "@decodelabs/underlay/components";
 
@@ -28,19 +29,30 @@
   // Fetch task and project data
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
-      const [task, project] = await Promise.all([
-        adminCommands.getTask(data.projectId, data.taskId, fetch, token),
+      const [taskResult, project] = await Promise.all([
+        adminCommands.getTaskWithEtag(data.projectId, data.taskId, fetch, token),
         adminCommands.getProject(data.projectId, fetch, token)
       ]);
-      return { task, project };
+      return { task: taskResult.data, taskEtag: taskResult.etag, project };
     },
     {
-      defaultValue: { task: null as Task | null, project: null as Project | null }
+      defaultValue: {
+        task: null as Task | null,
+        taskEtag: null as string | null,
+        project: null as Project | null
+      }
     }
   );
 
   const task = $derived(pageData.data?.task);
   const project = $derived(pageData.data?.project);
+  let currentEtag = $state<string | null>(null);
+
+  $effect(() => {
+    if (pageData.data?.taskEtag) {
+      currentEtag = pageData.data.taskEtag;
+    }
+  });
 
   // Initialize form when task data loads
   $effect(() => {
@@ -105,7 +117,7 @@
     error = null;
 
     try {
-      await adminCommands.updateTask(
+      const result = await adminCommands.updateTaskWithEtag(
         data.projectId,
         data.taskId,
         {
@@ -117,12 +129,28 @@
           labelIds: selectedLabelIds
         },
         fetch,
-        token
+        token,
+        { ifMatch: currentEtag ?? undefined }
       );
+      currentEtag = result.etag;
 
       toastStore.push({ variant: "success", message: "Task updated" });
       await goto(`/projects/${data.projectId}/tasks/${data.taskId}`);
     } catch (e) {
+      if (isPreconditionFailed(e)) {
+        const latest = await adminCommands.getTaskWithEtag(data.projectId, data.taskId, fetch, token);
+        currentEtag = latest.etag;
+        title = latest.data.title;
+        description = latest.data.description ?? "";
+        status = latest.data.status;
+        priority = latest.data.priority;
+        dueDate = latest.data.dueDate?.split("T")[0] ?? "";
+        const latestLabels = await adminCommands.getTaskLabels(data.projectId, data.taskId, fetch, token);
+        selectedLabelIds = latestLabels.map((label) => label.id);
+        error = "This task was changed in another session. Review the latest values, reapply your edits, and save again.";
+        toastStore.push({ variant: "error", message: error });
+        return;
+      }
       error = e instanceof Error ? e.message : "Failed to update task";
       toastStore.push({ variant: "error", message: error });
     } finally {

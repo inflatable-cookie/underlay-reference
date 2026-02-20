@@ -14,7 +14,11 @@ import {
   appendQueryParams,
   type QueryParams,
 } from "@decodelabs/underlay/client";
-import { toSnakeQueryParams } from "./utils.js";
+import {
+  getHeaderValueCaseInsensitive,
+  toSnakeQueryParams,
+  type WithEtag,
+} from "./utils.js";
 
 /**
  * List projects with counts (admin).
@@ -44,11 +48,23 @@ export async function getProject(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<Project> {
+  const result = await getProjectWithEtag(projectId, fetchFn, accessToken);
+  return result.data;
+}
+
+export async function getProjectWithEtag(
+  projectId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<WithEtag<Project>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<SingleResponse<Project>>(
+  const response = await http.getWithMeta<SingleResponse<Project>>(
     `/v1/admin/projects/${encodeURIComponent(projectId)}`
   );
-  return response.data;
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**
@@ -76,12 +92,28 @@ export async function updateProject(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<Project> {
+  const result = await updateProjectWithEtag(projectId, payload, fetchFn, accessToken);
+  return result.data;
+}
+
+export async function updateProjectWithEtag(
+  projectId: string,
+  payload: UpdateProjectPayload,
+  fetchFn: typeof fetch,
+  accessToken: string,
+  options?: { ifMatch?: string }
+): Promise<WithEtag<Project>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.patch<SingleResponse<Project>>(
+  const headers = options?.ifMatch ? { "If-Match": options.ifMatch } : undefined;
+  const response = await http.patchWithMeta<SingleResponse<Project>>(
     `/v1/admin/projects/${encodeURIComponent(projectId)}`,
-    payload
+    payload,
+    headers
   );
-  return response.data;
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**

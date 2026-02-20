@@ -10,6 +10,13 @@ interface ExtractedError {
   fieldErrors?: Record<string, string>;
 }
 
+export function isPreconditionFailed(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybeStatus = "status" in error ? (error as { status?: unknown }).status : undefined;
+  const maybeCode = "code" in error ? (error as { code?: unknown }).code : undefined;
+  return maybeStatus === 412 || maybeCode === "resource.precondition_failed";
+}
+
 /**
  * Extract user-friendly error message from an API error.
  *

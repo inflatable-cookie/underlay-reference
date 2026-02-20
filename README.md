@@ -72,6 +72,13 @@ Admin dashboard frontend:
 - Protected route layout with auth guards
 - Underlay UI Kit integration
 
+### Admin Freshness + Conflict Contract
+
+- Admin detail endpoints use `ETag` with `Cache-Control: private, no-cache, must-revalidate`.
+- Admin detail GET requests support `If-None-Match` and can return `304`.
+- Admin edit/update endpoints support `If-Match` optimistic concurrency and return `412` (`resource.precondition_failed`) on stale updates.
+- Admin edit UIs reload latest server state on `412` and ask users to reapply edits.
+
 ### acme-front (SvelteKit)
 
 Public-facing frontend:

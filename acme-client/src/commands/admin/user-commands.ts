@@ -9,6 +9,7 @@ import type {
   UserListResponse,
 } from "../../types/admin-types.js";
 import { getAdminHttpClient } from "../../utils/client-factory.js";
+import { getHeaderValueCaseInsensitive, type WithEtag } from "./utils.js";
 
 /**
  * Create a user (admin).
@@ -67,11 +68,23 @@ export async function getUser(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<UserDetail> {
+  const result = await getUserWithEtag(userId, fetchFn, accessToken);
+  return result.data;
+}
+
+export async function getUserWithEtag(
+  userId: string,
+  fetchFn: typeof fetch,
+  accessToken: string
+): Promise<WithEtag<UserDetail>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<SingleResponse<UserDetail>>(
+  const response = await http.getWithMeta<SingleResponse<UserDetail>>(
     `/v1/admin/users/${encodeURIComponent(userId)}`
   );
-  return response.data;
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**
@@ -83,17 +96,33 @@ export async function updateUser(
   fetchFn: typeof fetch,
   accessToken: string
 ): Promise<User> {
+  const result = await updateUserWithEtag(userId, payload, fetchFn, accessToken);
+  return result.data;
+}
+
+export async function updateUserWithEtag(
+  userId: string,
+  payload: UpdateUserPayload,
+  fetchFn: typeof fetch,
+  accessToken: string,
+  options?: { ifMatch?: string }
+): Promise<WithEtag<User>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.put<SingleResponse<User>>(
+  const headers = options?.ifMatch ? { "If-Match": options.ifMatch } : undefined;
+  const response = await http.putWithMeta<SingleResponse<User>>(
     `/v1/admin/users/${encodeURIComponent(userId)}`,
     {
       email: payload.email,
       role: payload.role,
       status: payload.status,
       displayName: payload.displayName ?? null,
-    }
+    },
+    headers
   );
-  return response.data;
+  return {
+    data: response.body!.data,
+    etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
+  };
 }
 
 /**
