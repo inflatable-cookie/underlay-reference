@@ -56,7 +56,6 @@ impl underlay_auth::HasAuthProvider for AppState {
 /// - A valid `Authorization: Bearer <access token>` is required.
 pub struct AuthenticatedUser(pub UserPrincipal);
 
-#[axum::async_trait]
 impl<S> FromRequestParts<S> for AuthenticatedUser
 where
     S: Send + Sync + underlay_auth::HasAuthProvider,
@@ -81,7 +80,6 @@ where
 /// in admin route handlers.
 pub struct AdminUser(pub UserPrincipal);
 
-#[axum::async_trait]
 impl<S> FromRequestParts<S> for AdminUser
 where
     S: Send + Sync + underlay_auth::HasAuthProvider,

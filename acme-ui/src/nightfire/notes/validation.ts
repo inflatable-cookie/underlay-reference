@@ -20,8 +20,9 @@ type ChecklistBlock = {
 };
 
 // Markdown notes validation - content is optional but if present must be string
-registerBlockValidator(TASK_NOTES_SCHEMA, "notes.markdown", (block: MarkdownBlock) => {
-  const content = block?.data?.content;
+registerBlockValidator(TASK_NOTES_SCHEMA, "notes.markdown", (block: unknown) => {
+  const typed = block as MarkdownBlock;
+  const content = typed?.data?.content;
   if (content !== undefined && content !== null && typeof content !== "string") {
     return { valid: false, errors: ["Content must be a string"] };
   }
@@ -29,8 +30,9 @@ registerBlockValidator(TASK_NOTES_SCHEMA, "notes.markdown", (block: MarkdownBloc
 });
 
 // Checklist validation - items must be array of valid checklist items
-registerBlockValidator(TASK_NOTES_SCHEMA, "notes.checklist", (block: ChecklistBlock) => {
-  const items = block?.data?.items;
+registerBlockValidator(TASK_NOTES_SCHEMA, "notes.checklist", (block: unknown) => {
+  const typed = block as ChecklistBlock;
+  const items = typed?.data?.items;
 
   if (items === undefined || items === null) {
     return { valid: true, errors: [] };

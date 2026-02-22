@@ -1,12 +1,17 @@
 {
-  "extends": "../../ts/tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "paths": {
-      "@decodelabs/underlay": ["../../ts/src"],
-      "@decodelabs/underlay/*": ["../../ts/src/*"]
-    }
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": true,
+    "outDir": "./dist"
   },
   "include": ["src/**/*"]
 }
