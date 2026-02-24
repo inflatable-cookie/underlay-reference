@@ -16,6 +16,7 @@ pub mod freshness;
 pub mod jobs;
 pub mod media;
 pub mod projects;
+pub mod reorder_conflict;
 pub mod scheduled_tasks;
 pub mod tasks;
 pub mod users;

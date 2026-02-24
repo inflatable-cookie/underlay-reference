@@ -16,6 +16,7 @@ use axum::{
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
+use uuid::Uuid as RawUuid;
 
 use acme_core::Uuid;
 use acme_db::{activity, tasks};
@@ -24,6 +25,7 @@ use crate::routes::admin::freshness::{
     build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
     precondition_failed_error,
 };
+use crate::routes::admin::reorder_conflict::reorder_conflict_error;
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -526,34 +528,7 @@ pub async fn reorder_tasks(
     let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
 
     match tasks::reorder_tasks(pool, project_id, &ids).await {
-        Ok(result) => {
-            if !result.missing_from_submission.is_empty() || !result.not_found.is_empty() {
-                let added_ids: Vec<String> = result
-                    .missing_from_submission
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect();
-                let removed_ids: Vec<String> =
-                    result.not_found.iter().map(ToString::to_string).collect();
-
-                return Err(ApiError::conflict(
-                    "tasks.reorder_conflict",
-                    "Items have changed since you started reordering.",
-                )
-                .with_context(serde_json::json!({
-                    "operation": "tasks.reorder",
-                    "project_id": project_id,
-                    "count": ids.len(),
-                    "added_ids": added_ids,
-                    "removed_ids": removed_ids
-                })));
-            }
-
-            Ok(
-                Json(serde_json::json!({ "ok": true, "reordered_count": result.reordered_count }))
-                    .into_response(),
-            )
-        }
+        Ok(result) => map_reorder_tasks_result(project_id, ids.len(), result),
         Err(e) => {
             tracing::error!("Failed to reorder tasks: {}", e);
             Err(crate::db_errors::internal_with_diagnostics(
@@ -567,6 +542,64 @@ pub async fn reorder_tasks(
                 "count": ids.len()
             })))
         }
+    }
+}
+
+fn map_reorder_tasks_result(
+    project_id: RawUuid,
+    submitted_count: usize,
+    result: tasks::ReorderTasksResult,
+) -> Result<Response, ApiError> {
+    if !result.missing_from_submission.is_empty() || !result.not_found.is_empty() {
+        let added_ids: Vec<String> = result
+            .missing_from_submission
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        let removed_ids: Vec<String> = result.not_found.iter().map(ToString::to_string).collect();
+
+        return Err(reorder_conflict_error(
+            "tasks.reorder_conflict",
+            "tasks.reorder",
+            submitted_count,
+            added_ids,
+            removed_ids,
+            serde_json::json!({ "project_id": project_id }),
+        ));
+    }
+
+    Ok(
+        Json(serde_json::json!({ "ok": true, "reordered_count": result.reordered_count }))
+            .into_response(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reorder_tasks_conflict_contains_added_removed_ids_and_project_id() {
+        let project_id = Uuid::new_v7().into_inner();
+        let err = map_reorder_tasks_result(
+            project_id,
+            4,
+            tasks::ReorderTasksResult {
+                reordered_count: 0,
+                missing_from_submission: vec![Uuid::new_v7().into_inner()],
+                not_found: vec![Uuid::new_v7().into_inner()],
+            },
+        )
+        .expect_err("expected conflict");
+
+        assert_eq!(err.status, StatusCode::CONFLICT);
+        assert_eq!(err.err.code, "tasks.reorder_conflict");
+        assert!(err.context["added_ids"].is_array());
+        assert!(err.context["removed_ids"].is_array());
+        assert_eq!(
+            err.context["project_id"],
+            serde_json::json!(project_id.to_string())
+        );
     }
 }
 

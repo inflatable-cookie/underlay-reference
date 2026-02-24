@@ -24,6 +24,7 @@ use crate::routes::admin::freshness::{
     build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
     precondition_failed_error,
 };
+use crate::routes::admin::reorder_conflict::reorder_conflict_error;
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -509,33 +510,7 @@ pub async fn reorder_projects(
     let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
 
     match tasks::reorder_projects(pool, &ids).await {
-        Ok(result) => {
-            if !result.missing_from_submission.is_empty() || !result.not_found.is_empty() {
-                let added_ids: Vec<String> = result
-                    .missing_from_submission
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect();
-                let removed_ids: Vec<String> =
-                    result.not_found.iter().map(ToString::to_string).collect();
-
-                return Err(ApiError::conflict(
-                    "projects.reorder_conflict",
-                    "Items have changed since you started reordering.",
-                )
-                .with_context(serde_json::json!({
-                    "operation": "projects.reorder",
-                    "count": ids.len(),
-                    "added_ids": added_ids,
-                    "removed_ids": removed_ids
-                })));
-            }
-
-            Ok(
-                Json(serde_json::json!({ "ok": true, "reordered_count": result.reordered_count }))
-                    .into_response(),
-            )
-        }
+        Ok(result) => map_reorder_projects_result(ids.len(), result),
         Err(e) => {
             tracing::error!("Failed to reorder projects: {}", e);
             Err(crate::db_errors::internal_with_diagnostics(
@@ -548,6 +523,57 @@ pub async fn reorder_projects(
                 "count": ids.len()
             })))
         }
+    }
+}
+
+fn map_reorder_projects_result(
+    submitted_count: usize,
+    result: tasks::ReorderProjectsResult,
+) -> Result<Response, ApiError> {
+    if !result.missing_from_submission.is_empty() || !result.not_found.is_empty() {
+        let added_ids: Vec<String> = result
+            .missing_from_submission
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+        let removed_ids: Vec<String> = result.not_found.iter().map(ToString::to_string).collect();
+
+        return Err(reorder_conflict_error(
+            "projects.reorder_conflict",
+            "projects.reorder",
+            submitted_count,
+            added_ids,
+            removed_ids,
+            serde_json::json!({}),
+        ));
+    }
+
+    Ok(
+        Json(serde_json::json!({ "ok": true, "reordered_count": result.reordered_count }))
+            .into_response(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reorder_projects_conflict_contains_added_removed_ids() {
+        let err = map_reorder_projects_result(
+            3,
+            tasks::ReorderProjectsResult {
+                reordered_count: 0,
+                missing_from_submission: vec![Uuid::new_v7().into_inner()],
+                not_found: vec![Uuid::new_v7().into_inner()],
+            },
+        )
+        .expect_err("expected conflict");
+
+        assert_eq!(err.status, StatusCode::CONFLICT);
+        assert_eq!(err.err.code, "projects.reorder_conflict");
+        assert!(err.context["added_ids"].is_array());
+        assert!(err.context["removed_ids"].is_array());
     }
 }
 
