@@ -40,6 +40,23 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 - Conflict-prone update endpoints should accept `If-Match` and return `412` with code `resource.precondition_failed` on mismatch.
 - Successful updates should return fresh payload + fresh `ETag` + admin cache-control header.
 
+### Reorder conflict recovery (canonical-order lists only)
+
+- Canonical manual-order entities support reorder:
+  - projects
+  - categories
+  - tasks within a project
+- Non-canonical list views are intentionally non-reorderable:
+  - labels (name-scoped list)
+  - date-sorted/computed feeds (activity, jobs, logs, dashboard aggregates)
+- Reorder endpoints should return `409` with stable conflict message and context keys:
+  - `added_ids: string[]`
+  - `removed_ids: string[]`
+- Admin reorder UIs should wire `ReorderableList` `onsubmiterror` to app-local recovery:
+  - parse conflict payload (`extractReorderConflict`)
+  - apply pending-state merge/remove (`applyReorderConflict`)
+  - keep reorder mode active; user reviews and explicitly saves again.
+
 ### Auth security alerting contract (failed-login + lockout pressure)
 
 - Use shared Underlay primitives from `underlay-security-alerts`:
@@ -135,6 +152,9 @@ cd acme-api && cargo build
 
 # Auth security alerting rollout audit
 ./scripts/check-auth-security-alerting-rollout.sh
+
+# Reorder conflict rollout audit
+./scripts/check-reorder-conflict-rollout.sh
 
 # Client
 cd acme-client && bun check

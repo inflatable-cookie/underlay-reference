@@ -27,6 +27,7 @@
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { ProjectListCard } from "$lib/cards";
   import { BatchActionBar } from "$lib/components";
+  import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
   import { adminCommands, type ProjectWithCounts } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
@@ -242,6 +243,25 @@
     await pageData.refetch();
   }
 
+  async function handleReorderError(error: unknown): Promise<void | string> {
+    await pageData.refetch();
+    const latestItems = (pageData.data?.projects ?? []).map((project) => ({ ...project, id: project.id }));
+    const recovery = recoverReorderConflict({
+      controller: reorderController,
+      error,
+      latestItems,
+      entityLabel: "project"
+    });
+
+    if (!recovery.handled) return;
+
+    toastStore.push({
+      variant: "info",
+      message: recovery.message
+    });
+    return recovery.message;
+  }
+
   function exitReorderMode() {
     isReorderMode = false;
   }
@@ -363,7 +383,12 @@
 {:else if (pageData.data?.projects ?? []).length === 0}
   <EmptyState title="No projects found" description="Create your first project to get started." actionLabel="Add project" actionHref="/projects/new" />
 {:else if isReorderMode}
-  <ReorderableList controller={reorderController} oncancel={exitReorderMode} onsuccess={handleReorderSuccess}>
+  <ReorderableList
+    controller={reorderController}
+    oncancel={exitReorderMode}
+    onsuccess={handleReorderSuccess}
+    onsubmiterror={handleReorderError}
+  >
     {#snippet item(project)}
       <ListCard
         title={project.name}
@@ -398,4 +423,3 @@
   onSelectAll={handleSelectAll}
   onBatchDelete={handleBatchDelete}
 />
-

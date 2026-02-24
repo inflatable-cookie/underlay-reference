@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
+use std::collections::HashSet;
 use underlay_http::query::{FieldMapping, QueryParams, WhereBuilder};
 use uuid::Uuid;
 
@@ -258,8 +259,43 @@ pub async fn restore_project(pool: &DbPool, id: Uuid) -> Result<Option<ProjectRo
     .await
 }
 
-/// Reorder projects by weight.
-pub async fn reorder_projects(pool: &DbPool, project_ids: &[Uuid]) -> Result<(), sqlx::Error> {
+#[derive(Debug, Clone, Default)]
+pub struct ReorderProjectsResult {
+    pub reordered_count: usize,
+    pub missing_from_submission: Vec<Uuid>,
+    pub not_found: Vec<Uuid>,
+}
+
+/// Reorder projects by weight with conflict detection.
+pub async fn reorder_projects(
+    pool: &DbPool,
+    project_ids: &[Uuid],
+) -> Result<ReorderProjectsResult, sqlx::Error> {
+    let current_ids = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        SELECT id
+        FROM acme.projects
+        WHERE deleted_at IS NULL
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    let submitted_set: HashSet<Uuid> = project_ids.iter().copied().collect();
+    let current_set: HashSet<Uuid> = current_ids.iter().copied().collect();
+
+    let missing_from_submission: Vec<Uuid> =
+        current_set.difference(&submitted_set).copied().collect();
+    let not_found: Vec<Uuid> = submitted_set.difference(&current_set).copied().collect();
+
+    if !missing_from_submission.is_empty() || !not_found.is_empty() {
+        return Ok(ReorderProjectsResult {
+            reordered_count: 0,
+            missing_from_submission,
+            not_found,
+        });
+    }
+
     for (weight, project_id) in project_ids.iter().enumerate() {
         sqlx::query(
             r#"
@@ -273,7 +309,11 @@ pub async fn reorder_projects(pool: &DbPool, project_ids: &[Uuid]) -> Result<(),
         .execute(pool)
         .await?;
     }
-    Ok(())
+    Ok(ReorderProjectsResult {
+        reordered_count: project_ids.len(),
+        missing_from_submission: Vec::new(),
+        not_found: Vec::new(),
+    })
 }
 
 /// Batch soft delete projects.

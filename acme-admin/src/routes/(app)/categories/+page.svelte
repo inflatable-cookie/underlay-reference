@@ -25,6 +25,7 @@
   } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { CategoryListCard } from "$lib/cards";
+  import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
   import { adminCommands, type CategoryWithCounts } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
@@ -157,6 +158,28 @@
     await pageData.refetch();
   }
 
+  async function handleReorderError(error: unknown): Promise<void | string> {
+    await pageData.refetch();
+    const latestItems = (pageData.data?.categories ?? []).map((category) => ({
+      ...category,
+      id: category.id
+    }));
+    const recovery = recoverReorderConflict({
+      controller: reorderController,
+      error,
+      latestItems,
+      entityLabel: "category"
+    });
+
+    if (!recovery.handled) return;
+
+    toastStore.push({
+      variant: "info",
+      message: recovery.message
+    });
+    return recovery.message;
+  }
+
   function exitReorderMode() {
     isReorderMode = false;
   }
@@ -251,7 +274,12 @@
 {:else if (pageData.data?.categories ?? []).length === 0}
   <EmptyState title="No categories found" description="Create your first category to get started." actionLabel="Add category" actionHref="/categories/new" />
 {:else if isReorderMode}
-  <ReorderableList controller={reorderController} oncancel={exitReorderMode} onsuccess={handleReorderSuccess}>
+  <ReorderableList
+    controller={reorderController}
+    oncancel={exitReorderMode}
+    onsuccess={handleReorderSuccess}
+    onsubmiterror={handleReorderError}
+  >
     {#snippet item(category)}
       <ListCard
         title={category.name}
@@ -272,4 +300,3 @@
     {/each}
   </ListGrid>
 {/if}
-

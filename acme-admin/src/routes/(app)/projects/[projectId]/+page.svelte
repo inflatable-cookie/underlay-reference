@@ -20,6 +20,7 @@
   import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, Pill, ProgressBar, Field, Select, OrderBy, DetailsCard, DetailsSection, DetailsItem, TimeAgo, type OrderByValue } from "@decodelabs/underlay/components";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { BatchActionBar } from "$lib/components";
+  import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
   import { getProjectStatusAccent } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";
   import Plus from "lucide-svelte/icons/plus";
@@ -279,6 +280,25 @@
     await pageData.refetch();
   }
 
+  async function handleTaskReorderError(error: unknown): Promise<void | string> {
+    await pageData.refetch();
+    const latestItems = (pageData.data?.tasks ?? []).map((task) => ({ ...task, id: task.id }));
+    const recovery = recoverReorderConflict({
+      controller: reorderController,
+      error,
+      latestItems,
+      entityLabel: "task"
+    });
+
+    if (!recovery.handled) return;
+
+    toastStore.push({
+      variant: "info",
+      message: recovery.message
+    });
+    return recovery.message;
+  }
+
   function exitTaskReorderMode() {
     isTaskReorderMode = false;
   }
@@ -491,7 +511,12 @@
     {#if tasks.length === 0}
       <p class="empty-state">No tasks yet. Add your first task to get started.</p>
     {:else if isTaskReorderMode}
-      <ReorderableList controller={reorderController} oncancel={exitTaskReorderMode} onsuccess={handleTaskReorderSuccess}>
+      <ReorderableList
+        controller={reorderController}
+        oncancel={exitTaskReorderMode}
+        onsuccess={handleTaskReorderSuccess}
+        onsubmiterror={handleTaskReorderError}
+      >
         {#snippet item(task)}
           <ListCard
             title={task.title}

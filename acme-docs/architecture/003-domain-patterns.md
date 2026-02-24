@@ -113,6 +113,16 @@ pub async fn purge_project(pool: &DbPool, id: Uuid) -> Result<bool, sqlx::Error>
 
 ## Manual Ordering Pattern
 
+Scope: only canonical, persisted-order entities are reorderable in Acme admin.
+
+- Reorderable:
+  - projects
+  - categories
+  - tasks (within project)
+- Intentionally not reorderable:
+  - labels (name-oriented list, not canonical manual order)
+  - date/computed sorted views (activity, jobs, error logs, dashboard aggregates)
+
 ### Database Schema
 
 ```sql
@@ -160,6 +170,15 @@ pub async fn reorder_categories(
     Ok(())
 }
 ```
+
+### Conflict Recovery Contract
+
+Reorder APIs return `409 Conflict` when list membership changed between load and save, with machine-readable context:
+
+- `added_ids`: IDs that now exist server-side but were missing from submission.
+- `removed_ids`: IDs submitted by client that no longer exist server-side.
+
+Admin reorder UI applies this context to the pending reorder state, keeps reorder mode active, and asks the operator to review and save again.
 
 ### Frontend Drag & Drop
 

@@ -526,7 +526,34 @@ pub async fn reorder_tasks(
     let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
 
     match tasks::reorder_tasks(pool, project_id, &ids).await {
-        Ok(()) => Ok(Json(serde_json::json!({ "ok": true })).into_response()),
+        Ok(result) => {
+            if !result.missing_from_submission.is_empty() || !result.not_found.is_empty() {
+                let added_ids: Vec<String> = result
+                    .missing_from_submission
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect();
+                let removed_ids: Vec<String> =
+                    result.not_found.iter().map(ToString::to_string).collect();
+
+                return Err(ApiError::conflict(
+                    "tasks.reorder_conflict",
+                    "Items have changed since you started reordering.",
+                )
+                .with_context(serde_json::json!({
+                    "operation": "tasks.reorder",
+                    "project_id": project_id,
+                    "count": ids.len(),
+                    "added_ids": added_ids,
+                    "removed_ids": removed_ids
+                })));
+            }
+
+            Ok(
+                Json(serde_json::json!({ "ok": true, "reordered_count": result.reordered_count }))
+                    .into_response(),
+            )
+        }
         Err(e) => {
             tracing::error!("Failed to reorder tasks: {}", e);
             Err(crate::db_errors::internal_with_diagnostics(

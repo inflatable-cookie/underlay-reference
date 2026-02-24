@@ -1,5 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::FromRow;
+use std::collections::HashSet;
 use underlay_http::query::{FieldMapping, QueryParams, WhereBuilder};
 use uuid::Uuid;
 
@@ -265,12 +266,45 @@ pub async fn delete_task(pool: &DbPool, id: Uuid, project_id: Uuid) -> Result<bo
     Ok(result.rows_affected() > 0)
 }
 
-/// Reorder tasks within a project.
+#[derive(Debug, Clone, Default)]
+pub struct ReorderTasksResult {
+    pub reordered_count: usize,
+    pub missing_from_submission: Vec<Uuid>,
+    pub not_found: Vec<Uuid>,
+}
+
+/// Reorder tasks within a project with conflict detection.
 pub async fn reorder_tasks(
     pool: &DbPool,
     project_id: Uuid,
     task_ids: &[Uuid],
-) -> Result<(), sqlx::Error> {
+) -> Result<ReorderTasksResult, sqlx::Error> {
+    let current_ids = sqlx::query_scalar::<_, Uuid>(
+        r#"
+        SELECT id
+        FROM acme.tasks
+        WHERE project_id = $1 AND deleted_at IS NULL
+        "#,
+    )
+    .bind(project_id)
+    .fetch_all(pool)
+    .await?;
+
+    let submitted_set: HashSet<Uuid> = task_ids.iter().copied().collect();
+    let current_set: HashSet<Uuid> = current_ids.iter().copied().collect();
+
+    let missing_from_submission: Vec<Uuid> =
+        current_set.difference(&submitted_set).copied().collect();
+    let not_found: Vec<Uuid> = submitted_set.difference(&current_set).copied().collect();
+
+    if !missing_from_submission.is_empty() || !not_found.is_empty() {
+        return Ok(ReorderTasksResult {
+            reordered_count: 0,
+            missing_from_submission,
+            not_found,
+        });
+    }
+
     for (position, task_id) in task_ids.iter().enumerate() {
         sqlx::query(
             r#"
@@ -285,7 +319,11 @@ pub async fn reorder_tasks(
         .execute(pool)
         .await?;
     }
-    Ok(())
+    Ok(ReorderTasksResult {
+        reordered_count: task_ids.len(),
+        missing_from_submission: Vec::new(),
+        not_found: Vec::new(),
+    })
 }
 
 /// Batch soft delete tasks.
