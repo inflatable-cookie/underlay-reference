@@ -1,4 +1,16 @@
 use super::*;
+use acme_db::activity::{log_activity, LogActivityParams};
+use chrono::{DateTime, Utc};
+use serde_json::json;
+use sqlx::Row;
+use tracing::warn;
+use underlay_security_alerts::{
+    evaluate_alerts, has_recent_alert, insert_alert_event, load_ip_signal_counts,
+    SecurityAlertEventInput,
+};
+
+const LOGIN_ATTEMPTS_TABLE: &str = "auth.login_attempts";
+const SECURITY_ALERT_EVENTS_TABLE: &str = "auth.security_alert_events";
 
 impl AcmeLocalAuthService {
     /// Check if a user is currently locked out.
@@ -39,7 +51,6 @@ impl AcmeLocalAuthService {
         ip: Option<&str>,
         reason: &str,
     ) -> AuthResult<Option<u64>> {
-        // Log the attempt
         sqlx::query(
             r#"
             INSERT INTO auth.login_attempts (user_id, ip_address, success, failure_reason)
@@ -53,7 +64,6 @@ impl AcmeLocalAuthService {
         .await
         .map_err(|_| AuthError::Internal("DB error logging login attempt".into()))?;
 
-        // Increment failed count and check for lockout
         let row = sqlx::query(
             r#"
             UPDATE auth.users
@@ -81,8 +91,15 @@ impl AcmeLocalAuthService {
             let now = Utc::now();
             if until > now {
                 let remaining = (until - now).num_seconds().max(0) as u64;
+                if let Some(ip) = ip {
+                    self.emit_security_alerts_for_ip(ip).await;
+                }
                 return Ok(Some(remaining));
             }
+        }
+
+        if let Some(ip) = ip {
+            self.emit_security_alerts_for_ip(ip).await;
         }
 
         Ok(None)
@@ -94,7 +111,6 @@ impl AcmeLocalAuthService {
         user_id: Uuid,
         ip: Option<&str>,
     ) -> AuthResult<()> {
-        // Log the successful attempt
         sqlx::query(
             r#"
             INSERT INTO auth.login_attempts (user_id, ip_address, success)
@@ -107,7 +123,6 @@ impl AcmeLocalAuthService {
         .await
         .map_err(|_| AuthError::Internal("DB error logging login attempt".into()))?;
 
-        // Reset the counters
         sqlx::query(
             r#"
             UPDATE auth.users
@@ -121,5 +136,147 @@ impl AcmeLocalAuthService {
         .map_err(|_| AuthError::Internal("DB error resetting failed logins".into()))?;
 
         Ok(())
+    }
+
+    pub(super) async fn record_locked_login_attempt(
+        &self,
+        user_id: Uuid,
+        ip: Option<&str>,
+    ) -> AuthResult<()> {
+        sqlx::query(
+            r#"
+            INSERT INTO auth.login_attempts (user_id, ip_address, success, failure_reason)
+            VALUES ($1, $2::inet, FALSE, 'account_locked')
+            "#,
+        )
+        .bind(user_id.into_inner())
+        .bind(ip)
+        .execute(&self.pool)
+        .await
+        .map_err(|_| AuthError::Internal("DB error logging locked login attempt".into()))?;
+
+        if let Some(ip) = ip {
+            self.emit_security_alerts_for_ip(ip).await;
+        }
+
+        Ok(())
+    }
+
+    async fn emit_security_alerts_for_ip(&self, ip: &str) {
+        if ip.trim().is_empty() {
+            return;
+        }
+
+        let now = Utc::now();
+        let config = self.config.security_alert_config();
+        let since = now - config.window;
+
+        let counts = match load_ip_signal_counts(&self.pool, LOGIN_ATTEMPTS_TABLE, ip, since).await
+        {
+            Ok(counts) => counts,
+            Err(err) => {
+                warn!(
+                    error = %err,
+                    ip_address = %ip,
+                    "failed to load login-attempt signal counts"
+                );
+                return;
+            }
+        };
+
+        let alert_types = evaluate_alerts(counts, &config);
+        for alert_type in alert_types {
+            let already_emitted = match has_recent_alert(
+                &self.pool,
+                SECURITY_ALERT_EVENTS_TABLE,
+                alert_type,
+                ip,
+                config.cooldown,
+                now,
+            )
+            .await
+            {
+                Ok(value) => value,
+                Err(err) => {
+                    warn!(
+                        error = %err,
+                        ip_address = %ip,
+                        alert_type = alert_type.as_str(),
+                        "failed to check security alert cooldown"
+                    );
+                    continue;
+                }
+            };
+
+            if already_emitted {
+                continue;
+            }
+
+            let event = SecurityAlertEventInput {
+                alert_type,
+                ip_address: ip.to_string(),
+                window_started_at: since,
+                window_ended_at: now,
+                counts,
+                details: json!({
+                    "source": "acme-auth",
+                    "window_seconds": config.window.num_seconds(),
+                    "cooldown_seconds": config.cooldown.num_seconds(),
+                }),
+            };
+
+            let event_id =
+                match insert_alert_event(&self.pool, SECURITY_ALERT_EVENTS_TABLE, &event).await {
+                    Ok(id) => id,
+                    Err(err) => {
+                        warn!(
+                            error = %err,
+                            ip_address = %ip,
+                            alert_type = alert_type.as_str(),
+                            "failed to persist security alert event"
+                        );
+                        continue;
+                    }
+                };
+
+            warn!(
+                alert_event_id = %event_id,
+                alert_type = alert_type.as_str(),
+                ip_address = %ip,
+                failed_attempts = counts.failed_attempts,
+                distinct_users = counts.distinct_users,
+                lockouts = counts.lockouts,
+                "security alert emitted for suspicious login activity"
+            );
+
+            if let Err(err) = log_activity(
+                &self.pool,
+                LogActivityParams {
+                    user_id: None,
+                    action: "auth.security_alert_emitted",
+                    resource_type: "security_alert_event",
+                    resource_id: event_id,
+                    details: Some(json!({
+                        "alert_type": alert_type.as_str(),
+                        "ip_address": ip,
+                        "failed_attempts": counts.failed_attempts,
+                        "distinct_users": counts.distinct_users,
+                        "lockouts": counts.lockouts,
+                        "window_started_at": since.to_rfc3339(),
+                        "window_ended_at": now.to_rfc3339(),
+                    })),
+                    correlation_id: None,
+                    ip_address: Some(ip),
+                },
+            )
+            .await
+            {
+                warn!(
+                    error = %err,
+                    alert_event_id = %event_id,
+                    "failed to write audit log for security alert event"
+                );
+            }
+        }
     }
 }

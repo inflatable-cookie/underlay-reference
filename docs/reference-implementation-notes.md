@@ -40,6 +40,25 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 - Conflict-prone update endpoints should accept `If-Match` and return `412` with code `resource.precondition_failed` on mismatch.
 - Successful updates should return fresh payload + fresh `ETag` + admin cache-control header.
 
+### Auth security alerting contract (failed-login + lockout pressure)
+
+- Use shared Underlay primitives from `underlay-security-alerts`:
+  - `load_ip_signal_counts(...)`
+  - `evaluate_alerts(...)`
+  - `has_recent_alert(...)`
+  - `insert_alert_event(...)`
+- Persist alert events in `auth.security_alert_events` with indexes on `created_at` and `(alert_type, ip_address, created_at)`.
+- Config defaults (from `config/default.toml`):
+  - `security_alert_window_secs = 600`
+  - `security_alert_cooldown_secs = 1800`
+  - `security_alert_failed_attempts_threshold = 20`
+  - `security_alert_distinct_users_threshold = 5`
+  - `security_alert_lockouts_threshold = 3`
+- Failed-login and lockout-denied attempts should both contribute to `auth.login_attempts` signals.
+- For each emitted alert:
+  - write structured `warn!` log
+  - append audit log event (`action = "auth.security_alert_emitted"`, `resource_type = "security_alert_event"`).
+
 ## acme-client details
 
 ### Main areas
@@ -113,6 +132,9 @@ cd acme-api && cargo build
 
 # Freshness rollout audit
 ./scripts/check-admin-freshness-rollout.sh
+
+# Auth security alerting rollout audit
+./scripts/check-auth-security-alerting-rollout.sh
 
 # Client
 cd acme-client && bun check

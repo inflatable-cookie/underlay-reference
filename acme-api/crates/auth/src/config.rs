@@ -63,6 +63,7 @@
 use std::time::Duration;
 
 use crate::redis_rate_limit::RateLimitBackendType;
+use underlay_security_alerts::SecurityAlertConfig;
 
 /// Centralized configuration for all authentication operations.
 ///
@@ -151,6 +152,21 @@ pub struct AuthConfig {
     /// Duration of account lockout after too many failed attempts.
     pub lockout_duration: Duration,
 
+    /// Login-attempt analysis window for security alerting.
+    pub security_alert_window: Duration,
+
+    /// Deduplication cooldown for repeated alerts of same type+IP.
+    pub security_alert_cooldown: Duration,
+
+    /// Failed attempts threshold for one IP within the alert window.
+    pub security_alert_failed_attempts_threshold: u32,
+
+    /// Distinct-user failure threshold for one IP within the alert window.
+    pub security_alert_distinct_users_threshold: u32,
+
+    /// Lockout threshold for one IP within the alert window.
+    pub security_alert_lockouts_threshold: u32,
+
     // =========================================================================
     // Email TOTP
     // =========================================================================
@@ -193,6 +209,11 @@ impl Default for AuthConfig {
             // Account lockout
             max_failed_logins: 5,
             lockout_duration: Duration::from_secs(900), // 15 minutes
+            security_alert_window: Duration::from_secs(600), // 10 minutes
+            security_alert_cooldown: Duration::from_secs(1800), // 30 minutes
+            security_alert_failed_attempts_threshold: 20,
+            security_alert_distinct_users_threshold: 5,
+            security_alert_lockouts_threshold: 3,
 
             // Email TOTP
             email_code_expiry: Duration::from_secs(600), // 10 minutes
@@ -245,6 +266,18 @@ impl AuthConfig {
     /// Get lockout duration in seconds.
     pub fn lockout_duration_secs(&self) -> u64 {
         self.lockout_duration.as_secs()
+    }
+
+    pub fn security_alert_config(&self) -> SecurityAlertConfig {
+        SecurityAlertConfig {
+            window: chrono::Duration::from_std(self.security_alert_window)
+                .unwrap_or_else(|_| chrono::Duration::minutes(10)),
+            cooldown: chrono::Duration::from_std(self.security_alert_cooldown)
+                .unwrap_or_else(|_| chrono::Duration::minutes(30)),
+            failed_attempts_threshold: self.security_alert_failed_attempts_threshold as i64,
+            distinct_users_threshold: self.security_alert_distinct_users_threshold as i64,
+            lockouts_threshold: self.security_alert_lockouts_threshold as i64,
+        }
     }
 }
 
@@ -359,6 +392,11 @@ mod tests {
         assert_eq!(config.max_failed_logins, 5);
         assert_eq!(config.totp_state_timeout, Duration::from_secs(300));
         assert_eq!(config.lockout_duration, Duration::from_secs(900));
+        assert_eq!(config.security_alert_window, Duration::from_secs(600));
+        assert_eq!(config.security_alert_cooldown, Duration::from_secs(1800));
+        assert_eq!(config.security_alert_failed_attempts_threshold, 20);
+        assert_eq!(config.security_alert_distinct_users_threshold, 5);
+        assert_eq!(config.security_alert_lockouts_threshold, 3);
     }
 
     #[test]

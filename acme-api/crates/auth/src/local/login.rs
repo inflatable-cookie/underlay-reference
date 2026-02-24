@@ -75,6 +75,13 @@ impl AcmeLocalAuthService {
 
         // Check if account is locked out
         if let Some(retry_after) = self.check_lockout(user.id).await? {
+            if let Err(err) = self.record_locked_login_attempt(user.id, ip).await {
+                tracing::warn!(
+                    error = ?err,
+                    user_id = %user.id,
+                    "failed to record locked login attempt"
+                );
+            }
             return Err(AuthError::RateLimited {
                 retry_after_seconds: retry_after,
             });

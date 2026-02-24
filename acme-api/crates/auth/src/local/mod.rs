@@ -285,6 +285,19 @@ impl AcmeLocalAuthService {
             ),
             max_failed_logins: behavior.auth.max_failed_logins,
             lockout_duration: std::time::Duration::from_secs(behavior.auth.lockout_duration_secs),
+            security_alert_window: std::time::Duration::from_secs(
+                behavior.auth.security_alert_window_secs,
+            ),
+            security_alert_cooldown: std::time::Duration::from_secs(
+                behavior.auth.security_alert_cooldown_secs,
+            ),
+            security_alert_failed_attempts_threshold: behavior
+                .auth
+                .security_alert_failed_attempts_threshold,
+            security_alert_distinct_users_threshold: behavior
+                .auth
+                .security_alert_distinct_users_threshold,
+            security_alert_lockouts_threshold: behavior.auth.security_alert_lockouts_threshold,
             email_code_expiry: std::time::Duration::from_secs(behavior.auth.email_code_expiry_secs),
             max_email_codes_per_hour: behavior.auth.max_email_codes_per_hour,
         };

@@ -231,6 +231,19 @@ Auth endpoints are rate-limited to prevent brute force:
 | Password reset | 3 requests per hour per email |
 | TOTP verify | 5 attempts per minute |
 
+### Security Alerting (IP Signal Model)
+
+Failed-login and lockout-denied attempts are persisted to `auth.login_attempts`, then evaluated over an IP window using shared Underlay security-alert primitives.
+
+- Window: `security_alert_window_secs` (default `600`)
+- Cooldown dedupe: `security_alert_cooldown_secs` (default `1800`)
+- Alert thresholds:
+  - `security_alert_failed_attempts_threshold` (default `20`)
+  - `security_alert_distinct_users_threshold` (default `5`)
+  - `security_alert_lockouts_threshold` (default `3`)
+
+Emitted alerts are persisted to `auth.security_alert_events`, logged with structured `warn!`, and mirrored into audit log entries with action `auth.security_alert_emitted`.
+
 ### Token Security
 
 - Access tokens are signed with RS256 (RSA-SHA256)

@@ -60,3 +60,4 @@ underlay-events = { path = "../underlay/rust/crates/underlay-events" }
 underlay-jobs = { path = "../underlay/rust/crates/underlay-jobs", features = ["full"] }
 underlay-media = { path = "../underlay/rust/crates/underlay-media" }
 underlay-ratelimit = { path = "../underlay/rust/crates/underlay-ratelimit" }
+underlay-security-alerts = { path = "../underlay/rust/crates/underlay-security-alerts" }

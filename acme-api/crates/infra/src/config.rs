@@ -172,6 +172,11 @@ pub struct AuthBehaviorDefaults {
     pub rate_limit_retry_after_long_secs: u64,
     pub max_failed_logins: u32,
     pub lockout_duration_secs: u64,
+    pub security_alert_window_secs: u64,
+    pub security_alert_cooldown_secs: u64,
+    pub security_alert_failed_attempts_threshold: u32,
+    pub security_alert_distinct_users_threshold: u32,
+    pub security_alert_lockouts_threshold: u32,
     pub email_code_expiry_secs: u64,
     pub max_email_codes_per_hour: u32,
     pub webauthn_rp_id: String,
@@ -213,6 +218,11 @@ impl Default for AppBehaviorConfig {
                 rate_limit_retry_after_long_secs: 300,
                 max_failed_logins: 5,
                 lockout_duration_secs: 900,
+                security_alert_window_secs: 600,
+                security_alert_cooldown_secs: 1800,
+                security_alert_failed_attempts_threshold: 20,
+                security_alert_distinct_users_threshold: 5,
+                security_alert_lockouts_threshold: 3,
                 email_code_expiry_secs: 600,
                 max_email_codes_per_hour: 5,
                 webauthn_rp_id: "localhost".to_string(),
@@ -263,6 +273,11 @@ struct FileAuthBehaviorDefaults {
     rate_limit_retry_after_long_secs: Option<u64>,
     max_failed_logins: Option<u32>,
     lockout_duration_secs: Option<u64>,
+    security_alert_window_secs: Option<u64>,
+    security_alert_cooldown_secs: Option<u64>,
+    security_alert_failed_attempts_threshold: Option<u32>,
+    security_alert_distinct_users_threshold: Option<u32>,
+    security_alert_lockouts_threshold: Option<u32>,
     email_code_expiry_secs: Option<u64>,
     max_email_codes_per_hour: Option<u32>,
     webauthn_rp_id: Option<String>,
@@ -378,6 +393,21 @@ impl AppBehaviorConfig {
             }
             if let Some(v) = auth.lockout_duration_secs {
                 behavior.auth.lockout_duration_secs = v;
+            }
+            if let Some(v) = auth.security_alert_window_secs {
+                behavior.auth.security_alert_window_secs = v;
+            }
+            if let Some(v) = auth.security_alert_cooldown_secs {
+                behavior.auth.security_alert_cooldown_secs = v;
+            }
+            if let Some(v) = auth.security_alert_failed_attempts_threshold {
+                behavior.auth.security_alert_failed_attempts_threshold = v;
+            }
+            if let Some(v) = auth.security_alert_distinct_users_threshold {
+                behavior.auth.security_alert_distinct_users_threshold = v;
+            }
+            if let Some(v) = auth.security_alert_lockouts_threshold {
+                behavior.auth.security_alert_lockouts_threshold = v;
             }
             if let Some(v) = auth.email_code_expiry_secs {
                 behavior.auth.email_code_expiry_secs = v;
