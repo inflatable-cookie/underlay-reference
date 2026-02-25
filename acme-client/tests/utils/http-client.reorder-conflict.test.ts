@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { extractReorderConflict } from "../../../underlay/ts/src/patterns/reorder-conflict";
-import { HttpClient } from "./http-client";
+import { HttpClient } from "../../src/utils/http-client";
 
 const requestMock = vi.fn();
 

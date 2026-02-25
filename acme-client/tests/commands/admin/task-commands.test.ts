@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const postMock = vi.fn();
 
-vi.mock("../../utils/client-factory.js", () => ({
+vi.mock("../../../src/utils/client-factory.js", () => ({
   getAdminHttpClient: () => ({
     post: postMock,
   }),
@@ -11,7 +11,7 @@ vi.mock("../../utils/client-factory.js", () => ({
 import {
   batchDeleteTasks,
   batchUpdateTaskStatus,
-} from "./task-commands.js";
+} from "../../../src/commands/admin/task-commands.js";
 
 describe("admin task command endpoints", () => {
   beforeEach(() => {

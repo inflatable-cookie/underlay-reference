@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { prerender, ssr } from "./+layout";
+import { prerender, ssr } from "../../src/routes/+layout";
 
 describe("root layout config", () => {
 	it("keeps SPA defaults for the public site", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { load } from "./+page";
+import { load } from "../../../../../src/routes/(app)/projects/[projectId]/+page";
 
 describe("project page load", () => {
 	it("returns the projectId from route params", () => {

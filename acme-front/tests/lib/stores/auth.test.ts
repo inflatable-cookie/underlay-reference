@@ -49,7 +49,7 @@ async function loadStore(overrides: Partial<Record<string, unknown>> = {}) {
 		createAuthManager: vi.fn(() => manager)
 	}));
 
-	const module = await import("./auth");
+	const module = await import("../../../src/lib/stores/auth");
 
 	return {
 		auth: module.auth,
