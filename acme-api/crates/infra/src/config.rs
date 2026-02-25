@@ -490,11 +490,60 @@ pub struct AppConfig {
     pub behavior: AppBehaviorConfig,
 }
 
+const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 16] = [
+    ("EMAIL_DEFAULT_FROM", "behavior.email.default_from"),
+    ("EMAIL_APP_NAME", "behavior.email.app_name"),
+    ("EMAIL_APP_URL", "behavior.email.app_url"),
+    ("EMAIL_SUPPORT", "behavior.email.support_email"),
+    ("EMAIL_TEMPLATES_DIR", "behavior.email.templates_dir"),
+    (
+        "AUTH_ACCESS_TOKEN_LIFETIME_MINUTES",
+        "behavior.auth.jwt_access_token_lifetime_minutes",
+    ),
+    (
+        "AUTH_REFRESH_TOKEN_LIFETIME_DAYS",
+        "behavior.auth.jwt_refresh_token_lifetime_days",
+    ),
+    ("AUTH_JWT_ISSUER", "behavior.auth.jwt_issuer"),
+    ("AUTH_JWT_AUDIENCE", "behavior.auth.jwt_audience"),
+    ("AUTH_JWT_LEEWAY_SECONDS", "behavior.auth.jwt_leeway_seconds"),
+    ("WEBAUTHN_RP_ID", "behavior.auth.webauthn_rp_id"),
+    ("WEBAUTHN_RP_ORIGIN", "behavior.auth.webauthn_rp_origin"),
+    ("WEBAUTHN_RP_NAME", "behavior.auth.webauthn_rp_name"),
+    ("ARGON2_MEMORY_KB", "behavior.auth.argon2_memory_kb"),
+    ("ARGON2_ITERATIONS", "behavior.auth.argon2_iterations"),
+    ("ARGON2_PARALLELISM", "behavior.auth.argon2_parallelism"),
+];
+
+fn collect_set_legacy_behavior_env_keys() -> Vec<(&'static str, &'static str)> {
+    LEGACY_BEHAVIOR_ENV_KEYS
+        .iter()
+        .copied()
+        .filter(|(key, _)| {
+            env::var(key)
+                .ok()
+                .map(|v| !v.trim().is_empty())
+                .unwrap_or(false)
+        })
+        .collect()
+}
+
+fn warn_legacy_behavior_env_keys() {
+    for (legacy_key, replacement_field) in collect_set_legacy_behavior_env_keys() {
+        tracing::warn!(
+            legacy_key,
+            replacement_field,
+            "legacy behavior env key is set but ignored; use typed config field instead"
+        );
+    }
+}
+
 impl AppConfig {
     /// Load configuration from the environment, applying sensible defaults.
     pub fn from_env() -> Self {
         // Load variables from a local `.env` file if present.
         let _ = dotenvy::dotenv();
+        warn_legacy_behavior_env_keys();
 
         let behavior = AppBehaviorConfig::load();
 
@@ -794,5 +843,32 @@ argon2_parallelism = 13
         }
         std::env::set_current_dir(original_cwd).expect("failed to restore cwd");
         std::fs::remove_dir_all(test_dir).expect("failed to remove temp dir");
+    }
+
+    #[test]
+    fn legacy_behavior_key_collection_detects_set_env_keys() {
+        let _lock = ENV_LOCK.lock().unwrap();
+
+        let prev_a = with_env_var("EMAIL_DEFAULT_FROM", Some("legacy@example.com"));
+        let prev_b = with_env_var("AUTH_JWT_ISSUER", Some("legacy-issuer"));
+        let prev_c = with_env_var("ARGON2_ITERATIONS", None);
+
+        let keys = collect_set_legacy_behavior_env_keys();
+        assert!(
+            keys.iter().any(|(k, _)| *k == "EMAIL_DEFAULT_FROM"),
+            "expected EMAIL_DEFAULT_FROM to be detected"
+        );
+        assert!(
+            keys.iter().any(|(k, _)| *k == "AUTH_JWT_ISSUER"),
+            "expected AUTH_JWT_ISSUER to be detected"
+        );
+        assert!(
+            !keys.iter().any(|(k, _)| *k == "ARGON2_ITERATIONS"),
+            "expected ARGON2_ITERATIONS to be absent when unset"
+        );
+
+        restore_env_var("EMAIL_DEFAULT_FROM", prev_a);
+        restore_env_var("AUTH_JWT_ISSUER", prev_b);
+        restore_env_var("ARGON2_ITERATIONS", prev_c);
     }
 }
