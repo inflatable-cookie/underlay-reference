@@ -88,7 +88,7 @@ pub fn build_router() -> Router<AppState> {
         // Passkey routes
         .route("/v1/auth/passkeys", get(shared::auth::list_passkeys))
         .route(
-            "/v1/auth/passkeys/:credential_id",
+            "/v1/auth/passkeys/{credential_id}",
             patch(shared::auth::rename_passkey).delete(shared::auth::delete_passkey),
         )
         .route(
@@ -118,7 +118,7 @@ pub fn build_router() -> Router<AppState> {
         // Session routes
         .route("/v1/auth/sessions", get(shared::auth::list_sessions))
         .route(
-            "/v1/auth/sessions/:session_id/revoke",
+            "/v1/auth/sessions/{session_id}/revoke",
             post(shared::auth::revoke_session),
         )
         // Account routes
@@ -135,18 +135,18 @@ pub fn build_router() -> Router<AppState> {
             get(tasks::list_projects).post(tasks::create_project),
         )
         .route(
-            "/v1/projects/:project_id",
+            "/v1/projects/{project_id}",
             get(tasks::get_project)
                 .patch(tasks::update_project)
                 .delete(tasks::delete_project),
         )
         // Task routes
         .route(
-            "/v1/projects/:project_id/tasks",
+            "/v1/projects/{project_id}/tasks",
             get(tasks::list_tasks).post(tasks::create_task),
         )
         .route(
-            "/v1/projects/:project_id/tasks/:task_id",
+            "/v1/projects/{project_id}/tasks/{task_id}",
             patch(tasks::update_task).delete(tasks::delete_task),
         )
         // ====================================================================
@@ -163,37 +163,37 @@ pub fn build_router() -> Router<AppState> {
             get(admin::users::list_users).post(admin::users::create_user),
         )
         .route(
-            "/v1/admin/users/:user_id",
+            "/v1/admin/users/{user_id}",
             get(admin::users::get_user).put(admin::users::update_user),
         )
         .route(
-            "/v1/admin/users/:user_id/role",
+            "/v1/admin/users/{user_id}/role",
             put(admin::users::update_user_role),
         )
         .route(
-            "/v1/admin/users/:user_id/suspend",
+            "/v1/admin/users/{user_id}/suspend",
             post(admin::users::suspend_user),
         )
         .route(
-            "/v1/admin/users/:user_id/unsuspend",
+            "/v1/admin/users/{user_id}/unsuspend",
             post(admin::users::unsuspend_user),
         )
         .route(
-            "/v1/admin/users/:user_id/activity",
+            "/v1/admin/users/{user_id}/activity",
             get(admin::activity::list_activity_for_user),
         )
         .route(
-            "/v1/admin/users/:user_id/sessions",
+            "/v1/admin/users/{user_id}/sessions",
             get(admin::users::list_user_sessions),
         )
         .route(
-            "/v1/admin/users/:user_id/sessions/:session_id/revoke",
+            "/v1/admin/users/{user_id}/sessions/{session_id}/revoke",
             post(admin::users::revoke_user_session),
         )
         // Activity/audit log
         .route("/v1/admin/activity", get(admin::activity::list_activity))
         .route(
-            "/v1/admin/activity/entity/:entity_type/:entity_id",
+            "/v1/admin/activity/entity/{entity_type}/{entity_id}",
             get(admin::activity::list_activity_for_entity),
         )
         // Validation endpoint (for async form validation)
@@ -207,7 +207,7 @@ pub fn build_router() -> Router<AppState> {
             get(admin::captured_emails::list_captured_emails),
         )
         .route(
-            "/v1/admin/captured-emails/:id",
+            "/v1/admin/captured-emails/{id}",
             get(admin::captured_emails::get_captured_email)
                 .delete(admin::captured_emails::delete_captured_email),
         )
@@ -221,13 +221,13 @@ pub fn build_router() -> Router<AppState> {
             put(admin::categories::reorder_categories),
         )
         .route(
-            "/v1/admin/categories/:category_id",
+            "/v1/admin/categories/{category_id}",
             get(admin::categories::get_category)
                 .patch(admin::categories::update_category)
                 .delete(admin::categories::soft_delete_category),
         )
         .route(
-            "/v1/admin/categories/:category_id/restore",
+            "/v1/admin/categories/{category_id}/restore",
             post(admin::categories::restore_category),
         )
         // Project admin routes
@@ -244,45 +244,45 @@ pub fn build_router() -> Router<AppState> {
             post(admin::projects::batch_delete_projects),
         )
         .route(
-            "/v1/admin/projects/:project_id",
+            "/v1/admin/projects/{project_id}",
             get(admin::projects::get_project)
                 .patch(admin::projects::update_project)
                 .delete(admin::projects::soft_delete_project),
         )
         .route(
-            "/v1/admin/projects/:project_id/restore",
+            "/v1/admin/projects/{project_id}/restore",
             post(admin::projects::restore_project),
         )
         // Task admin routes (nested under projects)
         .route(
-            "/v1/admin/projects/:project_id/tasks",
+            "/v1/admin/projects/{project_id}/tasks",
             get(admin::tasks::list_tasks).post(admin::tasks::create_task),
         )
         .route(
-            "/v1/admin/projects/:project_id/tasks/reorder",
+            "/v1/admin/projects/{project_id}/tasks/reorder",
             put(admin::tasks::reorder_tasks),
         )
         .route(
-            "/v1/admin/projects/:project_id/tasks/batch-delete",
+            "/v1/admin/projects/{project_id}/tasks/batch-delete",
             post(admin::tasks::batch_delete_tasks),
         )
         .route(
-            "/v1/admin/projects/:project_id/tasks/batch-update",
+            "/v1/admin/projects/{project_id}/tasks/batch-update",
             post(admin::tasks::batch_update_task_status),
         )
         .route(
-            "/v1/admin/projects/:project_id/tasks/:task_id",
+            "/v1/admin/projects/{project_id}/tasks/{task_id}",
             get(admin::tasks::get_task)
                 .patch(admin::tasks::update_task)
                 .delete(admin::tasks::soft_delete_task),
         )
         .route(
-            "/v1/admin/projects/:project_id/tasks/:task_id/labels",
+            "/v1/admin/projects/{project_id}/tasks/{task_id}/labels",
             get(admin::tasks::get_task_labels).put(admin::tasks::set_task_labels),
         )
         // Label admin routes (nested under projects)
         .route(
-            "/v1/admin/projects/:project_id/labels",
+            "/v1/admin/projects/{project_id}/labels",
             get(admin::tasks::list_labels).post(admin::tasks::create_label),
         )
         // ====================================================================
@@ -302,41 +302,41 @@ pub fn build_router() -> Router<AppState> {
         )
         .route("/v1/admin/media/trash", get(admin::media::list_media_trash))
         .route(
-            "/v1/admin/media/:media_id",
+            "/v1/admin/media/{media_id}",
             get(admin::media::get_media)
                 .put(admin::media::update_media)
                 .delete(admin::media::purge_media),
         )
         .route(
-            "/v1/admin/media/:media_id/soft-delete",
+            "/v1/admin/media/{media_id}/soft-delete",
             post(admin::media::soft_delete_media),
         )
         .route(
-            "/v1/admin/media/:media_id/restore",
+            "/v1/admin/media/{media_id}/restore",
             post(admin::media::restore_media),
         )
         .route(
-            "/v1/admin/media/:media_id/versions",
+            "/v1/admin/media/{media_id}/versions",
             get(admin::media::list_versions),
         )
         .route(
-            "/v1/admin/media/:media_id/versions/initiate-upload",
+            "/v1/admin/media/{media_id}/versions/initiate-upload",
             post(admin::media::initiate_upload),
         )
         .route(
-            "/v1/admin/media/:media_id/versions/:version_id/finalise-upload",
+            "/v1/admin/media/{media_id}/versions/{version_id}/finalise-upload",
             post(admin::media::finalise_upload),
         )
         .route(
-            "/v1/admin/media/:media_id/versions/:version_id/activate",
+            "/v1/admin/media/{media_id}/versions/{version_id}/activate",
             post(admin::media::activate_version),
         )
         .route(
-            "/v1/admin/media/:media_id/versions/:version_id",
+            "/v1/admin/media/{media_id}/versions/{version_id}",
             delete(admin::media::delete_version),
         )
         .route(
-            "/v1/admin/media/:media_id/usage",
+            "/v1/admin/media/{media_id}/usage",
             get(admin::media::list_usage),
         )
         // ====================================================================
@@ -344,12 +344,12 @@ pub fn build_router() -> Router<AppState> {
         // ====================================================================
         .route("/v1/admin/jobs", get(admin::jobs::list_jobs))
         .route("/v1/admin/jobs/stats", get(admin::jobs::get_job_stats))
-        .route("/v1/admin/jobs/:job_id", get(admin::jobs::get_job))
+        .route("/v1/admin/jobs/{job_id}", get(admin::jobs::get_job))
         .route(
-            "/v1/admin/jobs/:job_id/cancel",
+            "/v1/admin/jobs/{job_id}/cancel",
             post(admin::jobs::cancel_job),
         )
-        .route("/v1/admin/jobs/:job_id/retry", post(admin::jobs::retry_job))
+        .route("/v1/admin/jobs/{job_id}/retry", post(admin::jobs::retry_job))
         // ====================================================================
         // Scheduled Tasks admin routes
         // ====================================================================
@@ -358,15 +358,15 @@ pub fn build_router() -> Router<AppState> {
             get(admin::scheduled_tasks::list_scheduled_tasks),
         )
         .route(
-            "/v1/admin/scheduled-tasks/:task_id",
+            "/v1/admin/scheduled-tasks/{task_id}",
             get(admin::scheduled_tasks::get_scheduled_task),
         )
         .route(
-            "/v1/admin/scheduled-tasks/:task_id/toggle",
+            "/v1/admin/scheduled-tasks/{task_id}/toggle",
             post(admin::scheduled_tasks::toggle_scheduled_task),
         )
         .route(
-            "/v1/admin/scheduled-tasks/:task_id/trigger",
+            "/v1/admin/scheduled-tasks/{task_id}/trigger",
             post(admin::scheduled_tasks::trigger_scheduled_task),
         )
         // ====================================================================
@@ -381,7 +381,7 @@ pub fn build_router() -> Router<AppState> {
             get(admin::error_logs::get_error_log_stats),
         )
         .route(
-            "/v1/admin/error-logs/:id",
+            "/v1/admin/error-logs/{id}",
             get(admin::error_logs::get_error_log_handler),
         )
         .layer(cors);
