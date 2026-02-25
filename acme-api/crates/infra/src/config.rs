@@ -152,6 +152,11 @@ pub struct EmailBehaviorDefaults {
 
 #[derive(Debug, Clone)]
 pub struct AuthBehaviorDefaults {
+    pub jwt_access_token_lifetime_minutes: i64,
+    pub jwt_refresh_token_lifetime_days: i64,
+    pub jwt_issuer: String,
+    pub jwt_audience: Option<String>,
+    pub jwt_leeway_seconds: u64,
     pub totp_issuer: String,
     pub password_min_length: usize,
     pub login_rate_limit_per_hour: u32,
@@ -198,6 +203,11 @@ impl Default for AppBehaviorConfig {
                 templates_dir: "templates/emails".to_string(),
             },
             auth: AuthBehaviorDefaults {
+                jwt_access_token_lifetime_minutes: 15,
+                jwt_refresh_token_lifetime_days: 30,
+                jwt_issuer: "acme".to_string(),
+                jwt_audience: Some("acme-api".to_string()),
+                jwt_leeway_seconds: 30,
                 totp_issuer: "Acme".to_string(),
                 password_min_length: 12,
                 login_rate_limit_per_hour: 10,
@@ -253,6 +263,11 @@ struct FileEmailBehaviorDefaults {
 
 #[derive(Debug, Default, Deserialize)]
 struct FileAuthBehaviorDefaults {
+    jwt_access_token_lifetime_minutes: Option<i64>,
+    jwt_refresh_token_lifetime_days: Option<i64>,
+    jwt_issuer: Option<String>,
+    jwt_audience: Option<String>,
+    jwt_leeway_seconds: Option<u64>,
     totp_issuer: Option<String>,
     password_min_length: Option<usize>,
     login_rate_limit_per_hour: Option<u32>,
@@ -334,6 +349,21 @@ impl AppBehaviorConfig {
         }
 
         if let Some(auth) = parsed.auth {
+            if let Some(v) = auth.jwt_access_token_lifetime_minutes {
+                behavior.auth.jwt_access_token_lifetime_minutes = v;
+            }
+            if let Some(v) = auth.jwt_refresh_token_lifetime_days {
+                behavior.auth.jwt_refresh_token_lifetime_days = v;
+            }
+            if let Some(v) = auth.jwt_issuer {
+                behavior.auth.jwt_issuer = v;
+            }
+            if let Some(v) = auth.jwt_audience {
+                behavior.auth.jwt_audience = normalize_optional_string(Some(v));
+            }
+            if let Some(v) = auth.jwt_leeway_seconds {
+                behavior.auth.jwt_leeway_seconds = v;
+            }
             if let Some(v) = auth.totp_issuer {
                 behavior.auth.totp_issuer = v;
             }
@@ -437,8 +467,15 @@ impl AppBehaviorConfig {
     }
 }
 
-fn env_behavior_override(key: &str) -> Option<String> {
-    env::var(key).ok()
+fn normalize_optional_string(value: Option<String>) -> Option<String> {
+    value.and_then(|v| {
+        let trimmed = v.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
 }
 
 /// Top-level application configuration.
@@ -459,7 +496,7 @@ impl AppConfig {
         // Load variables from a local `.env` file if present.
         let _ = dotenvy::dotenv();
 
-        let mut behavior = AppBehaviorConfig::load();
+        let behavior = AppBehaviorConfig::load();
 
         // Environment
         let env_str = env::var("ENVIRONMENT").unwrap_or_else(|_| "local".to_string());
@@ -522,17 +559,12 @@ impl AppConfig {
         let email_adapter_str = env::var("EMAIL_ADAPTER").unwrap_or_else(|_| "noop".to_string());
         let email_adapter = EmailAdapterType::parse(&email_adapter_str);
 
-        // Email branding
-        let default_from = env_behavior_override("EMAIL_DEFAULT_FROM")
-            .unwrap_or_else(|| behavior.email.default_from.clone());
-        let app_name = env_behavior_override("EMAIL_APP_NAME")
-            .unwrap_or_else(|| behavior.email.app_name.clone());
-        let app_url = env_behavior_override("EMAIL_APP_URL")
-            .unwrap_or_else(|| behavior.email.app_url.clone());
-        let support_email = env_behavior_override("EMAIL_SUPPORT")
-            .unwrap_or_else(|| behavior.email.support_email.clone());
-        let templates_dir = env_behavior_override("EMAIL_TEMPLATES_DIR")
-            .unwrap_or_else(|| behavior.email.templates_dir.clone());
+        // Email branding from typed behavior config.
+        let default_from = behavior.email.default_from.clone();
+        let app_name = behavior.email.app_name.clone();
+        let app_url = behavior.email.app_url.clone();
+        let support_email = behavior.email.support_email.clone();
+        let templates_dir = behavior.email.templates_dir.clone();
 
         // SMTP config (when adapter=smtp)
         let smtp_config = if email_adapter == EmailAdapterType::Smtp {
@@ -592,20 +624,6 @@ impl AppConfig {
             dev_capture: dev_capture_config,
         };
 
-        let argon2_memory_kb: u32 = env_behavior_override("ARGON2_MEMORY_KB")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(behavior.auth.argon2_memory_kb);
-        let argon2_iterations: u32 = env_behavior_override("ARGON2_ITERATIONS")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(behavior.auth.argon2_iterations);
-        let argon2_parallelism: u32 = env_behavior_override("ARGON2_PARALLELISM")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(behavior.auth.argon2_parallelism);
-
-        behavior.auth.argon2_memory_kb = argon2_memory_kb;
-        behavior.auth.argon2_iterations = argon2_iterations;
-        behavior.auth.argon2_parallelism = argon2_parallelism;
-
         AppConfig {
             env,
             http: HttpConfig {
@@ -646,4 +664,135 @@ pub fn log_effective_config(config: &AppConfig) {
         argon2_parallelism = config.behavior.auth.argon2_parallelism,
         "effective configuration loaded"
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    fn with_env_var(key: &str, value: Option<&str>) -> Option<String> {
+        let previous = std::env::var(key).ok();
+        match value {
+            Some(value) => std::env::set_var(key, value),
+            None => std::env::remove_var(key),
+        }
+        previous
+    }
+
+    fn restore_env_var(key: &str, previous: Option<String>) {
+        match previous {
+            Some(value) => std::env::set_var(key, value),
+            None => std::env::remove_var(key),
+        }
+    }
+
+    fn unique_temp_dir() -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time went backwards")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "acme-infra-config-tests-{}-{}",
+            std::process::id(),
+            nanos
+        ))
+    }
+
+    fn write_default_toml(base_dir: &Path, content: &str) {
+        let config_dir = base_dir.join("config");
+        std::fs::create_dir_all(&config_dir).expect("failed to create config dir");
+        std::fs::write(config_dir.join("default.toml"), content)
+            .expect("failed to write default.toml");
+    }
+
+    #[test]
+    fn migrated_behavior_keys_use_typed_config_not_env_overrides() {
+        let _lock = ENV_LOCK.lock().unwrap();
+
+        let test_dir = unique_temp_dir();
+        write_default_toml(
+            &test_dir,
+            r#"
+[email]
+default_from = "typed@example.com"
+app_name = "Typed App"
+app_url = "https://typed.example.com"
+support_email = "support@typed.example.com"
+templates_dir = "typed/templates"
+
+[auth]
+jwt_access_token_lifetime_minutes = 77
+jwt_refresh_token_lifetime_days = 88
+jwt_issuer = "typed-issuer"
+jwt_audience = "typed-audience"
+jwt_leeway_seconds = 99
+webauthn_rp_id = "typed-rp-id"
+webauthn_rp_origin = "https://typed-rp.example.com"
+webauthn_rp_name = "Typed RP"
+argon2_memory_kb = 11111
+argon2_iterations = 12
+argon2_parallelism = 13
+"#,
+        );
+
+        let original_cwd = std::env::current_dir().expect("failed to get cwd");
+        std::env::set_current_dir(&test_dir).expect("failed to set cwd");
+
+        let env_overrides = [
+            ("EMAIL_DEFAULT_FROM", "env@example.com"),
+            ("EMAIL_APP_NAME", "Env App"),
+            ("EMAIL_APP_URL", "https://env.example.com"),
+            ("EMAIL_SUPPORT", "support@env.example.com"),
+            ("EMAIL_TEMPLATES_DIR", "env/templates"),
+            ("AUTH_ACCESS_TOKEN_LIFETIME_MINUTES", "15"),
+            ("AUTH_REFRESH_TOKEN_LIFETIME_DAYS", "30"),
+            ("AUTH_JWT_ISSUER", "env-issuer"),
+            ("AUTH_JWT_AUDIENCE", "env-audience"),
+            ("AUTH_JWT_LEEWAY_SECONDS", "30"),
+            ("WEBAUTHN_RP_ID", "env-rp-id"),
+            ("WEBAUTHN_RP_ORIGIN", "https://env-rp.example.com"),
+            ("WEBAUTHN_RP_NAME", "Env RP"),
+            ("ARGON2_MEMORY_KB", "22222"),
+            ("ARGON2_ITERATIONS", "21"),
+            ("ARGON2_PARALLELISM", "22"),
+        ];
+        let mut previous = Vec::new();
+        for (key, value) in env_overrides {
+            previous.push((key, with_env_var(key, Some(value))));
+        }
+
+        let config = AppConfig::from_env();
+        assert_eq!(config.email.default_from, "typed@example.com");
+        assert_eq!(config.email.app_name, "Typed App");
+        assert_eq!(config.email.app_url, "https://typed.example.com");
+        assert_eq!(config.email.support_email, "support@typed.example.com");
+        assert_eq!(config.email.templates_dir, "typed/templates");
+        assert_eq!(config.behavior.auth.jwt_access_token_lifetime_minutes, 77);
+        assert_eq!(config.behavior.auth.jwt_refresh_token_lifetime_days, 88);
+        assert_eq!(config.behavior.auth.jwt_issuer, "typed-issuer");
+        assert_eq!(
+            config.behavior.auth.jwt_audience.as_deref(),
+            Some("typed-audience")
+        );
+        assert_eq!(config.behavior.auth.jwt_leeway_seconds, 99);
+        assert_eq!(config.behavior.auth.webauthn_rp_id, "typed-rp-id");
+        assert_eq!(
+            config.behavior.auth.webauthn_rp_origin,
+            "https://typed-rp.example.com"
+        );
+        assert_eq!(config.behavior.auth.webauthn_rp_name, "Typed RP");
+        assert_eq!(config.behavior.auth.argon2_memory_kb, 11111);
+        assert_eq!(config.behavior.auth.argon2_iterations, 12);
+        assert_eq!(config.behavior.auth.argon2_parallelism, 13);
+
+        for (key, value) in previous {
+            restore_env_var(key, value);
+        }
+        std::env::set_current_dir(original_cwd).expect("failed to restore cwd");
+        std::fs::remove_dir_all(test_dir).expect("failed to remove temp dir");
+    }
 }

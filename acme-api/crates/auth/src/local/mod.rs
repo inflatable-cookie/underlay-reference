@@ -20,7 +20,7 @@ use underlay_auth::{
     AuthError, AuthResult, Credential, CredentialMetadata, CredentialType, RoleSet, Session,
     SessionStatus, User, UserStatus,
 };
-use underlay_auth_jwt::{token_fingerprint, JwtConfig, JwtService};
+use underlay_auth_jwt::{token_fingerprint, JwtBehaviorDefaults, JwtConfig, JwtService};
 #[allow(unused_imports)] // Prepared for future OAuth implementation
 use underlay_auth_oauth::{
     GoogleOAuthAppService, GoogleOAuthService, OAuthCallbackRequest, OAuthLoginState, OAuthStart,
@@ -229,10 +229,21 @@ impl AcmeLocalAuthService {
 
     pub fn from_env(pool: sqlx::PgPool) -> AuthResult<Self> {
         let behavior = AppBehaviorConfig::load();
-
-        let env_behavior_override = |key: &str| -> Option<String> { std::env::var(key).ok() };
-
-        let cfg = JwtConfig::from_env().map_err(AuthError::from)?;
+        let private_key_b64 = std::env::var("AUTH_JWT_PRIVATE_KEY")
+            .map_err(|_| AuthError::Internal("AUTH_JWT_PRIVATE_KEY not set".to_string()))?;
+        let public_key_b64 = std::env::var("AUTH_JWT_PUBLIC_KEY")
+            .map_err(|_| AuthError::Internal("AUTH_JWT_PUBLIC_KEY not set".to_string()))?;
+        let cfg = JwtConfig::from_values(
+            private_key_b64,
+            public_key_b64,
+            JwtBehaviorDefaults {
+                access_token_lifetime_minutes: behavior.auth.jwt_access_token_lifetime_minutes,
+                refresh_token_lifetime_days: behavior.auth.jwt_refresh_token_lifetime_days,
+                issuer: behavior.auth.jwt_issuer.clone(),
+                audience: behavior.auth.jwt_audience.clone(),
+                leeway_seconds: behavior.auth.jwt_leeway_seconds,
+            },
+        );
         let jwt = JwtService::new(cfg).map_err(AuthError::from)?;
 
         let rate_limit_backend = std::env::var("RATE_LIMIT_BACKEND")
@@ -308,12 +319,9 @@ impl AcmeLocalAuthService {
         }));
 
         // WebAuthn relying party configuration
-        let webauthn_rp_id = env_behavior_override("WEBAUTHN_RP_ID")
-            .unwrap_or_else(|| behavior.auth.webauthn_rp_id.clone());
-        let webauthn_rp_origin = env_behavior_override("WEBAUTHN_RP_ORIGIN")
-            .unwrap_or_else(|| behavior.auth.webauthn_rp_origin.clone());
-        let webauthn_rp_name = env_behavior_override("WEBAUTHN_RP_NAME")
-            .unwrap_or_else(|| behavior.auth.webauthn_rp_name.clone());
+        let webauthn_rp_id = behavior.auth.webauthn_rp_id.clone();
+        let webauthn_rp_origin = behavior.auth.webauthn_rp_origin.clone();
+        let webauthn_rp_name = behavior.auth.webauthn_rp_name.clone();
 
         let webauthn = WebAuthnService::new(WebAuthnConfig {
             rp_id: webauthn_rp_id.clone(),
@@ -348,15 +356,9 @@ impl AcmeLocalAuthService {
 
         // Argon2 password hashing parameters (configurable via environment)
         // Defaults: 128 MiB memory, 4 iterations, 4 parallelism
-        let argon2_memory_kb: u32 = env_behavior_override("ARGON2_MEMORY_KB")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(behavior.auth.argon2_memory_kb);
-        let argon2_iterations: u32 = env_behavior_override("ARGON2_ITERATIONS")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(behavior.auth.argon2_iterations);
-        let argon2_parallelism: u32 = env_behavior_override("ARGON2_PARALLELISM")
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(behavior.auth.argon2_parallelism);
+        let argon2_memory_kb: u32 = behavior.auth.argon2_memory_kb;
+        let argon2_iterations: u32 = behavior.auth.argon2_iterations;
+        let argon2_parallelism: u32 = behavior.auth.argon2_parallelism;
 
         let password_hasher =
             Argon2Hasher::with_params(argon2_memory_kb, argon2_iterations, argon2_parallelism);
