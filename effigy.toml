@@ -1,0 +1,38 @@
+[catalog]
+alias = "underlay-reference"
+
+[package_manager]
+js = "bun"
+
+[tasks.dev]
+mode = "tui"
+shell = true
+concurrent = [
+  { task = "acme-api/dev", start = 1, tab = 4 },
+  { task = "acme-api/jobs", start = 2, tab = 3, start_after_ms = 1500 },
+  { task = "acme-front/dev", start = 3, tab = 2 },
+  { task = "acme-admin/dev", start = 4, tab = 1 }
+]
+
+[tasks.dev.profiles.front]
+concurrent = [
+  { task = "acme-api/dev", start = 1, tab = 3 },
+  { task = "acme-api/jobs", start = 2, tab = 2, start_after_ms = 1500 },
+  { task = "acme-front/dev", start = 3, tab = 1 }
+]
+
+[tasks.dev.profiles.admin]
+concurrent = [
+  { task = "acme-api/dev", start = 1, tab = 3 },
+  { task = "acme-api/jobs", start = 2, tab = 2, start_after_ms = 1500 },
+  { task = "acme-admin/dev", start = 3, tab = 1 }
+]
+
+[tasks."db:drop"]
+run = [{ task = "acme-api/db:drop" }]
+
+[tasks."db:migrate"]
+run = [{ task = "acme-api/db:migrate" }]
+
+[tasks."db:reset"]
+run = [{ task = "acme-api/db:reset" }]

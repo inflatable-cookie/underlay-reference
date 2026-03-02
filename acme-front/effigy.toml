@@ -1,0 +1,32 @@
+[catalog]
+alias = "acme-front"
+
+[package_manager]
+js = "bun"
+
+[tasks.dev]
+run = "vite dev"
+
+[tasks.build]
+run = "vite build"
+
+[tasks.preview]
+run = "vite preview"
+
+[tasks.sync]
+run = "svelte-kit sync"
+
+[tasks.prepare]
+run = "svelte-kit sync || echo ''"
+
+[tasks.check]
+run = [
+  { task = "sync" },
+  "svelte-check --tsconfig ./tsconfig.json"
+]
+
+[tasks."check:watch"]
+run = [
+  { task = "sync" },
+  "svelte-check --tsconfig ./tsconfig.json --watch"
+]

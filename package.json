@@ -1,11 +1,5 @@
 {
   "name": "underlay-reference",
   "private": true,
-  "version": "0.0.1",
-  "scripts": {
-    "dev:api": "sh -c 'bun run --cwd acme-api dev & sleep 2; bun run --cwd acme-api jobs & wait'",
-    "dev:admin": "sh -c 'bun run dev:api & bun run --cwd acme-admin dev & wait'",
-    "dev:front": "sh -c 'bun run dev:api & bun run --cwd acme-front dev & wait'",
-    "db:reset": "bun run --cwd acme-api db:reset"
-  }
+  "version": "0.0.1"
 }

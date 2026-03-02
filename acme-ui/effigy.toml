@@ -1,0 +1,14 @@
+[catalog]
+alias = "acme-ui"
+
+[package_manager]
+js = "bun"
+
+[tasks.check]
+run = "svelte-check --tsconfig ./tsconfig.json"
+
+[tasks.validate]
+run = [{ task = "check" }]
+
+[tasks."refresh:deps"]
+run = "bun install"

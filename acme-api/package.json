@@ -3,18 +3,5 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "scripts": {
-    "build": "cargo build",
-    "test": "cargo nextest run --no-tests=pass --workspace",
-    "test:ci": "cargo nextest run --no-tests=pass --profile ci --workspace",
-    "test:list": "cargo nextest list --workspace",
-    "test:cargo": "cargo test --workspace",
-    "dev": "cargo run -p acme-api",
-    "dev:watch": "cargo watch -x 'run -p acme-api'",
-    "jobs": "cargo run -p acme-jobs",
-    "db:drop": "cargo run -p acme-db --bin reset_dev_db",
-    "db:migrate": "cargo run -p acme-db --bin migrate_dev_db",
-    "db:reset": "bun db:drop && bun db:migrate"
-  },
   "devDependencies": {}
 }

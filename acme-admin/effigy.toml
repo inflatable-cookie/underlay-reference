@@ -1,0 +1,39 @@
+[catalog]
+alias = "acme-admin"
+
+[package_manager]
+js = "bun"
+
+[tasks.dev]
+run = [
+  { task = "clean" },
+  { task = "sync" },
+  "vite dev --force"
+]
+
+[tasks.build]
+run = "vite build"
+
+[tasks.preview]
+run = "vite preview"
+
+[tasks.clean]
+run = "rm -rf .svelte-kit node_modules/.vite"
+
+[tasks.sync]
+run = "svelte-kit sync"
+
+[tasks.prepare]
+run = "svelte-kit sync || echo ''"
+
+[tasks.check]
+run = [
+  { task = "sync" },
+  "svelte-check --tsconfig ./tsconfig.json"
+]
+
+[tasks."check:watch"]
+run = [
+  { task = "sync" },
+  "svelte-check --tsconfig ./tsconfig.json --watch"
+]

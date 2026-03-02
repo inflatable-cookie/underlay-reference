@@ -1,0 +1,11 @@
+[catalog]
+alias = "acme-client"
+
+[package_manager]
+js = "bun"
+
+[tasks.build]
+run = "tsc -p tsconfig.json"
+
+[tasks.check]
+run = "tsc -p tsconfig.json --noEmit"

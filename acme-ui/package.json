@@ -25,11 +25,6 @@
       "default": "./src/validation.ts"
     }
   },
-  "scripts": {
-    "check": "svelte-check --tsconfig ./tsconfig.json",
-    "validate": "bun run check",
-    "refresh:deps": "bun install"
-  },
   "devDependencies": {
     "svelte": "^5.53.2",
     "svelte-check": "^4.4.3",

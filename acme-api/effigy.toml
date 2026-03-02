@@ -1,0 +1,29 @@
+[catalog]
+alias = "acme-api"
+
+[package_manager]
+js = "bun"
+
+[tasks.build]
+run = "cargo build"
+
+[tasks.dev]
+run = "cargo run -p acme-api"
+
+[tasks."dev:watch"]
+run = "cargo watch -x 'run -p acme-api'"
+
+[tasks.jobs]
+run = "cargo run -p acme-jobs"
+
+[tasks."db:drop"]
+run = "cargo run -p acme-db --bin reset_dev_db"
+
+[tasks."db:migrate"]
+run = "cargo run -p acme-db --bin migrate_dev_db"
+
+[tasks."db:reset"]
+run = [
+  { task = "db:drop" },
+  { task = "db:migrate" }
+]
