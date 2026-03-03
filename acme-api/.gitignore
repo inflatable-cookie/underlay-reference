@@ -1,4 +1,7 @@
 target/
+.cache/
+.cargo/*
+!.cargo/config.toml
 dev-uploads/
 node_modules/
 config/local.*
