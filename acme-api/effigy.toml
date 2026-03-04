@@ -4,34 +4,13 @@ alias = "acme-api"
 [package_manager]
 js = "bun"
 
-[env]
-CARGO_HOME = "{project}/.cache/cargo/home"
-
 [tasks]
-build = [
-  { env = "CARGO_HOME" },
-  { run = "cargo build {args}" },
-]
-dev = [
-  { env = "CARGO_HOME" },
-  { run = "cargo run -p acme-api {args}" },
-]
-"dev:watch" = [
-  { env = "CARGO_HOME" },
-  { run = "cargo watch -x 'run -p acme-api'" },
-]
-jobs = [
-  { env = "CARGO_HOME" },
-  { run = "cargo run -p acme-jobs {args}" },
-]
-"db:drop" = [
-  { env = "CARGO_HOME" },
-  { run = "cargo run -p acme-db --bin reset_dev_db {args}" },
-]
-"db:migrate" = [
-  { env = "CARGO_HOME" },
-  { run = "cargo run -p acme-db --bin migrate_dev_db {args}" },
-]
+build = "cargo build {args}"
+dev = "cargo run -p acme-api {args}"
+"dev:watch" = "cargo watch -x 'run -p acme-api'"
+jobs = "cargo run -p acme-jobs {args}"
+"db:drop" = "cargo run -p acme-db --bin reset_dev_db {args}"
+"db:migrate" = "cargo run -p acme-db --bin migrate_dev_db {args}"
 "db:reset" = [
   { task = "db:drop" },
   { task = "db:migrate" }
