@@ -16,6 +16,7 @@
 ## Validation
 
 ```bash
+# The checks below intentionally scan for deprecated flat docs paths so they do not reappear.
 rg -n "roadmap/|reports/|decisions/" acme-docs README.md AGENTS.md acme-api/AGENTS.md acme-client/AGENTS.md acme-admin/AGENTS.md acme-front/AGENTS.md
 python3 - <<'PY'
 from pathlib import Path
