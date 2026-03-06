@@ -20,3 +20,9 @@ Roadmaps hold executable work for the reference implementation.
 - [generation-index.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/generation-index.md)
 - [g01/README.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/g01/README.md)
 - [backlog/README.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/backlog/README.md)
+
+## Historical language boundary
+
+- New roadmaps and actively maintained roadmap updates must use roadmap IDs and batch language.
+- Imported roadmap content may retain phase-era wording when it is recording past implementation work.
+- Normalize local historical wording only when a roadmap is reopened for active work or when an old label causes live path or reference drift.

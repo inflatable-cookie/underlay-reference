@@ -11,6 +11,7 @@
 - Do not leave compatibility shim docs behind after moves; update links in place.
 - Keep `vision/` high-level and stable, `architecture/` concrete, and `processes/` operational.
 - Prefer Underlay source docs for shared framework doctrine and `acme-docs` for reference-app-specific application.
+- Keep new roadmap work in roadmap-ID and batch language. Treat inherited phase-era wording in imported roadmap files as historical unless a file is reopened for active work.
 
 ## Validation
 
