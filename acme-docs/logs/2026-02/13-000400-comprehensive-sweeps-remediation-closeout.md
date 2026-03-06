@@ -3,11 +3,11 @@
 Date: 2026-02-13
 
 Related roadmap:
-- `acme-docs/roadmap/003-comprehensive-sweeps-remediation.md`
+- `acme-docs/roadmaps/g01/003-comprehensive-sweeps-remediation.md`
 
 ## Outcome
 
-- Roadmap phases 0-5 are now completed with all checklist items marked done.
+- Roadmap batches 0-5 are now completed with all checklist items marked done.
 - Critical and high-severity findings from the sweep set were remediated.
 - Medium findings were either remediated or explicitly accepted/documented as scoped exceptions.
 
@@ -41,7 +41,7 @@ Not executed in this pass (per reference-app constraints):
 ## Report updates
 
 - Updated status annotations in:
-  - `acme-docs/reports/2026-02-13-002-underlay-reuse-sweep.md`
-  - `acme-docs/reports/2026-02-13-003-frontend-consistency-sweep.md`
+  - `acme-docs/logs/2026-02/13-000200-underlay-reuse-sweep.md`
+  - `acme-docs/logs/2026-02/13-000300-frontend-consistency-sweep.md`
 - Roadmap definition-of-done is now fully checked in:
-  - `acme-docs/roadmap/003-comprehensive-sweeps-remediation.md`
+  - `acme-docs/roadmaps/g01/003-comprehensive-sweeps-remediation.md`

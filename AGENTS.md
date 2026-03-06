@@ -14,7 +14,7 @@ This repository is a **reference template** for bootstrapping Underlay-based app
 4. Links to detailed docs
 
 Detailed implementation notes are documented in:
-- `docs/reference-implementation-notes.md`
+- `acme-docs/processes/210-reference-implementation-notes.md`
 - `README.md`
 
 ## Hard Rules
@@ -37,4 +37,4 @@ cd acme-front && bun check
 
 ## Source of Truth
 
-For architecture and conventions, prefer Underlay docs in `underlay/docs/guides/`.
+For reference-app planning and architecture, prefer `acme-docs/`. For shared framework conventions, prefer Underlay docs in `underlay/docs/guides/`. Do not create parallel roadmap or report docs elsewhere in this repo.

@@ -21,6 +21,8 @@ cd acme-client && bun run build
 
 ## Reference Docs
 
-- `../docs/reference-implementation-notes.md`
+Use `../acme-docs/` as the reference-app docs authority. Do not create package-local roadmap or report docs.
+
+- `../acme-docs/processes/210-reference-implementation-notes.md`
 - `../underlay/docs/guides/071-json-naming.md`
 - `../underlay/docs/guides/080-typescript-client.md`

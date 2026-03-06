@@ -5,8 +5,8 @@ This roadmap consolidates findings from running Underlay sweeps **001-018** agai
 Run date: 2026-02-13
 
 Related reports:
-- `acme-docs/reports/2026-02-13-002-underlay-reuse-sweep.md`
-- `acme-docs/reports/2026-02-13-003-frontend-consistency-sweep.md`
+- `acme-docs/logs/2026-02/13-000200-underlay-reuse-sweep.md`
+- `acme-docs/logs/2026-02/13-000300-frontend-consistency-sweep.md`
 
 ## Coverage Summary
 
@@ -41,7 +41,7 @@ Severity totals across all sweeps:
 
 ---
 
-## Phase 0 - Immediate Blocking Fixes
+## Batch 0 - Immediate Blocking Fixes
 
 Priority: **Critical**
 
@@ -59,7 +59,7 @@ Why: prevents unauthorized task mutation if foreign UUID is known.
 
 ---
 
-## Phase 1 - Security, Privacy, and Contract Integrity
+## Batch 1 - Security, Privacy, and Contract Integrity
 
 Priority: **High**
 
@@ -115,7 +115,7 @@ Files:
 
 ---
 
-## Phase 2 - API/Client and Data Access Efficiency
+## Batch 2 - API/Client and Data Access Efficiency
 
 Priority: **High/Medium**
 
@@ -151,7 +151,7 @@ Files:
 
 ---
 
-## Phase 3 - Observability, Audit, and Migration Safety
+## Batch 3 - Observability, Audit, and Migration Safety
 
 Priority: **High/Medium**
 
@@ -184,7 +184,7 @@ Files:
 
 ---
 
-## Phase 4 - Jobs Reliability and Test Coverage
+## Batch 4 - Jobs Reliability and Test Coverage
 
 Priority: **High/Medium**
 
@@ -216,7 +216,7 @@ Files:
 
 ---
 
-## Phase 5 - Frontend Consistency and Accessibility Hardening
+## Batch 5 - Frontend Consistency and Accessibility Hardening
 
 Priority: **Medium/Low**
 
@@ -268,6 +268,6 @@ Files:
 1. Phase 0 (critical authz boundary)
 2. Phase 1 (security/privacy/versioning/contract)
 3. Phase 2 (contract + query efficiency)
-4. Phase 3 (audit + migration safety)
-5. Phase 4 (jobs + test reliability)
-6. Phase 5 (frontend consistency/a11y/style hygiene)
+4. Batch 3 (audit + migration safety)
+5. Batch 4 (jobs + test reliability)
+6. Batch 5 (frontend consistency/a11y/style hygiene)

@@ -14,13 +14,16 @@ underlay-reference/
 └── underlay -> ...    # Symlink to underlay library
 ```
 
-## Reference Notes
+## Documentation Authority
 
-Detailed package maps and implementation task notes are documented in:
+Reference-app planning and architecture live in `acme-docs/`.
 
-- `docs/reference-implementation-notes.md`
+- Start with `acme-docs/README.md`
+- Use `acme-docs/vision/001-acme-reference-implementation-vision.md` for the long-term role of the repo
+- Use `acme-docs/architecture/000-overview.md` for the package map and system layout
+- Use `acme-docs/processes/210-reference-implementation-notes.md` for implementation notes and validation commands
 
-`AGENTS.md` files in this repository are intentionally kept lean and link here for details.
+`AGENTS.md` files in this repository are intentionally kept lean and point back to that docs authority.
 
 ## Development Setup
 

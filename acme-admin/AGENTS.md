@@ -19,7 +19,9 @@ cd acme-admin && bun check
 
 ## Reference Docs
 
-- `../docs/reference-implementation-notes.md`
+Use `../acme-docs/` as the reference-app docs authority. Do not create package-local roadmap or report docs.
+
+- `../acme-docs/processes/210-reference-implementation-notes.md`
 - `../underlay/docs/guides/090-ui-kit.md`
 - `../underlay/docs/guides/098-shared-admin-patterns.md`
 - `../underlay/docs/guides/110-admin.md`

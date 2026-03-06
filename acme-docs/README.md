@@ -1,35 +1,34 @@
 # Acme Docs
 
-Documentation, architecture, and planning for the Underlay Reference Implementation (Acme).
+Northstar-aligned documentation authority for the Underlay reference implementation.
 
-This repository serves as both:
-- **Reference documentation** for developers learning Underlay patterns
-- **Living spec** for the reference implementation itself
+Use this repo section for four things:
+- `vision/` for the long-term purpose of the reference app
+- `architecture/` for structural and technical decisions
+- `roadmaps/` for executable work queues
+- `logs/` for timestamped execution history tied to roadmap work
 
-## Structure
+## Core structure
 
-- `architecture/` – system overview and design decisions
-- `roadmap/` – feature roadmaps and implementation plans
-- `reports/` – session summaries and progress reports
+- `vision/`
+- `architecture/`
+- `processes/`
+- `roadmaps/`
+- `logs/`
 
-## Sub-projects
+## Reference app scope
 
-The reference implementation consists of:
+The reference implementation covers:
+- `acme-api` for the Rust backend and jobs runtime
+- `acme-client` for the typed TypeScript API boundary
+- `acme-admin` for the admin frontend
+- `acme-front` for the public frontend
+- `acme-ui` for app-local shared UI pieces
 
-- **acme-api** – Rust backend (Axum + SQLx) demonstrating Underlay patterns
-- **acme-client** – TypeScript API client library
-- **acme-admin** – SvelteKit admin dashboard
-- **acme-front** – SvelteKit public-facing frontend
-- **acme-ui** – Shared UI components (optional, for app-specific components)
+## How to use this docs set
 
-## Purpose
-
-This reference implementation demonstrates how to build applications using Underlay infrastructure:
-
-- Authentication (passwords, 2FA, passkeys, sessions)
-- Media library (versioned uploads, blob storage)
-- Domain patterns (CRUD, soft-delete, ordering)
-- Frontend patterns (authenticated data fetching, forms, lists)
-- TypeScript client generation patterns
-
-See `roadmap/001-reference-completion.md` for the current implementation status and roadmap.
+- Start with [vision/001-acme-reference-implementation-vision.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/vision/001-acme-reference-implementation-vision.md).
+- Use [architecture/000-overview.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/architecture/000-overview.md) for the package map and system layout.
+- Read [processes/210-reference-implementation-notes.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/processes/210-reference-implementation-notes.md) for implementation notes and validation commands.
+- Track active execution in [roadmaps/README.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/README.md).
+- Record meaningful work batches in [logs/README.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/logs/README.md).

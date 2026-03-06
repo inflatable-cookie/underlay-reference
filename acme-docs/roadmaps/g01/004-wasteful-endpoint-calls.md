@@ -27,7 +27,7 @@ This codebase is relatively clean. The reference app has no N+1 fan-out, no exha
 
 ---
 
-## Phase 1 - Eager Filter Data Fetches (Pattern G + B) ✓
+## Batch 1 - Eager Filter Data Fetches (Pattern G + B) ✓
 
 Priority: **High** — Completed
 
@@ -53,9 +53,9 @@ These are the most impactful fixes — removing unnecessary API calls from page 
 
 ---
 
-## Phase 2 - DTO Right-Sizing (Pattern I) ✓
+## Batch 2 - DTO Right-Sizing (Pattern I) ✓
 
-Priority: **Medium** — Completed (addressed as part of Phase 1)
+Priority: **Medium** — Completed (addressed as part of Batch 1)
 
 ### 2.1 Use suggestion endpoints for dropdowns ✓
 
@@ -64,7 +64,7 @@ Priority: **Medium** — Completed (addressed as part of Phase 1)
 
 ---
 
-## Phase 3 - Tab Content Lazy-Mount (Pattern A) ✓
+## Batch 3 - Tab Content Lazy-Mount (Pattern A) ✓
 
 Priority: **Low** — Completed
 
@@ -83,13 +83,13 @@ Priority: **Low** — Completed
 
 ---
 
-## Phase 4 - Dead Endpoint Cleanup (Pattern D) ✓
+## Batch 4 - Dead Endpoint Cleanup (Pattern D) ✓
 
 Priority: **Low** — Completed
 
 ### 4.1 Suggestion endpoints ✓
 
-- [x] `listCategoriesForSuggestions` — now actively used (3 callers after Phase 1). Kept.
+- [x] `listCategoriesForSuggestions` — now actively used (3 callers after Batch 1). Kept.
 - [x] `listProjectsForSuggestions` — removed (no callers, no planned use)
 
 ### 4.2 Unused restore commands ✓
@@ -106,7 +106,7 @@ Note: Media has a working restore flow via `MediaActionsMenu`. If restore is nee
 
 ---
 
-## Phase 5 - Enable Global Auto-Fetch (Pattern K) ✓
+## Batch 5 - Enable Global Auto-Fetch (Pattern K) ✓
 
 Priority: **High** — Completed
 
@@ -157,7 +157,7 @@ Affected files (27):
 | 7 | `projects/[projectId]/tasks/new/+page.svelte` | Standard |
 | 8 | `projects/[projectId]/tasks/[taskId]/+page.svelte` | Standard |
 | 9 | `projects/[projectId]/tasks/[taskId]/edit/+page.svelte` | Standard |
-| 10 | `users/+page.svelte` | Also has unguarded filter $effect (Phase 6) |
+| 10 | `users/+page.svelte` | Also has unguarded filter $effect (Batch 6) |
 | 11 | `users/[userId]/+page.svelte` | Has tab-gated tryFetch for sessions/activity — convert to separate useAuthenticatedData with tab gating |
 | 12 | `users/[userId]/edit/+page.svelte` | Standard |
 | 13 | `media/+page.svelte` | Has URL-change refetch $effect — keep that, remove tryFetch |
@@ -167,18 +167,18 @@ Affected files (27):
 | 17 | `account/2fa/+page.svelte` | Standard |
 | 18 | `account/passkeys/+page.svelte` | Standard |
 | 19 | `account/password/+page.svelte` | Standard |
-| 20 | `system/audit/+page.svelte` | Has URL-change refetch + wasteful refetch (Phase 7) |
+| 20 | `system/audit/+page.svelte` | Has URL-change refetch + wasteful refetch (Batch 7) |
 | 21 | `system/emails/+page.svelte` | Has URL-change refetch $effect — keep that, remove tryFetch |
 | 22 | `system/emails/[id]/+page.svelte` | Standard |
-| 23 | `system/errors/+page.svelte` | Also has unguarded filter $effect (Phase 6) |
-| 24 | `system/jobs/+page.svelte` | Also has unguarded filter $effect (Phase 6) |
+| 23 | `system/errors/+page.svelte` | Also has unguarded filter $effect (Batch 6) |
+| 24 | `system/jobs/+page.svelte` | Also has unguarded filter $effect (Batch 6) |
 | 25 | `system/jobs/[id]/+page.svelte` | Standard |
 | 26 | `system/scheduled-tasks/+page.svelte` | Has URL-change refetch $effect — keep that, remove tryFetch |
 | 27 | `system/scheduled-tasks/[id]/+page.svelte` | Has tab-gated tryFetch for jobsData — convert |
 
 ---
 
-## Phase 6 - Guard Filter-Change Refetch Effects (Pattern J variant) ✓
+## Batch 6 - Guard Filter-Change Refetch Effects (Pattern J variant) ✓
 
 Priority: **High** — Completed
 
@@ -220,7 +220,7 @@ File: `acme-admin/src/routes/(app)/system/jobs/+page.svelte` (lines 55-60)
 
 ---
 
-## Phase 7 - Audit Page Wasteful Refetch (Note) ✓
+## Batch 7 - Audit Page Wasteful Refetch (Note) ✓
 
 Priority: **Low** — Completed
 
@@ -244,7 +244,7 @@ The following patterns from the sweep were audited and found clean:
 | **H** Missing supplementary data on list DTOs | Clean | List endpoints include counts and labels directly |
 | **J** Unguarded queryKey refetch (tab-mounted) | Clean | No `queryKey` pattern used; tab-mounted components use `tryFetch` gated on `activeTab` (correct) |
 
-Note: Pattern J's core concern (tab-mounted components refetching on sibling tab URL changes) is not present. The 3 issues in Phase 6 are a variant — unguarded local-state filter effects on non-tab pages causing double-fetch on mount.
+Note: Pattern J's core concern (tab-mounted components refetching on sibling tab URL changes) is not present. The 3 issues in Batch 6 are a variant — unguarded local-state filter effects on non-tab pages causing double-fetch on mount.
 
 ---
 
