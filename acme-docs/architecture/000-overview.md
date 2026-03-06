@@ -101,7 +101,6 @@ underlay-reference/
 │   ├── roadmaps/          # Segmented roadmap generations
 │   │   ├── g01/           # Active roadmap generation
 │   │   ├── backlog/       # Unscheduled candidate milestones
-│   │   └── supporting/    # Non-roadmap supporting material
 │   └── logs/              # Month-sharded execution history
 │
 ├── docker-compose.yml     # Development services

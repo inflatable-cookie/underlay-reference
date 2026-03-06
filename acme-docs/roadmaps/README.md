@@ -9,7 +9,6 @@ Roadmaps hold executable work for the reference implementation.
 - References should use roadmap IDs such as `g01.003`.
 - Generation rollover is manual only.
 - Backlog items that are not active milestones belong in `backlog/`.
-- Supporting material that is not itself an executable roadmap belongs in `supporting/`.
 
 ## Current generation
 
