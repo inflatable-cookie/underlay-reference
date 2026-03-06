@@ -3,6 +3,16 @@
     "version": "0.0.1",
     "private": true,
     "type": "module",
+    "scripts": {
+        "tasks": "effigy tasks --repo .",
+        "health": "effigy health --repo .",
+        "doctor": "effigy doctor --repo .",
+        "check": "effigy check --repo .",
+        "build": "effigy build --repo .",
+        "validate": "effigy validate --repo .",
+        "qa": "effigy qa --repo .",
+        "effigy:dev": "effigy-dev --repo ."
+    },
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "dependencies": {

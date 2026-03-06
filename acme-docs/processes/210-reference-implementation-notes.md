@@ -144,24 +144,17 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 ## Validation quick commands
 
 ```bash
-# API
-cd acme-api && cargo build
+# Workspace baseline
+effigy health --repo .
+effigy validate --repo .
 
-# Freshness rollout audit
-./scripts/check-admin-freshness-rollout.sh
+# Docs rollout checks
+effigy validate --repo acme-docs
 
-# Auth security alerting rollout audit
-./scripts/check-auth-security-alerting-rollout.sh
-
-# Reorder conflict rollout audit
-./scripts/check-reorder-conflict-rollout.sh
-
-# Client
-cd acme-client && bun check
-
-# Admin
-cd acme-admin && bun check
-
-# Front
-cd acme-front && bun check
+# Repo-local baselines
+effigy validate --repo acme-api
+effigy validate --repo acme-client
+effigy validate --repo acme-admin
+effigy validate --repo acme-front
+effigy validate --repo acme-ui
 ```

@@ -24,16 +24,25 @@ Detailed implementation notes are documented in:
 - Keep wire JSON naming and API conventions aligned with Underlay guides.
 - Keep changes scoped; avoid unrelated refactors.
 
+## Effigy-First Execution
+
+Default flow from the workspace root:
+1. Run `effigy tasks --repo .`
+2. Run `effigy health --repo .`
+3. Run `effigy validate --repo .`
+4. Prefer `effigy <task> --repo .` for supported workspace and child-repo work
+5. Fall back to raw package-local commands only when Effigy does not yet cover the path
+
+Workspace notes:
+- use root Effigy tasks for cross-repo orchestration (`health`, `validate`, `qa`, `dev`)
+- use child-owned tasks from the workspace root when they resolve uniquely (`db:*`)
+- when modifying a specific repo, follow that repo's local `AGENTS.md`
+- do not treat `cargo build`, `bun check`, or ad hoc shell commands as the default entrypoint when an Effigy task exists
+
 ## Validation
 
-Run only what matches touched areas:
-
-```bash
-cd acme-api && cargo build
-cd acme-client && bun check
-cd acme-admin && bun check
-cd acme-front && bun check
-```
+- `effigy health --repo .`
+- `effigy validate --repo .`
 
 ## Source of Truth
 

@@ -3,6 +3,18 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"scripts": {
+		"tasks": "effigy tasks --repo .",
+		"health": "effigy health --repo .",
+		"doctor": "effigy doctor --repo .",
+		"dev": "effigy dev --repo .",
+		"check": "effigy check --repo .",
+		"build": "effigy build --repo .",
+		"preview": "effigy preview --repo .",
+		"validate": "effigy validate --repo .",
+		"qa": "effigy qa --repo .",
+		"effigy:dev": "effigy-dev --repo ."
+	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.53.0",

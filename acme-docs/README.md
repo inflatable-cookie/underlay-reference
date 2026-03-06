@@ -25,6 +25,27 @@ The reference implementation covers:
 - `acme-front` for the public frontend
 - `acme-ui` for app-local shared UI pieces
 
+## Effigy-First Repo Loop
+
+Use Effigy as the default command surface inside `acme-docs/`:
+
+```bash
+effigy tasks --repo .
+effigy health --repo .
+effigy validate --repo .
+```
+
+Repo-owned rollout checks:
+
+```bash
+effigy check:admin-freshness-rollout --repo .
+effigy check:auth-security-alerting-rollout --repo .
+effigy check:reorder-conflict-rollout --repo .
+effigy qa --repo .
+```
+
+These tasks wrap the active rollout audit scripts in the workspace root so agents and contributors can use a consistent repo-local surface instead of direct shell invocations.
+
 ## How to use this docs set
 
 - Start with [vision/001-acme-reference-implementation-vision.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/vision/001-acme-reference-implementation-vision.md).

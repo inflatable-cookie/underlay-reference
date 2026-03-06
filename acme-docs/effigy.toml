@@ -1,0 +1,21 @@
+[catalog]
+alias = "acme-docs"
+
+[tasks]
+health = [
+  { task = "check:admin-freshness-rollout" },
+]
+
+validate = [
+  { task = "check:admin-freshness-rollout" },
+  { task = "check:auth-security-alerting-rollout" },
+  { task = "check:reorder-conflict-rollout" },
+]
+
+qa = [
+  { task = "validate" },
+]
+
+"check:admin-freshness-rollout" = "bash ../scripts/check-admin-freshness-rollout.sh {args}"
+"check:auth-security-alerting-rollout" = "bash ../scripts/check-auth-security-alerting-rollout.sh {args}"
+"check:reorder-conflict-rollout" = "bash ../scripts/check-reorder-conflict-rollout.sh {args}"

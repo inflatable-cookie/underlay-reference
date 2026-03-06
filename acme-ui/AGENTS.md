@@ -1,20 +1,19 @@
-# Agents Guide: acme-client
+# Agents Guide: acme-ui
 
 ## Scope
 
-`acme-client` is the typed API client boundary shared by admin/front apps.
+`acme-ui` is the shared UI package for the Underlay reference workspace.
 
 ## Hard Rules
 
-- Keep this package transport-focused and app-agnostic.
-- Do not add UI concerns here.
-- Keep command and type exports stable and explicit.
-- Use Underlay JSON naming conventions at the wire boundary.
-- Use `bun` for all JS/TS operations.
+- Use `bun` for JS/TS tasks.
+- Keep exports stable and reusable across admin and front apps.
+- Prefer shared Underlay-compatible patterns over app-specific wrappers.
+- Keep package changes focused on reusable UI or rendering concerns.
 
 ## Effigy-First Execution
 
-Default flow inside `acme-client/`:
+Default flow inside `acme-ui/`:
 1. Run `effigy tasks --repo .`
 2. Run `effigy health --repo .`
 3. Run `effigy validate --repo .`
@@ -30,5 +29,4 @@ Default flow inside `acme-client/`:
 Use `../acme-docs/` as the reference-app docs authority. Do not create package-local roadmap or report docs.
 
 - `../acme-docs/processes/210-reference-implementation-notes.md`
-- `../underlay/docs/guides/071-json-naming.md`
-- `../underlay/docs/guides/080-typescript-client.md`
+- `../underlay/docs/guides/090-ui-kit.md`

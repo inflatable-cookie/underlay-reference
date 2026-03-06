@@ -11,11 +11,18 @@
 - Favor composable shared client/UI utilities over page-specific duplication.
 - Keep public-facing pages lightweight and consistent.
 
+## Effigy-First Execution
+
+Default flow inside `acme-front/`:
+1. Run `effigy tasks --repo .`
+2. Run `effigy health --repo .`
+3. Run `effigy validate --repo .`
+4. Prefer `effigy <task> --repo .` for repo-owned work instead of raw package commands where Effigy already covers the path
+
 ## Validation
 
-```bash
-cd acme-front && bun check
-```
+- `effigy health --repo .`
+- `effigy validate --repo .`
 
 ## Reference Docs
 

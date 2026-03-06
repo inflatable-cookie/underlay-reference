@@ -11,11 +11,18 @@
 - Keep route behavior and data loading close to route boundaries.
 - Keep admin behavior consistent with shared patterns documented in Underlay guides.
 
+## Effigy-First Execution
+
+Default flow inside `acme-admin/`:
+1. Run `effigy tasks --repo .`
+2. Run `effigy health --repo .`
+3. Run `effigy validate --repo .`
+4. Prefer `effigy <task> --repo .` for repo-owned work instead of raw package commands where Effigy already covers the path
+
 ## Validation
 
-```bash
-cd acme-admin && bun check
-```
+- `effigy health --repo .`
+- `effigy validate --repo .`
 
 ## Reference Docs
 

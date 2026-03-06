@@ -13,21 +13,24 @@
 - Prefer Underlay source docs for shared framework doctrine and `acme-docs` for reference-app-specific application.
 - Keep new roadmap work in roadmap-ID and batch language. Treat inherited phase-era wording in imported roadmap files as historical unless a file is reopened for active work.
 
+## Effigy-First Execution
+
+Default flow inside `acme-docs/`:
+1. Run `effigy tasks --repo .`
+2. Run `effigy health --repo .`
+3. Run `effigy validate --repo .`
+4. Prefer `effigy <task> --repo .` for rollout checks instead of calling shell scripts directly
+
+Repo notes:
+- `health` is the stable baseline for day-to-day docs validation
+- `validate` runs the full current rollout-check set
+- direct script execution is fallback only when debugging a specific check
+
 ## Validation
 
-```bash
-# The checks below intentionally scan for deprecated flat docs paths so they do not reappear.
-rg -n "roadmap/|reports/|decisions/" acme-docs README.md AGENTS.md acme-api/AGENTS.md acme-client/AGENTS.md acme-admin/AGENTS.md acme-front/AGENTS.md
-python3 - <<'PY'
-from pathlib import Path
-root = Path('.')
-for path in [root/'README.md', root/'AGENTS.md', *Path('acme-docs').rglob('*.md')]:
-    text = path.read_text()
-    if 'acme-docs/roadmap/' in text or 'acme-docs/reports/' in text:
-        raise SystemExit(f'stale path in {path}')
-print('ok')
-PY
-```
+- `effigy health --repo .`
+- `effigy validate --repo .`
+- Confirm docs do not reintroduce deprecated flat docs paths when editing historical references.
 
 ## Reference Docs
 

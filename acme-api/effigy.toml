@@ -6,6 +6,9 @@ js = "bun"
 
 [tasks]
 build = "cargo build {args}"
+health = [{ task = "build" }]
+validate = [{ task = "build" }]
+qa = [{ task = "validate" }]
 dev = "cargo run -p acme-api {args}"
 "dev:watch" = "cargo watch -x 'run -p acme-api'"
 jobs = "cargo run -p acme-jobs {args}"

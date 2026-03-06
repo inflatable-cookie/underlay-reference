@@ -4,6 +4,30 @@ alias = "underlay-reference"
 [package_manager]
 js = "bun"
 
+[tasks]
+health = [
+  { task = "acme-docs/health" },
+  { task = "acme-api/health" },
+  { task = "acme-client/health" },
+  { task = "acme-admin/health" },
+  { task = "acme-front/health" },
+  { task = "acme-ui/health" },
+]
+
+validate = [
+  { task = "acme-docs/validate" },
+  { task = "acme-api/validate" },
+  { task = "acme-client/validate" },
+  { task = "acme-admin/validate" },
+  { task = "acme-front/validate" },
+  { task = "acme-ui/validate" },
+]
+
+qa = [
+  { task = "health" },
+  { task = "validate" },
+]
+
 [tasks.dev]
 mode = "tui"
 concurrent = [
@@ -29,12 +53,3 @@ concurrent = [
   { task = "acme-admin/dev", start = 3, tab = 1 },
   { task = "shell", start = 4, tab = 4 }
 ]
-
-[tasks."db:drop"]
-run = [{ task = "acme-api/db:drop" }]
-
-[tasks."db:migrate"]
-run = [{ task = "acme-api/db:migrate" }]
-
-[tasks."db:reset"]
-run = [{ task = "acme-api/db:reset" }]

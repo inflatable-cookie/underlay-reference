@@ -4,6 +4,14 @@ alias = "acme-admin"
 [package_manager]
 js = "bun"
 
+[tasks]
+health = [{ task = "check" }]
+validate = [
+  { task = "check" },
+  { task = "build" }
+]
+qa = [{ task = "validate" }]
+
 [tasks.dev]
 run = [
   { task = "clean" },

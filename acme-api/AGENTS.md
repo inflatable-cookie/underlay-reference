@@ -11,13 +11,24 @@
 - Do not add app-specific hacks that reduce template clarity.
 - Prefer existing shared error/response utilities over custom wrappers.
 
+## Effigy-First Execution
+
+Default flow inside `acme-api/`:
+1. Run `effigy tasks --repo .`
+2. Run `effigy health --repo .`
+3. Run `effigy validate --repo .`
+4. Prefer `effigy <task> --repo .` for repo-owned work instead of raw Cargo commands where Effigy already covers the path
+
+Repo notes:
+- `health` and `validate` currently use `build` as the stable Rust baseline
+- `db:*` stays owned here and resolves from the workspace root through child-catalog routing
+- raw `cargo` commands are fallback for work Effigy does not yet model directly
+
 ## Validation
 
-```bash
-cd acme-api && cargo build
-# Optional deeper check when needed:
-cd acme-api && cargo test
-```
+- `effigy health --repo .`
+- `effigy validate --repo .`
+- Optional deeper check when needed: `cargo test`
 
 ## Reference Docs
 

@@ -25,6 +25,29 @@ Reference-app planning and architecture live in `acme-docs/`.
 
 `AGENTS.md` files in this repository are intentionally kept lean and point back to that docs authority.
 
+## Effigy-First Workspace Loop
+
+Use Effigy as the default command surface from the workspace root:
+
+```bash
+effigy tasks --repo .
+effigy health --repo .
+effigy validate --repo .
+```
+
+Common workspace commands:
+
+```bash
+effigy dev --repo .
+effigy dev front --repo .
+effigy dev admin --repo .
+effigy qa --repo .
+effigy db:reset --repo .
+effigy db:migrate --repo .
+```
+
+`db:*` stays owned by `acme-api/` and resolves through child-catalog routing from the workspace root. Root tasks should own cross-repo orchestration rather than duplicating uniquely owned child tasks.
+
 ## Development Setup
 
 This repository uses a **symlink** to reference the Underlay library for development:
@@ -169,14 +192,12 @@ cd acme-front && bun install
 ### Running the Application
 
 ```bash
-# Terminal 1: API server
-cd acme-api && cargo run
+# Full workspace
+effigy dev --repo .
 
-# Terminal 2: Admin dev server
-cd acme-admin && bun dev
-
-# Terminal 3: Front dev server
-cd acme-front && bun dev
+# Focused profiles
+effigy dev admin --repo .
+effigy dev front --repo .
 ```
 
 ### Development URLs

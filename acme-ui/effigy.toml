@@ -4,11 +4,13 @@ alias = "acme-ui"
 [package_manager]
 js = "bun"
 
+[tasks]
+health = [{ task = "check" }]
+validate = [{ task = "check" }]
+qa = [{ task = "validate" }]
+
 [tasks.check]
 run = "svelte-check --tsconfig ./tsconfig.json"
-
-[tasks.validate]
-run = [{ task = "check" }]
 
 [tasks."refresh:deps"]
 run = "bun install"
