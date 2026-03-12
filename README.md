@@ -30,20 +30,22 @@ Reference-app planning and architecture live in `acme-docs/`.
 Use Effigy as the default command surface from the workspace root:
 
 ```bash
-effigy tasks --repo .
-effigy health --repo .
-effigy validate --repo .
+effigy tasks
+effigy health
+effigy validate
 ```
 
 Common workspace commands:
 
 ```bash
-effigy dev --repo .
-effigy dev front --repo .
-effigy dev admin --repo .
-effigy qa --repo .
-effigy db:reset --repo .
-effigy db:migrate --repo .
+effigy dev
+effigy dev front
+effigy dev admin
+effigy qa
+effigy qa:docs
+effigy qa:northstar
+effigy db:reset
+effigy db:migrate
 ```
 
 `db:*` stays owned by `acme-api/` and resolves through child-catalog routing from the workspace root. Root tasks should own cross-repo orchestration rather than duplicating uniquely owned child tasks.
@@ -193,11 +195,11 @@ cd acme-front && bun install
 
 ```bash
 # Full workspace
-effigy dev --repo .
+effigy dev
 
 # Focused profiles
-effigy dev admin --repo .
-effigy dev front --repo .
+effigy dev admin
+effigy dev front
 ```
 
 ### Development URLs

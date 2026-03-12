@@ -23,9 +23,22 @@ validate = [
   { task = "acme-ui/validate" },
 ]
 
+"qa:docs:workspace-contract" = "effigy docs check-forbidden AGENTS.md README.md package.json --forbid '--repo .'"
+
+"qa:docs" = [
+  { task = "qa:docs:workspace-contract" },
+  { task = "acme-docs/qa:docs" },
+]
+
+"qa:northstar" = [
+  { task = "acme-docs/qa:northstar" },
+]
+
 qa = [
   { task = "health" },
   { task = "validate" },
+  { task = "qa:docs" },
+  { task = "qa:northstar" },
 ]
 
 [tasks.dev]

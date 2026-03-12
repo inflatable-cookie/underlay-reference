@@ -23,3 +23,8 @@ It should prioritize canonical implementation patterns, migration examples, and 
 - Shared Underlay capabilities are used directly where they fit instead of being reimplemented locally.
 - Roadmap work stays focused on reference quality, completeness, and pattern clarity.
 - Execution logs explain meaningful change batches without turning the repo into a task-by-task diary.
+
+## Next Task
+
+Use this vision as the baseline for the next reference-implementation roadmap
+batch and reopen it only when the repo's bootstrap role or boundary changes.

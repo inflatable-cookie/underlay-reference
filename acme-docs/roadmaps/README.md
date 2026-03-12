@@ -26,3 +26,8 @@ Roadmaps hold executable work for the reference implementation.
 - New roadmaps and actively maintained roadmap updates must use roadmap IDs and batch language.
 - Imported roadmap content may retain phase-era wording when it is recording past implementation work.
 - Normalize local historical wording only when a roadmap is reopened for active work or when an old label causes live path or reference drift.
+
+## Next Task
+
+Open `g01.006` when the next reference-implementation milestone is ready to be
+sequenced, rather than extending closed rollout work in place.

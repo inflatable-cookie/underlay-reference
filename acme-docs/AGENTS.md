@@ -2,7 +2,7 @@
 
 ## Scope
 
-`acme-docs` is the documentation authority for the Underlay reference implementation. Keep planning, architecture, and execution history here rather than in package-local docs.
+`acme-docs` is the documentation authority catalog for the Underlay reference implementation. Keep planning, architecture, and execution history here rather than in package-local docs.
 
 ## Hard Rules
 
@@ -15,21 +15,22 @@
 
 ## Effigy-First Execution
 
-Default flow inside `acme-docs/`:
-1. Run `effigy tasks --repo .`
-2. Run `effigy health --repo .`
-3. Run `effigy validate --repo .`
-4. Prefer `effigy <task> --repo .` for rollout checks instead of calling shell scripts directly
+Default flow from the workspace root:
+1. Run `effigy tasks`
+2. Prefer explicit docs-authority selectors such as `effigy acme-docs/health`, `effigy acme-docs/validate`, `effigy acme-docs/qa:docs`, and `effigy acme-docs/qa:northstar`
+3. Run `effigy validate` when the broader workspace needs validation
+4. Prefer explicit docs-authority tasks for rollout checks instead of calling shell scripts directly
 
 Repo notes:
-- `health` is the stable baseline for day-to-day docs validation
-- `validate` runs the full current rollout-check set
+- `acme-docs/health` is the stable baseline for day-to-day docs validation
+- `acme-docs/validate` runs the full current rollout-check set
 - direct script execution is fallback only when debugging a specific check
 
 ## Validation
 
-- `effigy health --repo .`
-- `effigy validate --repo .`
+- `effigy acme-docs/health`
+- `effigy acme-docs/validate`
+- `effigy acme-docs/qa:docs`
 - Confirm docs do not reintroduce deprecated flat docs paths when editing historical references.
 
 ## Reference Docs

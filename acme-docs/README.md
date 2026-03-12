@@ -27,29 +27,38 @@ The reference implementation covers:
 
 ## Effigy-First Repo Loop
 
-Use Effigy as the default command surface inside `acme-docs/`:
+Use Effigy as the default command surface from the workspace root, with
+explicit `acme-docs/...` selectors for docs-authority work:
 
 ```bash
-effigy tasks --repo .
-effigy health --repo .
-effigy validate --repo .
+effigy tasks
+effigy acme-docs/health
+effigy test --plan
 ```
 
 Repo-owned rollout checks:
 
 ```bash
-effigy check:admin-freshness-rollout --repo .
-effigy check:auth-security-alerting-rollout --repo .
-effigy check:reorder-conflict-rollout --repo .
-effigy qa --repo .
+effigy acme-docs/check:admin-freshness-rollout
+effigy acme-docs/check:auth-security-alerting-rollout
+effigy acme-docs/check:reorder-conflict-rollout
+effigy acme-docs/qa
+effigy acme-docs/qa:docs
+effigy acme-docs/qa:northstar
 ```
 
 These tasks wrap the active rollout audit scripts in the workspace root so agents and contributors can use a consistent repo-local surface instead of direct shell invocations.
 
 ## How to use this docs set
 
-- Start with [vision/001-acme-reference-implementation-vision.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/vision/001-acme-reference-implementation-vision.md).
-- Use [architecture/000-overview.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/architecture/000-overview.md) for the package map and system layout.
-- Read [processes/210-reference-implementation-notes.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/processes/210-reference-implementation-notes.md) for implementation notes and validation commands.
-- Track active execution in [roadmaps/README.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/README.md).
-- Record meaningful work batches in [logs/README.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/logs/README.md).
+- Start with [vision/001-acme-reference-implementation-vision.md](vision/001-acme-reference-implementation-vision.md).
+- Use [architecture/000-overview.md](architecture/000-overview.md) for the package map and system layout.
+- Read [processes/210-reference-implementation-notes.md](processes/210-reference-implementation-notes.md) for implementation notes and validation commands.
+- Track active execution in [roadmaps/README.md](roadmaps/README.md).
+- Record meaningful work batches in [logs/README.md](logs/README.md).
+
+## Next Task
+
+Use `effigy acme-docs/qa:docs` and `effigy acme-docs/qa:northstar` as the
+default docs baseline on the next reference-app docs batch, then keep rollout
+audits layered on top of that native surface.
