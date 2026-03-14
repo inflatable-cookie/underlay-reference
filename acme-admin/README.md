@@ -7,18 +7,18 @@ SvelteKit admin reference app for the Underlay reference workspace.
 Use Effigy as the default command surface inside `acme-admin/`:
 
 ```bash
-effigy tasks --repo .
-effigy health --repo .
-effigy validate --repo .
+effigy tasks
+effigy health
+effigy validate
 ```
 
 Common repo commands:
 
 ```bash
-effigy dev --repo .
-effigy check --repo .
-effigy build --repo .
-effigy qa --repo .
+effigy dev
+effigy check
+effigy build
+effigy qa
 ```
 
 `health` runs the Svelte typecheck baseline and `validate` adds the production build so admin changes stay aligned with the shared reference-app contract.

@@ -4,16 +4,16 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"tasks": "effigy tasks --repo .",
-		"health": "effigy health --repo .",
-		"doctor": "effigy doctor --repo .",
-		"dev": "effigy dev --repo .",
-		"check": "effigy check --repo .",
-		"build": "effigy build --repo .",
-		"preview": "effigy preview --repo .",
-		"validate": "effigy validate --repo .",
-		"qa": "effigy qa --repo .",
-		"effigy:dev": "effigy-dev --repo ."
+		"tasks": "effigy tasks",
+		"health": "effigy health",
+		"doctor": "effigy doctor",
+		"dev": "effigy dev",
+		"check": "effigy check",
+		"build": "effigy build",
+		"preview": "effigy preview",
+		"validate": "effigy validate",
+		"qa": "effigy qa",
+		"effigy:dev": "effigy-dev"
 	},
 	"dependencies": {
 		"acme-client": "file:../acme-client",

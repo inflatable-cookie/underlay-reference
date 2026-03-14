@@ -145,16 +145,16 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 
 ```bash
 # Workspace baseline
-effigy health --repo .
-effigy validate --repo .
+effigy health
+effigy validate
 
 # Docs rollout checks
-effigy validate --repo acme-docs
+cd acme-docs && effigy validate
 
 # Repo-local baselines
-effigy validate --repo acme-api
-effigy validate --repo acme-client
-effigy validate --repo acme-admin
-effigy validate --repo acme-front
-effigy validate --repo acme-ui
+cd acme-api && effigy validate
+cd acme-client && effigy validate
+cd acme-admin && effigy validate
+cd acme-front && effigy validate
+cd acme-ui && effigy validate
 ```

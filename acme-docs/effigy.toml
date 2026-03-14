@@ -22,11 +22,11 @@ validate = [
   { task = "check:reorder-conflict-rollout" },
 ]
 
-"qa:docs:links" = "effigy docs check-links --repo . README.md vision/README.md roadmaps/README.md logs/README.md"
-"qa:docs:agent-defaults" = "effigy docs check-forbidden --repo . AGENTS.md README.md --forbid '--repo .'"
-"qa:docs:headings" = "effigy docs check-headings --repo . README.md vision/README.md roadmaps/README.md logs/README.md --require-heading '## Next Task'"
-"qa:docs:index:vision" = "effigy docs check-index --repo . --policy-index vision"
-"qa:docs:next-action:vision" = "effigy docs check-next-action --repo . --policy vision"
+"qa:docs:links" = "effigy docs check-links README.md vision/README.md roadmaps/README.md logs/README.md"
+"qa:docs:agent-defaults" = "effigy docs check-forbidden AGENTS.md README.md --forbid '--repo .'"
+"qa:docs:headings" = "effigy docs check-headings README.md vision/README.md roadmaps/README.md logs/README.md --require-heading '## Next Task'"
+"qa:docs:index:vision" = "effigy docs check-index --policy-index vision"
+"qa:docs:next-action:vision" = "effigy docs check-next-action --policy vision"
 "qa:northstar" = [
   { task = "qa:docs:headings" },
   { task = "qa:docs:index:vision" },

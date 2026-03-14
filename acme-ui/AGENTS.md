@@ -14,15 +14,15 @@
 ## Effigy-First Execution
 
 Default flow inside `acme-ui/`:
-1. Run `effigy tasks --repo .`
-2. Run `effigy health --repo .`
-3. Run `effigy validate --repo .`
-4. Prefer `effigy <task> --repo .` for repo-owned work instead of raw package commands where Effigy already covers the path
+1. Run `effigy tasks`
+2. Run `effigy health`
+3. Run `effigy validate`
+4. Prefer `effigy <task>` for repo-owned work instead of raw package commands where Effigy already covers the path
 
 ## Validation
 
-- `effigy health --repo .`
-- `effigy validate --repo .`
+- `effigy health`
+- `effigy validate`
 
 ## Reference Docs
 

@@ -14,10 +14,10 @@
 ## Effigy-First Execution
 
 Default flow inside `acme-api/`:
-1. Run `effigy tasks --repo .`
-2. Run `effigy health --repo .`
-3. Run `effigy validate --repo .`
-4. Prefer `effigy <task> --repo .` for repo-owned work instead of raw Cargo commands where Effigy already covers the path
+1. Run `effigy tasks`
+2. Run `effigy health`
+3. Run `effigy validate`
+4. Prefer `effigy <task>` for repo-owned work instead of raw Cargo commands where Effigy already covers the path
 
 Repo notes:
 - `health` and `validate` currently use `build` as the stable Rust baseline
@@ -26,8 +26,8 @@ Repo notes:
 
 ## Validation
 
-- `effigy health --repo .`
-- `effigy validate --repo .`
+- `effigy health`
+- `effigy validate`
 - Optional deeper check when needed: `cargo test`
 
 ## Reference Docs

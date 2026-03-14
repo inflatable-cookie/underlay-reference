@@ -7,17 +7,17 @@ Typed TypeScript API client for the Underlay reference workspace.
 Use Effigy as the default command surface inside `acme-client/`:
 
 ```bash
-effigy tasks --repo .
-effigy health --repo .
-effigy validate --repo .
+effigy tasks
+effigy health
+effigy validate
 ```
 
 Common repo commands:
 
 ```bash
-effigy check --repo .
-effigy build --repo .
-effigy qa --repo .
+effigy check
+effigy build
+effigy qa
 ```
 
 `health` runs the typecheck baseline and `validate` adds the package build so the client stays transport-focused and publishable.
