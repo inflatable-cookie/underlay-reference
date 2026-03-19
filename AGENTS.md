@@ -33,6 +33,10 @@ Default flow from the workspace root:
 4. Prefer `effigy <task>` for supported workspace and child-repo work
 5. Fall back to raw package-local commands only when Effigy does not yet cover the path
 
+For first-time local bring-up from outside this repo:
+- use `effigy bootstrap git@github.com:inflatable-cookie/underlay-reference.git`
+- add `--start` when you want bootstrap to launch `dev` after dependency setup
+
 Workspace notes:
 - use root Effigy tasks for cross-repo orchestration (`health`, `validate`, `qa`, `qa:docs`, `qa:northstar`, `dev`)
 - use child-owned tasks from the workspace root when they resolve uniquely (`db:*`)

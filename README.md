@@ -35,6 +35,13 @@ effigy health
 effigy validate
 ```
 
+First-time bring-up from another directory:
+
+```bash
+effigy bootstrap git@github.com:inflatable-cookie/underlay-reference.git
+effigy bootstrap git@github.com:inflatable-cookie/underlay-reference.git --start
+```
+
 Common workspace commands:
 
 ```bash
@@ -49,6 +56,11 @@ effigy db:migrate
 ```
 
 `db:*` stays owned by `acme-api/` and resolves through child-catalog routing from the workspace root. Root tasks should own cross-repo orchestration rather than duplicating uniquely owned child tasks.
+
+Bootstrap notes:
+- `effigy bootstrap ...` clones the reference workspace and runs `bootstrap:deps`
+- setup fetches/install dependencies for `underlay`, `acme-api`, `acme-client`, `acme-ui`, `acme-front`, and `acme-admin`
+- add `--start` when you want it to launch the root `dev` stack after setup
 
 ## Development Setup
 
@@ -116,7 +128,15 @@ Public-facing frontend:
 
 ## Quick Start (for Development)
 
-### Option A: Automated Setup (Recommended)
+### Option A: Effigy Bootstrap (Recommended)
+
+```bash
+effigy bootstrap git@github.com:inflatable-cookie/underlay-reference.git
+```
+
+Add `--start` if you want the dev stack to launch after setup.
+
+### Option B: Automated Setup
 
 ```bash
 git clone <this-repo> underlay-reference
@@ -136,7 +156,7 @@ The setup script will:
 - Generate JWT keys
 - Install frontend dependencies
 
-### Option B: Manual Setup
+### Option C: Manual Setup
 
 #### 1. Clone and Set Up
 

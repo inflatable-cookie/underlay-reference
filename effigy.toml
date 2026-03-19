@@ -4,7 +4,18 @@ alias = "underlay-reference"
 [package_manager]
 js = "bun"
 
+[bootstrap]
+setup = ["bootstrap:deps"]
+start = "dev"
+
+[[bootstrap.children]]
+path = ".bootstrap/underlay"
+repo = "git@github.com:inflatable-cookie/underlay.git"
+branch = "main"
+
 [tasks]
+"bootstrap:deps" = "(rm -f underlay && ln -s .bootstrap/underlay underlay) && (cd underlay && cargo fetch) && (cd acme-api && cargo fetch) && (cd acme-client && bun install) && (cd acme-ui && bun install) && (cd acme-front && bun install) && (cd acme-admin && bun install)"
+
 health = [
   { task = "acme-docs/health" },
   { task = "acme-api/health" },
