@@ -1,6 +1,6 @@
 <script lang="ts">
   import { MediaThumbnail as PoodleMediaThumbnail, PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
   import {
     useToasts,
@@ -11,10 +11,9 @@
   } from "@decodelabs/underlay/patterns";
   import {
     EmptyState,
-        ListGrid,
+    ListGrid,
     ListCard,
-    PageLoading,
-    ConfirmAction
+    PageLoading
   } from "@decodelabs/underlay/components";
   import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { mediaCommands, type MediaSummary } from "acme-client";
@@ -68,6 +67,8 @@
       toastStore.push({ variant: "error", message });
     }
   }
+
+  let purgeCandidate = $state<MediaSummary | null>(null);
 
   function toPoodleMediaKind(kind: string): "image" | "audio" | "video" | "document" | "embed" {
     if (kind === "image") return "image";
@@ -138,20 +139,41 @@
               <RotateCcw size={14} />
               Restore
             </PoodleButton>
-            <ConfirmAction
-              title="Permanently Delete"
-              description={`Are you sure you want to permanently delete "${item.title ?? item.originalFilename}"? This action cannot be undone.`}
-              confirmLabel="Delete Forever"
-              triggerLabel="Delete"
-              triggerVariant="danger"
-              onConfirm={() => handlePurge(item.id)}
-            />
+            <PoodleButton
+              type="button"
+              variant="ghost"
+              tone="danger"
+              size="sm"
+              on:click={() => (purgeCandidate = item)}
+            >
+              <Trash2 size={14} />
+              Delete
+            </PoodleButton>
           </div>
         {/snippet}
       </ListCard>
     {/each}
   </ListGrid>
 {/if}
+
+<PoodleAlertDialog
+  open={purgeCandidate !== null}
+  title="Permanently Delete"
+  description={purgeCandidate
+    ? `Are you sure you want to permanently delete "${purgeCandidate.title ?? purgeCandidate.originalFilename}"? This action cannot be undone.`
+    : null}
+  confirmLabel="Delete Forever"
+  tone="danger"
+  onConfirm={async () => {
+    if (!purgeCandidate) return;
+    const mediaId = purgeCandidate.id;
+    purgeCandidate = null;
+    await handlePurge(mediaId);
+  }}
+  onCancel={() => {
+    purgeCandidate = null;
+  }}
+/>
 
 <style>
   .trash-info {

@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
+    CopyActionsMenu,
     DetailPageShell,
     DetailMeta,
     DetailMetaId,
     DetailMetaSeparator,
-    EntityActionsMenu,
     useToasts,
     useAuthenticatedData
   } from "@decodelabs/underlay/patterns";
@@ -37,6 +37,7 @@
   const email = $derived(pageData.data?.email as CapturedEmailDetail | undefined);
 
   let activeTab = $state("html");
+  let showDeleteConfirm = $state(false);
 
   function getStatusLabel() {
     if (!email) return "Captured";
@@ -90,25 +91,17 @@
     {/snippet}
 
     {#snippet actions()}
-      <EntityActionsMenu
+      <CopyActionsMenu
         toastStore={toastStore}
+        triggerLabel="Actions"
         copies={[
           { label: "Copy ID", text: email.emailId, successMessage: "Copied email ID" },
           { label: "Copy from address", text: email.fromAddress, successMessage: "Copied from address" },
           { label: "Copy to addresses", text: email.toAddresses.join(", "), successMessage: "Copied to addresses" }
         ]}
-        deleteConfig={{
-          entityLabel: email.subject || "(no subject)",
-          title: "Delete email",
-          description: "Are you sure you want to delete this captured email? This action cannot be undone.",
-          confirmLabel: "Delete",
-          execute: async () => {
-            const token = auth.getToken();
-            if (!token) throw new Error("Not authenticated");
-            await adminCommands.deleteCapturedEmail(email.id, fetch, token);
-          }
-        }}
-        onDeleteSuccess={() => goto("/system/emails")}
+        actions={[
+          { label: "Delete", destructive: true, onSelect: () => { showDeleteConfirm = true; } }
+        ]}
       />
     {/snippet}
 
@@ -157,6 +150,25 @@
       {/if}
     {/snippet}
   </DetailPageShell>
+
+  <PoodleAlertDialog
+    open={showDeleteConfirm}
+    title="Delete email"
+    description="Are you sure you want to delete this captured email? This action cannot be undone."
+    confirmLabel="Delete"
+    tone="danger"
+    onConfirm={async () => {
+      const token = auth.getToken();
+      if (!token) throw new Error("Not authenticated");
+      await adminCommands.deleteCapturedEmail(email.id, fetch, token);
+      await goto("/system/emails");
+    }}
+    onCancel={() => {
+      showDeleteConfirm = false;
+    }}
+  >
+    <p><strong>{email.subject || "(no subject)"}</strong></p>
+  </PoodleAlertDialog>
 {/if}
 
 <style>

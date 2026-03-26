@@ -17,7 +17,7 @@
  *   {:else if $auth.user}
  *     <Dashboard user={$auth.user} />
  *   {:else}
- *     <LoginForm />
+ *     <LoginPage />
  *   {/if}
  *
  *   // Login

@@ -19,8 +19,9 @@
     MediaVisibility
   } from "@decodelabs/underlay/patterns";
   import {
+    BatchActionBar,
     EmptyState,
-        ListGrid,
+    ListGrid,
     ListCard,
     OrderBy,
     PageLoading,
@@ -36,7 +37,6 @@
   } from "@poodle/svelte-primitives";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { mediaCommands, type MediaSummary } from "acme-client";
-  import { BatchActionBar } from "$lib/components";
   import { auth } from "$lib/stores/auth";
   import { squareCheckIcon, trash2Icon, uploadIcon } from "$lib/ui/poodle-icon-nodes";
   import Upload from "lucide-svelte/icons/upload";

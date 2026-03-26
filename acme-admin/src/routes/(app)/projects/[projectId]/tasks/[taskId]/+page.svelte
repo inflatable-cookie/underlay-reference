@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Task, type Label, type Project } from "acme-client";
@@ -13,7 +13,7 @@
     DetailMetaSeparator,
     useToasts
   } from "@decodelabs/underlay/patterns";
-  import { PageLoading, ConfirmAction, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
+  import { PageLoading, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
   import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import { getTaskStatusTone, getTaskPriorityTone } from "$lib/utils/accents";
@@ -28,6 +28,7 @@
   let { data }: Props = $props();
 
   const toastStore = useToasts();
+  let showDeleteConfirm = $state(false);
 
   // Fetch task, project, and labels data
   const pageData = useAuthenticatedData(
@@ -138,16 +139,23 @@
         <Pencil size={16} />
         Edit
       </PoodleButton>
-      <ConfirmAction
-        title="Delete Task"
-        description={`Are you sure you want to delete "${task.title}"?`}
-        confirmLabel="Delete"
-        triggerLabel="Delete"
-        triggerVariant="danger"
-        onConfirm={handleDelete}
-      />
+      <PoodleButton type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
+        Delete
+      </PoodleButton>
     {/snippet}
   </PageHeader>
+
+  <PoodleAlertDialog
+    open={showDeleteConfirm}
+    title="Delete Task"
+    description={`Are you sure you want to delete "${task.title}"?`}
+    confirmLabel="Delete"
+    tone="danger"
+    onConfirm={handleDelete}
+    onCancel={() => {
+      showDeleteConfirm = false;
+    }}
+  />
 
   <DetailsCard>
     <DetailsSection legend="Details">

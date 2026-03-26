@@ -405,11 +405,6 @@
     {#snippet actions()}
       <MediaActionsMenu
         {media}
-        sourceContext={{
-          label: media.title || media.originalFilename || "Media",
-          href: `/media/${media.id}`,
-          type: "detail"
-        }}
         onEditRequest={openEditDialog}
         onSoftDeleteSuccess={() => goto("/media")}
         onRestoreSuccess={() => mediaData.refetch()}

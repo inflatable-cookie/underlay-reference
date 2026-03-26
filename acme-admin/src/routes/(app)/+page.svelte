@@ -3,12 +3,12 @@
 	import { adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
 	import { MetricTile } from "@poodle/svelte-composites";
 	import { Pill } from "@poodle/svelte-primitives";
+	import { LogList, type LogEntry } from "@decodelabs/underlay/components";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
 	import Settings from "lucide-svelte/icons/settings";
 	import Box from "lucide-svelte/icons/box";
 	import { auth } from "$lib/stores/auth";
-	import LogList from "$lib/components/LogList.svelte";
 
 	let stats = $state<DashboardStats | null>(null);
 	let statsError = $state<string | null>(null);
@@ -17,6 +17,24 @@
 	let recentActivity = $state<ActivityEntry[]>([]);
 	let activityError = $state<string | null>(null);
 	let activityLoading = $state(true);
+	const logEntries = $derived<LogEntry[]>(
+		recentActivity.map((activity) => ({
+			id: activity.id,
+			occurredAt: activity.occurredAt,
+			actor: activity.actor
+				? {
+						id: activity.actor.id,
+						email: activity.actor.email,
+						name: activity.actor.displayName ?? undefined
+				  }
+				: undefined,
+			action: activity.action,
+			resourceType: activity.resourceType,
+			resourceId: activity.resourceId,
+			resourceLabel: (activity.details?.resourceLabel as string | undefined) ?? undefined,
+			details: activity.details
+		}))
+	);
 
 	onMount(async () => {
 		const token = auth.getToken();
@@ -137,7 +155,7 @@
 	<section class="dashboard__section">
 		<h2 class="dashboard__section-title">Recent Activity</h2>
 		<LogList
-			activities={recentActivity}
+			entries={logEntries}
 			loading={activityLoading}
 			error={activityError}
 			emptyMessage="No recent activity"

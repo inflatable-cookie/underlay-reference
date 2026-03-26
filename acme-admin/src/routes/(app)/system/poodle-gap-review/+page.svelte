@@ -1,9 +1,5 @@
 <script lang="ts">
   import {
-    DiagnosticsToolbar,
-    PaginatedList
-  } from "@decodelabs/underlay/components";
-  import {
     createClientPagination
   } from "@decodelabs/underlay/patterns";
   import {
@@ -160,13 +156,15 @@
       </p>
     </header>
 
-    <DiagnosticsToolbar title="Queue health">
-      <span>Build: acme-admin@preview</span>
-      <span>Latency: 184ms</span>
-      <span>Retries: 2</span>
-      <span>Last refresh: {pageRefreshCount}</span>
-
-      {#snippet actions()}
+    <div class="review-diagnostics-toolbar">
+      <div class="review-diagnostics-toolbar__content">
+        <span class="review-diagnostics-toolbar__title">Queue health</span>
+        <span>Build: acme-admin@preview</span>
+        <span>Latency: 184ms</span>
+        <span>Retries: 2</span>
+        <span>Last refresh: {pageRefreshCount}</span>
+      </div>
+      <div class="review-diagnostics-toolbar__actions">
         <PoodleButton type="button" variant="ghost" on:click={() => pageRefreshCount += 1}>
           <RefreshCw size={14} />
           Refresh
@@ -175,8 +173,8 @@
           <ShieldAlert size={14} />
           Inspect warnings
         </PoodleButton>
-      {/snippet}
-    </DiagnosticsToolbar>
+      </div>
+    </div>
   </section>
 
   <section class="review-page__section">
@@ -262,9 +260,9 @@
 
   <section class="review-page__section">
     <header class="review-page__intro">
-      <h2>PaginatedList</h2>
+      <h2>ListContainer + client pagination</h2>
       <p>
-        A smaller list shell that combines loading, empty/error states, item rendering, grid/list layout, and pagination in one component.
+        The same Poodle list shell can host client-side pagination by driving `currentPage`, `totalPages`, and `pageChange` from a local pagination controller.
       </p>
     </header>
 
@@ -283,22 +281,36 @@
       </PoodleField>
     </div>
 
-    <PaginatedList controller={gridPagination} layout="grid" gridMinWidth={16} emptyMessage="No queue workers match the current filter.">
-      {#snippet items(item)}
-        <PoodleCard>
-          <div class="queue-card">
-            <div class="queue-card__header">
-              <strong>{item.name}</strong>
-              <PoodlePill tone={getQueueTone(item.status)} appearance="badge" size="lg">
-                {titleCase(item.status)}
-              </PoodlePill>
+    <PoodleListContainer
+      title="Queue workers"
+      subtitle="Client-side pagination with caller-owned filtering and card layout."
+      eyebrow="Poodle composite"
+      state={gridPagination.items.length > 0 ? "ready" : "empty"}
+      emptyTitle="No queue workers match"
+      emptyMessage="Try widening the queue filter."
+      currentPage={gridPagination.currentPage}
+      totalPages={gridPagination.totalPages ?? 1}
+      totalItems={filteredQueueItems.length}
+      pageSize={gridPagination.pageSize}
+      on:pageChange={(event: CustomEvent<{ page: number }>) => gridPagination.goToPage?.(event.detail.page)}
+    >
+      <div class="ops-grid">
+        {#each gridPagination.items as item}
+          <PoodleCard>
+            <div class="queue-card">
+              <div class="queue-card__header">
+                <strong>{item.name}</strong>
+                <PoodlePill tone={getQueueTone(item.status)} appearance="badge" size="lg">
+                  {titleCase(item.status)}
+                </PoodlePill>
+              </div>
+              <div class="queue-card__meta">Owner: {item.owner}</div>
+              <div class="queue-card__meta">Queue ID: {item.id}</div>
             </div>
-            <div class="queue-card__meta">Owner: {item.owner}</div>
-            <div class="queue-card__meta">Queue ID: {item.id}</div>
-          </div>
-        </PoodleCard>
-      {/snippet}
-    </PaginatedList>
+          </PoodleCard>
+        {/each}
+      </div>
+    </PoodleListContainer>
   </section>
 
   <section class="review-page__section">
@@ -395,6 +407,37 @@
     margin: 0.25rem 0 0;
     color: var(--admin-color-text-muted);
     max-width: 75ch;
+  }
+
+  .review-diagnostics-toolbar {
+    border: 1px solid var(--underlay-color-border-subtle, rgba(148, 163, 184, 0.25));
+    border-radius: var(--underlay-radius-sm, 0.45rem);
+    background: var(--underlay-color-surface-muted, rgba(15, 23, 42, 0.2));
+    padding: 0.45rem 0.55rem;
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .review-diagnostics-toolbar__content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.76rem;
+    color: var(--underlay-color-text-muted, #94a3b8);
+  }
+
+  .review-diagnostics-toolbar__title {
+    font-weight: 600;
+    color: var(--underlay-color-text, #e2e8f0);
+    margin-right: 0.15rem;
+  }
+
+  .review-diagnostics-toolbar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
   }
 
   .review-filters {

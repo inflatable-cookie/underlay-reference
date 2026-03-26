@@ -17,8 +17,6 @@
   interface Props {
     /** Media data */
     media: MediaItem;
-    /** Navigation context for actions */
-    sourceContext?: NavigationContext;
     /** Optional custom trigger snippet (for ListCard usage) */
     trigger?: Snippet;
     /** Callback after successful soft delete */
@@ -33,7 +31,6 @@
 
   let {
     media,
-    sourceContext,
     trigger,
     onSoftDeleteSuccess,
     onRestoreSuccess,
@@ -67,7 +64,7 @@
   }
 
   function navigateToReplace(mediaId: string) {
-    void gotoWithContext(`/media/upload?replace=${mediaId}`, sourceContext ?? defaultContext);
+    void gotoWithContext(`/media/upload?replace=${mediaId}`, defaultContext);
   }
 
   // Handle purge success - navigate to media list if no custom handler
@@ -82,7 +79,6 @@
 
 <BaseMediaActionsMenu
   {media}
-  {sourceContext}
   {trigger}
   {softDelete}
   {restore}

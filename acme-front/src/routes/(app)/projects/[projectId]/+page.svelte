@@ -9,6 +9,7 @@
   import { useAuthenticatedData } from "@decodelabs/underlay/patterns/authenticated-data";
   import { useToasts } from "@decodelabs/underlay/patterns/useToasts";
   import {
+    AlertDialog,
     Button,
     Callout,
     Field,
@@ -21,7 +22,6 @@
   import PageLoading from "@decodelabs/underlay/components/PageLoading.svelte";
   import ListCard from "@decodelabs/underlay/components/ListCard.svelte";
   import ListGrid from "@decodelabs/underlay/components/ListGrid.svelte";
-  import ConfirmAction from "@decodelabs/underlay/components/ConfirmAction.svelte";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -58,6 +58,7 @@
 
   // Task creation dialog
   let showCreateDialog = $state(false);
+  let showDeleteConfirm = $state(false);
   let newTaskTitle = $state("");
   let newTaskDescription = $state("");
   let newTaskPriority = $state("medium");
@@ -169,16 +170,23 @@
 {:else if project}
   <PoodlePageHeader title={project.name} backHref="/dashboard" backLabel="Back to projects">
     <svelte:fragment slot="actions">
-      <ConfirmAction
-        title="Delete Project"
-        description={`Are you sure you want to delete "${project.name}"? All tasks will be deleted.`}
-        confirmLabel="Delete"
-        triggerLabel="Delete"
-        triggerVariant="danger"
-        onConfirm={handleDeleteProject}
-      />
+      <Button type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
+        Delete
+      </Button>
     </svelte:fragment>
   </PoodlePageHeader>
+
+  <AlertDialog
+    open={showDeleteConfirm}
+    title="Delete Project"
+    description={`Are you sure you want to delete "${project.name}"? All tasks will be deleted.`}
+    confirmLabel="Delete"
+    tone="danger"
+    onConfirm={handleDeleteProject}
+    onCancel={() => {
+      showDeleteConfirm = false;
+    }}
+  />
 
   {#if project.description}
     <p class="description">{project.description}</p>

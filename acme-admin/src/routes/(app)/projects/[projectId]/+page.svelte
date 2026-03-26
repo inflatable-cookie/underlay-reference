@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
@@ -17,7 +17,7 @@
     createReorderController,
     FilterBar
   } from "@decodelabs/underlay/patterns";
-  import { PageLoading, ConfirmAction, ListGrid, ListCard, ProgressBar, OrderBy, DetailsCard, DetailsSection, DetailsItem, TimeAgo, type OrderByValue } from "@decodelabs/underlay/components";
+  import { BatchActionBar, PageLoading, ListGrid, ListCard, ProgressBar, OrderBy, DetailsCard, DetailsSection, DetailsItem, TimeAgo, type OrderByValue } from "@decodelabs/underlay/components";
   import {
     Button as PoodleButton,
     Field as PoodleField,
@@ -25,7 +25,6 @@
     Select as PoodleSelect
   } from "@poodle/svelte-primitives";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
-  import { BatchActionBar } from "$lib/components";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
   import { getProjectStatusTone } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";
@@ -41,6 +40,7 @@
   let { data }: Props = $props();
 
   const toastStore = useToasts();
+  let showDeleteConfirm = $state(false);
 
   // Track URL for refetching when filters change
   let previousUrl = $state<string | null>(null);
@@ -405,16 +405,23 @@
         <Pencil size={16} />
         Edit
       </PoodleButton>
-      <ConfirmAction
-        title="Delete Project"
-        description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
-        confirmLabel="Delete"
-        triggerLabel="Delete"
-        triggerVariant="danger"
-        onConfirm={handleDelete}
-      />
+      <PoodleButton type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
+        Delete
+      </PoodleButton>
     {/snippet}
   </PageHeader>
+
+  <PoodleAlertDialog
+    open={showDeleteConfirm}
+    title="Delete Project"
+    description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
+    confirmLabel="Delete"
+    tone="danger"
+    onConfirm={handleDelete}
+    onCancel={() => {
+      showDeleteConfirm = false;
+    }}
+  />
 
   <DetailsCard>
     <DetailsSection legend="Details">

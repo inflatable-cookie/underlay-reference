@@ -1,13 +1,13 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Category } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import {
+    CopyActionsMenu,
     useAuthenticatedData,
     useToasts,
-    EntityActionsMenu,
     DetailPageShell,
     DetailMeta,
     DetailMetaId,
@@ -37,6 +37,7 @@
   );
 
   const category = $derived(pageData.data?.category);
+  let showDeleteConfirm = $state(false);
 
   function handleEdit() {
     if (!category) return;
@@ -71,22 +72,14 @@
     {/snippet}
 
     {#snippet actions()}
-      <EntityActionsMenu
+      <CopyActionsMenu
         toastStore={toastStore}
+        triggerLabel="Actions"
         copies={[{ label: "Copy ID", text: category.id, successMessage: "Copied category ID" }]}
-        onEdit={handleEdit}
-        deleteConfig={{
-          entityLabel: category.name,
-          title: "Delete Category",
-          description: `Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`,
-          confirmLabel: "Delete",
-          execute: async () => {
-            const token = auth.getToken();
-            if (!token) throw new Error("Not authenticated");
-            await adminCommands.softDeleteCategory(category.id, fetch, token);
-          }
-        }}
-        onDeleteSuccess={() => goto("/categories")}
+        actions={[
+          { label: "Edit", onSelect: handleEdit },
+          { label: "Delete", destructive: true, onSelect: () => { showDeleteConfirm = true; } }
+        ]}
       />
     {/snippet}
 
@@ -109,6 +102,25 @@
       </DetailsSection>
     </DetailsCard>
   </DetailPageShell>
+
+  <PoodleAlertDialog
+    open={showDeleteConfirm}
+    title="Delete Category"
+    description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
+    confirmLabel="Delete"
+    tone="danger"
+    onConfirm={async () => {
+      const token = auth.getToken();
+      if (!token) throw new Error("Not authenticated");
+      await adminCommands.softDeleteCategory(category.id, fetch, token);
+      await goto("/categories");
+    }}
+    onCancel={() => {
+      showDeleteConfirm = false;
+    }}
+  >
+    <p><strong>{category.name}</strong></p>
+  </PoodleAlertDialog>
 {:else}
   <PoodleCallout tone="danger" message="Category not found" announceMode="polite" />
 {/if}

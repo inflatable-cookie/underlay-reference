@@ -13,8 +13,9 @@
     useBatchSelection
   } from "@decodelabs/underlay/patterns";
   import {
+    BatchActionBar,
     EmptyState,
-        ListGrid,
+    ListGrid,
     ListCard,
     OrderBy,
     PageLoading,
@@ -29,7 +30,6 @@
   } from "@poodle/svelte-primitives";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { ProjectListCard } from "$lib/cards";
-  import { BatchActionBar } from "$lib/components";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
   import { arrowUpDownIcon, squareCheckIcon } from "$lib/ui/poodle-icon-nodes";
   import { adminCommands, type ProjectWithCounts } from "acme-client";
