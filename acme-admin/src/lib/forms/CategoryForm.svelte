@@ -1,19 +1,18 @@
 <script lang="ts">
   import {
+    Button,
+    ColorPicker,
     Field,
     FieldSet,
-    FieldSetGrid,
     FormActions,
-    FormValidationProvider,
-    SaveSplitButton,
-    ColorPicker,
+    SplitButton,
     Switch,
-    TextButton,
+    TextArea,
     TextInput,
-    TextArea
-  } from "@decodelabs/underlay/components";
-  import { SlugField } from "@decodelabs/underlay/patterns";
-  import type { ValidationResult } from "@decodelabs/underlay/components";
+    type InputValidationStatus,
+  } from "@poodle/svelte-primitives";
+  import type { ValidationResult } from "@poodle/svelte-primitives";
+  import { isReservedSlug, isValidSlugFormat, slugify } from "@decodelabs/underlay/patterns";
   import { navigateOnCancel } from "@decodelabs/underlay/client";
   import { untrack } from "svelte";
 
@@ -58,87 +57,252 @@
   let descriptionValue = $state(untrack(() => values.description ?? ""));
   let colorValue = $state(untrack(() => values.color ?? "#6366f1"));
   let isActive = $state(untrack(() => values.isActive ?? true));
+  let lastAutoSlug = $state(untrack(() => slugify(values.name ?? "")));
+  let slugStatus = $state<InputValidationStatus>("idle");
+  let slugValidationMessage = $state<string | null>(null);
 
-  // Form validation state
-  let isFormValid = $state(false);
+  const editIntentItems = [
+    { value: "save", label: "Save changes" },
+    { value: "save-close", label: "Save & close" }
+  ];
+
+  const createIntentItems = [
+    { value: "save", label: "Create & continue" },
+    { value: "save-close", label: "Create & close" }
+  ];
+
+  let actionBarElement = $state<HTMLDivElement | null>(null);
+
+  const isFormValid = $derived.by(() => {
+    return Boolean(
+      nameValue.trim() &&
+      slugValue.trim() &&
+      slugStatus !== "invalid" &&
+      slugStatus !== "validating"
+    );
+  });
+
+  const effectiveSlugError = $derived(errors?.slug ?? slugValidationMessage);
+  const slugFieldValidationState = $derived.by(() => {
+    if (effectiveSlugError) {
+      return "invalid";
+    }
+    if (slugStatus === "validating") {
+      return "pending";
+    }
+    if (slugStatus === "valid") {
+      return "valid";
+    }
+    return "none";
+  });
+
+  $effect(() => {
+    const nextAutoSlug = slugify(nameValue);
+    if (!slugValue.trim() || slugValue === lastAutoSlug) {
+      slugValue = nextAutoSlug;
+    }
+    lastAutoSlug = nextAutoSlug;
+  });
 
   function handleCancel() {
     navigateOnCancel(cancelHref);
   }
+
+  function validationState(error?: string | null) {
+    return error ? "invalid" : "none";
+  }
+
+  function submitWithIntent(nextIntent: "save" | "save-close") {
+    intent = nextIntent;
+    actionBarElement?.closest("form")?.requestSubmit();
+  }
+
+  async function validateCategorySlug(slug: string): Promise<ValidationResult> {
+    const normalizedSlug = slug.trim();
+
+    if (normalizedSlug.length < 2) {
+      return { valid: false, message: "Too short (min 2 characters)" };
+    }
+
+    if (normalizedSlug.length > 64) {
+      return { valid: false, message: "Too long (max 64 characters)" };
+    }
+
+    if (!isValidSlugFormat(normalizedSlug, 64)) {
+      return {
+        valid: false,
+        message: "Invalid format (use lowercase letters, numbers, hyphens)",
+      };
+    }
+
+    if (isReservedSlug(normalizedSlug)) {
+      return { valid: false, message: "This slug is reserved" };
+    }
+
+    if (!validateSlug) {
+      return { valid: true };
+    }
+
+    return validateSlug(normalizedSlug);
+  }
+
+  function handleSlugBlur() {
+    if (!slugValue) {
+      return;
+    }
+
+    const normalizedSlug = slugify(slugValue);
+    if (normalizedSlug !== slugValue) {
+      slugValue = normalizedSlug;
+    }
+  }
 </script>
 
-<FormValidationProvider bind:isValid={isFormValid}>
-  <FieldSet legend="Basic Information">
-    <FieldSetGrid columns={2}>
-    <Field label="Name" error={errors?.name} required>
+<FieldSet legend="Basic Information" columns={2}>
+    <Field
+      id="category-name"
+      label="Name"
+      error={errors?.name ?? null}
+      validationState={validationState(errors?.name)}
+      required
+      let:describedBy
+      let:validationState={nameValidationState}
+    >
       <TextInput
+        id="category-name"
         name="name"
-        bind:value={nameValue}
-        required
+        value={nameValue}
+        describedBy={describedBy}
+        validationState={nameValidationState}
         placeholder="e.g., Development"
-        maxlength={64}
+        maxLength={64}
+        on:valueChange={(event) => { nameValue = event.detail.value; }}
       />
     </Field>
 
-    <SlugField
-      name="slug"
+    <Field
+      id="category-slug"
       label="Slug"
-      bind:value={slugValue}
-      source={nameValue}
-      validate={validateSlug}
-      maxlength={64}
-      error={errors?.slug}
-    />
+      error={effectiveSlugError}
+      validationState={slugFieldValidationState}
+      description="Used in URLs, lowercase letters and hyphens only."
+      required
+      let:describedBy
+      let:validationState={categorySlugValidationState}
+    >
+      <TextInput
+        id="category-slug"
+        name="slug"
+        value={slugValue}
+        describedBy={describedBy}
+        validationState={categorySlugValidationState}
+        placeholder="e.g., development"
+        autocomplete="off"
+        required
+        pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+        maxLength={64}
+        validate={validateCategorySlug}
+        validationContext={{ categoryId }}
+        validationDebounce={300}
+        on:valueChange={(event) => { slugValue = event.detail.value; }}
+        on:validationChange={(event) => {
+          slugStatus = event.detail.status;
+          slugValidationMessage = event.detail.status === "invalid" ? event.detail.message || null : null;
+        }}
+        on:blur={handleSlugBlur}
+      />
+    </Field>
 
-    <Field label="Description" error={errors?.description} span="full">
+    <Field
+      id="category-description"
+      label="Description"
+      error={errors?.description ?? null}
+      validationState={validationState(errors?.description)}
+      span="full"
+      let:describedBy
+      let:validationState={descriptionValidationState}
+    >
       <TextArea
+        id="category-description"
         name="description"
-        bind:value={descriptionValue}
+        value={descriptionValue}
+        describedBy={describedBy}
+        validationState={descriptionValidationState}
         placeholder="Optional description for this category"
         rows={3}
-        maxlength={500}
+        on:valueChange={(event) => { descriptionValue = event.detail.value; }}
       />
     </Field>
-    </FieldSetGrid>
-  </FieldSet>
+</FieldSet>
 
-  <FieldSet legend="Display Settings">
-    <FieldSetGrid columns={2}>
-    <Field label="Color" error={errors?.color}>
+<FieldSet legend="Display Settings" columns={2}>
+    <Field
+      id="category-color"
+      label="Color"
+      error={errors?.color ?? null}
+      validationState={validationState(errors?.color)}
+      let:describedBy
+    >
+      <input type="hidden" name="color" value={colorValue} />
       <ColorPicker
-        name="color"
-        bind:value={colorValue}
-        size="md"
+        value={colorValue}
+        ariaLabel="Category colour"
+        on:change={(event) => { colorValue = event.detail.value; }}
       />
     </Field>
 
-    <Field label="Status" error={errors?.isActive}>
+    <Field
+      id="category-status"
+      label="Status"
+      error={errors?.isActive ?? null}
+      validationState={validationState(errors?.isActive)}
+      let:describedBy
+    >
+      <input type="hidden" name="isActive" value={isActive ? "true" : "false"} />
       <Switch
-        name="isActive"
-        bind:checked={isActive}
-        leftLabel="Inactive"
-        rightLabel="Active"
-        leftVariant="danger"
-        rightVariant="success"
+        id="category-status"
+        checked={isActive}
+        describedBy={describedBy}
+        ariaLabel="Category status"
+        label={isActive ? "Active" : "Inactive"}
+        on:checkedChange={(event) => { isActive = event.detail.checked; }}
       />
     </Field>
-    </FieldSetGrid>
-  </FieldSet>
-</FormValidationProvider>
+</FieldSet>
 
 <FormActions align="start">
-  {#snippet danger()}
+  <div class="category-form__actions" bind:this={actionBarElement}>
+    <input type="hidden" name="intent" value={intent} />
+
     {#if returnTo}
       <input type="hidden" name="returnTo" value={returnTo} />
     {/if}
 
-    <TextButton type="button" onclick={handleCancel}>
+    <Button type="button" variant="ghost" on:click={handleCancel}>
       Cancel
-    </TextButton>
-  {/snippet}
+    </Button>
 
-  <SaveSplitButton
-    disabled={!isFormValid}
-    bind:intent
-  />
+    <SplitButton
+      variant="primary"
+      items={mode === "create" ? createIntentItems : editIntentItems}
+      disabled={!isFormValid}
+      on:click={() => submitWithIntent(intent)}
+      on:action={(event) => submitWithIntent(event.detail.value as "save" | "save-close")}
+    >
+      {#if mode === "create"}
+        {intent === "save" ? "Create & continue" : "Create & close"}
+      {:else}
+        {intent === "save" ? "Save changes" : "Save & close"}
+      {/if}
+    </SplitButton>
+  </div>
 </FormActions>
+
+<style>
+  .category-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--poodle-space-inline-md);
+  }
+</style>

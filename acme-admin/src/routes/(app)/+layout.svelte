@@ -218,22 +218,23 @@
 	}
 
 	:global(body) {
-		padding: 0 1rem;
+		padding: 0;
 		overflow: hidden;
 		height: 100vh;
 	}
 
 	.admin-app-shell {
-		height: calc(100vh - 4rem);
+		height: 100vh;
+		width: 100%;
 		display: flex;
 		flex-direction: column;
-		max-width: 1650px;
-		margin: 2rem auto;
-		border-radius: 1.5rem;
+		max-width: none;
+		margin: 0;
+		border-radius: 0;
 		overflow: hidden;
 		background: var(--admin-color-surface);
-		box-shadow: 0 26px 70px rgba(0, 0, 0, 0.75);
-		border: 1px solid var(--admin-color-border-subtle);
+		box-shadow: none;
+		border: none;
 	}
 
 	.admin-main {
@@ -363,10 +364,6 @@
 	}
 
 	@media (min-width: 1501px) {
-		.admin-app-shell {
-			max-width: 1980px;
-		}
-
 		.admin-main {
 			grid-template-columns: 304px 1fr 55px;
 			grid-template-areas: "nav content panel";

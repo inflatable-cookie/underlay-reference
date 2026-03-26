@@ -1,17 +1,19 @@
 <script lang="ts">
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout, FileUpload, type FileUploadItem } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { mediaCommands } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import {
-    PageHeader,
     useToasts,
     validateFileType,
     ALLOWED_MEDIA_TYPES,
     REJECTED_VIDEO_TYPES,
     type UploadProgress
   } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Field, TextInput, TextButton, FileUpload, ProgressBar, type FileUploadItem } from "@decodelabs/underlay/components";
+  import { PageLoading, ProgressBar } from "@decodelabs/underlay/components";
+  import { Button as PoodleButton } from "@poodle/svelte-primitives";
   import Upload from "lucide-svelte/icons/upload";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
   import CheckCircle from "lucide-svelte/icons/check-circle";
@@ -389,15 +391,15 @@
   }
 </script>
 
-<PageHeader
-  section={replaceMediaId ? "Replace File" : "Upload Media"}
+<PoodlePageHeader
+  title={replaceMediaId ? "Replace File" : "Upload Media"}
   backHref={replaceMediaId ? `/media/${replaceMediaId}` : "/media"}
   backLabel={replaceMediaId ? "Back to media" : "Back to library"}
 />
 
 <div class="upload-container">
   {#if error}
-    <FormError message={error} />
+    <PoodleCallout tone="danger" message={error} announceMode="polite" />
   {/if}
 
   {#if replaceMediaId}
@@ -438,23 +440,26 @@
     {/if}
 
     <div class="actions">
-      <Button
+      <PoodleButton
         type="button"
         variant="primary"
-        onclick={handleSingleUpload}
         disabled={uploading || files.length === 0 || !!error}
+        on:click={handleSingleUpload}
       >
-        <Upload size={16} />
+        <svelte:fragment slot="leading">
+          <Upload size={16} />
+        </svelte:fragment>
         {uploading ? "Uploading..." : "Replace File"}
-      </Button>
+      </PoodleButton>
       <span class="actions-spacer"></span>
-      <TextButton
+      <PoodleButton
         type="button"
-        onclick={() => goto(`/media/${replaceMediaId}`)}
+        variant="ghost"
         disabled={uploading}
+        on:click={() => goto(`/media/${replaceMediaId}`)}
       >
         Cancel
-      </TextButton>
+      </PoodleButton>
     </div>
   {:else}
     <!-- Bulk upload mode -->
@@ -477,9 +482,9 @@
         <div class="queue-header">
           <h2>Upload Queue ({uploadQueue.length} file{uploadQueue.length > 1 ? "s" : ""})</h2>
           {#if !uploading && !allDone}
-            <Button type="button" variant="subtle" onclick={clearQueue} size="sm">
+            <PoodleButton type="button" variant="ghost" size="sm" on:click={clearQueue}>
               Clear All
-            </Button>
+            </PoodleButton>
           {/if}
         </div>
 
@@ -521,42 +526,42 @@
 
               <div class="queue-item-actions">
                 {#if item.status === "done" && item.mediaId}
-                  <Button
+                  <PoodleButton
                     type="button"
-                    variant="subtle"
+                    variant="ghost"
                     size="sm"
-                    onclick={() => goto(`/media/${item.mediaId}`)}
+                    on:click={() => goto(`/media/${item.mediaId}`)}
                   >
                     View
-                  </Button>
+                  </PoodleButton>
                 {:else if item.status === "error"}
-                  <Button
+                  <PoodleButton
                     type="button"
-                    variant="subtle"
+                    variant="ghost"
                     size="sm"
-                    onclick={() => retryItem(item.id)}
                     disabled={uploading}
+                    on:click={() => retryItem(item.id)}
                   >
                     Retry
-                  </Button>
+                  </PoodleButton>
                 {:else if item.status === "duplicate"}
-                  <Button
+                  <PoodleButton
                     type="button"
-                    variant="subtle"
+                    variant="ghost"
                     size="sm"
-                    onclick={() => goto(`/media/${item.duplicateOf?.id}`)}
+                    on:click={() => goto(`/media/${item.duplicateOf?.id}`)}
                   >
                     View Existing
-                  </Button>
-                  <Button
+                  </PoodleButton>
+                  <PoodleButton
                     type="button"
-                    variant="subtle"
+                    variant="ghost"
                     size="sm"
-                    onclick={() => uploadDuplicateAnyway(item.id)}
                     disabled={uploading}
+                    on:click={() => uploadDuplicateAnyway(item.id)}
                   >
                     Upload Anyway
-                  </Button>
+                  </PoodleButton>
                 {:else if item.status === "pending"}
                   <button
                     type="button"
@@ -576,32 +581,35 @@
 
     <div class="actions">
       {#if allDone}
-        <Button
+        <PoodleButton
           type="button"
           variant="primary"
-          onclick={() => goto("/media")}
+          on:click={() => goto("/media")}
         >
           Done
-        </Button>
+        </PoodleButton>
       {:else}
-        <Button
+        <PoodleButton
           type="button"
           variant="primary"
-          onclick={handleUpload}
           disabled={uploading || uploadQueue.length === 0 || pendingCount === 0}
+          on:click={handleUpload}
         >
-          <Upload size={16} />
+          <svelte:fragment slot="leading">
+            <Upload size={16} />
+          </svelte:fragment>
           {uploading ? "Uploading..." : `Upload ${pendingCount} file${pendingCount > 1 ? "s" : ""}`}
-        </Button>
+        </PoodleButton>
       {/if}
       <span class="actions-spacer"></span>
-      <TextButton
+      <PoodleButton
         type="button"
-        onclick={() => goto("/media")}
+        variant="ghost"
         disabled={uploading}
+        on:click={() => goto("/media")}
       >
         Cancel
-      </TextButton>
+      </PoodleButton>
     </div>
   {/if}
 </div>

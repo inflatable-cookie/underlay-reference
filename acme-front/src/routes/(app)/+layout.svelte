@@ -2,7 +2,8 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { auth, currentUser, authLoading } from "$lib/stores/auth";
-  import { Button, PageLoading } from "@decodelabs/underlay/components";
+  import { Button } from "@poodle/svelte-primitives";
+  import PageLoading from "@decodelabs/underlay/components/PageLoading.svelte";
   import LogOut from "lucide-svelte/icons/log-out";
   import User from "lucide-svelte/icons/user";
 
@@ -37,7 +38,7 @@
         <User size={16} />
         {$currentUser.displayName}
       </span>
-      <Button type="button" variant="subtle" onclick={handleLogout}>
+      <Button type="button" variant="ghost" on:click={handleLogout}>
         <LogOut size={16} />
         Sign Out
       </Button>
@@ -54,14 +55,14 @@
     align-items: center;
     gap: 2rem;
     padding: 0.75rem 1.25rem;
-    background: white;
-    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    background: color-mix(in srgb, var(--poodle-color-background-panel) 96%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--poodle-color-border-subtle) 82%, transparent);
   }
 
   .logo {
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--primary-color, #2563eb);
+    color: var(--poodle-color-accent-base);
     text-decoration: none;
   }
 
@@ -72,13 +73,13 @@
   }
 
   .nav a {
-    color: var(--text-secondary, #6b7280);
+    color: var(--poodle-color-text-secondary);
     text-decoration: none;
     font-size: 0.875rem;
   }
 
   .nav a:hover {
-    color: var(--text-primary, #111827);
+    color: var(--poodle-color-text-primary);
   }
 
   .user-menu {
@@ -92,7 +93,7 @@
     align-items: center;
     gap: 0.375rem;
     font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--poodle-color-text-secondary);
   }
 
   .main {

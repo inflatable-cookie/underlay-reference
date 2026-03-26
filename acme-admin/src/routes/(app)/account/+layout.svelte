@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { PageHeader } from "@decodelabs/underlay/patterns";
-  import { TabsRoot, TabsList, TabsTrigger, TabsContent } from "@decodelabs/underlay/components";
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { Tabs, type TabItem } from "@poodle/svelte-primitives";
 
   let { children } = $props();
 
@@ -23,6 +23,12 @@
 
   // Get current tab from pathname
   const currentTab = $derived(routeToTab[$page.url.pathname] ?? "overview");
+  const tabItems = $derived<TabItem[]>([
+    { value: "overview", label: "Overview" },
+    { value: "password", label: "Password" },
+    { value: "2fa", label: "Two-Factor Auth" },
+    { value: "passkeys", label: "Passkeys" }
+  ]);
 
   // Local state for the tab component
   let activeTab = $state("overview");
@@ -46,17 +52,14 @@
   });
 </script>
 
-<PageHeader section="Account" />
+<PoodlePageHeader title="Account" />
 
-<TabsRoot bind:value={activeTab} variant="boxed" size="sm">
-  <TabsList>
-    <TabsTrigger value="overview">Overview</TabsTrigger>
-    <TabsTrigger value="password">Password</TabsTrigger>
-    <TabsTrigger value="2fa">Two-Factor Auth</TabsTrigger>
-    <TabsTrigger value="passkeys">Passkeys</TabsTrigger>
-  </TabsList>
-
-  <TabsContent value={activeTab}>
-    {@render children?.()}
-  </TabsContent>
-</TabsRoot>
+<Tabs
+  value={activeTab}
+  items={tabItems}
+  variant="pill"
+  ariaLabel="Account sections"
+  on:valueChange={(event) => { activeTab = event.detail.value; }}
+>
+  {@render children?.()}
+</Tabs>

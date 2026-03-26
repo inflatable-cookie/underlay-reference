@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { MediaThumbnail as PoodleMediaThumbnail, PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
   import {
-    PageHeader,
     useToasts,
     useAuthenticatedData,
     getMediaKindLabel,
@@ -9,16 +10,13 @@
     formatFileSize
   } from "@decodelabs/underlay/patterns";
   import {
-    Button,
     EmptyState,
-    FormError,
-    ListGrid,
+        ListGrid,
     ListCard,
-    MediaThumbnail,
-    Pill,
     PageLoading,
     ConfirmAction
   } from "@decodelabs/underlay/components";
+  import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { mediaCommands, type MediaSummary } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
@@ -71,14 +69,21 @@
     }
   }
 
+  function toPoodleMediaKind(kind: string): "image" | "audio" | "video" | "document" | "embed" {
+    if (kind === "image") return "image";
+    if (kind === "audio") return "audio";
+    if (kind === "video") return "video";
+    return "document";
+  }
+
 </script>
 
-<PageHeader section="Media Trash" backHref="/media" backLabel="Back to media" />
+<PoodlePageHeader title="Media Trash" backHref="/media" backLabel="Back to media" />
 
 {#if pageData.loading}
   <PageLoading message="Loading trash..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if (pageData.data?.media ?? []).length === 0}
   <EmptyState title="Trash is empty" description="Deleted media items will appear here." actionLabel="Back to Media Library" actionHref="/media" />
 {:else}
@@ -88,7 +93,6 @@
 
   <ListGrid minItemWidth={26}>
     {#each pageData.data?.media ?? [] as item}
-      {@const accent = getMediaKindAccent(item.kind)}
       <ListCard
         title={item.title ?? item.originalFilename ?? "Untitled"}
         href={`/media/${item.id}`}
@@ -96,20 +100,26 @@
         actionsPlacement={item.thumbnailUrl ? "media-overlay" : "media"}
       >
         {#snippet media()}
-          <MediaThumbnail
-            thumbnailUrl={item.thumbnailUrl}
-            kind={item.kind}
-            alt={item.title ?? ""}
-            size="fill"
-          />
+          <PoodleMediaThumbnail
+            kind={toPoodleMediaKind(item.kind)}
+            presentation="compact"
+            aspectRatio="square"
+            ariaLabel={item.title ?? "Media thumbnail"}
+          >
+            {#if item.thumbnailUrl}
+              <img
+                src={item.thumbnailUrl}
+                alt={item.title ?? ""}
+                class="media-thumbnail-image"
+              />
+            {/if}
+          </PoodleMediaThumbnail>
         {/snippet}
 
         {#snippet trailing()}
           <div class="media-pills">
-            <Pill {accent}>
-              {getMediaKindLabel(item.kind)}
-            </Pill>
-            <Pill accent="#ef4444">Deleted</Pill>
+            <PoodlePill tone="neutral" appearance="badge" size="lg">{getMediaKindLabel(item.kind)}</PoodlePill>
+            <PoodlePill tone="danger" appearance="badge" size="lg">Deleted</PoodlePill>
           </div>
         {/snippet}
 
@@ -124,10 +134,10 @@
 
         {#snippet actions({ trigger, align })}
           <div class="trash-actions">
-            <Button type="button" variant="subtle" size="sm" onclick={() => handleRestore(item.id)}>
+            <PoodleButton type="button" variant="ghost" size="sm" on:click={() => handleRestore(item.id)}>
               <RotateCcw size={14} />
               Restore
-            </Button>
+            </PoodleButton>
             <ConfirmAction
               title="Permanently Delete"
               description={`Are you sure you want to permanently delete "${item.title ?? item.originalFilename}"? This action cannot be undone.`}
@@ -167,5 +177,12 @@
   .trash-actions {
     display: flex;
     gap: 0.5rem;
+  }
+
+  :global(.media-thumbnail-image) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 </style>

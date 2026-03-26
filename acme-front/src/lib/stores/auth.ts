@@ -10,9 +10,11 @@ import { goto } from '$app/navigation';
 import { browser } from '$app/environment';
 import {
   createAuthManager,
-  type LoginUser,
-  type LoginResponse
-} from '@api-client';
+} from '@api-client/utils/auth-manager.js';
+import type {
+  LoginUser,
+  LoginResponse
+} from '@api-client/types/common-types.js';
 
 export interface AuthState {
   initialized: boolean;

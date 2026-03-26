@@ -2,23 +2,26 @@
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { userCommands, type UserProject, type UserTask } from "@api-client";
-  import { FormDialog, useAuthenticatedData, useToasts, PageHeader } from "@decodelabs/underlay/patterns";
+  import * as userCommands from "@api-client/commands/user-commands.js";
+  import type { UserProject, UserTask } from "@api-client/commands/user-commands.js";
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { FormDialog } from "@decodelabs/underlay/patterns/FormDialog";
+  import { useAuthenticatedData } from "@decodelabs/underlay/patterns/authenticated-data";
+  import { useToasts } from "@decodelabs/underlay/patterns/useToasts";
   import {
     Button,
-    PageLoading,
-    FormActions,
-    FormError,
+    Callout,
     Field,
-    TextInput,
-    TextArea,
+    FormActions,
+    Pill,
     Select,
-    Badge,
-    ListCard,
-    ListGrid,
-    ConfirmAction,
-    TextButton,
-  } from "@decodelabs/underlay/components";
+    TextArea,
+    TextInput
+  } from "@poodle/svelte-primitives";
+  import PageLoading from "@decodelabs/underlay/components/PageLoading.svelte";
+  import ListCard from "@decodelabs/underlay/components/ListCard.svelte";
+  import ListGrid from "@decodelabs/underlay/components/ListGrid.svelte";
+  import ConfirmAction from "@decodelabs/underlay/components/ConfirmAction.svelte";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -162,10 +165,10 @@
 {#if pageData.loading}
   <PageLoading message="Loading project..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <Callout tone="danger" message={pageData.error} announceMode="assertive" />
 {:else if project}
-  <PageHeader title={project.name} backHref="/dashboard" backLabel="Back to projects">
-    {#snippet actions()}
+  <PoodlePageHeader title={project.name} backHref="/dashboard" backLabel="Back to projects">
+    <svelte:fragment slot="actions">
       <ConfirmAction
         title="Delete Project"
         description={`Are you sure you want to delete "${project.name}"? All tasks will be deleted.`}
@@ -174,8 +177,8 @@
         triggerVariant="danger"
         onConfirm={handleDeleteProject}
       />
-    {/snippet}
-  </PageHeader>
+    </svelte:fragment>
+  </PoodlePageHeader>
 
   {#if project.description}
     <p class="description">{project.description}</p>
@@ -187,7 +190,7 @@
         <h2>Tasks</h2>
         <span class="task-count">{completedCount}/{tasks.length} completed</span>
       </div>
-      <Button type="button" variant="primary" size="sm" onclick={openCreateDialog}>
+      <Button type="button" variant="primary" size="sm" on:click={openCreateDialog}>
         <Plus size={14} />
         Add Task
       </Button>
@@ -218,12 +221,13 @@
               {/if}
             </div>
             <div class="task-meta">
-              <Badge
-                variant={task.priority === "urgent" ? "danger" : task.priority === "high" ? "warning" : "muted"}
+              <Pill
+                tone={task.priority === "urgent" ? "danger" : "neutral"}
+                appearance="badge"
                 size="sm"
               >
                 {task.priority}
-              </Badge>
+              </Pill>
               <button
                 class="delete-btn"
                 onclick={() => handleDeleteTask(task.id)}
@@ -239,7 +243,7 @@
     {/if}
   </div>
 {:else}
-  <FormError message="Project not found" />
+  <Callout tone="danger" message="Project not found" announceMode="assertive" />
 {/if}
 
 <FormDialog
@@ -257,23 +261,43 @@
       }}
     >
       <div class="dialog-fields">
-        <Field label="Task Title" required>
-          <TextInput bind:value={newTaskTitle} placeholder="What needs to be done?" disabled={submitting} />
+        <Field id="front-task-title" label="Task Title" required let:describedBy>
+          <TextInput
+            id="front-task-title"
+            value={newTaskTitle}
+            describedBy={describedBy}
+            placeholder="What needs to be done?"
+            disabled={submitting}
+            on:valueChange={(event) => { newTaskTitle = event.detail.value; }}
+          />
         </Field>
-        <Field label="Description">
-          <TextArea bind:value={newTaskDescription} placeholder="Optional details" rows={3} disabled={submitting} />
+        <Field id="front-task-description" label="Description" let:describedBy>
+          <TextArea
+            id="front-task-description"
+            value={newTaskDescription}
+            describedBy={describedBy}
+            placeholder="Optional details"
+            rows={3}
+            disabled={submitting}
+            on:valueChange={(event) => { newTaskDescription = event.detail.value; }}
+          />
         </Field>
-        <Field label="Priority">
-          <Select value={newTaskPriority} onchange={(val) => { newTaskPriority = val; }} items={priorityOptions} disabled={submitting} />
+        <Field id="front-task-priority" label="Priority" let:describedBy>
+          <Select
+            id="front-task-priority"
+            value={newTaskPriority}
+            describedBy={describedBy}
+            options={priorityOptions}
+            disabled={submitting}
+            on:valueChange={(event) => { newTaskPriority = event.detail.value; }}
+          />
         </Field>
       </div>
 
       <FormActions align="end">
-        {#snippet danger()}
-          <TextButton type="button" onclick={() => (showCreateDialog = false)} disabled={submitting}>
-            Cancel
-          </TextButton>
-        {/snippet}
+        <Button type="button" variant="ghost" disabled={submitting} on:click={() => (showCreateDialog = false)}>
+          Cancel
+        </Button>
         <Button type="submit" variant="primary" disabled={submitting || !newTaskTitle.trim()}>
           {submitting ? "Adding..." : "Add Task"}
         </Button>
@@ -285,12 +309,12 @@
 <style>
   .description {
     margin: 0 0 1.5rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--poodle-color-text-secondary);
   }
 
   .tasks-section {
-    background: white;
-    border: 1px solid var(--border-color, #e5e7eb);
+    background: color-mix(in srgb, var(--poodle-color-background-panel) 96%, transparent);
+    border: 1px solid color-mix(in srgb, var(--poodle-color-border-subtle) 82%, transparent);
     border-radius: 0.5rem;
     padding: 1.5rem;
   }
@@ -316,7 +340,7 @@
 
   .task-count {
     font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--poodle-color-text-secondary);
   }
 
   .empty-tasks {

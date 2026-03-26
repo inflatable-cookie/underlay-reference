@@ -1,17 +1,24 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { PageHeader, useToasts, useAuthenticatedData, FilterBar } from "@decodelabs/underlay/patterns";
+  import { useToasts, useAuthenticatedData } from "@decodelabs/underlay/patterns";
   import {
-    DropdownMenu,
-    Field,
-    FormError,
-    ListCard,
+        ListCard,
     ListGrid,
-    PageLoading,
-    Select,
     TimeAgo
   } from "@decodelabs/underlay/components";
+  import {
+    FilterToolbar,
+    ListContainer
+  } from "@poodle/svelte-composites";
+  import {
+    Field as PoodleField,
+    IconButton as PoodleIconButton,
+    Menu as PoodleMenu,
+    Select as PoodleSelect,
+    type MenuItem
+  } from "@poodle/svelte-primitives";
   import Calendar from "lucide-svelte/icons/calendar";
   import { adminCommands } from "acme-client";
   import { auth } from "$lib/stores/auth";
@@ -57,6 +64,13 @@
   });
 
   const tasks = $derived(pageData.data?.tasks ?? []);
+  let filtersCollapsed = $state(true);
+  const listState = $derived(
+    pageData.loading ? "loading" : pageData.error ? "error" : tasks.length === 0 ? "empty" : "ready"
+  );
+  const filterSummaryText = $derived(
+    tasks.length > 0 ? `Showing ${tasks.length} scheduled task${tasks.length === 1 ? "" : "s"}` : "No scheduled tasks"
+  );
 
   /** Convert snake_case task name to human-readable title */
   function formatTaskName(name: string): string {
@@ -98,57 +112,85 @@
     { value: "true", label: "Enabled only" },
     { value: "false", label: "Disabled only" }
   ];
+
+  function getMenuItems(task: ScheduledTaskSummary): MenuItem[] {
+    return [
+      { value: "trigger", label: "Trigger now" },
+      { value: "toggle", label: task.enabled ? "Disable task" : "Enable task" }
+    ];
+  }
+
+  function handleMenuAction(task: ScheduledTaskSummary, value: string) {
+    if (value === "trigger") {
+      void handleTrigger(task);
+      return;
+    }
+
+    if (value === "toggle") {
+      void handleToggle(task);
+    }
+  }
 </script>
 
 <section class="scheduled-tasks-page">
-  <PageHeader section="Scheduled Tasks" backHref="/system" backLabel="Back to system">
-    Manage cron-scheduled maintenance tasks. Tasks run automatically based on their schedule.
-  </PageHeader>
+  <ListContainer
+    title="Scheduled Tasks"
+    subtitle="Manage cron-scheduled maintenance tasks. Tasks run automatically based on their schedule."
+    eyebrow="System"
+    state={listState}
+    loadingMessage="Loading scheduled tasks..."
+    emptyTitle="No scheduled tasks"
+    emptyMessage="No scheduled tasks found for the current filters."
+    showPagination={false}
+  >
+    <svelte:fragment slot="filters">
+      <FilterToolbar
+        ariaLabel="Scheduled task filters"
+        columns={1}
+        collapsible
+        bind:collapsed={filtersCollapsed}
+        summaryText={filterSummaryText}
+      >
+        <svelte:fragment slot="actions">
+          <PoodleIconButton
+            icon="refresh-cw"
+            variant="secondary"
+            size="sm"
+            ariaLabel="Refresh tasks"
+            tooltip="Refresh tasks"
+            on:click={() => pageData.refetch()}
+          />
+        </svelte:fragment>
 
-  <FilterBar title="Filters" startCollapsed={true} onRefresh={() => pageData.refetch()}>
-    <Field label="Status">
-      <Select
-        name="enabled"
-        value={filters.enabled}
-        items={enabledOptions}
-        placeholder="All tasks"
-        clearable
-        defaultValue=""
-        onchange={(value) => {
-          const url = new URL($page.url);
-          if (value) {
-            url.searchParams.set("enabled", value);
-          } else {
-            url.searchParams.delete("enabled");
-          }
-          void goto(url.toString());
-        }}
-      />
-    </Field>
-  </FilterBar>
+        <PoodleField id="scheduled-task-status-filter" label="Status" let:describedBy>
+          <PoodleSelect
+            id="scheduled-task-status-filter"
+            name="enabled"
+            value={filters.enabled}
+            describedBy={describedBy}
+            options={enabledOptions}
+            on:valueChange={(event) => {
+              const value = event.detail.value;
+              const url = new URL($page.url);
+              if (value) {
+                url.searchParams.set("enabled", value);
+              } else {
+                url.searchParams.delete("enabled");
+              }
+              void goto(url.toString());
+            }}
+          />
+        </PoodleField>
+      </FilterToolbar>
+    </svelte:fragment>
 
-  {#if pageData.loading}
-    <PageLoading message="Loading scheduled tasks..." />
-  {:else if pageData.error}
-    <FormError message={pageData.error} />
-  {:else if tasks.length === 0}
-    <p class="scheduled-tasks-page__empty">
-      No scheduled tasks found for the current filters.
-    </p>
-  {:else}
+    <svelte:fragment slot="error">
+      <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
+    </svelte:fragment>
+
     <ListGrid minItemWidth={26}>
       {#each tasks as task}
         {@const href = `/system/scheduled-tasks/${encodeURIComponent(task.id)}`}
-        {@const menuItems = [
-          {
-            label: "Trigger now",
-            onSelect: () => handleTrigger(task)
-          },
-          {
-            label: task.enabled ? "Disable task" : "Enable task",
-            onSelect: () => handleToggle(task)
-          }
-        ]}
         <ListCard
           href={href}
           title={formatTaskName(task.name)}
@@ -160,11 +202,11 @@
           {/snippet}
 
           {#snippet actions({ trigger: mediaContent, align })}
-            <DropdownMenu items={menuItems} {align}>
-              {#snippet trigger()}
+            <PoodleMenu items={getMenuItems(task)} placement={align === "end" ? "bottom-end" : "bottom-start"} on:action={(event) => handleMenuAction(task, event.detail.value)}>
+              <div slot="trigger">
                 {@render mediaContent()}
-              {/snippet}
-            </DropdownMenu>
+              </div>
+            </PoodleMenu>
           {/snippet}
 
           <span>
@@ -177,7 +219,7 @@
         </ListCard>
       {/each}
     </ListGrid>
-  {/if}
+  </ListContainer>
 </section>
 
 <style>
@@ -187,9 +229,4 @@
     gap: 1rem;
   }
 
-  .scheduled-tasks-page__empty {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--admin-color-text-muted);
-  }
 </style>

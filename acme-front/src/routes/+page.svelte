@@ -2,8 +2,8 @@
 	import { onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { auth, currentUser } from "$lib/stores/auth";
-	import { healthCommands } from "@api-client";
-	import { Button } from "@decodelabs/underlay/components";
+	import * as healthCommands from "@api-client/commands/health-commands.js";
+	import { Button } from "@poodle/svelte-primitives";
 
 	let healthStatus = $state<string | null>(null);
 
@@ -33,10 +33,10 @@
 	<p class="tagline">A simple task management app built with Underlay patterns.</p>
 
 	<div class="cta">
-		<Button type="button" variant="primary" onclick={() => goto("/login")}>
+		<Button type="button" variant="primary" on:click={() => goto("/login")}>
 			Sign In
 		</Button>
-		<Button type="button" variant="secondary" onclick={() => goto("/register")}>
+		<Button type="button" variant="secondary" on:click={() => goto("/register")}>
 			Create Account
 		</Button>
 	</div>
@@ -62,12 +62,12 @@
 		font-size: 2.5rem;
 		letter-spacing: -0.02em;
 		margin: 0 0 0.5rem;
-		color: var(--text-primary, #0f172a);
+		color: var(--poodle-color-text-primary);
 	}
 
 	.tagline {
 		font-size: 1.125rem;
-		color: var(--text-secondary, #6b7280);
+		color: var(--poodle-color-text-secondary);
 		margin: 0 0 2rem;
 	}
 
@@ -79,11 +79,11 @@
 	.health {
 		margin-top: 3rem;
 		font-size: 0.875rem;
-		color: var(--text-secondary, #9ca3af);
+		color: var(--poodle-color-text-secondary);
 	}
 
 	.status-ok {
-		color: var(--success-color, #22c55e);
+		color: var(--poodle-color-status-success);
 		font-weight: 500;
 	}
 </style>

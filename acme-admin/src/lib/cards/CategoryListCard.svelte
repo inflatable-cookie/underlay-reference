@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { ListCard, Pill, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
+  import { ListCard } from "@decodelabs/underlay/components";
+  import {
+    AlertDialog as PoodleAlertDialog,
+    Menu as PoodleMenu,
+    Pill as PoodlePill
+  } from "@poodle/svelte-primitives";
+  import type { MenuItem } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import type { CategoryWithCounts } from "acme-client";
   import FolderOpen from "lucide-svelte/icons/folder-open";
@@ -26,19 +32,30 @@
     confirmDeleteOpen = false;
   }
 
-  const menuItems = $derived([
-    { label: "Edit", onSelect: handleEdit },
+  const menuItems = $derived<MenuItem[]>([
+    { value: "edit", label: "Edit" },
     ...(onDelete
       ? [
-          { separator: true },
+          { value: "separator", label: "", kind: "separator" as const },
           {
+            value: "delete",
             label: "Delete",
-            destructive: true,
-            onSelect: () => (confirmDeleteOpen = true)
+            kind: "action" as const
           }
         ]
       : [])
   ]);
+
+  function handleMenuAction(value: string) {
+    if (value === "edit") {
+      handleEdit();
+      return;
+    }
+
+    if (value === "delete") {
+      confirmDeleteOpen = true;
+    }
+  }
 </script>
 
 <ListCard
@@ -52,16 +69,16 @@
 
   {#snippet trailing()}
     {#if !category.isActive}
-      <Pill accent="#ef4444">Inactive</Pill>
+      <PoodlePill tone="danger" appearance="badge" size="lg">Inactive</PoodlePill>
     {/if}
   {/snippet}
 
   {#snippet actions({ trigger: mediaContent, align })}
-    <DropdownMenu items={menuItems} {align}>
-      {#snippet trigger()}
+    <PoodleMenu items={menuItems} placement={align === "end" ? "bottom-end" : "bottom-start"} on:action={(event) => handleMenuAction(event.detail.value)}>
+      <div slot="trigger">
         {@render mediaContent()}
-      {/snippet}
-    </DropdownMenu>
+      </div>
+    </PoodleMenu>
   {/snippet}
 
   <span class="meta">
@@ -72,13 +89,13 @@
   </span>
 </ListCard>
 
-<AlertDialog
+<PoodleAlertDialog
   bind:open={confirmDeleteOpen}
-  showTrigger={false}
   title="Delete Category"
   description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
   confirmLabel="Delete"
   onConfirm={handleDelete}
+  tone="danger"
 />
 
 <style>

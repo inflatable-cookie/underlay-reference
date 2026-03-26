@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { MediaThumbnail as PoodleMediaThumbnail, PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import {
     FilterBar,
-    PageHeader,
     CopyActionsMenu,
     useToasts,
     useAuthenticatedData,
@@ -18,25 +19,26 @@
     MediaVisibility
   } from "@decodelabs/underlay/patterns";
   import {
-    Button,
     EmptyState,
-    Field,
-    FormError,
-    ListGrid,
+        ListGrid,
     ListCard,
-    MediaThumbnail,
-    Pill,
     OrderBy,
     PageLoading,
-    Select,
-    TextInput,
-    Tooltip,
     type OrderByValue
   } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Field as PoodleField,
+    IconButton as PoodleIconButton,
+    Pill as PoodlePill,
+    SearchField as PoodleSearchField,
+    Select as PoodleSelect
+  } from "@poodle/svelte-primitives";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { mediaCommands, type MediaSummary } from "acme-client";
   import { BatchActionBar } from "$lib/components";
   import { auth } from "$lib/stores/auth";
+  import { squareCheckIcon, trash2Icon, uploadIcon } from "$lib/ui/poodle-icon-nodes";
   import Upload from "lucide-svelte/icons/upload";
   import Image from "lucide-svelte/icons/image";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -115,6 +117,20 @@
     { value: "restricted", label: "Restricted" }
   ];
 
+  function toPoodleMediaKind(kind: string): "image" | "audio" | "video" | "document" | "embed" {
+    if (kind === MediaKind.Image) return "image";
+    if (kind === MediaKind.Audio) return "audio";
+    if (kind === MediaKind.Video) return "video";
+    return "document";
+  }
+
+  let titleFilterInput = $state("");
+  let titleFilterTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    titleFilterInput = selectedTitle.replace(/%/g, "");
+  });
+
   // Update URL when sort changes
   function handleSortChange(newOrderBy: OrderByValue) {
     const url = new URL($page.url);
@@ -140,6 +156,14 @@
     }
 
     goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  function handleTitleInput(value: string) {
+    titleFilterInput = value;
+    if (titleFilterTimer) clearTimeout(titleFilterTimer);
+    titleFilterTimer = setTimeout(() => {
+      handleTitleChange(value);
+    }, 500);
   }
 
   // Update URL when kind filter changes
@@ -241,95 +265,87 @@
   }
 </script>
 
-<PageHeader section="Media Library" backHref="/" backLabel="Back to dashboard">
-  {#snippet actions()}
+<PoodlePageHeader title="Media Library" backHref="/" backLabel="Back to dashboard">
+  <svelte:fragment slot="actions">
     {#if (pageData.data?.items ?? []).length > 0}
-      <Tooltip content={isSelectionMode ? "Cancel Selection" : "Select Items"} inline>
-        {#snippet trigger()}
-          <Button
-            type="button"
-            variant={isSelectionMode ? "danger" : "subtle"}
-            size="icon"
-            onclick={toggleSelectionMode}
-          >
-            <CheckSquare size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
+      <PoodleIconButton
+        type="button"
+        variant="secondary"
+        tone={isSelectionMode ? "danger" : "default"}
+        icon={squareCheckIcon}
+        ariaLabel={isSelectionMode ? "Cancel selection" : "Select items"}
+        tooltip={isSelectionMode ? "Cancel Selection" : "Select Items"}
+        on:click={toggleSelectionMode}
+      />
     {/if}
     {#if !isSelectionMode}
-      <Tooltip content="View Trash" inline>
-        {#snippet trigger()}
-          <Button type="button" variant="danger-subtle" size="icon" onclick={() => goto("/media/trash")}>
-            <Trash2 size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
+      <PoodleIconButton
+        type="button"
+        variant="secondary"
+        tone="danger"
+        icon={trash2Icon}
+        ariaLabel="View trash"
+        tooltip="View Trash"
+        on:click={() => goto("/media/trash")}
+      />
     {/if}
     {#if !isSelectionMode}
-      <Tooltip content="Upload Media" inline>
-        {#snippet trigger()}
-          <Button
-            type="button"
-            variant="primary"
-            size="icon"
-            onclick={() =>
-              void gotoWithContext("/media/upload", {
-                label: "Media",
-                href: "/media",
-                type: "list"
-              })}
-          >
-            <Upload size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
+      <PoodleIconButton
+        type="button"
+        variant="primary"
+        icon={uploadIcon}
+        ariaLabel="Upload media"
+        tooltip="Upload Media"
+        on:click={() =>
+          void gotoWithContext("/media/upload", {
+            label: "Media",
+            href: "/media",
+            type: "list"
+          })}
+      />
     {/if}
-  {/snippet}
-</PageHeader>
+  </svelte:fragment>
+</PoodlePageHeader>
 
 <FilterBar title="Filters" onRefresh={() => pageData.refetch()}>
-  <Field label="Title" forId="title">
-    <TextInput
-      id="title"
-      value={selectedTitle.replace(/%/g, "")}
-      onchange={handleTitleChange}
-      debounce={500}
-      search
+  <PoodleField id="media-filter-title" label="Title" let:describedBy>
+    <PoodleSearchField
+      id="media-filter-title"
+      value={titleFilterInput}
+      describedBy={describedBy}
       placeholder="Search by title..."
+      on:valueChange={(event) => handleTitleInput(event.detail.value)}
     />
-  </Field>
-  <Field label="Type" forId="kind">
-    <Select
-      id="kind"
+  </PoodleField>
+  <PoodleField id="media-filter-kind" label="Type" let:describedBy>
+    <PoodleSelect
+      id="media-filter-kind"
       value={selectedKind}
-      onchange={handleKindChange}
-      items={kindItems}
+      describedBy={describedBy}
+      options={kindItems}
       placeholder="All types"
-      clearable
-      defaultValue="All"
+      on:valueChange={(event) => handleKindChange(event.detail.value)}
     />
-  </Field>
-  <Field label="Visibility" forId="visibility">
-    <Select
-      id="visibility"
+  </PoodleField>
+  <PoodleField id="media-filter-visibility" label="Visibility" let:describedBy>
+    <PoodleSelect
+      id="media-filter-visibility"
       value={selectedVisibility}
-      onchange={handleVisibilityChange}
-      items={visibilityItems}
+      describedBy={describedBy}
+      options={visibilityItems}
       placeholder="All visibility"
-      clearable
-      defaultValue="All"
+      on:valueChange={(event) => handleVisibilityChange(event.detail.value)}
     />
-  </Field>
-  <Field label="Sort" forId="sort">
+  </PoodleField>
+  <PoodleField id="media-filter-sort" label="Sort">
     <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
-  </Field>
+  </PoodleField>
 </FilterBar>
 
 {#if pageData.loading}
   <PageLoading message="Loading media..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if (pageData.data?.items ?? []).length === 0}
   <EmptyState title="No media found" actionLabel="Upload your first media" actionHref="/media/upload" />
 {:else}
@@ -346,22 +362,28 @@
         actionsPlacement={item.thumbnailUrl ? "media-overlay" : "media"}
       >
         {#snippet media()}
-          <MediaThumbnail
-            thumbnailUrl={item.thumbnailUrl}
-            kind={item.kind}
-            alt={item.title ?? ""}
-            size="fill"
-          />
+          <PoodleMediaThumbnail
+            kind={toPoodleMediaKind(item.kind)}
+            presentation="compact"
+            aspectRatio="square"
+            ariaLabel={item.title ?? "Media thumbnail"}
+          >
+            {#if item.thumbnailUrl}
+              <img
+                src={item.thumbnailUrl}
+                alt={item.title ?? ""}
+                class="media-thumbnail-image"
+              />
+            {/if}
+          </PoodleMediaThumbnail>
         {/snippet}
         {#snippet trailing()}
           <div class="media-pills">
-            <Pill accent={accent}>
-              {getMediaKindLabel(item.kind)}
-            </Pill>
+            <PoodlePill tone="neutral" appearance="badge" size="lg">{getMediaKindLabel(item.kind)}</PoodlePill>
             {#if item.visibility && item.visibility !== MediaVisibility.Public}
-              <Pill accent={getMediaVisibilityAccent(item.visibility)}>
+              <PoodlePill tone="neutral" appearance="badge" size="lg">
                 {getMediaVisibilityLabel(item.visibility)}
-              </Pill>
+              </PoodlePill>
             {/if}
           </div>
         {/snippet}
@@ -427,5 +449,12 @@
 
   .media-meta {
     color: var(--admin-color-text-muted);
+  }
+
+  :global(.media-thumbnail-image) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 </style>

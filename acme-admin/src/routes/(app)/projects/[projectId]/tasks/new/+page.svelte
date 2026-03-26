@@ -1,10 +1,20 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Project, type Label, TaskPriority } from "acme-client";
   import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, TextInput, TextArea, Select, Field } from "@decodelabs/underlay/components";
+  import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
+  import { PageLoading } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Field as PoodleField,
+    FormActions as PoodleFormActions,
+    Select as PoodleSelect,
+    TextArea as PoodleTextArea,
+    TextInput as PoodleTextInput
+  } from "@poodle/svelte-primitives";
 
   interface Props {
     data: PageData;
@@ -103,15 +113,23 @@
       selectedLabelIds = [...selectedLabelIds, labelId];
     }
   }
+
+  function validationState(error?: string | null) {
+    return error ? "invalid" : "none";
+  }
+
+  function titleError(): string | null {
+    return error === "Title is required" ? error : null;
+  }
 </script>
 
 {#if pageData.loading}
   <PageLoading message="Loading..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if project}
-  <PageHeader
-    section="New Task"
+  <PoodlePageHeader
+    title="New Task"
     backHref={`/projects/${data.projectId}`}
     backLabel={`Back to ${project.name}`}
   />
@@ -119,47 +137,79 @@
   <div class="form-container">
     <form onsubmit={handleSubmit}>
       {#if error}
-        <FormError message={error} />
+        <PoodleCallout tone="danger" message={error} announceMode="polite" />
       {/if}
 
-      <Field label="Title" required>
-        <TextInput
-          bind:value={title}
+      <PoodleField
+        id="task-create-title"
+        label="Title"
+        error={titleError()}
+        validationState={validationState(titleError())}
+        required
+        let:describedBy
+        let:validationState={titleValidationState}
+      >
+        <PoodleTextInput
+          id="task-create-title"
+          value={title}
+          describedBy={describedBy}
+          validationState={titleValidationState}
           placeholder="Enter task title"
           disabled={submitting}
+          on:valueChange={(event) => { title = event.detail.value; }}
         />
-      </Field>
+      </PoodleField>
 
-      <Field label="Description">
-        <TextArea
-          bind:value={description}
+      <PoodleField
+        id="task-create-description"
+        label="Description"
+        let:describedBy
+      >
+        <PoodleTextArea
+          id="task-create-description"
+          value={description}
+          describedBy={describedBy}
           placeholder="Enter task description (optional)"
           rows={4}
           disabled={submitting}
+          on:valueChange={(event) => { description = event.detail.value; }}
         />
-      </Field>
+      </PoodleField>
 
       <div class="form-row">
-        <Field label="Priority">
-          <Select
+        <PoodleField
+          id="task-create-priority"
+          label="Priority"
+          let:describedBy
+        >
+          <PoodleSelect
+            id="task-create-priority"
             value={priority}
-            onchange={(val) => { priority = val; }}
-            items={priorityItems}
+            describedBy={describedBy}
+            options={priorityItems}
             disabled={submitting}
+            on:valueChange={(event) => { priority = event.detail.value; }}
           />
-        </Field>
+        </PoodleField>
 
-        <Field label="Due Date">
-          <TextInput
+        <PoodleField
+          id="task-create-due-date"
+          label="Due Date"
+          let:describedBy
+        >
+          <PoodleTextInput
+            id="task-create-due-date"
             type="date"
-            bind:value={dueDate}
+            value={dueDate}
+            describedBy={describedBy}
             disabled={submitting}
+            on:valueChange={(event) => { dueDate = event.detail.value; }}
           />
-        </Field>
+        </PoodleField>
       </div>
 
       {#if labels.length > 0}
-        <Field label="Labels">
+        <PoodleField id="task-create-labels" label="Labels">
           <div class="labels-grid">
             {#each labels as label}
               <button
@@ -175,21 +225,21 @@
               </button>
             {/each}
           </div>
-        </Field>
+        </PoodleField>
       {/if}
 
-      <div class="form-actions">
-        <Button type="button" variant="secondary" onclick={() => goto(`/projects/${data.projectId}`)} disabled={submitting}>
+      <PoodleFormActions align="end">
+        <PoodleButton type="button" variant="secondary" disabled={submitting} on:click={() => goto(`/projects/${data.projectId}`)}>
           Cancel
-        </Button>
-        <Button type="submit" variant="primary" disabled={submitting}>
+        </PoodleButton>
+        <PoodleButton type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Creating..." : "Create Task"}
-        </Button>
-      </div>
+        </PoodleButton>
+      </PoodleFormActions>
     </form>
   </div>
 {:else}
-  <FormError message="Project not found" />
+  <PoodleCallout tone="danger" message="Project not found" announceMode="polite" />
 {/if}
 
 <style>
@@ -247,12 +297,5 @@
     height: 0.5rem;
     border-radius: 50%;
     background: var(--label-color);
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding-top: 0.5rem;
   }
 </style>

@@ -13,7 +13,7 @@ Roadmaps hold executable work for the reference implementation.
 ## Current generation
 
 - Active generation: `g01`
-- Next roadmap ID: `g01.006`
+- Next roadmap ID: `g01.008`
 
 ## Index
 
@@ -29,5 +29,5 @@ Roadmaps hold executable work for the reference implementation.
 
 ## Next Task
 
-Open `g01.006` when the next reference-implementation milestone is ready to be
-sequenced, rather than extending closed rollout work in place.
+Execute `g01.007` as the active next milestone after the completed coexistence
+proof.

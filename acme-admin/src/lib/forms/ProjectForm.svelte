@@ -1,16 +1,14 @@
 <script lang="ts">
   import {
+    Button,
     Field,
     FieldSet,
-    FieldSetGrid,
     FormActions,
-    FormValidationProvider,
-    SaveSplitButton,
+    SplitButton,
     Select,
-    TextButton,
     TextInput,
     TextArea
-  } from "@decodelabs/underlay/components";
+  } from "@poodle/svelte-primitives";
   import {
     RelationSelector,
     createLocalSearchFns,
@@ -88,8 +86,21 @@
   let categoryId = $state<string | null>(untrack(() => values.categoryId ?? null));
   let statusValue = $state(untrack(() => values.status ?? "active"));
 
-  // Form validation state
-  let isFormValid = $state(false);
+  const editIntentItems = [
+    { value: "save", label: "Save changes" },
+    { value: "save-close", label: "Save & close" }
+  ];
+
+  const createIntentItems = [
+    { value: "save", label: "Create & continue" },
+    { value: "save-close", label: "Create & close" }
+  ];
+
+  let actionBarElement = $state<HTMLDivElement | null>(null);
+
+  const isFormValid = $derived.by(() => {
+    return Boolean(nameValue.trim() && statusValue.trim());
+  });
 
   // State for inline category creation
   let isCreatingCategory = $state(false);
@@ -164,12 +175,25 @@
   function handleCancel() {
     navigateOnCancel(cancelHref);
   }
+
+  function validationState(error?: string | null) {
+    return error ? "invalid" : "none";
+  }
+
+  function submitWithIntent(nextIntent: "save" | "save-close") {
+    intent = nextIntent;
+    actionBarElement?.closest("form")?.requestSubmit();
+  }
 </script>
 
-<FormValidationProvider bind:isValid={isFormValid}>
-  <FieldSet legend="Organisation">
-    <FieldSetGrid columns={2}>
-    <Field label="Category" error={errors?.categoryId} hint="Optional: Organize projects into categories">
+<FieldSet legend="Organisation" columns={2}>
+    <Field
+      id="project-category"
+      label="Category"
+      error={errors?.categoryId ?? null}
+      validationState={validationState(errors?.categoryId)}
+      hint="Optional: Organize projects into categories"
+    >
       <input type="hidden" name="categoryId" value={categoryId ?? ""} />
       <RelationSelector
         label="Select Category"
@@ -196,73 +220,117 @@
               errors={createCategoryError ? { name: createCategoryError } : null}
             />
             <div class="inline-form-actions">
-              <button type="submit" class="btn-primary" disabled={isCreatingCategory}>
+              <Button type="submit" variant="primary" disabled={isCreatingCategory}>
                 {isCreatingCategory ? "Creating..." : "Create"}
-              </button>
-              <button type="button" class="btn-secondary" onclick={createCategoryInlineCancelHandler(onCancel)}>
+              </Button>
+              <Button type="button" variant="secondary" on:click={createCategoryInlineCancelHandler(onCancel)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </form>
         {/snippet}
       </RelationSelector>
     </Field>
 
-    <Field label="Status" error={errors?.status}>
+    <Field
+      id="project-status"
+      label="Status"
+      error={errors?.status ?? null}
+      validationState={validationState(errors?.status)}
+      required
+      let:describedBy
+    >
       <Select
+        id="project-status"
         name="status"
         value={statusValue}
-        onchange={(val) => { statusValue = val; }}
-        items={statusItems}
+        describedBy={describedBy}
+        options={statusItems}
         placeholder="Select status"
+        on:valueChange={(event) => { statusValue = event.detail.value; }}
       />
     </Field>
-    </FieldSetGrid>
-  </FieldSet>
+</FieldSet>
 
-  <FieldSet legend="Basic Information">
-    <FieldSetGrid columns={1}>
-    <Field label="Name" error={errors?.name} required>
+<FieldSet legend="Basic Information">
+    <Field
+      id="project-name"
+      label="Name"
+      error={errors?.name ?? null}
+      validationState={validationState(errors?.name)}
+      required
+      let:describedBy
+      let:validationState={nameValidationState}
+    >
       <TextInput
+        id="project-name"
         name="name"
-        bind:value={nameValue}
-        required
+        value={nameValue}
+        describedBy={describedBy}
+        validationState={nameValidationState}
         placeholder="e.g., Website Redesign"
-        maxlength={128}
+        maxLength={128}
+        on:valueChange={(event) => { nameValue = event.detail.value; }}
       />
     </Field>
 
-    <Field label="Description" error={errors?.description}>
+    <Field
+      id="project-description"
+      label="Description"
+      error={errors?.description ?? null}
+      validationState={validationState(errors?.description)}
+      let:describedBy
+      let:validationState={descriptionValidationState}
+    >
       <TextArea
+        id="project-description"
         name="description"
-        bind:value={descriptionValue}
+        value={descriptionValue}
+        describedBy={describedBy}
+        validationState={descriptionValidationState}
         placeholder="Optional description for this project"
         rows={4}
-        maxlength={1000}
+        on:valueChange={(event) => { descriptionValue = event.detail.value; }}
       />
     </Field>
-    </FieldSetGrid>
-  </FieldSet>
-</FormValidationProvider>
+</FieldSet>
 
 <FormActions align="start">
-  {#snippet danger()}
+  <div class="project-form__actions" bind:this={actionBarElement}>
+    <input type="hidden" name="intent" value={intent} />
+
     {#if returnTo}
       <input type="hidden" name="returnTo" value={returnTo} />
     {/if}
 
-    <TextButton type="button" onclick={handleCancel}>
+    <Button type="button" variant="ghost" on:click={handleCancel}>
       Cancel
-    </TextButton>
-  {/snippet}
+    </Button>
 
-  <SaveSplitButton
-    disabled={!isFormValid}
-    bind:intent
-  />
+    <SplitButton
+      variant="primary"
+      items={mode === "create" ? createIntentItems : editIntentItems}
+      disabled={!isFormValid}
+      on:click={() => submitWithIntent(intent)}
+      on:action={(event) => submitWithIntent(event.detail.value as "save" | "save-close")}
+    >
+      {#if mode === "create"}
+        {intent === "save" ? "Create & continue" : "Create & close"}
+      {:else}
+        {intent === "save" ? "Save changes" : "Save & close"}
+      {/if}
+    </SplitButton>
+  </div>
 </FormActions>
 
 <style>
+  .project-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--poodle-space-inline-md);
+  }
+
   .inline-form {
     display: flex;
     flex-direction: column;
@@ -277,28 +345,5 @@
     display: flex;
     gap: 0.5rem;
     justify-content: flex-end;
-  }
-
-  .btn-primary {
-    padding: 0.5rem 1rem;
-    background: var(--color-primary, #6366f1);
-    color: white;
-    border: none;
-    border-radius: 0.375rem;
-    cursor: pointer;
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn-secondary {
-    padding: 0.5rem 1rem;
-    background: var(--bg-secondary, #f3f4f6);
-    color: var(--text-primary, #111827);
-    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
-    border-radius: 0.375rem;
-    cursor: pointer;
   }
 </style>

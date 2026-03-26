@@ -1,32 +1,35 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import {
     PageHeader,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
-    PageHeaderMetaSeparator,
+    DetailMeta,
+    DetailMetaId,
+    DetailMetaItem,
+    DetailMetaSeparator,
     useToasts,
     useAuthenticatedData
   } from "@decodelabs/underlay/patterns";
   import {
-    Button,
-    Card,
     Code,
-    FormError,
-    PageLoading,
+        PageLoading,
     DetailsCard,
     DetailsSection,
-    DetailsItem,
-    Pill,
-    Tooltip
+    DetailsItem
   } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Card as PoodleCard,
+    IconButton as PoodleIconButton,
+    Pill as PoodlePill
+  } from "@poodle/svelte-primitives";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Ban from "lucide-svelte/icons/ban";
   import { adminCommands, type JobDetail } from "acme-client";
   import { auth } from "$lib/stores/auth";
-  import { getJobStatusAccent } from "$lib/utils/accents";
+  import { getJobStatusTone } from "$lib/utils/accents";
+  import { refreshCwIcon } from "$lib/ui/poodle-icon-nodes";
 
   const toastStore = useToasts();
   const jobId = $page.params.id;
@@ -96,38 +99,38 @@
   backLabel="Back to jobs"
 >
   {#if job}
-    <PageHeaderMeta>
-      <PageHeaderMetaRow>
-        <PageHeaderMetaItem label="ID">
-          <Code copy>{job.id}</Code>
-        </PageHeaderMetaItem>
-        <PageHeaderMetaSeparator />
-        <Pill accent={getJobStatusAccent(job.status)}>{getStatusLabel(job.status)}</Pill>
-      </PageHeaderMetaRow>
-    </PageHeaderMeta>
+    <DetailMeta>
+      <DetailMetaId value={job.id} />
+      <DetailMetaSeparator />
+      <DetailMetaItem>
+        <PoodlePill tone={getJobStatusTone(job.status)} appearance="badge" size="lg">
+          {getStatusLabel(job.status)}
+        </PoodlePill>
+      </DetailMetaItem>
+    </DetailMeta>
   {/if}
 
   {#snippet actions()}
     {#if job}
       {#if job.status === "pending" || job.status === "running"}
-        <Button variant="secondary" onclick={handleCancel}>
+        <PoodleButton variant="secondary" on:click={handleCancel}>
           <Ban size={16} />
           Cancel
-        </Button>
+        </PoodleButton>
       {/if}
       {#if job.status === "failed" || job.status === "cancelled"}
-        <Button variant="primary" onclick={handleRetry}>
+        <PoodleButton variant="primary" on:click={handleRetry}>
           <RotateCcw size={16} />
           Retry
-        </Button>
+        </PoodleButton>
       {/if}
-      <Tooltip content="Refresh" inline>
-        {#snippet trigger()}
-          <Button variant="subtle" size="icon" onclick={() => pageData.refetch()}>
-            <RefreshCw size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
+      <PoodleIconButton
+        variant="secondary"
+        icon={refreshCwIcon}
+        ariaLabel="Refresh job"
+        tooltip="Refresh"
+        on:click={() => pageData.refetch()}
+      />
     {/if}
   {/snippet}
 </PageHeader>
@@ -135,7 +138,7 @@
 {#if pageData.loading && !job}
   <PageLoading message="Loading job details..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if job}
   <div class="job-detail">
   <DetailsCard>
@@ -154,28 +157,28 @@
   </DetailsCard>
 
     {#if job.errorMessage}
-      <Card>
+      <PoodleCard>
         <div class="job-detail__section job-detail__section--error">
           <h3>Error</h3>
           <p class="job-detail__error-text">{job.errorMessage}</p>
         </div>
-      </Card>
+      </PoodleCard>
     {/if}
 
-    <Card>
+    <PoodleCard>
       <div class="job-detail__section">
         <h3>Payload</h3>
         <pre class="job-detail__code">{JSON.stringify(job.payload, null, 2)}</pre>
       </div>
-    </Card>
+    </PoodleCard>
 
     {#if job.progress}
-      <Card>
+      <PoodleCard>
         <div class="job-detail__section">
           <h3>Progress</h3>
           <pre class="job-detail__code">{JSON.stringify(job.progress, null, 2)}</pre>
         </div>
-      </Card>
+      </PoodleCard>
     {/if}
   </div>
 {/if}

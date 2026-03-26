@@ -1,5 +1,9 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import "@poodle/svelte-tokens/styles.css";
+	import "@poodle/svelte-tokens/theme-light.css";
+	import "@poodle/svelte-tokens/density-comfortable.css";
+	import "@poodle/svelte-tokens/control-size-md.css";
 	import "@decodelabs/underlay/styles/base.css";
 	import "@decodelabs/underlay/styles/tokens.css";
 	import "@decodelabs/underlay/styles/forms.css";
@@ -11,18 +15,29 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="container">
+<div
+	class="container front-theme-shell"
+	data-theme="light"
+	data-density="comfortable"
+	data-control-size="md"
+>
 	{@render children()}
 </div>
 
 <style>
 	:global(body) {
 		margin: 0;
-		font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+		font-family:
+			"Avenir Next",
+			Avenir,
+			system-ui,
+			-ui-sans-serif,
+			-apple-system,
+			BlinkMacSystemFont,
+			"Segoe UI",
 			sans-serif;
-		background: radial-gradient(1200px 600px at 50% -10%, rgba(240, 253, 250, 0.85), transparent),
-			linear-gradient(180deg, #f8fafc, #ffffff);
-		color: #0f172a;
+		background: var(--poodle-color-background-canvas);
+		color: var(--poodle-color-text-primary);
 	}
 
 	:global(a) {
@@ -35,5 +50,9 @@
 		max-width: 980px;
 		margin: 0 auto;
 		padding: 1.25rem;
+	}
+
+	:global(.front-theme-shell) {
+		min-height: 100vh;
 	}
 </style>

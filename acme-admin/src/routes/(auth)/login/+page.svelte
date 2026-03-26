@@ -14,7 +14,6 @@
 
   // Track if we're showing setup prompt (to prevent redirect)
   let inSetupPrompt = $state(false);
-
   // Redirect to dashboard if authenticated (but not if showing setup prompt)
   $effect(() => {
     if (!$authLoading && $currentUser && !inSetupPrompt) {
@@ -27,7 +26,6 @@
     const result = await auth.loginStart(email, password);
 
     if (result.requiresTwoFactor) {
-      // Set flag if email verification (for setup prompt)
       if (result.isEmailVerification) {
         inSetupPrompt = true;
       }
@@ -40,11 +38,6 @@
     }
 
     return { complete: true };
-  }
-
-  // 2FA verification handler
-  async function handleTwoFactorVerify(stateId: string, code: string) {
-    await auth.loginFinish(stateId, code);
   }
 
   // Passkey login handler
@@ -79,12 +72,16 @@
     auth.setSession(loginResponse);
   }
 
+  // 2FA verification handler
+  async function handleTwoFactorVerify(stateId: string, code: string) {
+    await auth.loginFinish(stateId, code);
+  }
+
   // Login complete handler
   function handleComplete() {
     goto('/');
   }
 
-  // Skip setup handler
   function handleSkipSetup() {
     inSetupPrompt = false;
   }

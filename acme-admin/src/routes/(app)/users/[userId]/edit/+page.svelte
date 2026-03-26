@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
@@ -8,16 +9,16 @@
   import UserForm from "$lib/forms/UserForm.svelte";
   import {
     SpaFormShell,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
-    PageHeaderMetaSeparator,
+    DetailMeta,
+    DetailMetaId,
+    DetailMetaItem,
+    DetailMetaSeparator,
     computeBackInfo,
     consumeNavigationContext,
     useAuthenticatedData,
     type SpaFormResult
   } from "@decodelabs/underlay/patterns";
-  import { Code, FormError, PageLoading } from "@decodelabs/underlay/components";
+  import { Code, PageLoading } from "@decodelabs/underlay/components";
 
   interface Props {
     data: PageData;
@@ -162,20 +163,16 @@
 {#if pageData.loading}
   <PageLoading message="Loading user..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if user}
   {#snippet headerMeta()}
-    <PageHeaderMeta>
-      <PageHeaderMetaRow>
-        <PageHeaderMetaItem label="ID">
-          <Code copy>{user.id}</Code>
-        </PageHeaderMetaItem>
-        <PageHeaderMetaSeparator />
-        <PageHeaderMetaItem label="Email">
-          <Code copy>{user.email}</Code>
-        </PageHeaderMetaItem>
-      </PageHeaderMetaRow>
-    </PageHeaderMeta>
+    <DetailMeta>
+      <DetailMetaId value={user.id} />
+      <DetailMetaSeparator />
+      <DetailMetaItem label="Email">
+        <Code copy>{user.email}</Code>
+      </DetailMetaItem>
+    </DetailMeta>
   {/snippet}
 
   <SpaFormShell
@@ -185,9 +182,9 @@
     backLabel={computedBackInfo.label}
     backIsContextual={computedBackInfo.isContextual ?? false}
     bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
-    success={success === true}
+    {success}
     successMessage="User updated successfully."
-    error={success === false && !fieldErrors ? error : null}
+    {error}
     {fieldErrors}
     {headerMeta}
     onSubmit={handleSubmit}

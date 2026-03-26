@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Task, type Label, type Project } from "acme-client";
@@ -6,16 +7,16 @@
   import {
     useAuthenticatedData,
     PageHeader,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
-    PageHeaderMetaSeparator,
-    useToasts,
-    Banner
+    DetailMeta,
+    DetailMetaId,
+    DetailMetaItem,
+    DetailMetaSeparator,
+    useToasts
   } from "@decodelabs/underlay/patterns";
-  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, Pill, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
+  import { PageLoading, ConfirmAction, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
+  import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
-  import { getTaskStatusAccent, getTaskPriorityAccent } from "$lib/utils/accents";
+  import { getTaskStatusTone, getTaskPriorityTone } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
   import Calendar from "lucide-svelte/icons/calendar";
@@ -54,27 +55,12 @@
     cancelled: "Cancelled"
   }[task.status] ?? task.status : "");
 
-  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
-  const statusVariant = $derived<BadgeVariant>(task ? ({
-    pending: "muted",
-    in_progress: "info",
-    completed: "success",
-    cancelled: "danger"
-  } as Record<string, BadgeVariant>)[task.status] ?? "default" : "default");
-
   const priorityLabel = $derived(task ? {
     low: "Low",
     medium: "Medium",
     high: "High",
     urgent: "Urgent"
   }[task.priority] ?? task.priority : "");
-
-  const priorityVariant = $derived<BadgeVariant>(task ? ({
-    low: "muted",
-    medium: "default",
-    high: "warning",
-    urgent: "danger"
-  } as Record<string, BadgeVariant>)[task.priority] ?? "default" : "default");
 
   function handleEdit() {
     if (!task || !project) return;
@@ -118,30 +104,40 @@
 {#if pageData.loading}
   <PageLoading message="Loading task..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if task && project}
   <PageHeader
     section="Task"
     title={task.title}
     backHref={`/projects/${data.projectId}`}
     backLabel={`Back to ${project.name}`}
+    bannerMessage={task.status === "completed"
+      ? `This task was completed on ${formatDate(task.completedAt)}.`
+      : task.status === "cancelled"
+        ? "This task has been cancelled."
+        : undefined}
+    bannerVariant={task.status === "completed" ? "success" : "warning"}
   >
-    <PageHeaderMeta>
-      <PageHeaderMetaRow>
-        <PageHeaderMetaItem label="ID">
-          <Code copy>{task.id}</Code>
-        </PageHeaderMetaItem>
-        <PageHeaderMetaSeparator />
-        <Pill accent={getTaskStatusAccent(task.status)}>{statusLabel}</Pill>
-        <Pill accent={getTaskPriorityAccent(task.priority)}>{priorityLabel}</Pill>
-      </PageHeaderMetaRow>
-    </PageHeaderMeta>
+    <DetailMeta>
+      <DetailMetaId value={task.id} />
+      <DetailMetaSeparator />
+      <DetailMetaItem>
+        <PoodlePill tone={getTaskStatusTone(task.status)} appearance="badge" size="lg">
+          {statusLabel}
+        </PoodlePill>
+      </DetailMetaItem>
+      <DetailMetaItem>
+        <PoodlePill tone={getTaskPriorityTone(task.priority)} appearance="badge" size="lg">
+          {priorityLabel}
+        </PoodlePill>
+      </DetailMetaItem>
+    </DetailMeta>
 
     {#snippet actions()}
-      <Button type="button" variant="secondary" onclick={handleEdit}>
+      <PoodleButton type="button" variant="secondary" on:click={handleEdit}>
         <Pencil size={16} />
         Edit
-      </Button>
+      </PoodleButton>
       <ConfirmAction
         title="Delete Task"
         description={`Are you sure you want to delete "${task.title}"?`}
@@ -153,16 +149,16 @@
     {/snippet}
   </PageHeader>
 
-  {#if task.status === "completed"}
-    <Banner variant="success" message={`This task was completed on ${formatDate(task.completedAt)}.`} />
-  {:else if task.status === "cancelled"}
-    <Banner variant="warning" message="This task has been cancelled." />
-  {/if}
-
   <DetailsCard>
     <DetailsSection legend="Details">
       <DetailsItem label="Priority">
-        <Badge variant={priorityVariant}>{priorityLabel}</Badge>
+        <PoodlePill
+          tone={getTaskPriorityTone(task.priority)}
+          appearance="badge"
+          size="sm"
+        >
+          {priorityLabel}
+        </PoodlePill>
       </DetailsItem>
       <DetailsItem label="Due Date">
         <span class="due-date">
@@ -174,7 +170,13 @@
         <DetailsItem label="Labels" span="full">
           <div class="labels">
             {#each labels as label}
-              <Badge variant="muted" style="--badge-color: {label.color}">{label.name}</Badge>
+              <PoodlePill
+                tone="neutral"
+                appearance="badge"
+                size="sm"
+              >
+                {label.name}
+              </PoodlePill>
             {/each}
           </div>
         </DetailsItem>
@@ -198,7 +200,7 @@
     </DetailsSection>
   </DetailsCard>
 {:else}
-  <FormError message="Task not found" />
+  <PoodleCallout tone="danger" message="Task not found" announceMode="polite" />
 {/if}
 
 <style>

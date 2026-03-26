@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { TextInput } from "@decodelabs/underlay/components";
+  import { TextInput } from "@poodle/svelte-primitives";
 
   type ChecklistItem = {
     text: string;
@@ -29,7 +29,11 @@
       : [];
   }
 
-  let items = $state<ChecklistItem[]>(getItemsFromBlock(block));
+  let items = $state<ChecklistItem[]>([]);
+
+  $effect(() => {
+    items = getItemsFromBlock(block);
+  });
 
   function emit(nextItems: ChecklistItem[]) {
     items = nextItems;
@@ -93,10 +97,11 @@
           class="checkbox"
         />
         <TextInput
+          id={`checklist-item-${index}`}
           type="text"
           placeholder="Checklist item..."
           value={item.text}
-          oninput={(value: string) => updateItemText(index, value)}
+          on:valueChange={(event: CustomEvent<{ value: string }>) => updateItemText(index, event.detail.value)}
         />
         <div class="item-controls">
           <button

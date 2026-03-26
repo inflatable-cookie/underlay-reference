@@ -27,7 +27,10 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
-		"acme-client": "file:../acme-client",
-		"@decodelabs/underlay": "file:../underlay"
+		"@decodelabs/underlay": "file:../underlay",
+		"@poodle/svelte-composites": "file:../../poodle/packages/svelte/composites",
+		"@poodle/svelte-primitives": "file:../../poodle/packages/svelte/primitives",
+		"@poodle/svelte-tokens": "file:../../poodle/packages/svelte/tokens",
+		"acme-client": "file:../acme-client"
 	}
 }

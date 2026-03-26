@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { untrack } from "svelte";
   import type { PageData } from "./$types";
   import type { Category } from "acme-client";
@@ -9,15 +10,14 @@
   import { goto } from "$app/navigation";
   import {
     SpaFormShell,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
+    DetailMeta,
+    DetailMetaId,
     computeBackInfo,
     consumeNavigationContext,
     useAuthenticatedData,
     type SpaFormResult
   } from "@decodelabs/underlay/patterns";
-  import { Code, FormError, PageLoading } from "@decodelabs/underlay/components";
+  import { PageLoading } from "@decodelabs/underlay/components";
 
   interface Props {
     data: PageData;
@@ -186,16 +186,12 @@
 {#if pageData.loading}
   <PageLoading message="Loading category..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if category}
   {#snippet headerMeta()}
-    <PageHeaderMeta>
-      <PageHeaderMetaRow>
-        <PageHeaderMetaItem label="ID">
-          <Code copy>{category.id}</Code>
-        </PageHeaderMetaItem>
-      </PageHeaderMetaRow>
-    </PageHeaderMeta>
+    <DetailMeta>
+      <DetailMetaId value={category.id} />
+    </DetailMeta>
   {/snippet}
 
   <SpaFormShell
@@ -205,9 +201,9 @@
     backLabel={computedBackInfo.label}
     backIsContextual={computedBackInfo.isContextual ?? false}
     bannerMessage={!category.isActive ? "This category is inactive." : undefined}
-    success={success === true}
+    {success}
     successMessage="Category updated successfully."
-    error={success === false && !fieldErrors ? error : null}
+    {error}
     {fieldErrors}
     {headerMeta}
     onSubmit={handleSubmit}

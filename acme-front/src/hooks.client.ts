@@ -1,6 +1,6 @@
 import { env } from "$env/dynamic/public";
 
-import { configureAcmeClient } from "@api-client";
+import { configureAcmeClient } from "@api-client/utils/client-factory.js";
 
 configureAcmeClient({
   baseUrl: env.PUBLIC_API_URL ?? "http://localhost:40011",

@@ -1,20 +1,19 @@
 <script lang="ts">
 	import { adminCommands, type User, type UserRole, type UserStatus, UserRole as UserRoleConst, UserStatus as UserStatusConst } from "@api-client";
 	import {
-		Button,
 		DataTable,
-		Pill,
-		Tooltip,
 		type DataTableColumn,
 		type DataTablePagination,
 		type DataTableSort,
 		type DataTableFilters
 	} from "@decodelabs/underlay/components";
-	import { PageHeader, useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
+	import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+	import { IconButton as PoodleIconButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
+	import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
 	import { gotoWithContext } from "@decodelabs/underlay/client";
 	import Plus from "lucide-svelte/icons/plus";
 	import { auth } from "$lib/stores/auth";
-	import { getUserRoleAccent, getUserStatusAccent } from "$lib/utils/accents";
+	import { getUserRoleTone, getUserStatusTone } from "$lib/utils/accents";
 
 	const PAGE_SIZE = 20;
 
@@ -209,17 +208,18 @@
 	}
 </script>
 
-<PageHeader section="Users" count={total} backHref="/" backLabel="Back to dashboard">
-	{#snippet actions()}
-		<Tooltip content="Add User" inline>
-			{#snippet trigger()}
-				<Button type="button" variant="primary" size="icon" onclick={handleAddUser}>
-					<Plus size={16} />
-				</Button>
-			{/snippet}
-		</Tooltip>
-	{/snippet}
-</PageHeader>
+<PoodlePageHeader title="Users" count={total} backHref="/" backLabel="Back to dashboard">
+	<svelte:fragment slot="actions">
+		<PoodleIconButton
+			type="button"
+			variant="primary"
+			icon="plus"
+			ariaLabel="Add user"
+			tooltip="Add User"
+			on:click={handleAddUser}
+		/>
+	</svelte:fragment>
+</PoodlePageHeader>
 
 <DataTable
 	data={users}
@@ -238,9 +238,9 @@
 		{#if column.key === "email"}
 			<a href={`/users/${row.id}`} class="email-link">{value}</a>
 		{:else if column.key === "role"}
-			<Pill accent={getUserRoleAccent(row.role)}>{row.role}</Pill>
+			<PoodlePill tone={getUserRoleTone(row.role)} appearance="badge" size="lg">{row.role}</PoodlePill>
 		{:else if column.key === "status"}
-			<Pill accent={getUserStatusAccent(row.status)}>{row.status}</Pill>
+			<PoodlePill tone={getUserStatusTone(row.status)} appearance="badge" size="lg">{row.status}</PoodlePill>
 		{:else}
 			{value}
 		{/if}

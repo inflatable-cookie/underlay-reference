@@ -1,19 +1,21 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { userCommands, type UserProject } from "@api-client";
-  import { FormDialog, useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
+  import * as userCommands from "@api-client/commands/user-commands.js";
+  import type { UserProject } from "@api-client/commands/user-commands.js";
+  import { FormDialog } from "@decodelabs/underlay/patterns/FormDialog";
+  import { useAuthenticatedData } from "@decodelabs/underlay/patterns/authenticated-data";
+  import { useToasts } from "@decodelabs/underlay/patterns/useToasts";
   import {
     Button,
-    PageLoading,
-    FormActions,
-    FormError,
+    Callout,
     Field,
-    TextInput,
-    ListCard,
-    ListGrid,
-    TextButton,
-  } from "@decodelabs/underlay/components";
+    FormActions,
+    TextInput
+  } from "@poodle/svelte-primitives";
+  import PageLoading from "@decodelabs/underlay/components/PageLoading.svelte";
+  import ListCard from "@decodelabs/underlay/components/ListCard.svelte";
+  import ListGrid from "@decodelabs/underlay/components/ListGrid.svelte";
   import Plus from "lucide-svelte/icons/plus";
   import FolderOpen from "lucide-svelte/icons/folder-open";
 
@@ -82,7 +84,7 @@
 
 <div class="header">
   <h1>My Projects</h1>
-  <Button type="button" variant="primary" onclick={openCreateDialog}>
+  <Button type="button" variant="primary" on:click={openCreateDialog}>
     <Plus size={16} />
     New Project
   </Button>
@@ -91,13 +93,13 @@
 {#if pageData.loading}
   <PageLoading message="Loading projects..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <Callout tone="danger" message={pageData.error} announceMode="assertive" />
 {:else if (pageData.data?.projects ?? []).length === 0}
   <div class="empty-state">
     <FolderOpen size={48} />
     <h2>No projects yet</h2>
     <p>Create your first project to start tracking tasks.</p>
-    <Button type="button" variant="primary" onclick={openCreateDialog}>
+    <Button type="button" variant="primary" on:click={openCreateDialog}>
       <Plus size={16} />
       Create Project
     </Button>
@@ -134,20 +136,32 @@
       }}
     >
       <div class="dialog-fields">
-        <Field label="Project Name" required>
-          <TextInput bind:value={newProjectName} placeholder="My Project" disabled={submitting} />
+        <Field id="front-project-name" label="Project Name" required let:describedBy>
+          <TextInput
+            id="front-project-name"
+            value={newProjectName}
+            describedBy={describedBy}
+            placeholder="My Project"
+            disabled={submitting}
+            on:valueChange={(event) => { newProjectName = event.detail.value; }}
+          />
         </Field>
-        <Field label="Description">
-          <TextInput bind:value={newProjectDescription} placeholder="Optional description" disabled={submitting} />
+        <Field id="front-project-description" label="Description" let:describedBy>
+          <TextInput
+            id="front-project-description"
+            value={newProjectDescription}
+            describedBy={describedBy}
+            placeholder="Optional description"
+            disabled={submitting}
+            on:valueChange={(event) => { newProjectDescription = event.detail.value; }}
+          />
         </Field>
       </div>
 
       <FormActions align="end">
-        {#snippet danger()}
-          <TextButton type="button" onclick={() => (showCreateDialog = false)} disabled={submitting}>
-            Cancel
-          </TextButton>
-        {/snippet}
+        <Button type="button" variant="ghost" disabled={submitting} on:click={() => (showCreateDialog = false)}>
+          Cancel
+        </Button>
         <Button type="submit" variant="primary" disabled={submitting || !newProjectName.trim()}>
           {submitting ? "Creating..." : "Create"}
         </Button>
@@ -176,13 +190,13 @@
     justify-content: center;
     padding: 4rem 2rem;
     text-align: center;
-    color: var(--text-secondary, #6b7280);
+    color: var(--poodle-color-text-secondary);
   }
 
   .empty-state h2 {
     margin: 1rem 0 0.5rem;
     font-size: 1.25rem;
-    color: var(--text-primary, #111827);
+    color: var(--poodle-color-text-primary);
   }
 
   .empty-state p {

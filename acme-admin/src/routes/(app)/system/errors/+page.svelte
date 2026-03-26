@@ -1,8 +1,17 @@
 <script lang="ts">
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { adminCommands, type ErrorLogSummary, type ErrorLogStats, type ErrorLogDetail } from "acme-client";
   import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
-  import { Button, PageLoading, FormError, Badge, Select, Card, DataTable, TimeAgo, type DataTableColumn } from "@decodelabs/underlay/components";
+  import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
+  import { PageLoading, DataTable, TimeAgo, type DataTableColumn } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Card as PoodleCard,
+    Field as PoodleField,
+    Pill as PoodlePill,
+    Select as PoodleSelect
+  } from "@poodle/svelte-primitives";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
@@ -81,12 +90,9 @@
     }
   }
 
-  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
-
-  function getStatusVariant(statusCode: number): BadgeVariant {
+  function getStatusTone(statusCode: number): "neutral" | "danger" {
     if (statusCode >= 500) return "danger";
-    if (statusCode >= 400) return "warning";
-    return "default";
+    return "neutral";
   }
 
   function formatDateTime(dateStr: string): string {
@@ -115,24 +121,24 @@
   ];
 </script>
 
-<PageHeader section="Error Log" backHref="/system" backLabel="Back to system">
-  {#snippet actions()}
-    <Button type="button" variant="subtle" onclick={() => pageData.refetch()}>
+<PoodlePageHeader title="Error Log" backHref="/system" backLabel="Back to system">
+  <svelte:fragment slot="actions">
+    <PoodleButton type="button" variant="ghost" on:click={() => pageData.refetch()}>
       <RefreshCw size={16} />
       Refresh
-    </Button>
-  {/snippet}
-</PageHeader>
+    </PoodleButton>
+  </svelte:fragment>
+</PoodlePageHeader>
 
 {#if pageData.loading && logs.length === 0}
   <PageLoading message="Loading error logs..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else}
   <!-- Stats cards -->
   {#if stats}
     <div class="stats-grid">
-      <Card>
+      <PoodleCard>
         <div class="stat">
           <span class="stat-icon" style="color: var(--danger, #ef4444);">
             <AlertTriangle size={24} />
@@ -142,8 +148,8 @@
             <span class="stat-label">Total (24h)</span>
           </div>
         </div>
-      </Card>
-      <Card>
+      </PoodleCard>
+      <PoodleCard>
         <div class="stat">
           <span class="stat-icon" style="color: var(--danger, #ef4444);">
             <XCircle size={24} />
@@ -153,8 +159,8 @@
             <span class="stat-label">5xx Errors</span>
           </div>
         </div>
-      </Card>
-      <Card>
+      </PoodleCard>
+      <PoodleCard>
         <div class="stat">
           <span class="stat-icon" style="color: var(--warning, #f59e0b);">
             <AlertCircle size={24} />
@@ -164,17 +170,23 @@
             <span class="stat-label">4xx Errors</span>
           </div>
         </div>
-      </Card>
+      </PoodleCard>
     </div>
   {/if}
 
   <!-- Filter -->
   <div class="filter-bar">
-    <Select
-      bind:value={statusCodeFilter}
-      items={statusOptions}
-      placeholder="All status codes"
-    />
+    <PoodleField id="system-errors-status-filter" label="Status code" let:describedBy>
+      <PoodleSelect
+        id="system-errors-status-filter"
+        value={statusCodeFilter}
+        describedBy={describedBy}
+        options={statusOptions}
+        on:valueChange={(event) => {
+          statusCodeFilter = event.detail.value;
+        }}
+      />
+    </PoodleField>
   </div>
 
   <!-- Error logs list -->
@@ -206,9 +218,9 @@
             <TimeAgo date={row.occurredAt} tooltipFormat="datetime" short />
           </span>
         {:else if column.key === "statusCode"}
-          <Badge variant={getStatusVariant(row.statusCode)} size="sm">
+          <PoodlePill tone={getStatusTone(row.statusCode)} appearance="badge" size="lg">
             {row.statusCode}
-          </Badge>
+          </PoodlePill>
         {:else if column.key === "endpoint"}
           <div class="endpoint">
             <code class="method">{row.method}</code>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
@@ -7,21 +8,26 @@
   import {
     useAuthenticatedData,
     PageHeader,
-    PageHeaderMeta,
-    PageHeaderMetaRow,
-    PageHeaderMetaItem,
-    PageHeaderMetaSeparator,
+    DetailMeta,
+    DetailMetaId,
+    DetailMetaItem,
+    DetailMetaSeparator,
     useToasts,
-    Banner,
     ReorderableList,
     createReorderController,
     FilterBar
   } from "@decodelabs/underlay/patterns";
-  import { Button, Code, PageLoading, FormError, ConfirmAction, Badge, ListGrid, ListCard, Pill, ProgressBar, Field, Select, OrderBy, DetailsCard, DetailsSection, DetailsItem, TimeAgo, type OrderByValue } from "@decodelabs/underlay/components";
+  import { PageLoading, ConfirmAction, ListGrid, ListCard, ProgressBar, OrderBy, DetailsCard, DetailsSection, DetailsItem, TimeAgo, type OrderByValue } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Field as PoodleField,
+    Pill as PoodlePill,
+    Select as PoodleSelect
+  } from "@poodle/svelte-primitives";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { BatchActionBar } from "$lib/components";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
-  import { getProjectStatusAccent } from "$lib/utils/accents";
+  import { getProjectStatusTone } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
@@ -312,13 +318,6 @@
     on_hold: "On Hold"
   }[project.status] ?? project.status : "");
 
-  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
-  const statusVariant = $derived<BadgeVariant>(project ? ({
-    active: "success",
-    archived: "muted",
-    on_hold: "warning"
-  } as Record<string, BadgeVariant>)[project.status] ?? "default" : "default");
-
   function handleEdit() {
     if (!project) return;
     void gotoWithContext(`/projects/${project.id}/edit`, {
@@ -377,29 +376,35 @@
 {#if pageData.loading}
   <PageLoading message="Loading project..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if project}
   <PageHeader
     section="Project"
     title={project.name}
     backHref="/projects"
     backLabel="Back to projects"
+    bannerMessage={project.status === "archived"
+      ? "This project is archived and tasks cannot be modified."
+      : project.status === "on_hold"
+        ? "This project is on hold."
+        : undefined}
+    bannerVariant={project.status === "archived" ? "warning" : "info"}
   >
-    <PageHeaderMeta>
-      <PageHeaderMetaRow>
-        <PageHeaderMetaItem label="ID">
-          <Code copy>{project.id}</Code>
-        </PageHeaderMetaItem>
-        <PageHeaderMetaSeparator />
-        <Pill accent={getProjectStatusAccent(project.status)}>{statusLabel}</Pill>
-      </PageHeaderMetaRow>
-    </PageHeaderMeta>
+    <DetailMeta>
+      <DetailMetaId value={project.id} />
+      <DetailMetaSeparator />
+      <DetailMetaItem>
+        <PoodlePill tone={getProjectStatusTone(project.status)} appearance="badge" size="lg">
+          {statusLabel}
+        </PoodlePill>
+      </DetailMetaItem>
+    </DetailMeta>
 
     {#snippet actions()}
-      <Button type="button" variant="secondary" onclick={handleEdit}>
+      <PoodleButton type="button" variant="secondary" on:click={handleEdit}>
         <Pencil size={16} />
         Edit
-      </Button>
+      </PoodleButton>
       <ConfirmAction
         title="Delete Project"
         description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
@@ -410,12 +415,6 @@
       />
     {/snippet}
   </PageHeader>
-
-  {#if project.status === "archived"}
-    <Banner variant="warning" message="This project is archived and tasks cannot be modified." />
-  {:else if project.status === "on_hold"}
-    <Banner variant="info" message="This project is on hold." />
-  {/if}
 
   <DetailsCard>
     <DetailsSection legend="Details">
@@ -448,63 +447,63 @@
       <h2>Tasks</h2>
       <div class="tasks-header-actions">
         {#if tasks.length > 1 && !isTaskSelectionMode}
-          <Button
+          <PoodleButton
             type="button"
-            variant={isTaskReorderMode ? "danger" : "subtle"}
+            variant="ghost"
+            tone={isTaskReorderMode ? "danger" : "default"}
             size="sm"
-            onclick={() => isTaskReorderMode ? exitTaskReorderMode() : enterTaskReorderMode()}
+            on:click={() => isTaskReorderMode ? exitTaskReorderMode() : enterTaskReorderMode()}
           >
             <ArrowUpDown size={14} />
             Reorder
-          </Button>
+          </PoodleButton>
         {/if}
         {#if tasks.length > 0 && !isTaskReorderMode}
-          <Button
+          <PoodleButton
             type="button"
-            variant={isTaskSelectionMode ? "danger" : "subtle"}
+            variant="ghost"
+            tone={isTaskSelectionMode ? "danger" : "default"}
             size="sm"
-            onclick={toggleTaskSelectionMode}
+            on:click={toggleTaskSelectionMode}
           >
             <CheckSquare2 size={14} />
             {isTaskSelectionMode ? "Cancel" : "Select"}
-          </Button>
+          </PoodleButton>
         {/if}
         {#if !isTaskSelectionMode && !isTaskReorderMode}
-          <Button type="button" variant="primary" size="sm" onclick={handleAddTask}>
+          <PoodleButton type="button" variant="primary" size="sm" on:click={handleAddTask}>
             <Plus size={14} />
             Add Task
-          </Button>
+          </PoodleButton>
         {/if}
       </div>
     </div>
 
     {#if !isTaskReorderMode}
       <FilterBar title="Filter tasks" onRefresh={() => pageData.refetch()}>
-        <Field label="Status" forId="taskStatus">
-          <Select
-            id="taskStatus"
+        <PoodleField id="project-tasks-filter-status" label="Status" let:describedBy>
+          <PoodleSelect
+            id="project-tasks-filter-status"
             value={selectedStatus}
-            onchange={handleStatusChange}
-            items={statusItems}
+            describedBy={describedBy}
+            options={statusItems}
             placeholder="All statuses"
-            clearable
-            defaultValue="All"
+            on:valueChange={(event) => handleStatusChange(event.detail.value)}
           />
-        </Field>
-        <Field label="Priority" forId="taskPriority">
-          <Select
-            id="taskPriority"
+        </PoodleField>
+        <PoodleField id="project-tasks-filter-priority" label="Priority" let:describedBy>
+          <PoodleSelect
+            id="project-tasks-filter-priority"
             value={selectedPriority}
-            onchange={handlePriorityChange}
-            items={priorityItems}
+            describedBy={describedBy}
+            options={priorityItems}
             placeholder="All priorities"
-            clearable
-            defaultValue="All"
+            on:valueChange={(event) => handlePriorityChange(event.detail.value)}
           />
-        </Field>
-        <Field label="Sort" forId="taskSort">
+        </PoodleField>
+        <PoodleField id="project-tasks-filter-sort" label="Sort">
           <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
-        </Field>
+        </PoodleField>
       </FilterBar>
     {/if}
 
@@ -527,9 +526,13 @@
               <CheckSquare size={16} />
             {/snippet}
             {#snippet titleSuffix()}
-              <Badge variant={task.status === "completed" ? "success" : task.status === "in_progress" ? "info" : "muted"} size="sm">
+              <PoodlePill
+                tone={task.status === "completed" ? "success" : "neutral"}
+                appearance="badge"
+                size="sm"
+              >
                 {task.status === "completed" ? "Done" : task.status === "in_progress" ? "In Progress" : "Pending"}
-              </Badge>
+              </PoodlePill>
             {/snippet}
           </ListCard>
         {/snippet}
@@ -556,12 +559,20 @@
               {/if}
             {/snippet}
             {#snippet titleSuffix()}
-              <Badge variant={task.status === "completed" ? "success" : task.status === "in_progress" ? "info" : "muted"} size="sm">
+              <PoodlePill
+                tone={task.status === "completed" ? "success" : "neutral"}
+                appearance="badge"
+                size="sm"
+              >
                 {task.status === "completed" ? "Done" : task.status === "in_progress" ? "In Progress" : "Pending"}
-              </Badge>
-              <Badge variant={task.priority === "urgent" ? "danger" : task.priority === "high" ? "warning" : "muted"} size="sm">
+              </PoodlePill>
+              <PoodlePill
+                tone={task.priority === "urgent" ? "danger" : "neutral"}
+                appearance="badge"
+                size="sm"
+              >
                 {task.priority}
-              </Badge>
+              </PoodlePill>
             {/snippet}
           </ListCard>
         {/each}
@@ -581,7 +592,7 @@
     />
   </section>
 {:else}
-  <FormError message="Project not found" />
+  <PoodleCallout tone="danger" message="Project not found" announceMode="polite" />
 {/if}
 
 <style>

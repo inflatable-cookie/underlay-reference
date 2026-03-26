@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { auth } from "$lib/stores/auth";
-  import { Button, TextInput, Field, FormError } from "@decodelabs/underlay/components";
+  import { Button, Callout, Field, TextInput } from "@poodle/svelte-primitives";
 
   let displayName = $state("");
   let email = $state("");
@@ -31,35 +31,41 @@
 
 <form onsubmit={handleSubmit}>
   {#if error}
-    <FormError message={error} />
+    <Callout tone="danger" message={error} announceMode="assertive" />
   {/if}
 
-  <Field label="Name" required>
+  <Field id="register-name" label="Name" required let:describedBy>
     <TextInput
-      bind:value={displayName}
+      id="register-name"
+      value={displayName}
+      describedBy={describedBy}
       placeholder="Your name"
       disabled={submitting}
-      autocomplete="name"
+      on:valueChange={(event) => { displayName = event.detail.value; }}
     />
   </Field>
 
-  <Field label="Email" required>
+  <Field id="register-email" label="Email" required let:describedBy>
     <TextInput
+      id="register-email"
       type="email"
-      bind:value={email}
+      value={email}
+      describedBy={describedBy}
       placeholder="you@example.com"
       disabled={submitting}
-      autocomplete="email"
+      on:valueChange={(event) => { email = event.detail.value; }}
     />
   </Field>
 
-  <Field label="Password" required>
+  <Field id="register-password" label="Password" required let:describedBy>
     <TextInput
+      id="register-password"
       type="password"
-      bind:value={password}
+      value={password}
+      describedBy={describedBy}
       placeholder="Choose a password"
       disabled={submitting}
-      autocomplete="new-password"
+      on:valueChange={(event) => { password = event.detail.value; }}
     />
   </Field>
 

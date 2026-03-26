@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MarkdownEditor } from "@decodelabs/underlay/components";
+  import { MarkdownEditor } from "@poodle/svelte-composites";
 
   type TaskNotesBlock = {
     type: string;
@@ -17,7 +17,11 @@
 
   let { block, onChange }: Props = $props();
 
-  let content = $state(block?.data?.content ?? "");
+  let content = $state("");
+
+  $effect(() => {
+    content = block?.data?.content ?? "";
+  });
 
   function handleChange(text: string) {
     content = text;
@@ -38,7 +42,7 @@
   <MarkdownEditor
     placeholder="Write your notes here..."
     value={content}
-    onChange={handleChange}
+    on:change={(event) => handleChange(event.detail.value)}
   />
 </div>
 

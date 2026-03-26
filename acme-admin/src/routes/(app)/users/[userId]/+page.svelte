@@ -1,20 +1,25 @@
 <script lang="ts">
+  import {
+    AlertDialog as PoodleAlertDialog,
+    Callout as PoodleCallout
+  } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
   import {
-    AlertDialog,
-    Button,
+    Button as PoodleButton,
+    Field as PoodleField,
+    FormActions as PoodleFormActions,
+    IconButton as PoodleIconButton,
+    Menu as PoodleMenu,
+    Pill as PoodlePill,
+    Select as PoodleSelect,
+    type MenuItem
+  } from "@poodle/svelte-primitives";
+  import {
     DataTable,
     DetailsCard,
     DetailsItem,
     DetailsSection,
-    DropdownMenu,
-    Field,
-    FormActions,
-    FormError,
-    PageLoading,
-    Pill,
-    Select,
-    TextButton,
+        PageLoading,
     type DataTableAction,
     type DataTableColumn
   } from "@decodelabs/underlay/components";
@@ -39,9 +44,12 @@
     UserRole as UserRoleConst
   } from "@api-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { getUserRoleAccent, getUserStatusAccent, getSessionStatusAccent, getActivityAccent } from "$lib/utils/accents";
-  import MoreVertical from "lucide-svelte/icons/more-vertical";
-
+  import {
+    getUserRoleTone,
+    getUserStatusTone,
+    getSessionStatusTone,
+    getActivityTone
+  } from "$lib/utils/accents";
   interface Props {
     data: { userId: string };
   }
@@ -305,55 +313,66 @@
     { value: UserRoleConst.Superadmin, label: "Superadmin" }
   ];
 
-  function getUserMenuItems(currentUser: UserDetail) {
-    return [
-      {
-        label: "Edit",
-        onSelect: () =>
-          void gotoWithContext(`/users/${currentUser.id}/edit`, {
-            label: "User",
-            href: `/users/${currentUser.id}`,
-            type: "detail"
-          })
-      },
-      {
-        label: "Copy ID",
-        onSelect: () => void copyToClipboard(currentUser.id)
-      },
-      {
-        label: "Copy Email",
-        onSelect: () => void copyToClipboard(currentUser.email)
-      },
-      { separator: true },
-      {
-        label: "Change role…",
-        onSelect: () => {
-          showRoleDialog = true;
-        }
-      },
-      currentUser.status === "active"
-        ? {
-            label: "Suspend user",
-            destructive: true,
-            onSelect: () => void handleSuspend()
-          }
-        : currentUser.status === "suspended"
-          ? {
-              label: "Reactivate user",
-              onSelect: () => void handleUnsuspend()
-            }
-          : {
-              label: "User deleted",
-              disabled: true
-            }
+  function getUserMenuItems(currentUser: UserDetail): MenuItem[] {
+    const items: MenuItem[] = [
+      { value: "edit", label: "Edit" },
+      { value: "copy-id", label: "Copy ID" },
+      { value: "copy-email", label: "Copy Email" },
+      { value: "separator", label: "", kind: "separator" },
+      { value: "change-role", label: "Change role…" }
     ];
+
+    if (currentUser.status === "active") {
+      items.push({ value: "suspend", label: "Suspend user" });
+    } else if (currentUser.status === "suspended") {
+      items.push({ value: "reactivate", label: "Reactivate user" });
+    } else {
+      items.push({ value: "deleted", label: "User deleted", disabled: true });
+    }
+
+    return items;
+  }
+
+  function handleUserMenuAction(currentUser: UserDetail, value: string) {
+    if (value === "edit") {
+      void gotoWithContext(`/users/${currentUser.id}/edit`, {
+        label: "User",
+        href: `/users/${currentUser.id}`,
+        type: "detail"
+      });
+      return;
+    }
+
+    if (value === "copy-id") {
+      void copyToClipboard(currentUser.id);
+      return;
+    }
+
+    if (value === "copy-email") {
+      void copyToClipboard(currentUser.email);
+      return;
+    }
+
+    if (value === "change-role") {
+      showRoleDialog = true;
+      return;
+    }
+
+    if (value === "suspend") {
+      void handleSuspend();
+      return;
+    }
+
+    if (value === "reactivate") {
+      void handleUnsuspend();
+    }
   }
 </script>
 
 {#if userData.loading}
   <PageLoading message="Loading user..." />
 {:else if userData.error}
-  <FormError message={userData.error} />
+  <PoodleCallout tone="danger" message={userData.error} announceMode="polite" />
 {:else if user}
   <DetailPageShell
     section="User"
@@ -374,17 +393,15 @@
       <DetailMeta>
         <DetailMetaId value={user.id} />
         <DetailMetaSeparator />
-        <Pill accent={getUserRoleAccent(user.role)}>{user.role}</Pill>
-        <Pill accent={getUserStatusAccent(user.status)}>{user.status}</Pill>
+        <PoodlePill tone={getUserRoleTone(user.role)} appearance="badge" size="lg">{user.role}</PoodlePill>
+        <PoodlePill tone={getUserStatusTone(user.status)} appearance="badge" size="lg">{user.status}</PoodlePill>
       </DetailMeta>
     {/snippet}
 
     {#snippet actions()}
-      <DropdownMenu items={getUserMenuItems(user)}>
-        {#snippet trigger()}
-          <MoreVertical size={16} aria-hidden="true" />
-        {/snippet}
-      </DropdownMenu>
+      <PoodleMenu items={getUserMenuItems(user)} ariaLabel="User actions" placement="bottom-end" on:action={(event) => handleUserMenuAction(user, event.detail.value)}>
+        <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="User actions" />
+      </PoodleMenu>
     {/snippet}
 
     {#snippet tabContent(tab)}
@@ -405,7 +422,7 @@
         {#if activeTab === "sessions" && sessionsData.loading}
           <PageLoading message="Loading sessions..." />
         {:else if sessionsData.error}
-          <FormError message={sessionsData.error} />
+          <PoodleCallout tone="danger" message={sessionsData.error} announceMode="polite" />
         {:else}
           <DataTable
             data={sessions}
@@ -416,7 +433,7 @@
           >
             {#snippet cell({ column, value })}
               {#if column.key === "status"}
-                <Pill accent={getSessionStatusAccent(value)}>{value}</Pill>
+                <PoodlePill tone={getSessionStatusTone(value)} appearance="badge" size="lg">{value}</PoodlePill>
               {:else if column.key === "ipAddress"}
                 <code>{value || "—"}</code>
               {:else}
@@ -429,7 +446,7 @@
         {#if activeTab === "activity" && activityData.loading}
           <PageLoading message="Loading activity..." />
         {:else if activityData.error}
-          <FormError message={activityData.error} />
+          <PoodleCallout tone="danger" message={activityData.error} announceMode="polite" />
         {:else}
           <DataTable
             data={activity}
@@ -440,7 +457,7 @@
           >
             {#snippet cell({ column, value })}
               {#if column.key === "action"}
-                <Pill accent={getActivityAccent(value)}>{value}</Pill>
+                <PoodlePill tone={getActivityTone(value)} appearance="badge" size="lg">{value}</PoodlePill>
               {:else if column.key === "resourceId"}
                 <code>{value}</code>
               {:else}
@@ -468,37 +485,36 @@
         void handleRoleChange();
       }}
     >
-      <Field label="Role">
-        <Select
+      <PoodleField id="user-role-dialog" label="Role" let:describedBy>
+        <PoodleSelect
+          id="user-role-dialog"
           value={selectedRole}
-          onchange={(v) => { selectedRole = v as UserRole; }}
-          items={roleItems}
+          describedBy={describedBy}
+          options={roleItems}
           placeholder="Select role"
           disabled={submitting}
+          on:valueChange={(event) => { selectedRole = event.detail.value as UserRole; }}
         />
-      </Field>
+      </PoodleField>
 
-      <FormActions align="end">
-        {#snippet danger()}
-          <TextButton type="button" onclick={() => (showRoleDialog = false)} disabled={submitting}>
-            Cancel
-          </TextButton>
-        {/snippet}
-        <Button type="submit" variant="primary" disabled={submitting}>
+      <PoodleFormActions align="end">
+        <PoodleButton type="button" variant="ghost" disabled={submitting} on:click={() => (showRoleDialog = false)}>
+          Cancel
+        </PoodleButton>
+        <PoodleButton type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Saving..." : "Save"}
-        </Button>
-      </FormActions>
+        </PoodleButton>
+      </PoodleFormActions>
     </form>
   {/snippet}
 </FormDialog>
 
-<AlertDialog
+<PoodleAlertDialog
   bind:open={showRevokeDialog}
   title="Revoke session"
   description="This will immediately log the user out of this session. They will need to log in again."
   confirmLabel={revokingSession ? "Revoking..." : "Revoke"}
-  showTrigger={false}
   onConfirm={handleRevokeSession}
   onCancel={() => (sessionToRevoke = null)}
+  tone="danger"
 />
-

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
@@ -10,16 +11,18 @@
     useAuthenticatedData
   } from "@decodelabs/underlay/patterns";
   import {
-    Badge,
-    Card,
     DataTable,
-    DropdownMenu,
-    FormError,
-    PageLoading,
-    Pill,
+        PageLoading,
     TimeAgo,
     type DataTableColumn
   } from "@decodelabs/underlay/components";
+  import {
+    Card as PoodleCard,
+    IconButton as PoodleIconButton,
+    Menu as PoodleMenu,
+    Pill as PoodlePill
+  } from "@poodle/svelte-primitives";
+  import type { MenuItem } from "@poodle/svelte-primitives";
   import { adminCommands } from "acme-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import type { ScheduledTaskDetail, JobSummary } from "acme-client";
@@ -136,23 +139,38 @@
     }
   }
 
-  const menuItems = $derived(task ? [
-    { label: "Trigger now", onSelect: handleTrigger },
-    { label: task.enabled ? "Disable task" : "Enable task", onSelect: handleToggle },
-    { separator: true },
-    { label: "Refresh", onSelect: handleRefresh }
-  ] : []);
+  const menuItems = $derived<MenuItem[]>(
+    task
+      ? [
+          { value: "trigger", label: "Trigger now" },
+          { value: "toggle", label: task.enabled ? "Disable task" : "Enable task" },
+          { value: "separator", label: "", kind: "separator" as const },
+          { value: "refresh", label: "Refresh" }
+        ]
+      : []
+  );
 
-  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
+  function handleMenuAction(value: string) {
+    if (value === "trigger") {
+      void handleTrigger();
+      return;
+    }
 
-  function getStatusVariant(status: string): BadgeVariant {
+    if (value === "toggle") {
+      void handleToggle();
+      return;
+    }
+
+    if (value === "refresh") {
+      handleRefresh();
+    }
+  }
+
+  function getStatusTone(status: string): "neutral" | "success" | "danger" {
     switch (status) {
       case "succeeded": return "success";
       case "failed": return "danger";
-      case "running": return "info";
-      case "pending": return "warning";
-      case "cancelled": return "muted";
-      default: return "default";
+      default: return "neutral";
     }
   }
 
@@ -175,7 +193,7 @@
 {#if pageData.loading && !task}
   <PageLoading message="Loading task details..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if task}
   <DetailPageShell
     section="Scheduled Task"
@@ -192,21 +210,23 @@
       <DetailMeta>
         <DetailMetaId value={task.id} />
         <DetailMetaSeparator />
-        <Pill accent={task.enabled ? "#10b981" : "#6b7280"}>
+        <PoodlePill tone={task.enabled ? "success" : "neutral"} appearance="badge" size="lg">
           {task.enabled ? "Enabled" : "Disabled"}
-        </Pill>
+        </PoodlePill>
       </DetailMeta>
     {/snippet}
 
     {#snippet actions()}
-      <DropdownMenu items={menuItems} triggerAriaLabel="Task actions" />
+      <PoodleMenu items={menuItems} ariaLabel="Task actions" placement="bottom-end" on:action={(event) => handleMenuAction(event.detail.value)}>
+        <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Task actions" />
+      </PoodleMenu>
     {/snippet}
 
     {#snippet tabContent(tab)}
       {#if tab === "details"}
         <div class="details-content">
         <div class="task-detail-page__grid">
-          <Card>
+          <PoodleCard>
             <div class="task-detail-page__section">
               <h3>Configuration</h3>
               <dl class="task-detail-page__dl">
@@ -228,9 +248,9 @@
                 <dd>{task.allowOverlap ? "Yes" : "No"}</dd>
               </dl>
             </div>
-          </Card>
+          </PoodleCard>
 
-          <Card>
+          <PoodleCard>
             <div class="task-detail-page__section">
               <h3>Execution History</h3>
               <dl class="task-detail-page__dl">
@@ -244,24 +264,24 @@
                 <dd>{formatDate(task.updatedAt)}</dd>
               </dl>
             </div>
-          </Card>
+          </PoodleCard>
         </div>
 
-        <Card>
+        <PoodleCard>
           <div class="task-detail-page__section">
             <h3>Schedule</h3>
             <p class="task-detail-page__schedule-help">
               {describeSchedule(task.schedule)}
             </p>
           </div>
-        </Card>
+        </PoodleCard>
 
-        <Card>
+        <PoodleCard>
           <div class="task-detail-page__section">
             <h3>Payload</h3>
             <pre class="task-detail-page__code">{JSON.stringify(task.payload, null, 2)}</pre>
           </div>
-        </Card>
+        </PoodleCard>
         </div>
       {:else if tab === "job-runs"}
         <div class="jobs-list">
@@ -275,9 +295,9 @@
           >
             {#snippet cell({ column, row })}
               {#if column.key === "status"}
-                <Badge variant={getStatusVariant(row.status)} size="sm">
+                <PoodlePill tone={getStatusTone(row.status)} appearance="badge" size="lg">
                   {getStatusLabel(row.status)}
-                </Badge>
+                </PoodlePill>
               {:else if column.key === "attempts"}
                 {row.attempts}/{row.maxAttempts}
               {:else if column.key === "createdAt"}

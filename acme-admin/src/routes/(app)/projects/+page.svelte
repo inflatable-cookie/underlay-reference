@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
   import {
     FilterBar,
-    PageHeader,
     ReorderableList,
     createReorderController,
     useToasts,
@@ -11,23 +13,25 @@
     useBatchSelection
   } from "@decodelabs/underlay/patterns";
   import {
-    Button,
     EmptyState,
-    Field,
-    FormError,
-    ListGrid,
+        ListGrid,
     ListCard,
     OrderBy,
     PageLoading,
-    Select,
-    TextInput,
-    Tooltip,
     type OrderByValue
   } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Field as PoodleField,
+    IconButton as PoodleIconButton,
+    SearchField as PoodleSearchField,
+    Select as PoodleSelect
+  } from "@poodle/svelte-primitives";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { ProjectListCard } from "$lib/cards";
   import { BatchActionBar } from "$lib/components";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
+  import { arrowUpDownIcon, squareCheckIcon } from "$lib/ui/poodle-icon-nodes";
   import { adminCommands, type ProjectWithCounts } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
@@ -154,15 +158,34 @@
     { value: "on_hold", label: "On Hold" }
   ];
 
-  async function loadCategoryItems() {
+  const defaultCategoryOptions = [{ value: "All", label: "All categories" }];
+  let categoryOptions = $state(defaultCategoryOptions);
+  let nameFilterInput = $state("");
+  let nameFilterTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onMount(async () => {
     const token = auth.getToken();
-    if (!token) return [{ value: "All", label: "All categories" }];
-    const categories = await adminCommands.listCategoriesForSuggestions(fetch, token);
-    return [
-      { value: "All", label: "All categories" },
-      ...categories.map((c) => ({ value: c.id, label: c.name }))
-    ];
-  }
+    if (!token) {
+      categoryOptions = defaultCategoryOptions;
+      return;
+    }
+
+    try {
+      const categories = await adminCommands.listCategoriesForSuggestions(fetch, token);
+      categoryOptions = [
+        ...defaultCategoryOptions,
+        ...categories.map((category) => ({ value: category.id, label: category.name }))
+      ];
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load categories";
+      toastStore.push({ variant: "error", message });
+      categoryOptions = defaultCategoryOptions;
+    }
+  });
+
+  $effect(() => {
+    nameFilterInput = selectedName.replace(/%/g, "");
+  });
 
   // Update URL when sort changes
   function handleSortChange(newOrderBy: OrderByValue) {
@@ -189,6 +212,15 @@
     }
 
     goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  function handleNameInput(value: string) {
+    nameFilterInput = value;
+
+    if (nameFilterTimer) clearTimeout(nameFilterTimer);
+    nameFilterTimer = setTimeout(() => {
+      handleNameChange(value);
+    }, 500);
   }
 
   // Update URL when category filter changes
@@ -284,102 +316,89 @@
   }
 </script>
 
-<PageHeader section="Projects" backHref="/" backLabel="Back to dashboard">
-  {#snippet actions()}
+<PoodlePageHeader title="Projects" backHref="/" backLabel="Back to dashboard">
+  <svelte:fragment slot="actions">
     {#if (pageData.data?.projects ?? []).length > 0 && !isReorderMode}
-      <Tooltip content={isSelectionMode ? "Cancel Selection" : "Select Items"} inline>
-        {#snippet trigger()}
-          <Button
-            type="button"
-            variant={isSelectionMode ? "danger" : "subtle"}
-            size="icon"
-            onclick={toggleSelectionMode}
-          >
-            <CheckSquare size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
+      <PoodleIconButton
+        type="button"
+        variant="secondary"
+        tone={isSelectionMode ? "danger" : "default"}
+        icon={squareCheckIcon}
+        ariaLabel={isSelectionMode ? "Cancel selection" : "Select items"}
+        tooltip={isSelectionMode ? "Cancel Selection" : "Select Items"}
+        on:click={toggleSelectionMode}
+      />
     {/if}
     {#if (pageData.data?.projects ?? []).length > 1 && !isSelectionMode}
-      <Tooltip content={isReorderMode ? "Cancel Reorder" : "Reorder Projects"} inline>
-        {#snippet trigger()}
-          <Button
-            type="button"
-            variant={isReorderMode ? "danger" : "subtle"}
-            size="icon"
-            onclick={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
-          >
-            <ArrowUpDown size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
+      <PoodleIconButton
+        type="button"
+        variant="secondary"
+        tone={isReorderMode ? "danger" : "default"}
+        icon={arrowUpDownIcon}
+        ariaLabel={isReorderMode ? "Cancel reorder" : "Reorder projects"}
+        tooltip={isReorderMode ? "Cancel Reorder" : "Reorder Projects"}
+        on:click={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
+      />
     {/if}
     {#if !isSelectionMode && !isReorderMode}
-      <Tooltip content="Add Project" inline>
-        {#snippet trigger()}
-          <Button
-            type="button"
-            variant="primary"
-            size="icon"
-            onclick={() =>
-              void gotoWithContext("/projects/new", {
-                label: "Projects",
-                href: "/projects",
-                type: "list"
-              })}
-          >
-            <Plus size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
+      <PoodleIconButton
+        type="button"
+        variant="primary"
+        icon="plus"
+        ariaLabel="Add project"
+        tooltip="Add Project"
+        on:click={() =>
+          void gotoWithContext("/projects/new", {
+            label: "Projects",
+            href: "/projects",
+            type: "list"
+          })}
+      />
     {/if}
-  {/snippet}
-</PageHeader>
+  </svelte:fragment>
+</PoodlePageHeader>
 
 {#if !isReorderMode}
   <FilterBar title="Filters" onRefresh={() => pageData.refetch()}>
-    <Field label="Name" forId="name">
-      <TextInput
-        id="name"
-        value={selectedName.replace(/%/g, "")}
-        onchange={handleNameChange}
-        debounce={500}
-        search
-        placeholder="Filter by name..."
+    <PoodleField id="projects-filter-name" label="Name" let:describedBy>
+      <PoodleSearchField
+        id="projects-filter-name"
+        value={nameFilterInput}
+        describedBy={describedBy}
+        placeholder="Search by name..."
+        on:valueChange={(event) => handleNameInput(event.detail.value)}
       />
-    </Field>
-    <Field label="Category" forId="category">
-      <Select
-        id="category"
+    </PoodleField>
+    <PoodleField id="projects-filter-category" label="Category" let:describedBy>
+      <PoodleSelect
+        id="projects-filter-category"
         value={selectedCategoryId}
-        onchange={handleCategoryChange}
-        loadItems={loadCategoryItems}
+        describedBy={describedBy}
+        options={categoryOptions}
         placeholder="All categories"
-        clearable
-        defaultValue="All"
+        on:valueChange={(event) => handleCategoryChange(event.detail.value)}
       />
-    </Field>
-    <Field label="Status" forId="status">
-      <Select
-        id="status"
+    </PoodleField>
+    <PoodleField id="projects-filter-status" label="Status" let:describedBy>
+      <PoodleSelect
+        id="projects-filter-status"
         value={selectedStatus}
-        onchange={handleStatusChange}
-        items={statusItems}
+        describedBy={describedBy}
+        options={statusItems}
         placeholder="All statuses"
-        clearable
-        defaultValue="All"
+        on:valueChange={(event) => handleStatusChange(event.detail.value)}
       />
-    </Field>
-    <Field label="Sort" forId="sort">
+    </PoodleField>
+    <PoodleField id="projects-filter-sort" label="Sort">
       <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
-    </Field>
+    </PoodleField>
   </FilterBar>
 {/if}
 
 {#if pageData.loading}
   <PageLoading message="Loading projects..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if (pageData.data?.projects ?? []).length === 0}
   <EmptyState title="No projects found" description="Create your first project to get started." actionLabel="Add project" actionHref="/projects/new" />
 {:else if isReorderMode}

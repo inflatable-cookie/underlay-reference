@@ -1,11 +1,13 @@
 <script lang="ts">
   import {
-    AlertDialog,
-    Button,
-    Card,
-    FormActions,
-    FormError,
-    TotpInput,
+    AlertDialog as PoodleAlertDialog,
+    Button as PoodleButton,
+    Callout as PoodleCallout,
+    Card as PoodleCard,
+    FormActions as PoodleFormActions
+  } from "@poodle/svelte-primitives";
+  import {
+        TotpInput,
     PageLoading
   } from "@decodelabs/underlay/components";
   import { authCommands } from "acme-client";
@@ -139,39 +141,39 @@
 {#if pageData.loading}
   <PageLoading message="Loading 2FA settings..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else}
 
 {#if totpError}
-  <FormError message={totpError} />
+  <PoodleCallout tone="danger" message={totpError} announceMode="polite" />
 {/if}
 
 {#if pageData.data?.totpEnabled}
-  <Card>
+  <PoodleCard>
     <p class="success-message">Two-factor authentication is enabled on your account.</p>
     <p class="muted">Your account is protected with an authenticator app.</p>
 
-    <FormActions>
-      <Button
+    <PoodleFormActions align="start">
+      <PoodleButton
         type="button"
         variant="secondary"
-        onclick={() => (disableTotpOpen = true)}
         disabled={totpBusy}
+        on:click={() => (disableTotpOpen = true)}
       >
         Disable 2FA
-      </Button>
-    </FormActions>
-  </Card>
+      </PoodleButton>
+    </PoodleFormActions>
+  </PoodleCard>
 
-  <AlertDialog
+  <PoodleAlertDialog
     bind:open={disableTotpOpen}
-    showTrigger={false}
     title="Disable 2FA?"
     description="This removes TOTP protection from your account."
     confirmLabel={totpBusy ? "Disabling..." : "Disable 2FA"}
     cancelLabel="Cancel"
     onConfirm={disableTotp}
     onCancel={() => (disableTotpOpen = false)}
+    tone="danger"
   />
 {:else if totpBusy && !totpSetup}
   <div class="intro">
@@ -183,7 +185,7 @@
     <p class="hint">Google Authenticator, Authy, 1Password, etc.</p>
   </div>
 
-  <Card>
+  <PoodleCard>
     <div class="totp-setup">
       <div class="totp-setup__qr" aria-label="TOTP QR code">
         {#if validateQrSvg(totpSetup.qrSvg)}
@@ -215,23 +217,23 @@
           oncomplete={enableTotp}
         />
 
-        <FormActions>
-          <Button type="button" variant="primary" onclick={enableTotp} disabled={totpBusy}>
+        <PoodleFormActions align="start">
+          <PoodleButton type="button" variant="primary" disabled={totpBusy} on:click={enableTotp}>
             {totpBusy ? "Enabling..." : "Enable 2FA"}
-          </Button>
-        </FormActions>
+          </PoodleButton>
+        </PoodleFormActions>
       </div>
     </div>
-  </Card>
+  </PoodleCard>
 {:else}
   <div class="intro">
     <p class="muted">Two-factor authentication is not enabled.</p>
   </div>
-  <FormActions>
-    <Button type="button" variant="primary" onclick={setupTotp} disabled={totpBusy}>
+  <PoodleFormActions align="start">
+    <PoodleButton type="button" variant="primary" disabled={totpBusy} on:click={setupTotp}>
       {totpBusy ? "Loading..." : "Set up 2FA"}
-    </Button>
-  </FormActions>
+    </PoodleButton>
+  </PoodleFormActions>
 {/if}
 
 {/if}

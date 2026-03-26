@@ -10,12 +10,16 @@ import type { Handle, HandleServerError } from "@sveltejs/kit";
 import { env } from "$env/dynamic/public";
 import { env as privateEnv } from "$env/dynamic/private";
 
-import { configureAcmeClient } from "@api-client";
+import { configureAcmeClient as configureAliasedAcmeClient } from "@api-client";
+import { configureAcmeClient as configurePackageAcmeClient } from "acme-client";
 
-configureAcmeClient({
+const config = {
   baseUrl: env.PUBLIC_API_URL ?? "http://localhost:40011",
   apiVersion: env.PUBLIC_API_VERSION ?? "2025-01-01",
-});
+};
+
+configureAliasedAcmeClient(config);
+configurePackageAcmeClient(config);
 
 const cspReportOnly = privateEnv.CSP_REPORT_ONLY
   ? privateEnv.CSP_REPORT_ONLY === "true"

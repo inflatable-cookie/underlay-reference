@@ -124,9 +124,9 @@
   backHref={backInfo.href}
   backLabel={backInfo.label}
   backIsContextual={backInfo.isContextual ?? false}
-  success={success === true}
+  {success}
   successMessage="Project created successfully."
-  error={success === false && !fieldErrors ? error : null}
+  {error}
   {fieldErrors}
   onSubmit={handleSubmit}
   onResult={handleResult}

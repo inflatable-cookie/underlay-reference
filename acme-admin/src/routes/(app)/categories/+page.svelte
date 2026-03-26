@@ -1,31 +1,34 @@
 <script lang="ts">
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import {
     FilterBar,
-    PageHeader,
     ReorderableList,
     createReorderController,
     useToasts,
     useAuthenticatedData
   } from "@decodelabs/underlay/patterns";
   import {
-    Button,
     EmptyState,
-    Field,
-    FormError,
-    ListGrid,
+        ListGrid,
     ListCard,
     OrderBy,
     PageLoading,
-    Select,
-    TextInput,
-    Tooltip,
     type OrderByValue
   } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Field as PoodleField,
+    IconButton as PoodleIconButton,
+    SearchField as PoodleSearchField,
+    Select as PoodleSelect
+  } from "@poodle/svelte-primitives";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { CategoryListCard } from "$lib/cards";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
+  import { arrowUpDownIcon } from "$lib/ui/poodle-icon-nodes";
   import { adminCommands, type CategoryWithCounts } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
@@ -92,6 +95,13 @@
     { value: "false", label: "Inactive" }
   ];
 
+  let nameFilterInput = $state("");
+  let nameFilterTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    nameFilterInput = selectedName.replace(/%/g, "");
+  });
+
   // Update URL when sort changes
   function handleSortChange(newOrderBy: OrderByValue) {
     const url = new URL($page.url);
@@ -117,6 +127,15 @@
     }
 
     goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  function handleNameInput(value: string) {
+    nameFilterInput = value;
+
+    if (nameFilterTimer) clearTimeout(nameFilterTimer);
+    nameFilterTimer = setTimeout(() => {
+      handleNameChange(value);
+    }, 500);
   }
 
   // Update URL when active filter changes
@@ -202,75 +221,66 @@
   }
 </script>
 
-<PageHeader section="Categories" backHref="/" backLabel="Back to dashboard">
-  {#snippet actions()}
+<PoodlePageHeader title="Categories" backHref="/" backLabel="Back to dashboard">
+  <svelte:fragment slot="actions">
     {#if (pageData.data?.categories ?? []).length > 1}
-      <Tooltip content={isReorderMode ? "Cancel Reorder" : "Reorder Categories"} inline>
-        {#snippet trigger()}
-          <Button
-            type="button"
-            variant={isReorderMode ? "danger" : "subtle"}
-            size="icon"
-            onclick={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
-          >
-            <ArrowUpDown size={16} />
-          </Button>
-        {/snippet}
-      </Tooltip>
+      <PoodleIconButton
+        type="button"
+        variant="secondary"
+        tone={isReorderMode ? "danger" : "default"}
+        icon={arrowUpDownIcon}
+        ariaLabel={isReorderMode ? "Cancel reorder" : "Reorder categories"}
+        tooltip={isReorderMode ? "Cancel Reorder" : "Reorder Categories"}
+        on:click={() => isReorderMode ? exitReorderMode() : enterReorderMode()}
+      />
     {/if}
-    <Tooltip content="Add Category" inline>
-      {#snippet trigger()}
-        <Button
-          type="button"
-          variant="primary"
-          size="icon"
-          onclick={() =>
-            void gotoWithContext("/categories/new", {
-              label: "Categories",
-              href: "/categories",
-              type: "list"
-            })}
-        >
-          <Plus size={16} />
-        </Button>
-      {/snippet}
-    </Tooltip>
-  {/snippet}
-</PageHeader>
+    <PoodleIconButton
+      type="button"
+      variant="primary"
+      icon="plus"
+      ariaLabel="Add category"
+      tooltip="Add Category"
+      on:click={() =>
+        void gotoWithContext("/categories/new", {
+          label: "Categories",
+          href: "/categories",
+          type: "list"
+        })}
+    />
+  </svelte:fragment>
+</PoodlePageHeader>
 
 {#if !isReorderMode}
   <FilterBar title="Filters" onRefresh={() => pageData.refetch()}>
-    <Field label="Name" forId="name">
-      <TextInput
-        id="name"
-        value={selectedName.replace(/%/g, "")}
-        onchange={handleNameChange}
-        debounce={500}
-        search
-        placeholder="Filter by name..."
+    <PoodleField id="categories-filter-name" label="Name" let:describedBy>
+      <PoodleSearchField
+        id="categories-filter-name"
+        value={nameFilterInput}
+        describedBy={describedBy}
+        placeholder="Search by name..."
+        on:valueChange={(event) => handleNameInput(event.detail.value)}
       />
-    </Field>
-    <Field label="Status" forId="isActive">
-      <Select
-        id="isActive"
+    </PoodleField>
+    <PoodleField id="categories-filter-status" label="Status" let:describedBy>
+      <PoodleSelect
+        id="categories-filter-status"
         value={selectedIsActive}
-        onchange={handleActiveChange}
-        items={activeItems}
+        describedBy={describedBy}
+        options={activeItems}
         placeholder="All"
-        clearable
-        defaultValue="All"
+        on:valueChange={(event) => handleActiveChange(event.detail.value)}
       />
-    </Field>
-    <Field label="Sort" forId="sort">
+    </PoodleField>
+    <PoodleField id="categories-filter-sort" label="Sort">
       <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
-    </Field>
+    </PoodleField>
   </FilterBar>
 {/if}
 
 {#if pageData.loading}
   <PageLoading message="Loading categories..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if (pageData.data?.categories ?? []).length === 0}
   <EmptyState title="No categories found" description="Create your first category to get started." actionLabel="Add category" actionHref="/categories/new" />
 {:else if isReorderMode}

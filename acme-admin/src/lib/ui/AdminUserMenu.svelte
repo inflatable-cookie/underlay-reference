@@ -1,7 +1,10 @@
 <script lang="ts">
 	import User from "lucide-svelte/icons/user";
 	import LogOut from "lucide-svelte/icons/log-out";
-	import { AlertDialog, Popover } from "@decodelabs/underlay/components";
+	import {
+		AlertDialog as PoodleAlertDialog,
+		Popover as PoodlePopover
+	} from "@poodle/svelte-primitives";
 	import { auth } from "$lib/stores/auth";
 	import type { LoginUser } from "acme-client";
 
@@ -63,8 +66,8 @@
 </script>
 
 <div class={variant === "mobile" ? "admin-mobile-overlay__user" : "admin-nav__user-section"}>
-	<Popover bind:open={userMenuOpen} side="top" align="start" class="admin-nav__user-trigger">
-		{#snippet trigger()}
+	<PoodlePopover bind:open={userMenuOpen} placement="top-start" ariaLabel="User menu">
+		<div slot="trigger" class="admin-nav__user-trigger">
 			<div class="admin-nav__user-avatar" aria-hidden="true">
 				{initialsFromName(currentUser?.displayName ?? "Admin")}
 			</div>
@@ -72,7 +75,7 @@
 				<span class="admin-nav__user-name">{currentUser?.displayName ?? "Admin user"}</span>
 				<span class="admin-nav__user-role">{roleLabel(currentUser?.roles)}</span>
 			</div>
-		{/snippet}
+		</div>
 
 		<nav class="admin-nav__user-menu" aria-label="User menu">
 			<a href="/account" class="admin-nav__user-menu-item" onclick={handleNavigate}>
@@ -89,17 +92,17 @@
 				<span>Log out</span>
 			</button>
 		</nav>
-	</Popover>
+	</PoodlePopover>
 
-	<AlertDialog
+	<PoodleAlertDialog
 		bind:open={logoutOpen}
-		showTrigger={false}
 		title="Log out?"
 		description="You'll be signed out of Acme Admin."
 		confirmLabel={loggingOut ? "Logging out..." : "Log out"}
 		cancelLabel="Cancel"
 		onConfirm={confirmLogout}
 		onCancel={() => (logoutOpen = false)}
+		tone="danger"
 	/>
 </div>
 

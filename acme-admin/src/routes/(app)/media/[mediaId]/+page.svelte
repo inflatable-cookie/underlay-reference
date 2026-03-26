@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    AlertDialog as PoodleAlertDialog,
+    Callout as PoodleCallout,
+    Dialog as PoodleDialog
+  } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
@@ -19,25 +24,25 @@
     formatFileSize
   } from "@decodelabs/underlay/patterns";
   import {
-    AlertDialog,
-    Button,
     Code,
-    Dialog,
     DetailsCard,
     DetailsItem,
     DetailsSection,
     EmptyState,
-    Field,
-    FormError,
-    InlineListCard,
+        InlineListCard,
     InlineListItem,
     PageLoading,
-    Pill,
-    Select,
-    TextButton,
-    TextInput,
     TimeAgo
   } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Field as PoodleField,
+    FormActions as PoodleFormActions,
+    IconButton as PoodleIconButton,
+    Pill as PoodlePill,
+    Select as PoodleSelect,
+    TextInput as PoodleTextInput
+  } from "@poodle/svelte-primitives";
   import {
     mediaCommands,
     type MediaDetail,
@@ -50,7 +55,8 @@
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { isPreconditionFailed } from "$lib/utils/api-errors";
-  import { getMediaMetaAccent, getMediaVisibilityPillAccent } from "$lib/utils/accents";
+  import { getMediaMetaAccent, getMediaMetaTone } from "$lib/utils/accents";
+  import { uploadIcon } from "$lib/ui/poodle-icon-nodes";
   import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";
   import Check from "lucide-svelte/icons/check";
   import Plus from "lucide-svelte/icons/plus";
@@ -118,6 +124,10 @@
   const usageCount = $derived(media?.usageCount ?? 0);
 
   const backInfo = getBackButtonInfo("Back to media", "/media");
+  const editVisibilityOptions = [
+    { value: MediaVisibility.Public, label: "Public - accessible without login" },
+    { value: MediaVisibility.Restricted, label: "Restricted - requires authentication" }
+  ];
 
   // Edit dialog state
   let editDialogOpen = $state(false);
@@ -140,6 +150,12 @@
     editDialogOpen = false;
     editDialogError = null;
     editDialogSubmitting = false;
+  }
+
+  function getVersionStateTone(state: MediaVersionState): "neutral" | "success" | "danger" {
+    if (state === MediaVersionState.Ready) return "success";
+    if (state === MediaVersionState.Failed) return "danger";
+    return "neutral";
   }
 
   async function handleEditSubmit(e: SubmitEvent) {
@@ -359,7 +375,7 @@
 {#if mediaData.loading}
   <PageLoading message="Loading media..." />
 {:else if mediaData.error}
-  <FormError message={mediaData.error} />
+  <PoodleCallout tone="danger" message={mediaData.error} announceMode="polite" />
 {:else if media}
   <DetailPageShell
     section="Media"
@@ -376,12 +392,12 @@
       <DetailMeta>
         <DetailMetaId value={media.id} />
         <DetailMetaSeparator />
-        <Pill accent={getMediaKindAccent(media.kind)}>{getMediaKindLabel(media.kind)}</Pill>
-        <Pill accent={getMediaVisibilityPillAccent(media.visibility)}>
+        <PoodlePill tone="neutral" appearance="badge" size="lg">{getMediaKindLabel(media.kind)}</PoodlePill>
+        <PoodlePill tone="neutral" appearance="badge" size="lg">
           {getMediaVisibilityLabel(media.visibility)}
-        </Pill>
+        </PoodlePill>
         {#if media.deletedAt}
-          <Pill accent={getMediaMetaAccent("deleted")}>Deleted</Pill>
+          <PoodlePill tone={getMediaMetaTone("deleted")} appearance="badge" size="lg">Deleted</PoodlePill>
         {/if}
       </DetailMeta>
     {/snippet}
@@ -436,20 +452,19 @@
             hasItems={versions.length > 0}
           >
             {#snippet action()}
-              <Button
+              <PoodleIconButton
                 type="button"
                 variant="primary"
-                size="icon-sm"
-                onclick={() => goto(`/media/upload?replace=${media.id}`)}
-                aria-label="Upload new version"
-              >
-                <Plus size={14} />
-              </Button>
+                size="sm"
+                icon={uploadIcon}
+                ariaLabel="Upload new version"
+                on:click={() => goto(`/media/upload?replace=${media.id}`)}
+              />
             {/snippet}
             {#if activeTab === "details" && versionsData.loading}
               <PageLoading message="Loading versions..." />
             {:else if versionsData.error}
-              <FormError message={versionsData.error} />
+              <PoodleCallout tone="danger" message={versionsData.error} announceMode="polite" />
             {:else}
               {#each versions as version (version.id)}
                 <InlineListItem
@@ -461,11 +476,11 @@
                     {formatFileSize(version.byteSize)} · <Code>{version.mimeType ?? "Unknown type"}</Code> · <TimeAgo date={version.createdAt} short />
                   {/snippet}
                   {#snippet trailing()}
-                    <Pill accent={getMediaVersionStateAccent(version.state)}>
+                    <PoodlePill tone={getVersionStateTone(version.state)} appearance="badge" size="lg">
                       {getMediaVersionStateLabel(version.state)}
-                    </Pill>
+                    </PoodlePill>
                     {#if isCurrentVersion(version)}
-                      <Pill accent={getMediaMetaAccent("current")}>Current</Pill>
+                      <PoodlePill tone={getMediaMetaTone("current")} appearance="badge" size="lg">Current</PoodlePill>
                     {/if}
                   {/snippet}
                   {#snippet actions()}
@@ -544,7 +559,7 @@
           {#if activeTab === "usage" && usagesData.loading}
             <PageLoading message="Loading usage..." />
           {:else if usagesData.error}
-            <FormError message={usagesData.error} />
+            <PoodleCallout tone="danger" message={usagesData.error} announceMode="polite" />
           {:else if usages.length === 0}
             <EmptyState title="No usage found" description="This media is not used anywhere yet." variant="compact" />
           {:else}
@@ -584,87 +599,96 @@
     {#snippet children(submitting)}
       <form onsubmit={handleEditSubmit}>
         <div class="form-fields">
-          <Field label="Title" forId="edit-title">
-            <TextInput
+          <PoodleField id="edit-title" label="Title" let:describedBy>
+            <PoodleTextInput
               id="edit-title"
               name="title"
-              bind:value={editTitle}
+              value={editTitle}
+              describedBy={describedBy}
               placeholder="Enter a title for this media"
               disabled={submitting}
+              on:valueChange={(event) => { editTitle = event.detail.value; }}
             />
-          </Field>
+          </PoodleField>
 
-          <Field label="Filename" forId="edit-filename" hint="The filename shown when downloading">
-            <TextInput
+          <PoodleField id="edit-filename" label="Filename" hint="The filename shown when downloading" let:describedBy>
+            <PoodleTextInput
               id="edit-filename"
               name="filename"
-              bind:value={editFilename}
+              value={editFilename}
+              describedBy={describedBy}
               placeholder="e.g. document.pdf"
               disabled={submitting}
+              on:valueChange={(event) => { editFilename = event.detail.value; }}
             />
-          </Field>
+          </PoodleField>
 
-          <Field label="Visibility" forId="edit-visibility">
-            <Select id="edit-visibility" name="visibility" bind:value={editVisibility} disabled={submitting}>
-              <option value={MediaVisibility.Public}>Public - accessible without login</option>
-              <option value={MediaVisibility.Restricted}>Restricted - requires authentication</option>
-            </Select>
-          </Field>
+          <PoodleField id="edit-visibility" label="Visibility" let:describedBy>
+            <PoodleSelect
+              id="edit-visibility"
+              name="visibility"
+              value={editVisibility}
+              describedBy={describedBy}
+              options={editVisibilityOptions}
+              disabled={submitting}
+              on:valueChange={(event) => { editVisibility = event.detail.value; }}
+            />
+          </PoodleField>
         </div>
 
-        <div class="form-actions">
-          <Button type="submit" variant="primary" disabled={submitting}>
-            {submitting ? "Saving..." : "Save"}
-          </Button>
-          <TextButton onclick={closeEditDialog} disabled={submitting}>
+        <PoodleFormActions align="between">
+          <PoodleButton type="button" variant="ghost" disabled={submitting} on:click={closeEditDialog}>
             Cancel
-          </TextButton>
-        </div>
+          </PoodleButton>
+          <PoodleButton type="submit" variant="primary" disabled={submitting}>
+            {submitting ? "Saving..." : "Save"}
+          </PoodleButton>
+        </PoodleFormActions>
       </form>
     {/snippet}
   </FormDialog>
 
   <!-- Activate Version Dialog -->
-  <AlertDialog
+  <PoodleAlertDialog
     bind:open={activateDialogOpen}
-    showTrigger={false}
     title="Activate version?"
     description="This will set this version as the current active version for this media item."
     confirmLabel="Activate"
     cancelLabel="Cancel"
     onConfirm={confirmActivate}
     onCancel={cancelActivate}
+    tone="warning"
   >
     {#if selectedVersion}
       <p>
         Version: <Code>{selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...</Code>
       </p>
     {/if}
-  </AlertDialog>
+  </PoodleAlertDialog>
 
   <!-- Delete Version Dialog -->
-  <AlertDialog
+  <PoodleAlertDialog
     bind:open={deleteDialogOpen}
-    showTrigger={false}
     title="Delete version?"
     description="This will permanently delete this version and its stored file. This action cannot be undone."
     confirmLabel="Delete"
     cancelLabel="Cancel"
     onConfirm={confirmDelete}
     onCancel={cancelDelete}
+    tone="danger"
   >
     {#if selectedVersion}
       <p>
         Version: <Code>{selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...</Code>
       </p>
     {/if}
-  </AlertDialog>
+  </PoodleAlertDialog>
 
-  <Dialog
+  <PoodleDialog
     bind:open={previewDialogOpen}
     title="Version preview"
-    showTrigger={false}
     contentClassName="version-preview-dialog"
+    showCloseButton
   >
     {#if previewVersion}
       {@const previewUrl = getPreviewUrl(previewVersion)}
@@ -680,7 +704,7 @@
         <p>Preview not available for this version.</p>
       {/if}
     {/if}
-  </Dialog>
+  </PoodleDialog>
 {/if}
 
 <style>
@@ -717,12 +741,6 @@
     flex-direction: column;
     gap: 1rem;
     margin-bottom: 1.5rem;
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.75rem;
   }
 
   /* Full preview tab */

@@ -1,13 +1,15 @@
 <script lang="ts">
+  import {
+    AlertDialog as PoodleAlertDialog,
+    Button as PoodleButton,
+    Callout as PoodleCallout,
+    Field as PoodleField,
+    FormActions as PoodleFormActions,
+    TextInput as PoodleTextInput
+  } from "@poodle/svelte-primitives";
   import { tick } from "svelte";
   import {
-    AlertDialog,
-    Button,
-    Field,
-    FormActions,
-    FormError,
-    TextInput,
-    TimeAgo,
+        TimeAgo,
     PageLoading
   } from "@decodelabs/underlay/components";
   import { authCommands } from "acme-client";
@@ -67,14 +69,14 @@
 
   let createPasskeyNameOpen = $state(false);
   let createPasskeyNameValue = $state("");
-  let createPasskeyNameInput = $state<HTMLInputElement | null>(null);
   let createPasskeyNameResolver = $state<((value: string | undefined) => void) | null>(null);
 
   $effect(() => {
     if (!createPasskeyNameOpen) return;
     void tick().then(() => {
-      createPasskeyNameInput?.focus();
-      createPasskeyNameInput?.select();
+      const input = document.getElementById("create-passkey-name") as HTMLInputElement | null;
+      input?.focus();
+      input?.select();
     });
   });
 
@@ -224,12 +226,21 @@
       passkeyBusy = false;
     }
   };
+
+  function validationState(error?: string | null) {
+    return error ? "invalid" : "none";
+  }
+
+  function renameFieldError(passkeyId: string): string | null {
+    if (renamePasskeyId !== passkeyId) return null;
+    return passkeyError === "Passkey name is required." ? passkeyError : null;
+  }
 </script>
 
 {#if pageData.loading}
   <PageLoading message="Loading passkeys..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else}
 
 <div class="intro">
@@ -238,7 +249,7 @@
 </div>
 
 {#if passkeyError}
-  <FormError message={passkeyError} />
+  <PoodleCallout tone="danger" message={passkeyError} announceMode="polite" />
 {/if}
 
 {#if passkeySuccess}
@@ -252,50 +263,69 @@
     {#each pageData.data.passkeys as pk (pk.id)}
       <li class="passkey-item">
         {#if renamePasskeyId === pk.id}
-          <Field label="Passkey name">
-            <TextInput bind:value={renamePasskeyValue} required />
-          </Field>
+          <PoodleField
+            id={`rename-passkey-${pk.id}`}
+            label="Passkey name"
+            error={renameFieldError(pk.id)}
+            validationState={validationState(renameFieldError(pk.id))}
+            required
+            let:describedBy
+            let:validationState={renameValidationState}
+          >
+            <PoodleTextInput
+              id={`rename-passkey-${pk.id}`}
+              value={renamePasskeyValue}
+              describedBy={describedBy}
+              validationState={renameValidationState}
+              maxLength={120}
+              on:valueChange={(event) => { renamePasskeyValue = event.detail.value; }}
+              on:submit={() => saveRenamePasskey(pk.id)}
+            />
+          </PoodleField>
 
-          <FormActions>
-            <Button
+          <PoodleFormActions align="start">
+            <PoodleButton
               type="button"
               variant="primary"
-              onclick={() => saveRenamePasskey(pk.id)}
               disabled={renamePasskeyBusy}
+              on:click={() => saveRenamePasskey(pk.id)}
             >
               {renamePasskeyBusy ? "Saving..." : "Save"}
-            </Button>
-            <Button
+            </PoodleButton>
+            <PoodleButton
               type="button"
               variant="secondary"
-              onclick={cancelRenamePasskey}
               disabled={renamePasskeyBusy}
+              on:click={cancelRenamePasskey}
             >
               Cancel
-            </Button>
-          </FormActions>
+            </PoodleButton>
+          </PoodleFormActions>
         {:else}
           <div class="passkey-item__row">
             <div class="passkey-item__name">{pk.displayName ?? "Unnamed passkey"}</div>
             <div class="passkey-item__actions">
-              <Button
+              <PoodleButton
                 type="button"
-                variant="subtle"
-                class="button-small"
-                onclick={() => startRenamePasskey(pk)}
+                variant="ghost"
+                size="sm"
+                className="button-small"
                 disabled={passkeyBusy || deletePasskeyBusy}
+                on:click={() => startRenamePasskey(pk)}
               >
                 Rename
-              </Button>
-              <Button
+              </PoodleButton>
+              <PoodleButton
                 type="button"
-                variant="subtle"
-                class="button-small"
-                onclick={() => requestDeletePasskey(pk.id)}
+                variant="ghost"
+                tone="danger"
+                size="sm"
+                className="button-small"
                 disabled={passkeyBusy || deletePasskeyBusy}
+                on:click={() => requestDeletePasskey(pk.id)}
               >
                 Delete
-              </Button>
+              </PoodleButton>
             </div>
           </div>
 
@@ -311,30 +341,40 @@
   </ul>
 {/if}
 
-<FormActions>
-  <Button type="button" variant="primary" onclick={createPasskey} disabled={passkeyBusy}>
+<PoodleFormActions align="start">
+  <PoodleButton type="button" variant="primary" disabled={passkeyBusy} on:click={createPasskey}>
     {passkeyBusy ? "Working..." : "Add passkey"}
-  </Button>
-</FormActions>
+  </PoodleButton>
+</PoodleFormActions>
 
-<AlertDialog
+<PoodleAlertDialog
   bind:open={createPasskeyNameOpen}
-  showTrigger={false}
   title="Name this passkey"
   description="Give it a name to recognise it later (optional)."
   confirmLabel="Continue"
   cancelLabel="Skip"
   onConfirm={confirmCreatePasskeyName}
   onCancel={skipCreatePasskeyName}
+  tone="warning"
 >
-  <Field label="Passkey name">
-    <TextInput bind:value={createPasskeyNameValue} bind:inputRef={createPasskeyNameInput} />
-  </Field>
-</AlertDialog>
+  <PoodleField
+    id="create-passkey-name"
+    label="Passkey name"
+    let:describedBy
+  >
+    <PoodleTextInput
+      id="create-passkey-name"
+      value={createPasskeyNameValue}
+      describedBy={describedBy}
+      maxLength={120}
+      on:valueChange={(event) => { createPasskeyNameValue = event.detail.value; }}
+      on:submit={confirmCreatePasskeyName}
+    />
+  </PoodleField>
+</PoodleAlertDialog>
 
-<AlertDialog
+<PoodleAlertDialog
   bind:open={deletePasskeyOpen}
-  showTrigger={false}
   title="Delete passkey?"
   description="This removes the passkey from your account. Make sure you still have another way to sign in."
   confirmLabel={deletePasskeyBusy ? "Deleting..." : "Delete passkey"}
@@ -344,6 +384,7 @@
     deletePasskeyOpen = false;
     deletePasskeyId = null;
   }}
+  tone="danger"
 />
 
 {/if}

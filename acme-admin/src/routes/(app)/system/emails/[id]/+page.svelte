@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
@@ -14,10 +15,9 @@
     DetailsCard,
     DetailsItem,
     DetailsSection,
-    FormError,
-    PageLoading,
-    Pill
+        PageLoading
   } from "@decodelabs/underlay/components";
+  import { Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { adminCommands } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import type { CapturedEmailDetail } from "acme-client";
@@ -45,11 +45,11 @@
     return "Captured";
   }
 
-  function getStatusAccent() {
-    if (!email) return "#3b82f6";
-    if (email.wasDelivered) return "#10b981";
-    if (email.deliveryError) return "#ef4444";
-    return "#3b82f6";
+  function getStatusTone() {
+    if (!email) return "neutral";
+    if (email.wasDelivered) return "success";
+    if (email.deliveryError) return "danger";
+    return "neutral";
   }
 
   // Build dynamic tabs based on email content
@@ -69,7 +69,7 @@
 {#if pageData.loading}
   <PageLoading message="Loading email..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if email}
   <DetailPageShell
     section="Captured Email"
@@ -83,7 +83,9 @@
       <DetailMeta>
         <DetailMetaId value={email.emailId} />
         <DetailMetaSeparator />
-        <Pill accent={getStatusAccent()}>{getStatusLabel()}</Pill>
+        <PoodlePill tone={getStatusTone()} appearance="badge" size="lg">
+          {getStatusLabel()}
+        </PoodlePill>
       </DetailMeta>
     {/snippet}
 

@@ -1,20 +1,20 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import {
-    Card,
-    Button,
-    TextButton,
-    Field,
-    FieldSet,
-    FieldSetGrid,
-    TextInput,
-    Select,
-    Switch,
-    FormActions,
     PageLoading,
-    FormError,
-    DetailList,
+        DetailList,
     DetailItem
   } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Card as PoodleCard,
+    Field as PoodleField,
+    FieldSet as PoodleFieldSet,
+    FormActions as PoodleFormActions,
+    Select as PoodleSelect,
+    Switch as PoodleSwitch,
+    TextInput as PoodleTextInput
+  } from "@poodle/svelte-primitives";
   import { FormDialog, detectBrowserTimezone } from "@decodelabs/underlay/patterns";
   import { accountCommands, type UserProfile, type UserProfileUpdate } from "acme-client";
   import { auth, currentUser } from "$lib/stores/auth";
@@ -224,10 +224,10 @@
 {#if profileData.loading}
   <PageLoading message="Loading profile..." />
 {:else if profileData.error}
-  <FormError message={profileData.error} />
+  <PoodleCallout tone="danger" message={profileData.error} announceMode="polite" />
 {:else if profile}
   <div class="account-overview">
-    <Card>
+    <PoodleCard>
       <div class="account-header">
         <div class="avatar-section">
           <div class="avatar">
@@ -246,30 +246,32 @@
             </p>
           </div>
         </div>
-        <Button variant="subtle" onclick={openSettings}>
-          <Settings size={16} />
+        <PoodleButton variant="secondary" on:click={openSettings}>
+          <svelte:fragment slot="leading">
+            <Settings size={16} />
+          </svelte:fragment>
           Edit Profile
-        </Button>
+        </PoodleButton>
       </div>
-    </Card>
+    </PoodleCard>
 
     <div class="details-grid">
-      <Card>
+      <PoodleCard>
         <DetailList title="Locale">
           <DetailItem label="Time Zone" value={profile.timeZone} />
           <DetailItem label="Language" value={profile.language} />
           <DetailItem label="Country" value={profile.countryCode} />
           <DetailItem label="Currency" value={profile.currencyPreference} />
         </DetailList>
-      </Card>
+      </PoodleCard>
 
-      <Card>
+      <PoodleCard>
         <DetailList title="Communication">
           <DetailItem label="Marketing Emails" value={profile.emailMarketingOptIn} />
           <DetailItem label="Transactional Emails" value={profile.emailTransactionalOptIn} />
           <DetailItem label="Email Frequency" value={profile.emailFrequency} capitalize />
         </DetailList>
-      </Card>
+      </PoodleCard>
     </div>
   </div>
 
@@ -291,80 +293,153 @@
           handleSubmit();
         }}
       >
-        <FieldSet legend="Identity">
-          <FieldSetGrid columns={2}>
-          <Field label="Full Name" hint="Your full name as you wish to be known">
-            <TextInput bind:value={fullName} placeholder="e.g. Alice Smith" maxlength={256} disabled={submitting} />
-          </Field>
-          <Field label="Display Name" hint="Short name shown in the UI">
-            <TextInput bind:value={formDisplayName} placeholder="e.g. Alice" maxlength={64} disabled={submitting} />
-          </Field>
-          </FieldSetGrid>
-        </FieldSet>
+        <PoodleFieldSet legend="Identity">
+          <div class="account-form-grid account-form-grid--two">
+            <PoodleField id="account-full-name" label="Full Name" hint="Your full name as you wish to be known" let:describedBy>
+              <PoodleTextInput
+                id="account-full-name"
+                value={fullName}
+                describedBy={describedBy}
+                placeholder="e.g. Alice Smith"
+                maxLength={256}
+                disabled={submitting}
+                on:valueChange={(event) => { fullName = event.detail.value; }}
+              />
+            </PoodleField>
+            <PoodleField id="account-display-name" label="Display Name" hint="Short name shown in the UI" let:describedBy>
+              <PoodleTextInput
+                id="account-display-name"
+                value={formDisplayName}
+                describedBy={describedBy}
+                placeholder="e.g. Alice"
+                maxLength={64}
+                disabled={submitting}
+                on:valueChange={(event) => { formDisplayName = event.detail.value; }}
+              />
+            </PoodleField>
+          </div>
+        </PoodleFieldSet>
 
-        <FieldSet legend="Locale & Region">
-          <FieldSetGrid columns={2}>
-            <Field label="Time Zone">
+        <PoodleFieldSet legend="Locale & Region">
+          <div class="account-form-grid account-form-grid--two">
+            <PoodleField id="account-time-zone" label="Time Zone" let:describedBy>
               <div class="timezone-field">
-                <Select
-                  bind:value={timeZone}
-                  items={timezoneOptions}
+                <PoodleSelect
+                  id="account-time-zone"
+                  value={timeZone}
+                  describedBy={describedBy}
+                  options={timezoneOptions}
                   placeholder="Select timezone..."
                   disabled={submitting}
+                  on:valueChange={(event) => { timeZone = event.detail.value; }}
                 />
                 {#if browserTimezone && timeZone !== browserTimezone}
-                  <Button type="button" variant="subtle" onclick={useBrowserTimezone} disabled={submitting}>
+                  <PoodleButton type="button" variant="secondary" size="sm" disabled={submitting} on:click={useBrowserTimezone}>
                     Use {browserTimezone}
-                  </Button>
+                  </PoodleButton>
                 {/if}
               </div>
-            </Field>
-            <Field label="Language">
-              <Select
-                bind:value={language}
-                items={languageOptions}
+            </PoodleField>
+            <PoodleField id="account-language" label="Language" let:describedBy>
+              <PoodleSelect
+                id="account-language"
+                value={language}
+                describedBy={describedBy}
+                options={languageOptions}
                 placeholder="Select language..."
                 disabled={submitting}
+                on:valueChange={(event) => { language = event.detail.value; }}
               />
-            </Field>
-          </FieldSetGrid>
-          <FieldSetGrid columns={3}>
-            <Field label="Country" hint="ISO 3166-1 alpha-2">
-              <TextInput bind:value={countryCode} placeholder="e.g. GB" maxlength={2} disabled={submitting} />
-            </Field>
-            <Field label="Region">
-              <TextInput bind:value={regionCode} placeholder="e.g. EU" maxlength={8} disabled={submitting} />
-            </Field>
-            <Field label="Currency" hint="ISO 4217">
-              <TextInput bind:value={currencyPreference} placeholder="e.g. GBP" maxlength={3} disabled={submitting} />
-            </Field>
-          </FieldSetGrid>
-        </FieldSet>
+            </PoodleField>
+          </div>
+          <div class="account-form-grid account-form-grid--three">
+            <PoodleField id="account-country" label="Country" hint="ISO 3166-1 alpha-2" let:describedBy>
+              <PoodleTextInput
+                id="account-country"
+                value={countryCode}
+                describedBy={describedBy}
+                placeholder="e.g. GB"
+                maxLength={2}
+                disabled={submitting}
+                on:valueChange={(event) => { countryCode = event.detail.value; }}
+              />
+            </PoodleField>
+            <PoodleField id="account-region" label="Region" let:describedBy>
+              <PoodleTextInput
+                id="account-region"
+                value={regionCode}
+                describedBy={describedBy}
+                placeholder="e.g. EU"
+                maxLength={8}
+                disabled={submitting}
+                on:valueChange={(event) => { regionCode = event.detail.value; }}
+              />
+            </PoodleField>
+            <PoodleField id="account-currency" label="Currency" hint="ISO 4217" let:describedBy>
+              <PoodleTextInput
+                id="account-currency"
+                value={currencyPreference}
+                describedBy={describedBy}
+                placeholder="e.g. GBP"
+                maxLength={3}
+                disabled={submitting}
+                on:valueChange={(event) => { currencyPreference = event.detail.value; }}
+              />
+            </PoodleField>
+          </div>
+        </PoodleFieldSet>
 
-        <FieldSet legend="Communication Preferences">
-          <FieldSetGrid columns={3}>
-          <Field label="Email Frequency">
-            <Select bind:value={emailFrequency} items={emailFrequencyOptions} disabled={submitting} />
-          </Field>
-          <Field label="Marketing Emails">
-            <Switch bind:checked={emailMarketingOptIn} leftLabel="No" rightLabel="Yes" disabled={submitting} />
-          </Field>
-          <Field label="Transactional Emails">
-            <Switch bind:checked={emailTransactionalOptIn} leftLabel="No" rightLabel="Yes" disabled={submitting} />
-          </Field>
-          </FieldSetGrid>
-        </FieldSet>
+        <PoodleFieldSet legend="Communication Preferences">
+          <div class="account-form-grid account-form-grid--three">
+            <PoodleField id="account-email-frequency" label="Email Frequency" let:describedBy>
+              <PoodleSelect
+                id="account-email-frequency"
+                value={emailFrequency}
+                describedBy={describedBy}
+                options={emailFrequencyOptions}
+                disabled={submitting}
+                on:valueChange={(event) => { emailFrequency = event.detail.value; }}
+              />
+            </PoodleField>
+            <PoodleField id="account-marketing-emails" label="Marketing Emails" let:describedBy>
+              <div class="account-switch-row">
+                <span class="account-switch-label">No</span>
+                <PoodleSwitch
+                  id="account-marketing-emails"
+                  checked={emailMarketingOptIn}
+                  describedBy={describedBy}
+                  ariaLabel="Marketing emails"
+                  disabled={submitting}
+                  on:checkedChange={(event) => { emailMarketingOptIn = event.detail.checked; }}
+                />
+                <span class="account-switch-label">Yes</span>
+              </div>
+            </PoodleField>
+            <PoodleField id="account-transactional-emails" label="Transactional Emails" let:describedBy>
+              <div class="account-switch-row">
+                <span class="account-switch-label">No</span>
+                <PoodleSwitch
+                  id="account-transactional-emails"
+                  checked={emailTransactionalOptIn}
+                  describedBy={describedBy}
+                  ariaLabel="Transactional emails"
+                  disabled={submitting}
+                  on:checkedChange={(event) => { emailTransactionalOptIn = event.detail.checked; }}
+                />
+                <span class="account-switch-label">Yes</span>
+              </div>
+            </PoodleField>
+          </div>
+        </PoodleFieldSet>
 
-        <FormActions>
-          <Button type="submit" variant="primary" disabled={submitting}>
+        <PoodleFormActions align="end">
+          <PoodleButton type="button" variant="ghost" disabled={submitting} on:click={closeSettings}>
+            Cancel
+          </PoodleButton>
+          <PoodleButton type="submit" variant="primary" disabled={submitting}>
             {submitting ? "Saving..." : "Save Changes"}
-          </Button>
-          {#snippet danger()}
-            <TextButton type="button" onclick={closeSettings} disabled={submitting}>
-              Cancel
-            </TextButton>
-          {/snippet}
-        </FormActions>
+          </PoodleButton>
+        </PoodleFormActions>
       </form>
     {/snippet}
   </FormDialog>
@@ -445,13 +520,50 @@
     gap: var(--underlay-space-4, 1rem);
   }
 
+  .account-form-grid {
+    display: grid;
+    gap: var(--poodle-space-inline-md);
+  }
+
+  .account-form-grid + .account-form-grid {
+    margin-top: var(--poodle-space-stack-md);
+  }
+
+  .account-form-grid--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .account-form-grid--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .timezone-field {
     display: flex;
     gap: 0.5rem;
     align-items: center;
   }
 
-  .timezone-field :global(.underlay-select) {
+  .timezone-field :global(.select) {
     flex: 1;
+  }
+
+  .account-switch-row {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--poodle-space-inline-sm);
+  }
+
+  .account-switch-label {
+    color: var(--poodle-color-text-secondary);
+    font-family: var(--poodle-typography-label-family);
+    font-size: 0.75rem;
+    line-height: var(--poodle-typography-label-lineHeight);
+  }
+
+  @media (max-width: 768px) {
+    .account-form-grid--two,
+    .account-form-grid--three {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

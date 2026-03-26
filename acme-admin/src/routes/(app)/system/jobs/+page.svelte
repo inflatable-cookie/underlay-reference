@@ -1,27 +1,32 @@
 <script lang="ts">
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
   import { adminCommands, type JobSummary, type JobStats, type JobStatus } from "acme-client";
   import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData, PageHeader, useToasts } from "@decodelabs/underlay/patterns";
+  import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
   import {
-    Button,
-    Card,
     PageLoading,
-    FormError,
-    Badge,
-    Select,
-    DataTable,
-    DropdownMenu,
+        DataTable,
     TimeAgo,
     type DataTableColumn
   } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Card as PoodleCard,
+    Field as PoodleField,
+    IconButton as PoodleIconButton,
+    Menu as PoodleMenu,
+    Pill as PoodlePill,
+    Select as PoodleSelect
+  } from "@poodle/svelte-primitives";
+  import type { MenuItem } from "@poodle/svelte-primitives";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import Clock from "lucide-svelte/icons/clock";
   import Play from "lucide-svelte/icons/play";
   import CheckCircle from "lucide-svelte/icons/check-circle";
   import XCircle from "lucide-svelte/icons/x-circle";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
-  import MoreHorizontal from "lucide-svelte/icons/more-horizontal";
 
   const toastStore = useToasts();
 
@@ -102,16 +107,11 @@
     }
   }
 
-  type BadgeVariant = "default" | "success" | "warning" | "danger" | "info" | "muted";
-
-  function getStatusVariant(status: string): BadgeVariant {
+  function getStatusTone(status: string): "neutral" | "success" | "danger" {
     switch (status) {
       case "succeeded": return "success";
       case "failed": return "danger";
-      case "running": return "info";
-      case "pending": return "warning";
-      case "cancelled": return "muted";
-      default: return "default";
+      default: return "neutral";
     }
   }
 
@@ -125,20 +125,36 @@
       .replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
-  function getMenuItems(job: JobSummary) {
-    const items: Array<{ label: string; onSelect: () => void; destructive?: boolean }> = [
-      { label: "View details", onSelect: () => navigateToJob(job) }
+  function getMenuItems(job: JobSummary): MenuItem[] {
+    const items: MenuItem[] = [
+      { value: "view", label: "View details" }
     ];
 
     if (job.status === "failed" || job.status === "cancelled") {
-      items.push({ label: "Retry", onSelect: () => handleRetry(job) });
+      items.push({ value: "retry", label: "Retry" });
     }
 
     if (job.status === "pending" || job.status === "running") {
-      items.push({ label: "Cancel", onSelect: () => handleCancel(job), destructive: true });
+      items.push({ value: "cancel", label: "Cancel" });
     }
 
     return items;
+  }
+
+  function handleMenuAction(job: JobSummary, value: string) {
+    if (value === "view") {
+      navigateToJob(job);
+      return;
+    }
+
+    if (value === "retry") {
+      void handleRetry(job);
+      return;
+    }
+
+    if (value === "cancel") {
+      void handleCancel(job);
+    }
   }
 
   const statusOptions = [
@@ -160,24 +176,24 @@
   ];
 </script>
 
-<PageHeader section="Job Queue" backHref="/system" backLabel="Back to system">
-  {#snippet actions()}
-    <Button type="button" variant="subtle" onclick={() => pageData.refetch()}>
+<PoodlePageHeader title="Job Queue" backHref="/system" backLabel="Back to system">
+  <svelte:fragment slot="actions">
+    <PoodleButton type="button" variant="ghost" on:click={() => pageData.refetch()}>
       <RefreshCw size={16} />
       Refresh
-    </Button>
-  {/snippet}
-</PageHeader>
+    </PoodleButton>
+  </svelte:fragment>
+</PoodlePageHeader>
 
 {#if pageData.loading && jobs.length === 0}
   <PageLoading message="Loading jobs..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else}
   <!-- Stats cards -->
   {#if stats}
     <div class="stats-grid">
-      <Card>
+      <PoodleCard>
         <div class="stat">
           <span class="stat-icon" style="color: var(--admin-color-warning, #f59e0b);">
             <Clock size={24} />
@@ -187,8 +203,8 @@
             <span class="stat-label">Pending</span>
           </div>
         </div>
-      </Card>
-      <Card>
+      </PoodleCard>
+      <PoodleCard>
         <div class="stat">
           <span class="stat-icon" style="color: var(--admin-color-info, #3b82f6);">
             <Play size={24} />
@@ -198,8 +214,8 @@
             <span class="stat-label">Running</span>
           </div>
         </div>
-      </Card>
-      <Card>
+      </PoodleCard>
+      <PoodleCard>
         <div class="stat">
           <span class="stat-icon" style="color: var(--admin-color-danger, #ef4444);">
             <XCircle size={24} />
@@ -209,8 +225,8 @@
             <span class="stat-label">Failed</span>
           </div>
         </div>
-      </Card>
-      <Card>
+      </PoodleCard>
+      <PoodleCard>
         <div class="stat">
           <span class="stat-icon" style="color: var(--admin-color-success, #10b981);">
             <CheckCircle size={24} />
@@ -220,17 +236,23 @@
             <span class="stat-label">Recent Success</span>
           </div>
         </div>
-      </Card>
+      </PoodleCard>
     </div>
   {/if}
 
   <!-- Filter -->
   <div class="filter-bar">
-    <Select
-      bind:value={statusFilter}
-      items={statusOptions}
-      placeholder="All statuses"
-    />
+    <PoodleField id="system-jobs-status-filter" label="Status" let:describedBy>
+      <PoodleSelect
+        id="system-jobs-status-filter"
+        value={statusFilter}
+        describedBy={describedBy}
+        options={statusOptions}
+        on:valueChange={(event) => {
+          statusFilter = event.detail.value;
+        }}
+      />
+    </PoodleField>
   </div>
 
   <!-- Jobs table -->
@@ -248,9 +270,9 @@
         {#if column.key === "jobType"}
           {formatJobType(row.jobType)}
         {:else if column.key === "status"}
-          <Badge variant={getStatusVariant(row.status)} size="sm">
+          <PoodlePill tone={getStatusTone(row.status)} appearance="badge" size="lg">
             {getStatusLabel(row.status)}
-          </Badge>
+          </PoodlePill>
         {:else if column.key === "attempts"}
           {row.attempts}/{row.maxAttempts}
         {:else if column.key === "createdAt"}
@@ -269,11 +291,9 @@
             onclick={(e) => e.stopPropagation()}
             onkeydown={(e) => e.stopPropagation()}
           >
-            <DropdownMenu items={getMenuItems(row)} triggerAriaLabel="Job actions">
-              {#snippet trigger()}
-                <MoreHorizontal size={16} />
-              {/snippet}
-            </DropdownMenu>
+            <PoodleMenu items={getMenuItems(row)} ariaLabel="Job actions" placement="bottom-end" on:action={(event) => handleMenuAction(row, event.detail.value)}>
+              <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Job actions" />
+            </PoodleMenu>
           </div>
         {:else}
           —

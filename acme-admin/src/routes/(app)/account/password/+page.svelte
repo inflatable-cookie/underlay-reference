@@ -1,16 +1,17 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import {
-    Button,
-    Card,
-    Field,
-    FormActions,
-    FormError,
-    TextInput,
-    TextButton,
-    TotpInput,
+        TotpInput,
     PasswordRequirements,
     PageLoading
   } from "@decodelabs/underlay/components";
+  import {
+    Button as PoodleButton,
+    Card as PoodleCard,
+    Field as PoodleField,
+    FormActions as PoodleFormActions,
+    TextInput as PoodleTextInput
+  } from "@poodle/svelte-primitives";
   import { authCommands } from "acme-client";
   import { auth } from "$lib/stores/auth";
   import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
@@ -188,20 +189,20 @@
 {#if pageData.loading}
   <PageLoading message="Loading..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if passwordStep === "verify"}
   <div class="intro">
     <p>Before changing your password, please verify your identity.</p>
   </div>
 
   {#if verificationError}
-    <FormError message={verificationError} />
+    <PoodleCallout tone="danger" message={verificationError} announceMode="polite" />
   {/if}
 
   {#if verificationMethod === null}
     <!-- Waiting for method to be determined -->
   {:else if verificationMethod === "totp"}
-    <Card>
+    <PoodleCard>
       <p class="muted">Enter the 6-digit code from your authenticator app.</p>
       <TotpInput
         bind:value={verificationCode}
@@ -209,20 +210,20 @@
         disabled={verificationBusy}
         oncomplete={verifyTotp}
       />
-      <FormActions>
-        <Button type="button" variant="primary" onclick={verifyTotp} disabled={verificationBusy}>
+      <PoodleFormActions align="start">
+        <PoodleButton type="button" variant="primary" disabled={verificationBusy} on:click={verifyTotp}>
           {verificationBusy ? "Verifying..." : "Verify"}
-        </Button>
-      </FormActions>
-    </Card>
+        </PoodleButton>
+      </PoodleFormActions>
+    </PoodleCard>
     <p class="switch-method">
-      <TextButton onclick={switchToEmail} disabled={verificationBusy}>
+      <PoodleButton variant="ghost" disabled={verificationBusy} on:click={switchToEmail}>
         Send code via email instead
-      </TextButton>
+      </PoodleButton>
     </p>
   {:else}
     {#if emailTotpSent}
-      <Card>
+      <PoodleCard>
         <p class="muted">We've sent a 6-digit code to your email address. Enter it below.</p>
         <TotpInput
           bind:value={verificationCode}
@@ -230,37 +231,37 @@
           disabled={verificationBusy}
           oncomplete={verifyEmailTotp}
         />
-        <FormActions>
-          <Button type="button" variant="primary" onclick={verifyEmailTotp} disabled={verificationBusy}>
+        <PoodleFormActions align="start">
+          <PoodleButton type="button" variant="primary" disabled={verificationBusy} on:click={verifyEmailTotp}>
             {verificationBusy ? "Verifying..." : "Verify"}
-          </Button>
-          <Button type="button" variant="secondary" onclick={requestEmailTotp} disabled={verificationBusy}>
+          </PoodleButton>
+          <PoodleButton type="button" variant="secondary" disabled={verificationBusy} on:click={requestEmailTotp}>
             Resend Code
-          </Button>
-        </FormActions>
-      </Card>
+          </PoodleButton>
+        </PoodleFormActions>
+      </PoodleCard>
     {:else}
-      <Card>
+      <PoodleCard>
         <p class="muted">We'll send a verification code to your email address.</p>
-        <FormActions>
-          <Button type="button" variant="primary" onclick={requestEmailTotp} disabled={verificationBusy}>
+        <PoodleFormActions align="start">
+          <PoodleButton type="button" variant="primary" disabled={verificationBusy} on:click={requestEmailTotp}>
             {verificationBusy ? "Sending..." : "Send Verification Code"}
-          </Button>
-        </FormActions>
-      </Card>
+          </PoodleButton>
+        </PoodleFormActions>
+      </PoodleCard>
     {/if}
     {#if pageData.data?.totpEnabled}
       <p class="switch-method">
-        <TextButton onclick={switchToTotp} disabled={verificationBusy}>
+        <PoodleButton variant="ghost" disabled={verificationBusy} on:click={switchToTotp}>
           Use authenticator app instead
-        </TextButton>
+        </PoodleButton>
       </p>
     {/if}
   {/if}
 {:else if passwordStep === "password"}
-  <Card>
+  <PoodleCard>
     {#if passwordError}
-      <FormError message={passwordError} />
+      <PoodleCallout tone="danger" message={passwordError} announceMode="polite" />
     {/if}
 
     <PasswordRequirements
@@ -269,41 +270,45 @@
     />
 
     <div class="password-form">
-      <Field label="New password">
-        <TextInput
-          bind:value={newPassword}
+      <PoodleField id="account-new-password" label="New password" let:describedBy>
+        <PoodleTextInput
+          id="account-new-password"
+          value={newPassword}
+          describedBy={describedBy}
           type="password"
-          autocomplete="new-password"
           disabled={passwordBusy}
+          on:valueChange={(event) => { newPassword = event.detail.value; }}
         />
-      </Field>
+      </PoodleField>
 
-      <Field label="Confirm new password">
-        <TextInput
-          bind:value={confirmPassword}
+      <PoodleField id="account-confirm-password" label="Confirm new password" let:describedBy>
+        <PoodleTextInput
+          id="account-confirm-password"
+          value={confirmPassword}
+          describedBy={describedBy}
           type="password"
-          autocomplete="new-password"
           disabled={passwordBusy}
+          on:valueChange={(event) => { confirmPassword = event.detail.value; }}
         />
-      </Field>
+      </PoodleField>
 
-      <FormActions>
-        <Button type="button" variant="primary" onclick={changePassword} disabled={passwordBusy}>
+      <PoodleFormActions align="start">
+        <PoodleButton type="button" variant="primary" disabled={passwordBusy} on:click={changePassword}>
           {passwordBusy ? "Changing..." : "Change Password"}
-        </Button>
-      </FormActions>
+        </PoodleButton>
+      </PoodleFormActions>
     </div>
-  </Card>
+  </PoodleCard>
 {:else if passwordStep === "success"}
   <div class="intro">
     <p class="success-message">Your password has been changed successfully.</p>
     <p class="muted">For security, you've been logged out of all sessions and will need to sign in again with your new password.</p>
   </div>
-  <FormActions>
-    <Button type="button" variant="primary" onclick={goToLogin}>
+  <PoodleFormActions align="start">
+    <PoodleButton type="button" variant="primary" on:click={goToLogin}>
       Sign In
-    </Button>
-  </FormActions>
+    </PoodleButton>
+  </PoodleFormActions>
 {/if}
 
 <style>

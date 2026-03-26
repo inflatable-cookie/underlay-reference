@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { ListCard, Pill, DropdownMenu, AlertDialog } from "@decodelabs/underlay/components";
+  import { ListCard } from "@decodelabs/underlay/components";
+  import {
+    AlertDialog as PoodleAlertDialog,
+    Menu as PoodleMenu,
+    Pill as PoodlePill
+  } from "@poodle/svelte-primitives";
+  import type { MenuItem } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import type { ProjectWithCounts } from "acme-client";
   import Briefcase from "lucide-svelte/icons/briefcase";
@@ -36,10 +42,8 @@
     ] ?? project.status
   );
 
-  const statusAccent = $derived(
-    ({ active: "#10b981", archived: "#6b7280", on_hold: "#f59e0b" } as Record<string, string>)[
-      project.status
-    ] ?? "#64748b"
+  const statusTone = $derived(
+    project.status === "active" ? "success" : "neutral"
   );
 
   function handleEdit() {
@@ -55,19 +59,30 @@
     confirmDeleteOpen = false;
   }
 
-  const menuItems = $derived([
-    { label: "Edit", onSelect: handleEdit },
+  const menuItems = $derived<MenuItem[]>([
+    { value: "edit", label: "Edit" },
     ...(onDelete
       ? [
-          { separator: true },
+          { value: "separator", label: "", kind: "separator" as const },
           {
+            value: "delete",
             label: "Delete",
-            destructive: true,
-            onSelect: () => (confirmDeleteOpen = true)
+            kind: "action" as const
           }
         ]
       : [])
   ]);
+
+  function handleMenuAction(value: string) {
+    if (value === "edit") {
+      handleEdit();
+      return;
+    }
+
+    if (value === "delete") {
+      confirmDeleteOpen = true;
+    }
+  }
 </script>
 
 <ListCard title={project.name} href={selectionMode ? undefined : `/projects/${project.id}`}>
@@ -86,18 +101,18 @@
   {/snippet}
 
   {#snippet trailing()}
-    <Pill accent={statusAccent}>{statusLabel}</Pill>
+    <PoodlePill tone={statusTone} appearance="badge" size="lg">{statusLabel}</PoodlePill>
     {#if project.categoryName}
-      <Pill accent="#64748b">{project.categoryName}</Pill>
+      <PoodlePill tone="neutral" appearance="badge" size="lg">{project.categoryName}</PoodlePill>
     {/if}
   {/snippet}
 
   {#snippet actions({ trigger: mediaContent, align })}
-    <DropdownMenu items={menuItems} {align}>
-      {#snippet trigger()}
+    <PoodleMenu items={menuItems} placement={align === "end" ? "bottom-end" : "bottom-start"} on:action={(event) => handleMenuAction(event.detail.value)}>
+      <div slot="trigger">
         {@render mediaContent()}
-      {/snippet}
-    </DropdownMenu>
+      </div>
+    </PoodleMenu>
   {/snippet}
 
   <div class="task-progress">
@@ -110,13 +125,13 @@
   </div>
 </ListCard>
 
-<AlertDialog
+<PoodleAlertDialog
   bind:open={confirmDeleteOpen}
-  showTrigger={false}
   title="Delete Project"
   description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
   confirmLabel="Delete"
   onConfirm={handleDelete}
+  tone="danger"
 />
 
 <style>

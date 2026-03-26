@@ -144,7 +144,7 @@ export {
   type SelectionHistoryOptions,
   type SelectionHistory,
   type SuggestionRequestOptions,
-} from "@decodelabs/underlay/patterns";
+} from "@decodelabs/underlay/patterns/selection-history";
 
 // Client factory (for apps to configure)
 export {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { auth } from "$lib/stores/auth";
-  import { Button, TextInput, Field, FormError } from "@decodelabs/underlay/components";
+  import { Button, Callout, Field, TextInput } from "@poodle/svelte-primitives";
 
   let email = $state("");
   let password = $state("");
@@ -30,26 +30,30 @@
 
 <form onsubmit={handleSubmit}>
   {#if error}
-    <FormError message={error} />
+    <Callout tone="danger" message={error} announceMode="assertive" />
   {/if}
 
-  <Field label="Email" required>
+  <Field id="login-email" label="Email" required let:describedBy>
     <TextInput
+      id="login-email"
       type="email"
-      bind:value={email}
+      value={email}
+      describedBy={describedBy}
       placeholder="you@example.com"
       disabled={submitting}
-      autocomplete="email"
+      on:valueChange={(event) => { email = event.detail.value; }}
     />
   </Field>
 
-  <Field label="Password" required>
+  <Field id="login-password" label="Password" required let:describedBy>
     <TextInput
+      id="login-password"
       type="password"
-      bind:value={password}
+      value={password}
+      describedBy={describedBy}
       placeholder="Your password"
       disabled={submitting}
-      autocomplete="current-password"
+      on:valueChange={(event) => { password = event.detail.value; }}
     />
   </Field>
 

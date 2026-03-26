@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { NavCard, NavCardGrid, PageHeader } from "@decodelabs/underlay/patterns";
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  import { NavCard, NavCardGrid } from "@decodelabs/underlay/patterns";
   import { getSystemCardAccent } from "$lib/utils/accents";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import Calendar from "lucide-svelte/icons/calendar";
   import ClipboardList from "lucide-svelte/icons/clipboard-list";
   import Layers from "lucide-svelte/icons/layers";
+  import LayoutPanelTop from "lucide-svelte/icons/layout-panel-top";
   import Mail from "lucide-svelte/icons/mail";
 </script>
 
-<PageHeader section="System" />
+<PoodlePageHeader title="System" />
 
 <NavCardGrid>
   <NavCard
@@ -45,5 +47,12 @@
     description="View emails captured during development instead of being sent."
     icon={Mail}
     iconBackground={getSystemCardAccent("emails")}
+  />
+  <NavCard
+    href="/system/poodle-gap-review"
+    title="Poodle gap review"
+    description="Assess ambiguous Underlay workflow surfaces with live examples before reclassifying them."
+    icon={LayoutPanelTop}
+    iconBackground={getSystemCardAccent("jobs")}
   />
 </NavCardGrid>

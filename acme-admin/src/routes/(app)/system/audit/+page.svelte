@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { PageHeader, useAuthenticatedData } from "@decodelabs/underlay/patterns";
+  import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
   import { LogList, type LogEntry, type LogFilter, type LogActor } from "@decodelabs/underlay/components";
   import { adminCommands } from "acme-client";
   import { auth } from "$lib/stores/auth";
@@ -132,9 +133,12 @@
 </script>
 
 <section class="audit-page">
-  <PageHeader section="Audit Log" backHref="/system" backLabel="Back to system">
-    Track changes made to content and configuration across the platform.
-  </PageHeader>
+  <PoodlePageHeader
+    title="Audit Log"
+    subtitle="Track changes made to content and configuration across the platform."
+    backHref="/system"
+    backLabel="Back to system"
+  />
 
   <LogList
     entries={logEntries}

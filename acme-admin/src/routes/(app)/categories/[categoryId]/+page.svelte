@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Category } from "acme-client";
@@ -13,7 +14,7 @@
     DetailMetaStatus,
     DetailMetaSeparator
   } from "@decodelabs/underlay/patterns";
-  import { PageLoading, FormError, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
+  import { PageLoading, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
   import { gotoWithContext } from "@decodelabs/underlay/client";
 
   interface Props {
@@ -50,7 +51,7 @@
 {#if pageData.loading}
   <PageLoading message="Loading category..." />
 {:else if pageData.error}
-  <FormError message={pageData.error} />
+  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if category}
   <DetailPageShell
     section="Category"
@@ -109,7 +110,7 @@
     </DetailsCard>
   </DetailPageShell>
 {:else}
-  <FormError message="Category not found" />
+  <PoodleCallout tone="danger" message="Category not found" announceMode="polite" />
 {/if}
 
 <style>

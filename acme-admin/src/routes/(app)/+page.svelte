@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
-	import { Pill, StatCard, StatGrid } from "@decodelabs/underlay/components";
+	import { MetricTile } from "@poodle/svelte-composites";
+	import { Pill } from "@poodle/svelte-primitives";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
 	import Settings from "lucide-svelte/icons/settings";
@@ -49,64 +50,89 @@
 		<p class="dashboard__subtitle">Platform overview and key metrics</p>
 	</header>
 
-	<StatGrid columns={2} minItemWidth={280}>
-		<StatCard
-			title="Users"
-			value={stats?.userCounts.total ?? 0}
-			label="Total users"
-			variant="info"
-			loading={statsLoading}
-			error={statsError}
-			href="/users"
-		>
-			{#snippet icon()}<Users />{/snippet}
-			{#snippet breakdown()}
+	<div class="dashboard__metrics">
+		<a class="dashboard__metric-link" href="/users">
+			<div class="dashboard__metric-header">
+				<div class="dashboard__metric-heading">
+					<Users />
+					<span>Users</span>
+				</div>
+				{#if statsError}
+					<Pill tone="danger" appearance="subtle">Sync issue</Pill>
+				{:else if statsLoading}
+					<Pill appearance="subtle">Loading</Pill>
+				{/if}
+			</div>
+			<MetricTile
+				label="Total users"
+				value={statsLoading ? "..." : String(stats?.userCounts.total ?? 0)}
+				trend="up"
+				trendLabel={`${stats?.userCounts.active ?? 0} active`}
+				ariaLabel="Users metric"
+			/>
+			<div class="dashboard__metric-footer">
 				<span class="breakdown__item">
-					<Pill accent="#22c55e">{stats?.userCounts.active ?? 0}</Pill>
+					<Pill tone="success">{stats?.userCounts.active ?? 0}</Pill>
 					<span>active</span>
 				</span>
 				<span class="breakdown__item">
-					<Pill accent="#f97316">{stats?.userCounts.suspended ?? 0}</Pill>
+					<Pill tone="danger" appearance="subtle">{stats?.userCounts.suspended ?? 0}</Pill>
 					<span>suspended</span>
 				</span>
-			{/snippet}
-		</StatCard>
+			</div>
+		</a>
 
-		<StatCard
-			title="Media"
-			value={stats?.mediaCount ?? 0}
-			label="Media items"
-			variant="warning"
-			loading={statsLoading}
-			error={statsError}
-			href="/media"
-		>
-			{#snippet icon()}<Image />{/snippet}
-		</StatCard>
+		<a class="dashboard__metric-link" href="/media">
+			<div class="dashboard__metric-header">
+				<div class="dashboard__metric-heading">
+					<Image />
+					<span>Media</span>
+				</div>
+			</div>
+			<MetricTile
+				label="Media items"
+				value={statsLoading ? "..." : String(stats?.mediaCount ?? 0)}
+				trend="flat"
+				trendLabel={statsError ? "Awaiting refresh" : "Library inventory"}
+				ariaLabel="Media metric"
+			/>
+			<p class="dashboard__metric-copy">Asset volume under the active catalog and ingestion flow.</p>
+		</a>
 
-		<StatCard
-			title="Acme"
-			value={stats?.recentRegistrations ?? 0}
-			label="Projects & Categories"
-			variant="success"
-			loading={statsLoading}
-			href="/projects"
-		>
-			{#snippet icon()}<Box />{/snippet}
-		</StatCard>
+		<a class="dashboard__metric-link" href="/projects">
+			<div class="dashboard__metric-header">
+				<div class="dashboard__metric-heading">
+					<Box />
+					<span>Acme</span>
+				</div>
+			</div>
+			<MetricTile
+				label="Recent registrations"
+				value={statsLoading ? "..." : String(stats?.recentRegistrations ?? 0)}
+				trend="up"
+				trendLabel="Projects and categories"
+				ariaLabel="Acme metric"
+			/>
+			<p class="dashboard__metric-copy">Project-side growth and taxonomy activity across the workspace.</p>
+		</a>
 
-		<StatCard
-			title="System"
-			value={stats?.activeSessions ?? 0}
-			label="Active sessions"
-			variant="info"
-			loading={statsLoading}
-			error={statsError}
-			href="/system"
-		>
-			{#snippet icon()}<Settings />{/snippet}
-		</StatCard>
-	</StatGrid>
+		<a class="dashboard__metric-link" href="/system">
+			<div class="dashboard__metric-header">
+				<div class="dashboard__metric-heading">
+					<Settings />
+					<span>System</span>
+				</div>
+			</div>
+			<MetricTile
+				label="Active sessions"
+				value={statsLoading ? "..." : String(stats?.activeSessions ?? 0)}
+				trend="flat"
+				trendLabel={statsError ? "Check auth state" : "Current operator load"}
+				ariaLabel="System metric"
+			/>
+			<p class="dashboard__metric-copy">Operator activity and runtime posture for the current environment.</p>
+		</a>
+	</div>
 
 	<section class="dashboard__section">
 		<h2 class="dashboard__section-title">Recent Activity</h2>
@@ -140,12 +166,93 @@
 		font-size: 0.95rem;
 	}
 
+	.dashboard__metrics {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+		gap: 1rem;
+	}
+
+	.dashboard__metric-link {
+		display: grid;
+		gap: 0.85rem;
+		padding: 1rem;
+		border: 1px solid var(--admin-color-border-subtle);
+		border-radius: 0.9rem;
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--admin-color-surface-card) 92%, transparent), var(--admin-color-surface)),
+			var(--admin-color-surface-card);
+		color: inherit;
+		text-decoration: none;
+		box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+		transition:
+			transform 160ms ease,
+			border-color 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	.dashboard__metric-link:hover {
+		transform: translateY(-2px);
+		border-color: var(--admin-color-border-strong);
+		box-shadow: 0 24px 56px rgba(0, 0, 0, 0.28);
+	}
+
+	.dashboard__metric-link:focus-visible {
+		outline: 2px solid var(--admin-color-accent);
+		outline-offset: 3px;
+	}
+
+	.dashboard__metric-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.dashboard__metric-heading {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		font-size: 0.9rem;
+		font-weight: 650;
+		letter-spacing: 0.01em;
+	}
+
+	.dashboard__metric-heading :global(svg) {
+		width: 1rem;
+		height: 1rem;
+		color: var(--admin-color-accent);
+	}
+
+	.dashboard__metric-footer {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+
+	.dashboard__metric-copy {
+		margin: 0;
+		color: var(--admin-color-text-muted);
+		font-size: 0.85rem;
+		line-height: 1.45;
+	}
+
 	.breakdown__item {
 		display: flex;
 		align-items: center;
 		gap: 0.4rem;
 		font-size: 0.85rem;
 		color: var(--admin-color-text-muted);
+	}
+
+	.dashboard__metric-link :global(.state-tile) {
+		padding: 0;
+		border: none;
+		border-radius: 0;
+		background: transparent;
+	}
+
+	.dashboard__metric-link :global(.state-tile__value) {
+		font-size: 1.65rem;
 	}
 
 	.dashboard__section {

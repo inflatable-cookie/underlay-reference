@@ -2,6 +2,10 @@
 	import { page } from '$app/stores';
 	import favicon from '$lib/assets/favicon.svg';
 	import { resolveAdminPageTitle } from '$lib/utils/page-title';
+	import "@poodle/svelte-tokens/styles.css";
+	import "@poodle/svelte-tokens/theme-dark.css";
+	import "@poodle/svelte-tokens/density-compact.css";
+	import "@poodle/svelte-tokens/control-size-md.css";
 	import "@decodelabs/underlay/styles/base.css";
 	// Import Underlay CSS FIRST so our :root overrides take precedence.
 	import "@decodelabs/underlay/styles/tokens.css";
@@ -15,31 +19,38 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-{@render children()}
+<div
+	class="admin-theme-shell"
+	data-theme="dark"
+	data-density="compact"
+	data-control-size="md"
+>
+	{@render children()}
+</div>
 
 <style>
-	:global(:root) {
+	:global(.admin-theme-shell) {
 		/* Core colors */
-		--admin-color-bg: #2a3037;
-		--admin-color-surface: #050608;
-		--admin-color-surface-subtle: #16181d;
-		--admin-color-surface-card: #101318;
-		--admin-color-border-subtle: rgba(255, 255, 255, 0.1);
-		--admin-color-border-strong: rgba(148, 163, 184, 0.6);
-		--admin-color-text: #d1d5db;
-		--admin-color-text-muted: var(--underlay-color-text-muted);
-		--admin-color-accent: #14b8a6;
+		--admin-color-bg: var(--poodle-color-background-canvas);
+		--admin-color-surface: color-mix(in srgb, var(--poodle-color-background-panel) 72%, #050608);
+		--admin-color-surface-subtle: color-mix(in srgb, var(--poodle-color-background-panel) 88%, #16181d);
+		--admin-color-surface-card: color-mix(in srgb, var(--poodle-color-background-surface) 82%, #101318);
+		--admin-color-border-subtle: color-mix(in srgb, var(--poodle-color-border-subtle) 72%, transparent);
+		--admin-color-border-strong: color-mix(in srgb, var(--poodle-color-border-default) 84%, transparent);
+		--admin-color-text: var(--poodle-color-text-primary);
+		--admin-color-text-muted: var(--poodle-color-text-secondary);
+		--admin-color-accent: var(--poodle-color-accent-base);
 
 		/* Status colors */
-		--admin-color-success: #10b981;
-		--admin-color-success-subtle: rgba(16, 185, 129, 0.15);
-		--admin-color-warning: #f59e0b;
-		--admin-color-warning-subtle: rgba(245, 158, 11, 0.15);
-		--admin-color-danger: #ef4444;
-		--admin-color-danger-subtle: rgba(239, 68, 68, 0.15);
-		--admin-color-danger-text: #fca5a5;
-		--admin-color-info: #3b82f6;
-		--admin-color-info-subtle: rgba(59, 130, 246, 0.15);
+		--admin-color-success: var(--poodle-color-status-success);
+		--admin-color-success-subtle: color-mix(in srgb, var(--poodle-color-status-success) 18%, transparent);
+		--admin-color-warning: var(--poodle-color-status-warning);
+		--admin-color-warning-subtle: color-mix(in srgb, var(--poodle-color-status-warning) 18%, transparent);
+		--admin-color-danger: var(--poodle-color-status-danger);
+		--admin-color-danger-subtle: color-mix(in srgb, var(--poodle-color-status-danger) 18%, transparent);
+		--admin-color-danger-text: color-mix(in srgb, var(--poodle-color-status-danger) 64%, white);
+		--admin-color-info: color-mix(in srgb, var(--poodle-color-accent-base) 72%, #3b82f6);
+		--admin-color-info-subtle: color-mix(in srgb, var(--admin-color-info) 18%, transparent);
 
 		/* Underlay token mappings */
 		--underlay-color-bg-surface: var(--admin-color-surface);
@@ -50,31 +61,32 @@
 		--underlay-color-surface-hover: var(--admin-color-surface-subtle);
 		--underlay-color-on-surface: var(--admin-color-text);
 		--underlay-color-primary: var(--admin-color-accent);
-		--underlay-color-primary-strong: #0f766e;
-		--underlay-color-primary-subtle: rgba(20, 184, 166, 0.15);
+		--underlay-color-primary-strong: color-mix(in srgb, var(--admin-color-accent) 72%, black);
+		--underlay-color-primary-subtle: color-mix(in srgb, var(--admin-color-accent) 18%, transparent);
 		--underlay-color-accent: var(--admin-color-accent);
-		--underlay-color-button-neutral-bg: #1f2933;
-		--underlay-color-button-neutral-hover: #374151;
+		--underlay-color-button-neutral-bg: color-mix(in srgb, var(--admin-color-surface-subtle) 84%, black);
+		--underlay-color-button-neutral-hover: color-mix(in srgb, var(--admin-color-surface-subtle) 92%, white);
 		--underlay-color-on-primary: #ffffff;
 		--underlay-color-border: var(--admin-color-border-subtle);
 		--underlay-color-border-subtle: var(--admin-color-border-subtle);
 		--underlay-color-border-strong: var(--admin-color-border-strong);
 		--underlay-color-border-hover: var(--admin-color-border-strong);
-		--underlay-color-popover-bg: #1f2428;
+		--underlay-color-popover-bg: color-mix(in srgb, var(--admin-color-surface-card) 88%, black);
 		--underlay-color-success: var(--admin-color-success);
 		--underlay-color-warning: var(--admin-color-warning);
 		--underlay-color-danger: var(--admin-color-danger);
 		--underlay-color-error: var(--admin-color-danger);
-		--underlay-shadow-popover: 0 22px 60px rgba(0, 0, 0, 0.7);
-		--underlay-color-field-bg: rgba(255, 255, 255, 0.08);
-		--underlay-color-text-secondary: #cbd5e1;
+		--underlay-shadow-popover: 0 22px 60px color-mix(in srgb, black 72%, transparent);
+		--underlay-color-field-bg: color-mix(in srgb, var(--poodle-color-background-surface) 78%, transparent);
+		--underlay-color-text-secondary: var(--poodle-color-text-secondary);
+		--underlay-color-text-muted: var(--admin-color-text-muted);
 		--underlay-color-surface-raised: var(--admin-color-surface-subtle);
 
 		/* DataTable specific tokens */
 		--underlay-table-border: 1px solid var(--admin-color-border-subtle);
 		--underlay-table-header-bg: var(--admin-color-surface-subtle);
-		--underlay-table-row-hover: rgba(148, 163, 184, 0.08);
-		--underlay-table-row-selected: rgba(20, 184, 166, 0.12);
+		--underlay-table-row-hover: color-mix(in srgb, var(--poodle-color-text-secondary) 8%, transparent);
+		--underlay-table-row-selected: color-mix(in srgb, var(--admin-color-accent) 12%, transparent);
 		--underlay-table-stripe: var(--admin-color-surface-subtle);
 		--color-surface: var(--admin-color-surface-card);
 		--color-border: var(--admin-color-border-subtle);
@@ -87,6 +99,10 @@
 		--radius-sm: 0.25rem;
 	}
 
+	:global(.admin-theme-shell) {
+		min-height: 100vh;
+	}
+
 	:global(html) {
 		font-size: 112.5%;
 	}
@@ -94,10 +110,9 @@
 	:global(body) {
 		margin: 0;
 		padding: 0;
-		background:
-			radial-gradient(900px 520px at 20% -10%, rgba(20, 184, 166, 0.18), transparent),
-			linear-gradient(180deg, #13171f, var(--admin-color-bg));
-		color: var(--admin-color-text);
+		min-height: 100vh;
+		background: var(--poodle-color-background-canvas);
+		color: var(--poodle-color-text-primary);
 		font-family:
 			"Avenir Next",
 			Avenir,
