@@ -1,11 +1,5 @@
 <script lang="ts">
 import {
-  DetailMeta,
-  DetailMetaId,
-  DetailMetaItem,
-  DetailMetaSeparator
-} from "@decodelabs/underlay/patterns";
-import {
   useAuthenticatedData,
   useToasts,
   createReorderController
@@ -19,6 +13,8 @@ import {
   Dialog as PoodleDialog,
   Grid as PoodleGrid,
   ListCard as PoodleListCard,
+  MetaBar as PoodleMetaBar,
+  MetaItem as PoodleMetaItem,
   OrderBy as PoodleOrderBy,
   type BulkAction,
   type OrderByValue
@@ -41,6 +37,7 @@ import {
   import { TimeAgo } from "@poodle/svelte-primitives";
   import {
     Button as PoodleButton,
+    Code as PoodleCode,
     Field as PoodleField,
     Pill as PoodlePill,
     Select as PoodleSelect
@@ -468,15 +465,14 @@ import {
       </PoodleButton>
     </svelte:fragment>
   </PoodlePageHeader>
-  <DetailMeta>
-    <DetailMetaId value={project.id} />
-    <DetailMetaSeparator />
-    <DetailMetaItem>
-      <PoodlePill tone={getProjectStatusTone(project.status)} appearance="badge" size="lg">
-        {statusLabel}
-      </PoodlePill>
-    </DetailMetaItem>
-  </DetailMeta>
+  <PoodleMetaBar ariaLabel="Project metadata">
+    <PoodleMetaItem label="ID">
+      <PoodleCode inline source={project.id} showCopyButton />
+    </PoodleMetaItem>
+    <PoodlePill tone={getProjectStatusTone(project.status)} appearance="badge" size="lg">
+      {statusLabel}
+    </PoodlePill>
+  </PoodleMetaBar>
   </div>
 
   <PoodleAlertDialog

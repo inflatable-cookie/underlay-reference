@@ -1,11 +1,5 @@
 <script lang="ts">
 import {
-  DetailMeta,
-  DetailMetaId,
-  DetailMetaItem,
-  DetailMetaSeparator
-} from "@decodelabs/underlay/patterns";
-import {
   useAuthenticatedData,
   useToasts
 } from "@decodelabs/underlay/runtime";
@@ -13,6 +7,7 @@ import {
   AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
   Card as PoodleCard,
+  Code as PoodleCode,
   DetailRow as PoodleDetailRow
   } from "@poodle/svelte-primitives";
   import { DetailSection as PoodleDetailSection,
@@ -26,7 +21,7 @@ import {
   type Project } from "@api-client";
   import { auth } from "$lib/stores/auth";
     import { TimeAgo } from "@poodle/svelte-primitives";
-  import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
+  import { Button as PoodleButton, MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import { getTaskStatusTone, getTaskPriorityTone } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";
@@ -142,20 +137,17 @@ import {
       </PoodleButton>
     </svelte:fragment>
   </PoodlePageHeader>
-  <DetailMeta>
-    <DetailMetaId value={task.id} />
-    <DetailMetaSeparator />
-    <DetailMetaItem>
-      <PoodlePill tone={getTaskStatusTone(task.status)} appearance="badge" size="lg">
-        {statusLabel}
-      </PoodlePill>
-    </DetailMetaItem>
-    <DetailMetaItem>
-      <PoodlePill tone={getTaskPriorityTone(task.priority)} appearance="badge" size="lg">
-        {priorityLabel}
-      </PoodlePill>
-    </DetailMetaItem>
-  </DetailMeta>
+  <PoodleMetaBar ariaLabel="Task metadata">
+    <PoodleMetaItem label="ID">
+      <PoodleCode inline source={task.id} showCopyButton />
+    </PoodleMetaItem>
+    <PoodlePill tone={getTaskStatusTone(task.status)} appearance="badge" size="lg">
+      {statusLabel}
+    </PoodlePill>
+    <PoodlePill tone={getTaskPriorityTone(task.priority)} appearance="badge" size="lg">
+      {priorityLabel}
+    </PoodlePill>
+  </PoodleMetaBar>
   </div>
 
   <PoodleAlertDialog

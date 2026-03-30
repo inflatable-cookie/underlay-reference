@@ -1,10 +1,5 @@
 <script lang="ts">
 import {
-  DetailMetaId,
-  DetailMetaSeparator,
-  DetailMeta
-} from "@decodelabs/underlay/patterns";
-import {
   useToasts,
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime";
@@ -16,7 +11,10 @@ import {
     import { DataTable, PageHeader as PoodlePageHeader, PageLoading, type TableColumn, type TableRow } from "@poodle/svelte-composites";
   import {
     Card as PoodleCard,
+    Code as PoodleCode,
     IconButton as PoodleIconButton,
+    MetaBar as PoodleMetaBar,
+    MetaItem as PoodleMetaItem,
     Menu as PoodleMenu,
     Pill as PoodlePill,
     TimeAgo
@@ -236,13 +234,14 @@ import {
       </PoodlePageHeader>
 
       <div class="task-detail-page__meta">
-      <DetailMeta>
-        <DetailMetaId value={task.id} />
-        <DetailMetaSeparator />
+      <PoodleMetaBar ariaLabel="Scheduled task metadata">
+        <PoodleMetaItem label="ID">
+          <PoodleCode inline source={task.id} showCopyButton />
+        </PoodleMetaItem>
         <PoodlePill tone={task.enabled ? "success" : "neutral"} appearance="badge" size="lg">
           {task.enabled ? "Enabled" : "Disabled"}
         </PoodlePill>
-      </DetailMeta>
+      </PoodleMetaBar>
       </div>
     </div>
 

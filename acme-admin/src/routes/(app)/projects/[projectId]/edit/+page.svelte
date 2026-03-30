@@ -1,17 +1,15 @@
 <script lang="ts">
-import {
-  DetailMeta,
-  DetailMetaId,
-  type SpaFormResult,
-  SpaFormShell
-} from "@decodelabs/underlay/patterns";
+import { type SpaFormResult, SpaFormShell } from "@decodelabs/underlay/patterns";
 import {
   computeBackInfo,
   consumeNavigationContext,
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime";
 import {
-  Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  Callout as PoodleCallout,
+  Code as PoodleCode,
+  MetaBar as PoodleMetaBar,
+  MetaItem as PoodleMetaItem } from "@poodle/svelte-primitives";
   import { untrack } from "svelte";
   import type { PageData } from "./$types";
   import type { Project,
@@ -196,9 +194,11 @@ import {
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if project}
   {#snippet headerMeta()}
-    <DetailMeta>
-      <DetailMetaId value={project.id} />
-    </DetailMeta>
+    <PoodleMetaBar ariaLabel="Project metadata">
+      <PoodleMetaItem label="ID">
+        <PoodleCode inline source={project.id} showCopyButton />
+      </PoodleMetaItem>
+    </PoodleMetaBar>
   {/snippet}
 
   <SpaFormShell

@@ -1,10 +1,5 @@
 <script lang="ts">
 import {
-  DetailMetaId,
-  DetailMetaSeparator,
-  DetailMeta
-} from "@decodelabs/underlay/patterns";
-import {
   computeBackInfo,
   consumeNavigationContext,
   useAuthenticatedData,
@@ -14,7 +9,10 @@ import {
   AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
   Card as PoodleCard,
+  Code as PoodleCode,
   DetailRow as PoodleDetailRow,
+  MetaBar as PoodleMetaBar,
+  MetaItem as PoodleMetaItem,
   Tabs
   } from "@poodle/svelte-primitives";
   import { DetailSection as PoodleDetailSection,
@@ -468,12 +466,13 @@ import {
       </PoodlePageHeader>
 
       <div class="user-view__meta">
-      <DetailMeta>
-        <DetailMetaId value={user.id} />
-        <DetailMetaSeparator />
+      <PoodleMetaBar ariaLabel="User metadata">
+        <PoodleMetaItem label="ID">
+          <PoodleCode inline source={user.id} showCopyButton />
+        </PoodleMetaItem>
         <PoodlePill tone={getUserRoleTone(user.role)} appearance="badge" size="lg">{user.role}</PoodlePill>
         <PoodlePill tone={getUserStatusTone(user.status)} appearance="badge" size="lg">{user.status}</PoodlePill>
-      </DetailMeta>
+      </PoodleMetaBar>
       </div>
     </div>
 

@@ -1,11 +1,5 @@
 <script lang="ts">
 import {
-  DetailMetaId,
-  DetailMetaItem,
-  DetailMetaSeparator,
-  DetailMeta
-} from "@decodelabs/underlay/patterns";
-import {
   useToasts,
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime";
@@ -22,6 +16,8 @@ import {
     Card as PoodleCard,
     Code,
     IconButton as PoodleIconButton,
+    MetaBar as PoodleMetaBar,
+    MetaItem as PoodleMetaItem,
     Pill as PoodlePill
   } from "@poodle/svelte-primitives";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
@@ -125,15 +121,14 @@ import {
   </svelte:fragment>
 </PoodlePageHeader>
 {#if job}
-  <DetailMeta>
-    <DetailMetaId value={job.id} />
-    <DetailMetaSeparator />
-    <DetailMetaItem>
-      <PoodlePill tone={getJobStatusTone(job.status)} appearance="badge" size="lg">
-        {getStatusLabel(job.status)}
-      </PoodlePill>
-    </DetailMetaItem>
-  </DetailMeta>
+  <PoodleMetaBar ariaLabel="Job metadata">
+    <PoodleMetaItem label="ID">
+      <Code inline source={job.id} showCopyButton />
+    </PoodleMetaItem>
+    <PoodlePill tone={getJobStatusTone(job.status)} appearance="badge" size="lg">
+      {getStatusLabel(job.status)}
+    </PoodlePill>
+  </PoodleMetaBar>
 {/if}
 </div>
 

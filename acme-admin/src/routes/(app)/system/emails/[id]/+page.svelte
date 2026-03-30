@@ -1,10 +1,5 @@
 <script lang="ts">
 import {
-  DetailMetaId,
-  DetailMetaSeparator,
-  DetailMeta
-} from "@decodelabs/underlay/patterns";
-import {
   useToasts,
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime";
@@ -12,7 +7,10 @@ import {
   AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
   Card as PoodleCard,
+  Code as PoodleCode,
   DetailRow as PoodleDetailRow,
+  MetaBar as PoodleMetaBar,
+  MetaItem as PoodleMetaItem,
   Tabs,
   type TabItem
   } from "@poodle/svelte-primitives";
@@ -102,13 +100,14 @@ import {
       </PoodlePageHeader>
 
       <div class="email-detail__meta">
-      <DetailMeta>
-        <DetailMetaId value={email.emailId} />
-        <DetailMetaSeparator />
+      <PoodleMetaBar ariaLabel="Email metadata">
+        <PoodleMetaItem label="ID">
+          <PoodleCode inline source={email.emailId} showCopyButton />
+        </PoodleMetaItem>
         <PoodlePill tone={getStatusTone()} appearance="badge" size="lg">
           {getStatusLabel()}
         </PoodlePill>
-      </DetailMeta>
+      </PoodleMetaBar>
       </div>
     </div>
 

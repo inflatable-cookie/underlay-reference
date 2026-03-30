@@ -1,11 +1,5 @@
 <script lang="ts">
 import {
-  DetailMeta,
-  DetailMetaId,
-  DetailMetaStatus,
-  DetailMetaSeparator
-} from "@decodelabs/underlay/patterns";
-import {
   useAuthenticatedData,
   useToasts
 } from "@decodelabs/underlay/runtime";
@@ -13,6 +7,7 @@ import {
   AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
   Card as PoodleCard,
+  Code as PoodleCode,
   DetailRow as PoodleDetailRow
   } from "@poodle/svelte-primitives";
   import { DetailSection as PoodleDetailSection,
@@ -24,7 +19,7 @@ import {
   type Category } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
-    import { TimeAgo } from "@poodle/svelte-primitives";
+    import { MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill, TimeAgo } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
 
   interface Props {
@@ -89,11 +84,14 @@ import {
       </PoodlePageHeader>
 
       <div class="category-detail__meta">
-      <DetailMeta>
-        <DetailMetaId value={category.id} />
-        <DetailMetaSeparator />
-        <DetailMetaStatus value={category.isActive} trueLabel="Active" falseLabel="Inactive" />
-      </DetailMeta>
+      <PoodleMetaBar ariaLabel="Category metadata">
+        <PoodleMetaItem label="ID">
+          <PoodleCode inline source={category.id} showCopyButton />
+        </PoodleMetaItem>
+        <PoodlePill tone={category.isActive ? "success" : "neutral"} appearance="badge" size="lg">
+          {category.isActive ? "Active" : "Inactive"}
+        </PoodlePill>
+      </PoodleMetaBar>
       </div>
     </div>
 

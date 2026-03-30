@@ -1,12 +1,5 @@
 <script lang="ts">
-import {
-  DetailMeta,
-  DetailMetaId,
-  DetailMetaItem,
-  DetailMetaSeparator,
-  type SpaFormResult,
-  SpaFormShell
-} from "@decodelabs/underlay/patterns";
+import { type SpaFormResult, SpaFormShell } from "@decodelabs/underlay/patterns";
 import {
   computeBackInfo,
   consumeNavigationContext,
@@ -14,7 +7,9 @@ import {
 } from "@decodelabs/underlay/runtime";
 import {
   Callout as PoodleCallout,
-  Code } from "@poodle/svelte-primitives";
+  Code,
+  MetaBar as PoodleMetaBar,
+  MetaItem as PoodleMetaItem } from "@poodle/svelte-primitives";
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
@@ -174,13 +169,14 @@ import {
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if user}
   {#snippet headerMeta()}
-    <DetailMeta>
-      <DetailMetaId value={user.id} />
-      <DetailMetaSeparator />
-      <DetailMetaItem label="Email">
+    <PoodleMetaBar ariaLabel="User metadata">
+      <PoodleMetaItem label="ID">
+        <Code inline source={user.id} showCopyButton />
+      </PoodleMetaItem>
+      <PoodleMetaItem label="Email">
         <Code inline source={user.email} showCopyButton />
-      </DetailMetaItem>
-    </DetailMeta>
+      </PoodleMetaItem>
+    </PoodleMetaBar>
   {/snippet}
 
   <SpaFormShell

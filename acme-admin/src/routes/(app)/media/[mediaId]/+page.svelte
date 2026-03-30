@@ -1,10 +1,5 @@
 <script lang="ts">
 import {
-  DetailMetaId,
-  DetailMetaSeparator,
-  DetailMeta
-} from "@decodelabs/underlay/patterns";
-import {
   getBackButtonInfo,
   useToasts,
   useAuthenticatedData,
@@ -27,6 +22,8 @@ import {
   Callout as PoodleCallout,
   Code,
   Dialog as PoodleDialog,
+  MetaBar as PoodleMetaBar,
+  MetaItem as PoodleMetaItem,
   Tabs
   } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
@@ -414,9 +411,10 @@ import {
       </PoodlePageHeader>
 
       <div class="underlay-detail-page__meta">
-      <DetailMeta>
-        <DetailMetaId value={media.id} />
-        <DetailMetaSeparator />
+      <PoodleMetaBar ariaLabel="Media metadata">
+        <PoodleMetaItem label="ID">
+          <Code inline source={media.id} showCopyButton />
+        </PoodleMetaItem>
         <PoodlePill tone="neutral" appearance="badge" size="lg">{getMediaKindLabel(media.kind)}</PoodlePill>
         <PoodlePill tone="neutral" appearance="badge" size="lg">
           {getMediaVisibilityLabel(media.visibility)}
@@ -424,7 +422,7 @@ import {
         {#if media.deletedAt}
           <PoodlePill tone={getMediaMetaTone("deleted")} appearance="badge" size="lg">Deleted</PoodlePill>
         {/if}
-      </DetailMeta>
+      </PoodleMetaBar>
       </div>
     </div>
 
