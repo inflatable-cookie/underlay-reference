@@ -1,10 +1,17 @@
 <script lang="ts">
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  LogList,
+  PageHeader as PoodlePageHeader,
+  type LogActor,
+  type LogEntry,
+  type LogFilter
+  } from "@poodle/svelte-composites";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
-  import { LogList, type LogEntry, type LogFilter, type LogActor } from "@decodelabs/underlay/components";
-  import { adminCommands } from "acme-client";
+    import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
 
   // Derive filters from URL

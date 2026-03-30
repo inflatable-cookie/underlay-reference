@@ -1,25 +1,30 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
-  import {
-    PageLoading,
-        DetailList,
-    DetailItem
-  } from "@decodelabs/underlay/components";
+import {
+  detectBrowserTimezone,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout,
+  DetailRow as PoodleDetailRow
+  } from "@poodle/svelte-primitives";
+  import { FormDialog,
+  PageLoading } from "@poodle/svelte-composites";
   import {
     Button as PoodleButton,
-    Card as PoodleCard,
-    Field as PoodleField,
-    FieldSet as PoodleFieldSet,
-    FormActions as PoodleFormActions,
-    Select as PoodleSelect,
-    Switch as PoodleSwitch,
-    TextInput as PoodleTextInput
+  Card as PoodleCard,
+  Field as PoodleField,
+  FieldSet as PoodleFieldSet,
+  FormActions as PoodleFormActions,
+  Select as PoodleSelect,
+  Switch as PoodleSwitch,
+  TextInput as PoodleTextInput
   } from "@poodle/svelte-primitives";
-  import { FormDialog, detectBrowserTimezone } from "@decodelabs/underlay/patterns";
-  import { accountCommands, type UserProfile, type UserProfileUpdate } from "acme-client";
-  import { auth, currentUser } from "$lib/stores/auth";
-  import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
-  import { Settings } from "lucide-svelte";
+  import { accountCommands,
+  type UserProfile,
+  type UserProfileUpdate } from "@api-client";
+  import { auth,
+  currentUser } from "$lib/stores/auth";
+      import { Settings } from "lucide-svelte";
 
   // Fetch user profile when auth is ready
   const profileData = useAuthenticatedData(
@@ -222,7 +227,7 @@
 </script>
 
 {#if profileData.loading}
-  <PageLoading message="Loading profile..." />
+  <PageLoading presentation="inline" message="Loading profile..." />
 {:else if profileData.error}
   <PoodleCallout tone="danger" message={profileData.error} announceMode="polite" />
 {:else if profile}
@@ -257,20 +262,26 @@
 
     <div class="details-grid">
       <PoodleCard>
-        <DetailList title="Locale">
-          <DetailItem label="Time Zone" value={profile.timeZone} />
-          <DetailItem label="Language" value={profile.language} />
-          <DetailItem label="Country" value={profile.countryCode} />
-          <DetailItem label="Currency" value={profile.currencyPreference} />
-        </DetailList>
+        <div class="account-detail-card">
+          <h3 class="account-detail-title">Locale</h3>
+          <div class="account-detail-list">
+            <PoodleDetailRow label="Time Zone" value={profile.timeZone ?? "—"} />
+            <PoodleDetailRow label="Language" value={profile.language ?? "—"} />
+            <PoodleDetailRow label="Country" value={profile.countryCode ?? "—"} />
+            <PoodleDetailRow label="Currency" value={profile.currencyPreference ?? "—"} />
+          </div>
+        </div>
       </PoodleCard>
 
       <PoodleCard>
-        <DetailList title="Communication">
-          <DetailItem label="Marketing Emails" value={profile.emailMarketingOptIn} />
-          <DetailItem label="Transactional Emails" value={profile.emailTransactionalOptIn} />
-          <DetailItem label="Email Frequency" value={profile.emailFrequency} capitalize />
-        </DetailList>
+        <div class="account-detail-card">
+          <h3 class="account-detail-title">Communication</h3>
+          <div class="account-detail-list">
+            <PoodleDetailRow label="Marketing Emails" value={profile.emailMarketingOptIn ? "Yes" : "No"} />
+            <PoodleDetailRow label="Transactional Emails" value={profile.emailTransactionalOptIn ? "Yes" : "No"} />
+            <PoodleDetailRow label="Email Frequency" value={profile.emailFrequency ? `${profile.emailFrequency.charAt(0).toUpperCase()}${profile.emailFrequency.slice(1)}` : "—"} />
+          </div>
+        </div>
       </PoodleCard>
     </div>
   </div>
@@ -282,17 +293,18 @@
     submitting={saving}
     error={saveError}
     success={saveSuccess}
-    onCancel={closeSettings}
     width="40rem"
+    showDefaultActions={false}
+    on:cancel={closeSettings}
   >
-    {#snippet children(submitting)}
-      <form
-        class="underlay-form-grid"
-        onsubmit={(e) => {
-          e.preventDefault();
-          handleSubmit();
-        }}
-      >
+    <form
+      id="account-settings-form"
+      class="underlay-form-grid"
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
+    >
         <PoodleFieldSet legend="Identity">
           <div class="account-form-grid account-form-grid--two">
             <PoodleField id="account-full-name" label="Full Name" hint="Your full name as you wish to be known" let:describedBy>
@@ -302,7 +314,7 @@
                 describedBy={describedBy}
                 placeholder="e.g. Alice Smith"
                 maxLength={256}
-                disabled={submitting}
+                disabled={saving}
                 on:valueChange={(event) => { fullName = event.detail.value; }}
               />
             </PoodleField>
@@ -313,7 +325,7 @@
                 describedBy={describedBy}
                 placeholder="e.g. Alice"
                 maxLength={64}
-                disabled={submitting}
+                disabled={saving}
                 on:valueChange={(event) => { formDisplayName = event.detail.value; }}
               />
             </PoodleField>
@@ -330,11 +342,11 @@
                   describedBy={describedBy}
                   options={timezoneOptions}
                   placeholder="Select timezone..."
-                  disabled={submitting}
+                  disabled={saving}
                   on:valueChange={(event) => { timeZone = event.detail.value; }}
                 />
                 {#if browserTimezone && timeZone !== browserTimezone}
-                  <PoodleButton type="button" variant="secondary" size="sm" disabled={submitting} on:click={useBrowserTimezone}>
+                  <PoodleButton type="button" variant="secondary" size="sm" disabled={saving} on:click={useBrowserTimezone}>
                     Use {browserTimezone}
                   </PoodleButton>
                 {/if}
@@ -347,7 +359,7 @@
                 describedBy={describedBy}
                 options={languageOptions}
                 placeholder="Select language..."
-                disabled={submitting}
+                disabled={saving}
                 on:valueChange={(event) => { language = event.detail.value; }}
               />
             </PoodleField>
@@ -360,7 +372,7 @@
                 describedBy={describedBy}
                 placeholder="e.g. GB"
                 maxLength={2}
-                disabled={submitting}
+                disabled={saving}
                 on:valueChange={(event) => { countryCode = event.detail.value; }}
               />
             </PoodleField>
@@ -371,7 +383,7 @@
                 describedBy={describedBy}
                 placeholder="e.g. EU"
                 maxLength={8}
-                disabled={submitting}
+                disabled={saving}
                 on:valueChange={(event) => { regionCode = event.detail.value; }}
               />
             </PoodleField>
@@ -382,7 +394,7 @@
                 describedBy={describedBy}
                 placeholder="e.g. GBP"
                 maxLength={3}
-                disabled={submitting}
+                disabled={saving}
                 on:valueChange={(event) => { currencyPreference = event.detail.value; }}
               />
             </PoodleField>
@@ -397,7 +409,7 @@
                 value={emailFrequency}
                 describedBy={describedBy}
                 options={emailFrequencyOptions}
-                disabled={submitting}
+                disabled={saving}
                 on:valueChange={(event) => { emailFrequency = event.detail.value; }}
               />
             </PoodleField>
@@ -409,7 +421,7 @@
                   checked={emailMarketingOptIn}
                   describedBy={describedBy}
                   ariaLabel="Marketing emails"
-                  disabled={submitting}
+                  disabled={saving}
                   on:checkedChange={(event) => { emailMarketingOptIn = event.detail.checked; }}
                 />
                 <span class="account-switch-label">Yes</span>
@@ -423,7 +435,7 @@
                   checked={emailTransactionalOptIn}
                   describedBy={describedBy}
                   ariaLabel="Transactional emails"
-                  disabled={submitting}
+                  disabled={saving}
                   on:checkedChange={(event) => { emailTransactionalOptIn = event.detail.checked; }}
                 />
                 <span class="account-switch-label">Yes</span>
@@ -432,16 +444,17 @@
           </div>
         </PoodleFieldSet>
 
-        <PoodleFormActions align="end">
-          <PoodleButton type="button" variant="ghost" disabled={submitting} on:click={closeSettings}>
-            Cancel
-          </PoodleButton>
-          <PoodleButton type="submit" variant="primary" disabled={submitting}>
-            {submitting ? "Saving..." : "Save Changes"}
-          </PoodleButton>
-        </PoodleFormActions>
-      </form>
-    {/snippet}
+    </form>
+    <svelte:fragment slot="actions">
+      <PoodleFormActions align="end">
+        <PoodleButton type="button" variant="ghost" disabled={saving} on:click={closeSettings}>
+          Cancel
+        </PoodleButton>
+        <PoodleButton type="submit" form="account-settings-form" variant="primary" disabled={saving}>
+          {saving ? "Saving..." : "Save Changes"}
+        </PoodleButton>
+      </PoodleFormActions>
+    </svelte:fragment>
   </FormDialog>
 {/if}
 
@@ -518,6 +531,25 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
     gap: var(--underlay-space-4, 1rem);
+  }
+
+  .account-detail-card {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .account-detail-title {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--underlay-color-text-muted, rgba(148, 163, 184, 0.85));
+  }
+
+  .account-detail-list {
+    display: grid;
+    gap: 0.75rem;
   }
 
   .account-form-grid {

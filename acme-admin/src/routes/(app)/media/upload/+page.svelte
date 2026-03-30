@@ -1,19 +1,25 @@
 <script lang="ts">
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { Callout as PoodleCallout, FileUpload, type FileUploadItem } from "@poodle/svelte-primitives";
+import {
+  useToasts,
+  validateFileType,
+  ALLOWED_MEDIA_TYPES,
+  REJECTED_VIDEO_TYPES,
+  type UploadProgress
+} from "@decodelabs/underlay/runtime";
+import {
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout,
+  FileUpload,
+  Progress,
+  type FileUploadItem } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { mediaCommands } from "acme-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import {
-    useToasts,
-    validateFileType,
-    ALLOWED_MEDIA_TYPES,
-    REJECTED_VIDEO_TYPES,
-    type UploadProgress
-  } from "@decodelabs/underlay/patterns";
-  import { PageLoading, ProgressBar } from "@decodelabs/underlay/components";
-  import { Button as PoodleButton } from "@poodle/svelte-primitives";
+  import { mediaCommands } from "@api-client";
+  import { auth,
+  authLoading,
+  currentUser } from "$lib/stores/auth";
+    import { Button as PoodleButton } from "@poodle/svelte-primitives";
   import Upload from "lucide-svelte/icons/upload";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
   import CheckCircle from "lucide-svelte/icons/check-circle";
@@ -417,7 +423,11 @@
             <span class="progress-percent">{singleUploadProgress}%</span>
           {/if}
         </div>
-        <ProgressBar value={singleUploadStage === "uploading" ? singleUploadProgress : singleUploadStage === "done" ? 100 : 0} max={100} />
+        <Progress
+          value={singleUploadStage === "uploading" ? singleUploadProgress : singleUploadStage === "done" ? 100 : 0}
+          max={100}
+          ariaLabel="Replace upload progress"
+        />
         {#if singleUploadStage === "done"}
           <div class="progress-done">
             <CheckCircle size={20} />
@@ -520,7 +530,7 @@
                   {/if}
                 </div>
                 {#if item.status === "uploading"}
-                  <ProgressBar value={item.progress} max={100} size="sm" />
+                  <Progress value={item.progress} max={100} size="sm" ariaLabel={`Upload progress for ${item.file.name}`} />
                 {/if}
               </div>
 

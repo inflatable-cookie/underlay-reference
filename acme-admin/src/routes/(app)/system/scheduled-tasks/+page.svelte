@@ -1,14 +1,15 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  useToasts,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout,
+  Grid as PoodleGrid,
+  ListCard as PoodleListCard } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { useToasts, useAuthenticatedData } from "@decodelabs/underlay/patterns";
-  import {
-        ListCard,
-    ListGrid,
-    TimeAgo
-  } from "@decodelabs/underlay/components";
-  import {
+    import {
     FilterToolbar,
     ListContainer
   } from "@poodle/svelte-composites";
@@ -17,12 +18,13 @@
     IconButton as PoodleIconButton,
     Menu as PoodleMenu,
     Select as PoodleSelect,
+    TimeAgo,
     type MenuItem
   } from "@poodle/svelte-primitives";
   import Calendar from "lucide-svelte/icons/calendar";
-  import { adminCommands } from "acme-client";
+  import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import type { ScheduledTaskSummary } from "acme-client";
+  import type { ScheduledTaskSummary } from "@api-client";
 
   const toastStore = useToasts();
 
@@ -188,37 +190,35 @@
       <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
     </svelte:fragment>
 
-    <ListGrid minItemWidth={26}>
+    <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
       {#each tasks as task}
         {@const href = `/system/scheduled-tasks/${encodeURIComponent(task.id)}`}
-        <ListCard
+        <PoodleListCard
           href={href}
           title={formatTaskName(task.name)}
           subtitle={task.schedule}
-          isLive={task.enabled}
+          notLive={!task.enabled}
         >
-          {#snippet media()}
+          <svelte:fragment slot="leading">
             <Calendar size={30} />
-          {/snippet}
+          </svelte:fragment>
 
-          {#snippet actions({ trigger: mediaContent, align })}
-            <PoodleMenu items={getMenuItems(task)} placement={align === "end" ? "bottom-end" : "bottom-start"} on:action={(event) => handleMenuAction(task, event.detail.value)}>
-              <div slot="trigger">
-                {@render mediaContent()}
-              </div>
+          <svelte:fragment slot="actions">
+            <PoodleMenu items={getMenuItems(task)} placement="bottom-end" ariaLabel="Scheduled task actions" on:action={(event) => handleMenuAction(task, event.detail.value)}>
+              <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Scheduled task actions" variant="ghost" />
             </PoodleMenu>
-          {/snippet}
+          </svelte:fragment>
 
-          <span>
+          <span slot="trailing">
             {#if task.lastCompletedAt}
-              <TimeAgo date={task.lastCompletedAt} />
+              <TimeAgo datetime={task.lastCompletedAt} />
             {:else}
               Never run
             {/if}
           </span>
-        </ListCard>
+        </PoodleListCard>
       {/each}
-    </ListGrid>
+    </PoodleGrid>
   </ListContainer>
 </section>
 

@@ -1,33 +1,34 @@
 <script lang="ts">
-  import { MediaThumbnail as PoodleMediaThumbnail, PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  useToasts,
+  useAuthenticatedData,
+  useBatchSelection,
+  getMediaKindAccent,
+  getMediaKindLabel,
+  getMediaKindIcon,
+  getMediaVisibilityAccent,
+  getMediaVisibilityLabel,
+  formatFileSize,
+  MediaKind,
+  MediaVisibility
+} from "@decodelabs/underlay/runtime";
+import {
+  EmptyState as PoodleEmptyState,
+  FilterToolbar,
+  MediaThumbnail as PoodleMediaThumbnail,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
+  import { AlertDialog as PoodleAlertDialog,
+  Callout as PoodleCallout,
+  Grid as PoodleGrid,
+  ListCard as PoodleListCard,
+  OrderBy as PoodleOrderBy,
+  type BulkAction,
+  type OrderByValue } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import {
-    FilterBar,
-    CopyActionsMenu,
-    useToasts,
-    useAuthenticatedData,
-    useBatchSelection,
-    getMediaKindAccent,
-    getMediaKindLabel,
-    getMediaKindIcon,
-    getMediaVisibilityAccent,
-    getMediaVisibilityLabel,
-    formatFileSize,
-    MediaKind,
-    MediaVisibility
-  } from "@decodelabs/underlay/patterns";
-  import {
-    BatchActionBar,
-    EmptyState,
-    ListGrid,
-    ListCard,
-    OrderBy,
-    PageLoading,
-    type OrderByValue
-  } from "@decodelabs/underlay/components";
-  import {
+    import {
+    BulkActionBar as PoodleBulkActionBar,
     Button as PoodleButton,
     Field as PoodleField,
     IconButton as PoodleIconButton,
@@ -36,8 +37,9 @@
     Select as PoodleSelect
   } from "@poodle/svelte-primitives";
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
-  import { mediaCommands, type MediaSummary } from "acme-client";
+  import { mediaCommands, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";
+  import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
   import { squareCheckIcon, trash2Icon, uploadIcon } from "$lib/ui/poodle-icon-nodes";
   import Upload from "lucide-svelte/icons/upload";
   import Image from "lucide-svelte/icons/image";
@@ -213,6 +215,7 @@
   let isSelectionMode = $state(false);
   const selection = useBatchSelection<string>();
   let batchLoading = $state(false);
+  let showBatchDeleteConfirm = $state(false);
 
   // Clear selection when exiting selection mode
   $effect(() => {
@@ -232,6 +235,10 @@
 
   function handleSelectAll() {
     const allIds = (pageData.data?.items ?? []).map(m => m.id);
+    if (selection.count === allIds.length) {
+      handleClearSelection();
+      return;
+    }
     selection.selectAll(allIds);
   }
 
@@ -242,6 +249,7 @@
       return;
     }
 
+    showBatchDeleteConfirm = false;
     batchLoading = true;
     try {
       const result = await mediaCommands.batchDeleteMedia(
@@ -263,6 +271,10 @@
       batchLoading = false;
     }
   }
+
+  const batchActions: BulkAction[] = [
+    { id: "delete", label: "Delete", icon: trash2Icon, tone: "danger" }
+  ];
 </script>
 
 <PoodlePageHeader title="Media Library" backHref="/" backLabel="Back to dashboard">
@@ -307,7 +319,12 @@
   </svelte:fragment>
 </PoodlePageHeader>
 
-<FilterBar title="Filters" onRefresh={() => pageData.refetch()}>
+<FilterToolbar ariaLabel="Media filters" summaryText="Filters">
+  <svelte:fragment slot="actions">
+    <PoodleButton type="button" variant="ghost" size="sm" onclick={() => pageData.refetch()}>
+      Refresh
+    </PoodleButton>
+  </svelte:fragment>
   <PoodleField id="media-filter-title" label="Title" let:describedBy>
     <PoodleSearchField
       id="media-filter-title"
@@ -338,30 +355,39 @@
     />
   </PoodleField>
   <PoodleField id="media-filter-sort" label="Sort">
-    <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
+    <PoodleOrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} compact />
   </PoodleField>
-</FilterBar>
+</FilterToolbar>
 
 {#if pageData.loading}
-  <PageLoading message="Loading media..." />
+  <PageLoading presentation="inline" message="Loading media..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if (pageData.data?.items ?? []).length === 0}
-  <EmptyState title="No media found" actionLabel="Upload your first media" actionHref="/media/upload" />
+  <PoodleEmptyState title="No media found">
+    <svelte:fragment slot="visual">
+      <Image size={18} />
+    </svelte:fragment>
+    <a slot="actions" href="/media/upload">Upload your first media</a>
+  </PoodleEmptyState>
 {:else}
-  <ListGrid minItemWidth={26}>
+  <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
     {#each pageData.data?.items ?? [] as item}
       {@const accent = getMediaKindAccent(item.kind)}
-      <ListCard
+      <PoodleListCard
         title={item.title ?? item.originalFilename ?? "Untitled"}
         subtitle={isSelectionMode ? formatFileSize(item.byteSize) : undefined}
         href={isSelectionMode ? undefined : `/media/${item.id}`}
-        {accent}
+        accentColor={accent}
+        selectable={isSelectionMode}
         selected={selection.isSelected(item.id)}
-        onSelectionChange={isSelectionMode ? (checked) => selection.toggle(item.id, checked) : undefined}
-        actionsPlacement={item.thumbnailUrl ? "media-overlay" : "media"}
+        on:selectedChange={(event) => {
+          if (isSelectionMode) {
+            selection.toggle(item.id, event.detail.selected);
+          }
+        }}
       >
-        {#snippet media()}
+        <svelte:fragment slot="leading">
           <PoodleMediaThumbnail
             kind={toPoodleMediaKind(item.kind)}
             presentation="compact"
@@ -376,8 +402,8 @@
               />
             {/if}
           </PoodleMediaThumbnail>
-        {/snippet}
-        {#snippet trailing()}
+        </svelte:fragment>
+        <svelte:fragment slot="trailing">
           <div class="media-pills">
             <PoodlePill tone="neutral" appearance="badge" size="lg">{getMediaKindLabel(item.kind)}</PoodlePill>
             {#if item.visibility && item.visibility !== MediaVisibility.Public}
@@ -386,57 +412,72 @@
               </PoodlePill>
             {/if}
           </div>
-        {/snippet}
+        </svelte:fragment>
+        <svelte:fragment slot="actions">
+          {#if !isSelectionMode}
+            <CopyActionsMenu
+              toastStore={toastStore}
+              triggerLabel="Actions"
+              copies={[
+                {
+                  label: "Copy media ID",
+                  text: item.id,
+                  successMessage: "Copied media ID"
+                }
+              ]}
+              actions={[
+                {
+                  label: "View details",
+                  onSelect: () =>
+                    void gotoWithContext(`/media/${item.id}`, {
+                      label: "Media",
+                      href: "/media",
+                      type: "list"
+                    })
+                },
+                {
+                  label: "Move to trash",
+                  destructive: true,
+                  onSelect: () => handleDeleteMedia(item.id)
+                }
+              ]}
+            />
+          {/if}
+        </svelte:fragment>
 
-        {#snippet actions({ trigger, align })}
-          <CopyActionsMenu
-            toastStore={toastStore}
-            {trigger}
-            {align}
-            copies={[
-              {
-                label: "Copy media ID",
-                text: item.id,
-                successMessage: "Copied media ID"
-              }
-            ]}
-            actions={[
-              {
-                label: "View details",
-                onSelect: () =>
-                  void gotoWithContext(`/media/${item.id}`, {
-                    label: "Media",
-                    href: "/media",
-                    type: "list"
-                  })
-              },
-              {
-                label: "Move to trash",
-                destructive: true,
-                onSelect: () => handleDeleteMedia(item.id)
-              }
-            ]}
-          />
-        {/snippet}
-
-        <span class="media-meta">
+        <span slot="footer" class="media-meta">
           {#if item.byteSize}
             {formatFileSize(item.byteSize)} &middot;
           {/if}
           Updated {new Date(item.updatedAt).toLocaleDateString()}
         </span>
-      </ListCard>
+      </PoodleListCard>
     {/each}
-  </ListGrid>
+  </PoodleGrid>
 {/if}
 
-<BatchActionBar
-  selectedCount={selection.count}
+<PoodleBulkActionBar
+  selectionCount={selection.count}
   totalCount={(pageData.data?.items ?? []).length}
+  actions={batchActions}
   loading={batchLoading}
-  onClearSelection={handleClearSelection}
-  onSelectAll={handleSelectAll}
-  onBatchDelete={handleBatchDelete}
+  showSelectAll
+  allSelected={selection.count > 0 && selection.count === (pageData.data?.items ?? []).length}
+  on:clear={handleClearSelection}
+  on:selectAll={handleSelectAll}
+  on:action={() => (showBatchDeleteConfirm = true)}
+/>
+
+<PoodleAlertDialog
+  open={showBatchDeleteConfirm}
+  title="Delete selected media"
+  description={`Are you sure you want to delete ${selection.count} selected ${selection.count === 1 ? "item" : "items"}?`}
+  confirmLabel={`Delete ${selection.count} ${selection.count === 1 ? "item" : "items"}`}
+  tone="danger"
+  onConfirm={handleBatchDelete}
+  onCancel={() => {
+    showBatchDeleteConfirm = false;
+  }}
 />
 
 <style>

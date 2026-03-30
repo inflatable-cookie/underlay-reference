@@ -1,19 +1,19 @@
 <script lang="ts">
-  import {
-    AlertDialog as PoodleAlertDialog,
-    Button as PoodleButton,
-    Callout as PoodleCallout,
-    Card as PoodleCard,
-    FormActions as PoodleFormActions
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  TotpInput as PoodleTotpInput,
+  AlertDialog as PoodleAlertDialog,
+  Button as PoodleButton,
+  Callout as PoodleCallout,
+  Card as PoodleCard,
+  FormActions as PoodleFormActions
   } from "@poodle/svelte-primitives";
-  import {
-        TotpInput,
-    PageLoading
-  } from "@decodelabs/underlay/components";
-  import { authCommands } from "acme-client";
+  import { PageLoading } from "@poodle/svelte-composites";
+  import { authCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
-
+  
   // Page data - fetched when auth is ready
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
@@ -139,7 +139,7 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading 2FA settings..." />
+  <PageLoading presentation="inline" message="Loading 2FA settings..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else}
@@ -211,10 +211,11 @@
           </pre>
         </details>
 
-        <TotpInput
-          bind:value={enableCode}
+        <PoodleTotpInput
+          value={enableCode}
           label="Enter code from your authenticator app"
-          oncomplete={enableTotp}
+          on:valueChange={(event) => { enableCode = event.detail.value; }}
+          on:complete={enableTotp}
         />
 
         <PoodleFormActions align="start">

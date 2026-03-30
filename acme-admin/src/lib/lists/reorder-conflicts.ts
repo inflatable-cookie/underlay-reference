@@ -2,8 +2,8 @@ import {
   applyReorderConflict,
   extractReorderConflict,
   type ReorderController,
-  type ReorderableItem
-} from "@decodelabs/underlay/patterns";
+  type ReorderableItem,
+} from "@decodelabs/underlay/runtime";
 
 export interface ReorderConflictRecoveryResult {
   handled: boolean;
@@ -25,7 +25,7 @@ export function recoverReorderConflict<T extends ReorderableItem>({
   controller,
   error,
   latestItems,
-  entityLabel
+  entityLabel,
 }: RecoverReorderConflictOptions<T>): ReorderConflictRecoveryResult {
   const conflict = extractReorderConflict(error);
   if (!conflict) {
@@ -42,7 +42,9 @@ export function recoverReorderConflict<T extends ReorderableItem>({
     changes.push(`${resolution.removedCount} ${entityLabel} removed`);
   }
   if (resolution.unresolvedAddedIds.length > 0) {
-    changes.push(`${resolution.unresolvedAddedIds.length} new item(s) need refresh`);
+    changes.push(
+      `${resolution.unresolvedAddedIds.length} new item(s) need refresh`,
+    );
   }
 
   const suffix =
@@ -52,6 +54,6 @@ export function recoverReorderConflict<T extends ReorderableItem>({
 
   return {
     handled: true,
-    message: `${conflict.message}${suffix} Review the order and save again.`
+    message: `${conflict.message}${suffix} Review the order and save again.`,
   };
 }

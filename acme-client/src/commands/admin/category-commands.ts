@@ -1,3 +1,12 @@
+import {
+  appendSuggestionParams,
+  type SuggestionRequestOptions,
+} from "@decodelabs/underlay/runtime";
+import { getAdminHttpClient } from "../../utils/client-factory.js";
+import {
+  appendQueryParams,
+  type QueryParams,
+} from "@decodelabs/underlay/client";
 import type { ListResponse, SingleResponse } from "../../types/common-types.js";
 import type {
   Category,
@@ -7,15 +16,6 @@ import type {
   ReorderPayload,
   ReorderResult,
 } from "../../types/admin-types.js";
-import { getAdminHttpClient } from "../../utils/client-factory.js";
-import {
-  appendQueryParams,
-  type QueryParams,
-} from "@decodelabs/underlay/client";
-import {
-  appendSuggestionParams,
-  type SuggestionRequestOptions,
-} from "@decodelabs/underlay/patterns";
 import {
   getHeaderValueCaseInsensitive,
   toSnakeQueryParams,
@@ -32,10 +32,13 @@ import {
 export async function listCategories(
   fetchFn: typeof fetch,
   accessToken: string,
-  query?: QueryParams
+  query?: QueryParams,
 ): Promise<CategoryWithCounts[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const path = appendQueryParams("/v1/admin/categories", toSnakeQueryParams(query));
+  const path = appendQueryParams(
+    "/v1/admin/categories",
+    toSnakeQueryParams(query),
+  );
   const response = await http.get<ListResponse<CategoryWithCounts>>(path);
   return response.data;
 }
@@ -46,7 +49,7 @@ export async function listCategories(
 export async function listCategoriesForSuggestions(
   fetchFn: typeof fetch,
   accessToken: string,
-  options?: SuggestionRequestOptions
+  options?: SuggestionRequestOptions,
 ): Promise<Category[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const path = appendSuggestionParams("/v1/admin/categories", options);
@@ -60,7 +63,7 @@ export async function listCategoriesForSuggestions(
 export async function getCategory(
   categoryId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<Category> {
   const result = await getCategoryWithEtag(categoryId, fetchFn, accessToken);
   return result.data;
@@ -69,11 +72,11 @@ export async function getCategory(
 export async function getCategoryWithEtag(
   categoryId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<WithEtag<Category>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.getWithMeta<SingleResponse<Category>>(
-    `/v1/admin/categories/${encodeURIComponent(categoryId)}`
+    `/v1/admin/categories/${encodeURIComponent(categoryId)}`,
   );
   return {
     data: response.body!.data,
@@ -87,12 +90,12 @@ export async function getCategoryWithEtag(
 export async function createCategory(
   payload: CreateCategoryPayload,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<Category> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.post<SingleResponse<Category>>(
     "/v1/admin/categories",
-    payload
+    payload,
   );
   return response.data;
 }
@@ -104,9 +107,14 @@ export async function updateCategory(
   categoryId: string,
   payload: UpdateCategoryPayload,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<Category> {
-  const result = await updateCategoryWithEtag(categoryId, payload, fetchFn, accessToken);
+  const result = await updateCategoryWithEtag(
+    categoryId,
+    payload,
+    fetchFn,
+    accessToken,
+  );
   return result.data;
 }
 
@@ -115,14 +123,16 @@ export async function updateCategoryWithEtag(
   payload: UpdateCategoryPayload,
   fetchFn: typeof fetch,
   accessToken: string,
-  options?: { ifMatch?: string }
+  options?: { ifMatch?: string },
 ): Promise<WithEtag<Category>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const headers = options?.ifMatch ? { "If-Match": options.ifMatch } : undefined;
+  const headers = options?.ifMatch
+    ? { "If-Match": options.ifMatch }
+    : undefined;
   const response = await http.patchWithMeta<SingleResponse<Category>>(
     `/v1/admin/categories/${encodeURIComponent(categoryId)}`,
     payload,
-    headers
+    headers,
   );
   return {
     data: response.body!.data,
@@ -136,7 +146,7 @@ export async function updateCategoryWithEtag(
 export async function softDeleteCategory(
   categoryId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<void> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   await http.delete(`/v1/admin/categories/${encodeURIComponent(categoryId)}`);
@@ -148,7 +158,7 @@ export async function softDeleteCategory(
 export async function reorderCategories(
   payload: ReorderPayload,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<ReorderResult> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   return await http.put<ReorderResult>("/v1/admin/categories/reorder", payload);

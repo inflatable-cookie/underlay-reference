@@ -1,23 +1,27 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  DetailMeta,
+  DetailMetaId,
+  type SpaFormResult,
+  SpaFormShell
+} from "@decodelabs/underlay/patterns";
+import {
+  computeBackInfo,
+  consumeNavigationContext,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { untrack } from "svelte";
   import type { PageData } from "./$types";
-  import type { Category } from "acme-client";
-  import { adminCommands } from "acme-client";
+  import type { Category } from "@api-client";
+  import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { extractApiError, isPreconditionFailed } from "$lib/utils/api-errors";
+  import { extractApiError,
+  isPreconditionFailed } from "$lib/utils/api-errors";
   import CategoryForm from "$lib/forms/CategoryForm.svelte";
   import { goto } from "$app/navigation";
-  import {
-    SpaFormShell,
-    DetailMeta,
-    DetailMetaId,
-    computeBackInfo,
-    consumeNavigationContext,
-    useAuthenticatedData,
-    type SpaFormResult
-  } from "@decodelabs/underlay/patterns";
-  import { PageLoading } from "@decodelabs/underlay/components";
+    import { PageLoading } from "@poodle/svelte-composites";
 
   interface Props {
     data: PageData;
@@ -184,7 +188,7 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading category..." />
+  <PageLoading presentation="inline" message="Loading category..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if category}

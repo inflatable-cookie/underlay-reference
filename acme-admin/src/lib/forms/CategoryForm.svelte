@@ -1,19 +1,23 @@
 <script lang="ts">
-  import {
-    Button,
-    ColorPicker,
-    Field,
-    FieldSet,
-    FormActions,
-    SplitButton,
-    Switch,
-    TextArea,
-    TextInput,
-    type InputValidationStatus,
+import {
+  isReservedSlug,
+  isValidSlugFormat,
+  slugify
+} from "@decodelabs/underlay/utils";
+import {
+  Button,
+  ColorPicker,
+  Field,
+  FieldSet,
+  FormActions,
+  SplitButton,
+  Switch,
+  TextArea,
+  TextInput,
+  type InputValidationStatus,
   } from "@poodle/svelte-primitives";
   import type { ValidationResult } from "@poodle/svelte-primitives";
-  import { isReservedSlug, isValidSlugFormat, slugify } from "@decodelabs/underlay/patterns";
-  import { navigateOnCancel } from "@decodelabs/underlay/client";
+    import { navigateOnCancel } from "@decodelabs/underlay/client";
   import { untrack } from "svelte";
 
   type CategoryFormMode = "create" | "edit";

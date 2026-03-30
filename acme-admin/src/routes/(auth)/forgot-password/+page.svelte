@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { authCommands } from "acme-client";
-  import { ForgotPasswordFlow } from "@decodelabs/underlay/components";
-
+import {
+  ForgotPasswordFlow
+} from "@decodelabs/underlay/patterns";
+import {
+  authCommands } from "@api-client";
+  
   // Wire up api-client commands
   async function handleRequestCode(email: string) {
     await authCommands.requestPasswordReset({ email }, fetch);

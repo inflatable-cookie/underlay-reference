@@ -144,7 +144,7 @@ export {
   type SelectionHistoryOptions,
   type SelectionHistory,
   type SuggestionRequestOptions,
-} from "@decodelabs/underlay/patterns/selection-history";
+} from "@decodelabs/underlay/runtime";
 
 // Client factory (for apps to configure)
 export {
@@ -154,7 +154,11 @@ export {
   getFrontHttpClient,
   getSharedHttpClient,
 } from "./utils/client-factory.js";
-export type { AcmeClientConfig, HttpClientOptions, Audience } from "./utils/client-factory.js";
+export type {
+  AcmeClientConfig,
+  HttpClientOptions,
+  Audience,
+} from "./utils/client-factory.js";
 
 // Token store
 export { createTokenStore, tokenStore } from "./utils/token-store.js";
@@ -173,7 +177,11 @@ export {
   configureAuthManager,
   getAuthManager,
 } from "./utils/auth-manager.js";
-export type { AuthManager, AuthManagerConfig, AuthState } from "./utils/auth-manager.js";
+export type {
+  AuthManager,
+  AuthManagerConfig,
+  AuthState,
+} from "./utils/auth-manager.js";
 
 // Account types
 export type { UserProfile, UserProfileUpdate } from "./types/account-types.js";

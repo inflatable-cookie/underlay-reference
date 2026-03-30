@@ -1,20 +1,24 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
-  import {
-        TotpInput,
-    PasswordRequirements,
-    PageLoading
-  } from "@decodelabs/underlay/components";
-  import {
-    Button as PoodleButton,
-    Card as PoodleCard,
-    Field as PoodleField,
-    FormActions as PoodleFormActions,
-    TextInput as PoodleTextInput
-  } from "@poodle/svelte-primitives";
-  import { authCommands } from "acme-client";
-  import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
+import {
+  PasswordRequirements
+} from "@decodelabs/underlay/patterns";
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout,
+  TotpInput as PoodleTotpInput
+} from "@poodle/svelte-primitives";
+import { PageLoading } from "@poodle/svelte-composites";
+import {
+  Button as PoodleButton,
+  Card as PoodleCard,
+  Field as PoodleField,
+  FormActions as PoodleFormActions,
+  TextInput as PoodleTextInput
+} from "@poodle/svelte-primitives";
+import { authCommands } from "@api-client";
+import { auth } from "$lib/stores/auth";
 
   // Page data - fetched when auth is ready
   const pageData = useAuthenticatedData(
@@ -187,7 +191,7 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading..." />
+  <PageLoading presentation="inline" message="Loading..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if passwordStep === "verify"}
@@ -204,11 +208,12 @@
   {:else if verificationMethod === "totp"}
     <PoodleCard>
       <p class="muted">Enter the 6-digit code from your authenticator app.</p>
-      <TotpInput
-        bind:value={verificationCode}
+      <PoodleTotpInput
+        value={verificationCode}
         label="Authenticator code"
         disabled={verificationBusy}
-        oncomplete={verifyTotp}
+        on:valueChange={(event) => { verificationCode = event.detail.value; }}
+        on:complete={verifyTotp}
       />
       <PoodleFormActions align="start">
         <PoodleButton type="button" variant="primary" disabled={verificationBusy} on:click={verifyTotp}>
@@ -225,11 +230,12 @@
     {#if emailTotpSent}
       <PoodleCard>
         <p class="muted">We've sent a 6-digit code to your email address. Enter it below.</p>
-        <TotpInput
-          bind:value={verificationCode}
+        <PoodleTotpInput
+          value={verificationCode}
           label="Email code"
           disabled={verificationBusy}
-          oncomplete={verifyEmailTotp}
+          on:valueChange={(event) => { verificationCode = event.detail.value; }}
+          on:complete={verifyEmailTotp}
         />
         <PoodleFormActions align="start">
           <PoodleButton type="button" variant="primary" disabled={verificationBusy} on:click={verifyEmailTotp}>

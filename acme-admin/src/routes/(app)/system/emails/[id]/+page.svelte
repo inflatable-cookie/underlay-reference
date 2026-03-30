@@ -1,26 +1,31 @@
 <script lang="ts">
-  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  DetailMetaId,
+  DetailMetaSeparator,
+  DetailMeta
+} from "@decodelabs/underlay/patterns";
+import {
+  useToasts,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  AlertDialog as PoodleAlertDialog,
+  Callout as PoodleCallout,
+  Card as PoodleCard,
+  DetailRow as PoodleDetailRow,
+  Tabs,
+  type TabItem
+  } from "@poodle/svelte-primitives";
+  import { DetailSection as PoodleDetailSection,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import {
-    CopyActionsMenu,
-    DetailPageShell,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaSeparator,
-    useToasts,
-    useAuthenticatedData
-  } from "@decodelabs/underlay/patterns";
-  import {
-    DetailsCard,
-    DetailsItem,
-    DetailsSection,
-        PageLoading
-  } from "@decodelabs/underlay/components";
-  import { Pill as PoodlePill } from "@poodle/svelte-primitives";
-  import { adminCommands } from "acme-client";
+    import { Pill as PoodlePill } from "@poodle/svelte-primitives";
+  import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import type { CapturedEmailDetail } from "acme-client";
+  import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
+  import type { CapturedEmailDetail } from "@api-client";
 
   const toastStore = useToasts();
 
@@ -56,7 +61,7 @@
   // Build dynamic tabs based on email content
   const emailTabs = $derived.by(() => {
     if (!email) return [];
-    const tabs: { value: string; label: string }[] = [];
+    const tabs: TabItem[] = [];
     if (email.htmlBody) tabs.push({ value: "html", label: "HTML Preview" });
     if (email.textBody) tabs.push({ value: "text", label: "Plain Text" });
     if (email.htmlBody) tabs.push({ value: "source", label: "HTML Source" });
@@ -68,19 +73,35 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading email..." />
+  <PageLoading presentation="inline" message="Loading email..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if email}
-  <DetailPageShell
-    section="Captured Email"
-    title={email.subject || "(no subject)"}
-    backHref="/system/emails"
-    backLabel="Back to emails"
-    tabs={emailTabs}
-    bind:activeTab
-  >
-    {#snippet meta()}
+  <section class="email-detail">
+    <div class="email-detail__header">
+      <PoodlePageHeader
+        section="Captured Email"
+        title={email.subject || "(no subject)"}
+        backHref="/system/emails"
+        backLabel="Back to emails"
+      >
+        <svelte:fragment slot="actions">
+          <CopyActionsMenu
+            toastStore={toastStore}
+            triggerLabel="Actions"
+            copies={[
+              { label: "Copy ID", text: email.emailId, successMessage: "Copied email ID" },
+              { label: "Copy from address", text: email.fromAddress, successMessage: "Copied from address" },
+              { label: "Copy to addresses", text: email.toAddresses.join(", "), successMessage: "Copied to addresses" }
+            ]}
+            actions={[
+              { label: "Delete", destructive: true, onSelect: () => { showDeleteConfirm = true; } }
+            ]}
+          />
+        </svelte:fragment>
+      </PoodlePageHeader>
+
+      <div class="email-detail__meta">
       <DetailMeta>
         <DetailMetaId value={email.emailId} />
         <DetailMetaSeparator />
@@ -88,43 +109,31 @@
           {getStatusLabel()}
         </PoodlePill>
       </DetailMeta>
-    {/snippet}
+      </div>
+    </div>
 
-    {#snippet actions()}
-      <CopyActionsMenu
-        toastStore={toastStore}
-        triggerLabel="Actions"
-        copies={[
-          { label: "Copy ID", text: email.emailId, successMessage: "Copied email ID" },
-          { label: "Copy from address", text: email.fromAddress, successMessage: "Copied from address" },
-          { label: "Copy to addresses", text: email.toAddresses.join(", "), successMessage: "Copied to addresses" }
-        ]}
-        actions={[
-          { label: "Delete", destructive: true, onSelect: () => { showDeleteConfirm = true; } }
-        ]}
-      />
-    {/snippet}
-
-    {#snippet tabContent(tab)}
-      {#if tab === "html" && email.htmlBody}
-        <DetailsCard>
-          <DetailsSection legend="Addresses">
-            <DetailsItem label="From" value={email.fromAddress} />
-            <DetailsItem label="To" value={email.toAddresses.join(", ")} />
-            {#if email.replyTo}
-              <DetailsItem label="Reply-To" value={email.replyTo} />
-            {/if}
-            {#if email.ccAddresses.length > 0}
-              <DetailsItem label="CC" value={email.ccAddresses.join(", ")} />
-            {/if}
-            {#if email.bccAddresses.length > 0}
-              <DetailsItem label="BCC" value={email.bccAddresses.join(", ")} />
-            {/if}
-          </DetailsSection>
-          <DetailsSection legend="Metadata">
-            <DetailsItem label="Captured" value={new Date(email.capturedAt).toLocaleString()} />
-          </DetailsSection>
-        </DetailsCard>
+    <Tabs bind:value={activeTab} items={emailTabs} variant="card" size="sm" ariaLabel="Email detail sections" let:activeValue>
+      {#if activeValue === "html" && email.htmlBody}
+        <PoodleCard>
+          <div class="detail-card-grid">
+            <PoodleDetailSection title="Addresses" columns={2} separated={false}>
+              <PoodleDetailRow label="From" value={email.fromAddress} />
+              <PoodleDetailRow label="To" value={email.toAddresses.join(", ")} />
+              {#if email.replyTo}
+                <PoodleDetailRow label="Reply-To" value={email.replyTo} />
+              {/if}
+              {#if email.ccAddresses.length > 0}
+                <PoodleDetailRow label="CC" value={email.ccAddresses.join(", ")} />
+              {/if}
+              {#if email.bccAddresses.length > 0}
+                <PoodleDetailRow label="BCC" value={email.bccAddresses.join(", ")} />
+              {/if}
+            </PoodleDetailSection>
+            <PoodleDetailSection title="Metadata" columns={2} separated={false}>
+              <PoodleDetailRow label="Captured" value={new Date(email.capturedAt).toLocaleString()} />
+            </PoodleDetailSection>
+          </div>
+        </PoodleCard>
 
         <div class="email-detail__body">
           <div class="email-detail__preview">
@@ -135,21 +144,21 @@
             ></iframe>
           </div>
         </div>
-      {:else if tab === "text" && email.textBody}
+      {:else if activeValue === "text" && email.textBody}
         <div class="email-detail__body">
           <pre class="email-detail__text">{email.textBody}</pre>
         </div>
-      {:else if tab === "source" && email.htmlBody}
+      {:else if activeValue === "source" && email.htmlBody}
         <div class="email-detail__body">
           <pre class="email-detail__source">{email.htmlBody}</pre>
         </div>
-      {:else if tab === "headers" && email.headersJson}
+      {:else if activeValue === "headers" && email.headersJson}
         <div class="email-detail__body">
           <pre class="email-detail__headers">{JSON.stringify(email.headersJson, null, 2)}</pre>
         </div>
       {/if}
-    {/snippet}
-  </DetailPageShell>
+    </Tabs>
+  </section>
 
   <PoodleAlertDialog
     open={showDeleteConfirm}
@@ -172,6 +181,29 @@
 {/if}
 
 <style>
+  .email-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .email-detail__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .email-detail__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .detail-card-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
   .email-detail__body {
     background: var(--admin-color-surface-subtle);
     border: 1px solid var(--admin-color-border-subtle);

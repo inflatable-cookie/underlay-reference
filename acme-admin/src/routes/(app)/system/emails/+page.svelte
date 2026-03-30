@@ -1,13 +1,15 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  useToasts,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout,
+  Grid as PoodleGrid,
+  ListCard as PoodleListCard } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { CopyActionsMenu, useToasts, useAuthenticatedData } from "@decodelabs/underlay/patterns";
-  import {
-        ListCard,
-    ListGrid
-  } from "@decodelabs/underlay/components";
-  import {
+    import {
     FilterToolbar,
     ListContainer
   } from "@poodle/svelte-composites";
@@ -19,9 +21,10 @@
   } from "@poodle/svelte-primitives";
   import Mail from "lucide-svelte/icons/mail";
   import Filter from "lucide-svelte/icons/filter";
-  import { adminCommands } from "acme-client";
+  import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import type { CapturedEmailSummary } from "acme-client";
+  import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
+  import type { CapturedEmailSummary } from "@api-client";
 
   const toastStore = useToasts();
 
@@ -185,25 +188,24 @@
       <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
     </svelte:fragment>
 
-    <ListGrid minItemWidth={26}>
+    <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
       {#each entries as entry}
         {@const accent = entry.wasDelivered ? "#22c55e" : "#3b82f6"}
         {@const href = `/system/emails/${encodeURIComponent(entry.id)}`}
-        <ListCard
+        <PoodleListCard
           href={href}
           title={entry.subject || "(no subject)"}
           subtitle={entry.toAddresses.join(", ")}
-          accent={accent}
+          accentColor={accent}
         >
-          {#snippet media()}
+          <svelte:fragment slot="leading">
             <Mail size={30} />
-          {/snippet}
+          </svelte:fragment>
 
-          {#snippet actions({ trigger, align })}
+          <svelte:fragment slot="actions">
             <CopyActionsMenu
               toastStore={toastStore}
-              {trigger}
-              {align}
+              triggerLabel="Actions"
               copies={[
                 {
                   label: "Copy email ID",
@@ -223,20 +225,20 @@
                 }
               ]}
             />
-          {/snippet}
+          </svelte:fragment>
 
-          <span>
+          <span slot="footer">
             From: <strong>{entry.fromAddress}</strong>
           </span>
-          <span>
+          <span slot="trailing">
             {new Date(entry.capturedAt).toLocaleString()}
             {#if entry.wasDelivered}
               <span class="delivered-badge">Delivered</span>
             {/if}
           </span>
-        </ListCard>
+        </PoodleListCard>
       {/each}
-    </ListGrid>
+    </PoodleGrid>
   </ListContainer>
 </section>
 

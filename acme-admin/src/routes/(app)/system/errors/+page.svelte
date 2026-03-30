@@ -1,10 +1,21 @@
 <script lang="ts">
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+import {
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  DataTable,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
+  import type { TableColumn,
+  TableRow } from "@poodle/svelte-composites";
   import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
-  import { adminCommands, type ErrorLogSummary, type ErrorLogStats, type ErrorLogDetail } from "acme-client";
+  import { adminCommands,
+  type ErrorLogSummary,
+  type ErrorLogStats,
+  type ErrorLogDetail } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
-  import { PageLoading, DataTable, TimeAgo, type DataTableColumn } from "@decodelabs/underlay/components";
+    import { TimeAgo } from "@poodle/svelte-primitives";
   import {
     Button as PoodleButton,
     Card as PoodleCard,
@@ -64,6 +75,24 @@
 
   const logs = $derived(pageData.data?.logs ?? []);
   const stats = $derived(pageData.data?.stats);
+  const tableRows = $derived<TableRow<ErrorLogSummary>[]>(
+    logs.map((log) => ({
+      id: log.id,
+      cells: {
+        expand: "",
+        occurredAt: log.occurredAt,
+        statusCode: log.statusCode,
+        endpoint: log.endpoint,
+        errorCode: log.errorCode,
+        message: log.message || null
+      },
+      data: log
+    }))
+  );
+
+  function getRowLog(row: TableRow): ErrorLogSummary | null {
+    return (row.data as ErrorLogSummary | undefined) ?? null;
+  }
 
   async function toggleDetail(logId: string) {
     if (expandedLogId === logId) {
@@ -111,13 +140,13 @@
     { value: "503", label: "503 Unavailable" }
   ];
 
-  const columns: DataTableColumn<ErrorLogSummary>[] = [
-    { key: "expand", label: "", width: "64px", align: "center", hideable: false },
-    { key: "occurredAt", label: "Time", width: "minmax(120px, 160px)" },
-    { key: "statusCode", label: "Status", width: "minmax(90px, 110px)" },
-    { key: "endpoint", label: "Endpoint", width: "minmax(240px, 420px)" },
-    { key: "errorCode", label: "Error Code", width: "minmax(140px, 200px)" },
-    { key: "message", label: "Message", width: "minmax(220px, 420px)" }
+  const columns: TableColumn[] = [
+    { id: "expand", label: "", width: "64px", align: "center", hideable: false, isRowHeader: false },
+    { id: "occurredAt", label: "Time", width: "minmax(120px, 160px)" },
+    { id: "statusCode", label: "Status", width: "minmax(90px, 110px)" },
+    { id: "endpoint", label: "Endpoint", width: "minmax(240px, 420px)" },
+    { id: "errorCode", label: "Error Code", width: "minmax(140px, 200px)" },
+    { id: "message", label: "Message", width: "minmax(220px, 420px)" }
   ];
 </script>
 
@@ -131,7 +160,7 @@
 </PoodlePageHeader>
 
 {#if pageData.loading && logs.length === 0}
-  <PageLoading message="Loading error logs..." />
+  <PageLoading presentation="inline" message="Loading error logs..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else}
@@ -192,15 +221,17 @@
   <!-- Error logs list -->
   <div class="logs-list">
     <DataTable
-      data={logs}
+      rows={tableRows}
       {columns}
-      loading={pageData.loading}
       emptyMessage="No error logs found"
-      showLimitSelector={false}
-      extendedRowWhen={(row) => expandedLogId === row.id}
+      showRowActions={false}
+      expandedRowWhen={(row: TableRow) => expandedLogId === row.id}
     >
-      {#snippet cell({ column, row })}
-        {#if column.key === "expand"}
+      <svelte:fragment slot="cell" let:column let:row>
+        {@const log = getRowLog(row)}
+        {#if !log}
+          —
+        {:else if column.id === "expand"}
           <button
             type="button"
             class="expand-btn"
@@ -213,29 +244,30 @@
               <ChevronDown size={16} />
             {/if}
           </button>
-        {:else if column.key === "occurredAt"}
+        {:else if column.id === "occurredAt"}
           <span class="time">
-            <TimeAgo date={row.occurredAt} tooltipFormat="datetime" short />
+            <TimeAgo datetime={log.occurredAt} tooltipFormat="datetime" short />
           </span>
-        {:else if column.key === "statusCode"}
-          <PoodlePill tone={getStatusTone(row.statusCode)} appearance="badge" size="lg">
-            {row.statusCode}
+        {:else if column.id === "statusCode"}
+          <PoodlePill tone={getStatusTone(log.statusCode)} appearance="badge" size="lg">
+            {log.statusCode}
           </PoodlePill>
-        {:else if column.key === "endpoint"}
+        {:else if column.id === "endpoint"}
           <div class="endpoint">
-            <code class="method">{row.method}</code>
-            <code class="path">{row.endpoint}</code>
+            <code class="method">{log.method}</code>
+            <code class="path">{log.endpoint}</code>
           </div>
-        {:else if column.key === "errorCode"}
-          <code class="error-code">{row.errorCode}</code>
-        {:else if column.key === "message"}
-          <span class="message">{row.message || "—"}</span>
+        {:else if column.id === "errorCode"}
+          <code class="error-code">{log.errorCode}</code>
+        {:else if column.id === "message"}
+          <span class="message">{log.message || "—"}</span>
         {:else}
           —
         {/if}
-      {/snippet}
-      {#snippet extendedRow({ row })}
-        {#if expandedLogId === row.id}
+      </svelte:fragment>
+      <svelte:fragment slot="expandedRow" let:row>
+        {@const log = getRowLog(row)}
+        {#if log && expandedLogId === row.id}
           {#if loadingDetail}
             <div class="detail-loading">Loading details...</div>
           {:else if expandedLogDetail}
@@ -273,13 +305,13 @@
             </div>
           {/if}
         {/if}
-      {/snippet}
-      {#snippet empty()}
+      </svelte:fragment>
+      <svelte:fragment slot="empty">
         <div class="empty-state">
           <AlertCircle size={32} />
           <p>No error logs found</p>
         </div>
-      {/snippet}
+      </svelte:fragment>
     </DataTable>
   </div>
 {/if}

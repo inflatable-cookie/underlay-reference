@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
-	import { MetricTile } from "@poodle/svelte-composites";
+	import { LogList, MetricTile, type LogEntry } from "@poodle/svelte-composites";
 	import { Pill } from "@poodle/svelte-primitives";
-	import { LogList, type LogEntry } from "@decodelabs/underlay/components";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
 	import Settings from "lucide-svelte/icons/settings";

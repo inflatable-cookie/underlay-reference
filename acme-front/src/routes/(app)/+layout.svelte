@@ -3,7 +3,7 @@
   import { goto } from "$app/navigation";
   import { auth, currentUser, authLoading } from "$lib/stores/auth";
   import { Button } from "@poodle/svelte-primitives";
-  import PageLoading from "@decodelabs/underlay/components/PageLoading.svelte";
+  import { PageLoading } from "@poodle/svelte-composites";
   import LogOut from "lucide-svelte/icons/log-out";
   import User from "lucide-svelte/icons/user";
 
@@ -26,7 +26,7 @@
 </script>
 
 {#if $authLoading}
-  <PageLoading message="Loading..." />
+  <PageLoading presentation="inline" message="Loading..." />
 {:else if $currentUser}
   <header class="header">
     <a href="/dashboard" class="logo">Acme</a>

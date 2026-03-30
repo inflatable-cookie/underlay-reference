@@ -1,13 +1,20 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+import {
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  import { PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
-  import { adminCommands, type Project, type Label, TaskPriority } from "acme-client";
+  import { adminCommands,
+  type Project,
+  type Label,
+  TaskPriority } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
-  import { PageLoading } from "@decodelabs/underlay/components";
-  import {
+    import {
     Button as PoodleButton,
     Field as PoodleField,
     FormActions as PoodleFormActions,
@@ -124,7 +131,7 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading..." />
+  <PageLoading presentation="inline" message="Loading..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if project}

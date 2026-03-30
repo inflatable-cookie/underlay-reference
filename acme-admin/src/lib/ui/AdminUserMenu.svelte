@@ -6,7 +6,7 @@
 		Popover as PoodlePopover
 	} from "@poodle/svelte-primitives";
 	import { auth } from "$lib/stores/auth";
-	import type { LoginUser } from "acme-client";
+	import type { LoginUser } from "@api-client";
 
 	interface Props {
 		currentUser?: LoginUser | null;

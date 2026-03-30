@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { browser } from "$app/environment";
+import {
+  LoginPage
+} from "@decodelabs/underlay/patterns";
+import {
+  browser } from "$app/environment";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { authCommands } from "acme-client";
-  import { LoginPage } from "@decodelabs/underlay/components";
-  import { toPublicKeyRequestOptions, assertionToJson } from "@decodelabs/underlay/utils";
+  import { auth,
+  authLoading,
+  currentUser } from "$lib/stores/auth";
+  import { authCommands } from "@api-client";
+    import { toPublicKeyRequestOptions, assertionToJson } from "@decodelabs/underlay/utils";
 
   // Initialize auth and redirect if already logged in
   onMount(async () => {

@@ -1,27 +1,28 @@
 <script lang="ts">
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  createReorderController,
+  useToasts,
+  useAuthenticatedData,
+  useBatchSelection
+} from "@decodelabs/underlay/runtime";
+import {
+  EmptyState as PoodleEmptyState,
+  FilterToolbar,
+  PageHeader as PoodlePageHeader,
+  PageLoading,
+  ReorderableList as PoodleReorderableList } from "@poodle/svelte-composites";
+  import { AlertDialog as PoodleAlertDialog,
+  Callout as PoodleCallout,
+  Grid as PoodleGrid,
+  ListCard as PoodleListCard,
+  OrderBy as PoodleOrderBy,
+  type BulkAction,
+  type OrderByValue } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { onMount } from "svelte";
-  import {
-    FilterBar,
-    ReorderableList,
-    createReorderController,
-    useToasts,
-    useAuthenticatedData,
-    useBatchSelection
-  } from "@decodelabs/underlay/patterns";
-  import {
-    BatchActionBar,
-    EmptyState,
-    ListGrid,
-    ListCard,
-    OrderBy,
-    PageLoading,
-    type OrderByValue
-  } from "@decodelabs/underlay/components";
-  import {
+    import {
+    BulkActionBar as PoodleBulkActionBar,
     Button as PoodleButton,
     Field as PoodleField,
     IconButton as PoodleIconButton,
@@ -32,7 +33,7 @@
   import { ProjectListCard } from "$lib/cards";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
   import { arrowUpDownIcon, squareCheckIcon } from "$lib/ui/poodle-icon-nodes";
-  import { adminCommands, type ProjectWithCounts } from "acme-client";
+  import { adminCommands, type ProjectWithCounts } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
   import Plus from "lucide-svelte/icons/plus";
@@ -69,9 +70,11 @@
   });
 
   let isReorderMode = $state(false);
+  let reorderSubmitError = $state<string | null>(null);
   let isSelectionMode = $state(false);
   const selection = useBatchSelection<string>();
   let batchLoading = $state(false);
+  let showBatchDeleteConfirm = $state(false);
 
   // Clear selection when exiting selection mode
   $effect(() => {
@@ -92,6 +95,10 @@
 
   function handleSelectAll() {
     const allIds = (pageData.data?.projects ?? []).map(p => p.id);
+    if (selection.count === allIds.length) {
+      handleClearSelection();
+      return;
+    }
     selection.selectAll(allIds);
   }
 
@@ -102,6 +109,7 @@
       return;
     }
 
+    showBatchDeleteConfirm = false;
     batchLoading = true;
     try {
       const result = await adminCommands.batchDeleteProjects(
@@ -123,6 +131,10 @@
       batchLoading = false;
     }
   }
+
+  const batchActions: BulkAction[] = [
+    { id: "delete", label: "Delete", icon: "trash-2", tone: "danger" }
+  ];
 
   // Parse current state from URL
   const currentQuery = $derived(parseQueryParams($page.url.searchParams));
@@ -267,10 +279,12 @@
   );
 
   function enterReorderMode() {
+    reorderSubmitError = null;
     isReorderMode = true;
   }
 
   async function handleReorderSuccess() {
+    reorderSubmitError = null;
     isReorderMode = false;
     await pageData.refetch();
   }
@@ -295,7 +309,24 @@
   }
 
   function exitReorderMode() {
+    reorderController.reset();
+    reorderSubmitError = null;
     isReorderMode = false;
+  }
+
+  function handleReorderItems(items: typeof reorderController.pending) {
+    reorderController.updatePending(items);
+  }
+
+  async function handleReorderSubmit() {
+    reorderSubmitError = null;
+    try {
+      await reorderController.submit();
+      await handleReorderSuccess();
+    } catch (error) {
+      const transformed = await handleReorderError(error);
+      reorderSubmitError = transformed ?? (error instanceof Error ? error.message : String(error));
+    }
   }
 
   async function handleDeleteProject(projectId: string) {
@@ -359,7 +390,12 @@
 </PoodlePageHeader>
 
 {#if !isReorderMode}
-  <FilterBar title="Filters" onRefresh={() => pageData.refetch()}>
+  <FilterToolbar ariaLabel="Project filters" summaryText="Filters">
+    <svelte:fragment slot="actions">
+      <PoodleButton type="button" variant="ghost" size="sm" onclick={() => pageData.refetch()}>
+        Refresh
+      </PoodleButton>
+    </svelte:fragment>
     <PoodleField id="projects-filter-name" label="Name" let:describedBy>
       <PoodleSearchField
         id="projects-filter-name"
@@ -390,38 +426,44 @@
       />
     </PoodleField>
     <PoodleField id="projects-filter-sort" label="Sort">
-      <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
+      <PoodleOrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} compact />
     </PoodleField>
-  </FilterBar>
+  </FilterToolbar>
 {/if}
 
 {#if pageData.loading}
-  <PageLoading message="Loading projects..." />
+  <PageLoading presentation="inline" message="Loading projects..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if (pageData.data?.projects ?? []).length === 0}
-  <EmptyState title="No projects found" description="Create your first project to get started." actionLabel="Add project" actionHref="/projects/new" />
+  <PoodleEmptyState title="No projects found" message="Create your first project to get started.">
+    <a slot="actions" href="/projects/new">Add project</a>
+  </PoodleEmptyState>
 {:else if isReorderMode}
-  <ReorderableList
-    controller={reorderController}
+  <PoodleReorderableList
+    items={reorderController.pending}
+    ariaLabel="Reorder projects"
+    dirty={reorderController.isDirty}
+    submitting={reorderController.isPending}
+    errorMessage={reorderSubmitError}
+    onsubmit={handleReorderSubmit}
     oncancel={exitReorderMode}
-    onsuccess={handleReorderSuccess}
-    onsubmiterror={handleReorderError}
+    on:reorder={(event) => handleReorderItems(event.detail.items)}
   >
     {#snippet item(project)}
-      <ListCard
+      <PoodleListCard
         title={project.name}
-        variant="compact"
-        showDragHandle
+        layout="compact"
+        showReorderHandle
       >
-        {#snippet media()}
+        <svelte:fragment slot="leading">
           <Briefcase size={16} />
-        {/snippet}
-      </ListCard>
+        </svelte:fragment>
+      </PoodleListCard>
     {/snippet}
-  </ReorderableList>
+  </PoodleReorderableList>
 {:else}
-  <ListGrid minItemWidth={26}>
+  <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
     {#each pageData.data?.projects ?? [] as project}
       <ProjectListCard
         {project}
@@ -431,14 +473,29 @@
         onSelectionChange={(id, selected) => selection.toggle(id, selected)}
       />
     {/each}
-  </ListGrid>
+  </PoodleGrid>
 {/if}
 
-<BatchActionBar
-  selectedCount={selection.count}
+<PoodleBulkActionBar
+  selectionCount={selection.count}
   totalCount={(pageData.data?.projects ?? []).length}
+  actions={batchActions}
   loading={batchLoading}
-  onClearSelection={handleClearSelection}
-  onSelectAll={handleSelectAll}
-  onBatchDelete={handleBatchDelete}
+  showSelectAll
+  allSelected={selection.count > 0 && selection.count === (pageData.data?.projects ?? []).length}
+  on:clear={handleClearSelection}
+  on:selectAll={handleSelectAll}
+  on:action={() => (showBatchDeleteConfirm = true)}
+/>
+
+<PoodleAlertDialog
+  open={showBatchDeleteConfirm}
+  title="Delete selected projects"
+  description={`Are you sure you want to delete ${selection.count} selected project${selection.count === 1 ? "" : "s"}?`}
+  confirmLabel={`Delete ${selection.count} project${selection.count === 1 ? "" : "s"}`}
+  tone="danger"
+  onConfirm={handleBatchDelete}
+  onCancel={() => {
+    showBatchDeleteConfirm = false;
+  }}
 />

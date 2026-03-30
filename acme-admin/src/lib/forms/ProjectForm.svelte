@@ -1,26 +1,24 @@
 <script lang="ts">
-  import {
-    Button,
-    Field,
-    FieldSet,
-    FormActions,
-    SplitButton,
-    Select,
-    TextInput,
-    TextArea
+import {
+  createLocalSearchFns,
+  type SearchResult,
+  type SuggestionOptions
+} from "@decodelabs/underlay/runtime";
+import {
+  Button,
+  Field,
+  FieldSet,
+  FormActions,
+  SplitButton,
+  Select,
+  TextInput,
+  TextArea
   } from "@poodle/svelte-primitives";
-  import {
-    RelationSelector,
-    createLocalSearchFns,
-    type SelectableRelation,
-    type SearchResult,
-    type SuggestionOptions
-  } from "@decodelabs/underlay/patterns";
-  import { navigateOnCancel } from "@decodelabs/underlay/client";
+    import { navigateOnCancel } from "@decodelabs/underlay/client";
   import { categorySelectionHistory } from "$lib/stores/selection-history";
   import { untrack } from "svelte";
-  import type { Category, CategoryWithCounts } from "acme-client";
-  import CategoryForm from "./CategoryForm.svelte";
+  import type { Category, CategoryWithCounts } from "@api-client";
+  import ProjectCategorySelector from "./ProjectCategorySelector.svelte";
 
   type ProjectFormMode = "create" | "edit";
 
@@ -31,8 +29,8 @@
     status?: string;
   }
 
-  /** Converts a Category to SelectableRelation for RelationSelector */
-  function categoryToSelectable(category: Category | CategoryWithCounts): SelectableRelation {
+  /** Converts a Category to local category-selector item */
+  function categoryToSelectable(category: Category | CategoryWithCounts) {
     return {
       id: category.id,
       label: category.name,
@@ -102,47 +100,8 @@
     return Boolean(nameValue.trim() && statusValue.trim());
   });
 
-  // State for inline category creation
-  let isCreatingCategory = $state(false);
-  let createCategoryError = $state<string | null>(null);
-
-  function createCategoryInlineSubmitHandler(onSuccess: (item: SelectableRelation) => void) {
-    return async (formData: FormData) => {
-      if (!createCategory) return;
-
-      const name = String(formData.get("name") ?? "").trim();
-      const slug = String(formData.get("slug") ?? "").trim();
-      const description = String(formData.get("description") ?? "").trim() || null;
-      const color = String(formData.get("color") ?? "#6366f1").trim();
-
-      if (!name || !slug) {
-        createCategoryError = "Name and slug are required";
-        return;
-      }
-
-      isCreatingCategory = true;
-      createCategoryError = null;
-
-      try {
-        const newCategory = await createCategory(name, slug, description, color);
-        onSuccess(categoryToSelectable(newCategory));
-      } catch (e) {
-        createCategoryError = e instanceof Error ? e.message : "Failed to create category";
-      } finally {
-        isCreatingCategory = false;
-      }
-    };
-  }
-
-  function createCategoryInlineCancelHandler(onCancel: () => void) {
-    return () => {
-      createCategoryError = null;
-      onCancel();
-    };
-  }
-
   // Search function for RelationSelector when using server-side search
-  const searchCategoriesServer = async (query: string): Promise<SearchResult<SelectableRelation>> => {
+  const searchCategoriesServer = async (query: string): Promise<SearchResult<ReturnType<typeof categoryToSelectable>>> => {
     if (!fetchCategories) {
       return searchCategories(query);
     }
@@ -155,7 +114,7 @@
   };
 
   // Suggestions function
-  const suggestCategoriesServer = async (options?: SuggestionOptions): Promise<SelectableRelation[]> => {
+  const suggestCategoriesServer = async (options?: SuggestionOptions): Promise<ReturnType<typeof categoryToSelectable>[]> => {
     if (!fetchCategories) {
       return suggestCategories(options);
     }
@@ -195,41 +154,22 @@
       hint="Optional: Organize projects into categories"
     >
       <input type="hidden" name="categoryId" value={categoryId ?? ""} />
-      <RelationSelector
+      <ProjectCategorySelector
         label="Select Category"
-        value={categoryId}
-        onchange={(val) => { categoryId = val; }}
         search={fetchCategories ? searchCategoriesServer : searchCategories}
         suggestions={fetchCategories ? suggestCategoriesServer : suggestCategories}
         selectionHistory={categorySelectionHistory}
         placeholder="Select a category…"
-        allowCreate={!!createCategory}
         createLabel="Add new category"
-      >
-        {#snippet createForm(onSuccess, onCancel)}
-          <form
-            class="inline-form"
-            onsubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              createCategoryInlineSubmitHandler(onSuccess)(formData);
-            }}
-          >
-            <CategoryForm
-              mode="create"
-              errors={createCategoryError ? { name: createCategoryError } : null}
-            />
-            <div class="inline-form-actions">
-              <Button type="submit" variant="primary" disabled={isCreatingCategory}>
-                {isCreatingCategory ? "Creating..." : "Create"}
-              </Button>
-              <Button type="button" variant="secondary" on:click={createCategoryInlineCancelHandler(onCancel)}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        {/snippet}
-      </RelationSelector>
+        createCategory={createCategory
+          ? async (name, slug, description, color) => categoryToSelectable(
+              await createCategory(name, slug, description, color)
+            )
+          : undefined}
+        error={errors?.categoryId ?? null}
+        required={false}
+        bind:value={categoryId}
+      />
     </Field>
 
     <Field
@@ -329,21 +269,5 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--poodle-space-inline-md);
-  }
-
-  .inline-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
-    border-radius: 0.5rem;
-    background: var(--underlay-color-surface-subtle, #f9fafb);
-  }
-
-  .inline-form-actions {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
   }
 </style>

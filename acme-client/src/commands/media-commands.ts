@@ -1,3 +1,13 @@
+import {
+  appendPaginationParams,
+  type PaginatedResponse,
+  type PaginationParams,
+} from "@decodelabs/underlay/runtime";
+import { getAdminHttpClient } from "../utils/client-factory.js";
+import {
+  appendQueryParams,
+  type QueryParams,
+} from "@decodelabs/underlay/client";
 /**
  * Media Library commands - media operations for admin UI
  */
@@ -15,16 +25,6 @@ import type {
   FinaliseUploadRequest,
   FinaliseUploadResponse,
 } from "../types/media-types.js";
-import { getAdminHttpClient } from "../utils/client-factory.js";
-import {
-  appendQueryParams,
-  type QueryParams,
-} from "@decodelabs/underlay/client";
-import {
-  appendPaginationParams,
-  type PaginatedResponse,
-  type PaginationParams,
-} from "@decodelabs/underlay/patterns";
 import { getHeaderValueCaseInsensitive, type WithEtag } from "./admin/utils.js";
 
 export type MediaListProfile = "list" | "filter";
@@ -47,12 +47,12 @@ export interface ListMediaOptions {
 export async function checkDuplicate(
   request: CheckDuplicateRequest,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<CheckDuplicateResponse> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.post<CheckDuplicateResponse>(
     "/v1/admin/media/check-duplicate",
-    request
+    request,
   );
   return response;
 }
@@ -73,7 +73,7 @@ export async function checkDuplicate(
 export async function listMedia(
   fetchFn: typeof fetch,
   accessToken: string,
-  options?: ListMediaOptions
+  options?: ListMediaOptions,
 ): Promise<PaginatedResponse<MediaSummary>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   let path = "/v1/admin/media";
@@ -90,7 +90,7 @@ export async function listMedia(
 export async function listMediaAdmin(
   fetchFn: typeof fetch,
   accessToken: string,
-  query?: QueryParams
+  query?: QueryParams,
 ): Promise<MediaSummary[]> {
   const response = await listMedia(fetchFn, accessToken, {
     profile: "list",
@@ -104,11 +104,11 @@ export async function listMediaAdmin(
  */
 export async function listMediaTrash(
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<MediaSummary[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.get<ListResponse<MediaSummary>>(
-    "/v1/admin/media/trash"
+    "/v1/admin/media/trash",
   );
   return response.data;
 }
@@ -119,12 +119,12 @@ export async function listMediaTrash(
 export async function createMedia(
   request: CreateMediaRequest,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<MediaDetail> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.post<SingleResponse<MediaDetail>>(
     "/v1/admin/media",
-    request
+    request,
   );
   return response.data;
 }
@@ -135,7 +135,7 @@ export async function createMedia(
 export async function getMedia(
   mediaId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<MediaDetail> {
   const result = await getMediaWithEtag(mediaId, fetchFn, accessToken);
   return result.data;
@@ -144,11 +144,11 @@ export async function getMedia(
 export async function getMediaWithEtag(
   mediaId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<WithEtag<MediaDetail>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.getWithMeta<SingleResponse<MediaDetail>>(
-    `/v1/admin/media/${encodeURIComponent(mediaId)}`
+    `/v1/admin/media/${encodeURIComponent(mediaId)}`,
   );
   return {
     data: response.body!.data,
@@ -163,13 +163,13 @@ export async function updateMedia(
   mediaId: string,
   request: UpdateMediaRequest,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<MediaDetail> {
   const result = await updateMediaWithEtag(
     mediaId,
     request,
     fetchFn,
-    accessToken
+    accessToken,
   );
   return result.data;
 }
@@ -179,14 +179,16 @@ export async function updateMediaWithEtag(
   request: UpdateMediaRequest,
   fetchFn: typeof fetch,
   accessToken: string,
-  options?: { ifMatch?: string }
+  options?: { ifMatch?: string },
 ): Promise<WithEtag<MediaDetail>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const headers = options?.ifMatch ? { "If-Match": options.ifMatch } : undefined;
+  const headers = options?.ifMatch
+    ? { "If-Match": options.ifMatch }
+    : undefined;
   const response = await http.putWithMeta<SingleResponse<MediaDetail>>(
     `/v1/admin/media/${encodeURIComponent(mediaId)}`,
     request,
-    headers
+    headers,
   );
   return {
     data: response.body!.data,
@@ -200,10 +202,13 @@ export async function updateMediaWithEtag(
 export async function softDeleteMedia(
   mediaId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<void> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  await http.post(`/v1/admin/media/${encodeURIComponent(mediaId)}/soft-delete`, {});
+  await http.post(
+    `/v1/admin/media/${encodeURIComponent(mediaId)}/soft-delete`,
+    {},
+  );
 }
 
 /**
@@ -212,7 +217,7 @@ export async function softDeleteMedia(
 export async function restoreMedia(
   mediaId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<void> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   await http.post(`/v1/admin/media/${encodeURIComponent(mediaId)}/restore`, {});
@@ -224,7 +229,7 @@ export async function restoreMedia(
 export async function purgeMedia(
   mediaId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<void> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   await http.delete(`/v1/admin/media/${encodeURIComponent(mediaId)}`);
@@ -251,12 +256,12 @@ export async function initiateUpload(
   mediaId: string,
   request: InitiateUploadRequest,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<InitiateUploadResponse> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.post<InitiateUploadResponse>(
     `/v1/admin/media/${encodeURIComponent(mediaId)}/versions/initiate-upload`,
-    request
+    request,
   );
   return response;
 }
@@ -271,12 +276,12 @@ export async function finaliseUpload(
   versionId: string,
   request: FinaliseUploadRequest,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<FinaliseUploadResponse> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.post<FinaliseUploadResponse>(
     `/v1/admin/media/${encodeURIComponent(mediaId)}/versions/${encodeURIComponent(versionId)}/finalise-upload`,
-    request
+    request,
   );
   return response;
 }
@@ -291,11 +296,11 @@ export async function finaliseUpload(
 export async function listVersions(
   mediaId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<MediaVersion[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.get<ListResponse<MediaVersion>>(
-    `/v1/admin/media/${encodeURIComponent(mediaId)}/versions`
+    `/v1/admin/media/${encodeURIComponent(mediaId)}/versions`,
   );
   return response.data;
 }
@@ -307,12 +312,12 @@ export async function activateVersion(
   mediaId: string,
   versionId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<void> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   await http.post(
     `/v1/admin/media/${encodeURIComponent(mediaId)}/versions/${encodeURIComponent(versionId)}/activate`,
-    {}
+    {},
   );
 }
 
@@ -325,11 +330,11 @@ export async function deleteVersion(
   mediaId: string,
   versionId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<void> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   await http.delete(
-    `/v1/admin/media/${encodeURIComponent(mediaId)}/versions/${encodeURIComponent(versionId)}`
+    `/v1/admin/media/${encodeURIComponent(mediaId)}/versions/${encodeURIComponent(versionId)}`,
   );
 }
 
@@ -339,11 +344,11 @@ export async function deleteVersion(
 export async function listUsages(
   mediaId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<MediaUsage[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const response = await http.get<ListResponse<MediaUsage>>(
-    `/v1/admin/media/${encodeURIComponent(mediaId)}/usage`
+    `/v1/admin/media/${encodeURIComponent(mediaId)}/usage`,
   );
   return response.data;
 }
@@ -369,12 +374,12 @@ export interface BatchDeleteMediaResult {
 export async function batchDeleteMedia(
   request: BatchDeleteMediaRequest,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
 ): Promise<BatchDeleteMediaResult> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   return await http.post<BatchDeleteMediaResult>(
     "/v1/admin/media:batch-delete",
-    request
+    request,
   );
 }
 
@@ -391,7 +396,10 @@ export async function batchDeleteMedia(
  * Note: The actual download redirects to the blob URL, so this function
  * just returns the API endpoint URL that will redirect.
  */
-export function getMediaDownloadUrl(mediaId: string, restricted = false): string {
+export function getMediaDownloadUrl(
+  mediaId: string,
+  restricted = false,
+): string {
   if (restricted) {
     return `/v1/media/${encodeURIComponent(mediaId)}/download`;
   }

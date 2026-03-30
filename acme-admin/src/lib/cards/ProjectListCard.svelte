@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { ListCard } from "@decodelabs/underlay/components";
   import {
     AlertDialog as PoodleAlertDialog,
+    IconButton as PoodleIconButton,
+    ListCard as PoodleListCard,
     Menu as PoodleMenu,
     Pill as PoodlePill
   } from "@poodle/svelte-primitives";
   import type { MenuItem } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
-  import type { ProjectWithCounts } from "acme-client";
+  import type { ProjectWithCounts } from "@api-client";
   import Briefcase from "lucide-svelte/icons/briefcase";
 
   interface Props {
@@ -22,11 +23,6 @@
   }
 
   let { project, onDelete, selectionMode = false, selected = false, onSelectionChange }: Props = $props();
-
-  function handleCheckboxChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    onSelectionChange?.(project.id, target.checked);
-  }
 
   let confirmDeleteOpen = $state(false);
 
@@ -85,37 +81,33 @@
   }
 </script>
 
-<ListCard title={project.name} href={selectionMode ? undefined : `/projects/${project.id}`}>
-  {#snippet media()}
-    {#if selectionMode}
-      <label class="selection-checkbox">
-        <input
-          type="checkbox"
-          checked={selected}
-          onchange={handleCheckboxChange}
-        />
-      </label>
-    {:else}
-      <Briefcase size={30} />
-    {/if}
-  {/snippet}
+<PoodleListCard
+  title={project.name}
+  href={selectionMode ? undefined : `/projects/${project.id}`}
+  selectable={selectionMode}
+  {selected}
+  on:selectedChange={(event) => onSelectionChange?.(project.id, event.detail.selected)}
+>
+  <svelte:fragment slot="leading">
+    <Briefcase size={20} />
+  </svelte:fragment>
 
-  {#snippet trailing()}
+  <svelte:fragment slot="trailing">
     <PoodlePill tone={statusTone} appearance="badge" size="lg">{statusLabel}</PoodlePill>
     {#if project.categoryName}
       <PoodlePill tone="neutral" appearance="badge" size="lg">{project.categoryName}</PoodlePill>
     {/if}
-  {/snippet}
+  </svelte:fragment>
 
-  {#snippet actions({ trigger: mediaContent, align })}
-    <PoodleMenu items={menuItems} placement={align === "end" ? "bottom-end" : "bottom-start"} on:action={(event) => handleMenuAction(event.detail.value)}>
-      <div slot="trigger">
-        {@render mediaContent()}
-      </div>
-    </PoodleMenu>
-  {/snippet}
+  <svelte:fragment slot="actions">
+    {#if !selectionMode}
+      <PoodleMenu items={menuItems} placement="bottom-end" ariaLabel="Project actions" on:action={(event) => handleMenuAction(event.detail.value)}>
+        <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Project actions" variant="ghost" />
+      </PoodleMenu>
+    {/if}
+  </svelte:fragment>
 
-  <div class="task-progress">
+  <div slot="footer" class="task-progress">
     <span class="progress-label">{project.completedTaskCount}/{project.taskCount} tasks</span>
     {#if project.taskCount > 0}
       <div class="progress-bar">
@@ -123,7 +115,7 @@
       </div>
     {/if}
   </div>
-</ListCard>
+</PoodleListCard>
 
 <PoodleAlertDialog
   bind:open={confirmDeleteOpen}
@@ -135,22 +127,6 @@
 />
 
 <style>
-  .selection-checkbox {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    cursor: pointer;
-  }
-
-  .selection-checkbox input[type="checkbox"] {
-    width: 1.25rem;
-    height: 1.25rem;
-    accent-color: var(--accent-color, #6366f1);
-    cursor: pointer;
-  }
-
   .task-progress {
     display: flex;
     flex-direction: column;

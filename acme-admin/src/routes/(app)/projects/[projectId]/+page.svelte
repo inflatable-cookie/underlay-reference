@@ -1,23 +1,44 @@
 <script lang="ts">
-  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  DetailMeta,
+  DetailMetaId,
+  DetailMetaItem,
+  DetailMetaSeparator
+} from "@decodelabs/underlay/patterns";
+import {
+  useAuthenticatedData,
+  useToasts,
+  createReorderController
+} from "@decodelabs/underlay/runtime";
+import {
+  AlertDialog as PoodleAlertDialog,
+  BulkActionBar as PoodleBulkActionBar,
+  Callout as PoodleCallout,
+  Card as PoodleCard,
+  DetailRow as PoodleDetailRow,
+  Dialog as PoodleDialog,
+  Grid as PoodleGrid,
+  ListCard as PoodleListCard,
+  OrderBy as PoodleOrderBy,
+  type BulkAction,
+  type OrderByValue
+  } from "@poodle/svelte-primitives";
+  import { DetailSection as PoodleDetailSection,
+  FilterToolbar,
+  PageHeader as PoodlePageHeader,
+  PageLoading,
+  ReorderableList as PoodleReorderableList } from "@poodle/svelte-composites";
   import type { PageData } from "./$types";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { adminCommands, type Project, type TaskWithLabels, TaskStatus, TaskPriority } from "acme-client";
+  import { adminCommands,
+  type Project,
+  type TaskWithLabels,
+  TaskStatus,
+  TaskPriority } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import {
-    useAuthenticatedData,
-    PageHeader,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaItem,
-    DetailMetaSeparator,
-    useToasts,
-    ReorderableList,
-    createReorderController,
-    FilterBar
-  } from "@decodelabs/underlay/patterns";
-  import { BatchActionBar, PageLoading, ListGrid, ListCard, ProgressBar, OrderBy, DetailsCard, DetailsSection, DetailsItem, TimeAgo, type OrderByValue } from "@decodelabs/underlay/components";
+    import { Progress } from "@poodle/svelte-primitives";
+  import { TimeAgo } from "@poodle/svelte-primitives";
   import {
     Button as PoodleButton,
     Field as PoodleField,
@@ -41,6 +62,9 @@
 
   const toastStore = useToasts();
   let showDeleteConfirm = $state(false);
+  let showBatchDeleteConfirm = $state(false);
+  let showBatchStatusDialog = $state(false);
+  let pendingBatchStatus = $state<TaskStatus>(TaskStatus.Pending);
 
   // Track URL for refetching when filters change
   let previousUrl = $state<string | null>(null);
@@ -156,6 +180,7 @@
   const tasks = $derived(pageData.data?.tasks ?? []);
 
   let isTaskReorderMode = $state(false);
+  let taskReorderSubmitError = $state<string | null>(null);
   let isTaskSelectionMode = $state(false);
   let selectedTaskIds = $state<Set<string>>(new Set());
   let batchLoading = $state(false);
@@ -191,6 +216,10 @@
 
   function selectAllTasks() {
     const allIds = tasks.map(t => t.id);
+    if (selectedTaskIds.size === allIds.length) {
+      clearTaskSelection();
+      return;
+    }
     selectedTaskIds = new Set(allIds);
   }
 
@@ -202,6 +231,7 @@
     }
 
     batchLoading = true;
+    showBatchDeleteConfirm = false;
     try {
       const result = await adminCommands.batchDeleteTasks(
         data.projectId,
@@ -232,6 +262,7 @@
     }
 
     batchLoading = true;
+    showBatchStatusDialog = false;
     try {
       const result = await adminCommands.batchUpdateTaskStatus(
         data.projectId,
@@ -260,6 +291,23 @@
     { value: TaskStatus.Completed, label: "Completed" }
   ];
 
+  const batchActions: BulkAction[] = [
+    { id: "status", label: "Update status", icon: "check-check" },
+    { id: "delete", label: "Delete", icon: "trash-2", tone: "danger" }
+  ];
+
+  function handleBatchAction(actionId: string) {
+    if (actionId === "delete") {
+      showBatchDeleteConfirm = true;
+      return;
+    }
+
+    if (actionId === "status") {
+      pendingBatchStatus = TaskStatus.Pending;
+      showBatchStatusDialog = true;
+    }
+  }
+
   // Map tasks to have 'id' field for reorder controller
   const reorderItems = $derived(
     tasks.map((t) => ({ ...t, id: t.id }))
@@ -278,10 +326,12 @@
   );
 
   function enterTaskReorderMode() {
+    taskReorderSubmitError = null;
     isTaskReorderMode = true;
   }
 
   async function handleTaskReorderSuccess() {
+    taskReorderSubmitError = null;
     isTaskReorderMode = false;
     await pageData.refetch();
   }
@@ -306,7 +356,24 @@
   }
 
   function exitTaskReorderMode() {
+    reorderController.reset();
+    taskReorderSubmitError = null;
     isTaskReorderMode = false;
+  }
+
+  function handleTaskReorderItems(items: typeof reorderController.pending) {
+    reorderController.updatePending(items);
+  }
+
+  async function handleTaskReorderSubmit() {
+    taskReorderSubmitError = null;
+    try {
+      await reorderController.submit();
+      await handleTaskReorderSuccess();
+    } catch (error) {
+      const transformed = await handleTaskReorderError(error);
+      taskReorderSubmitError = transformed ?? (error instanceof Error ? error.message : String(error));
+    }
   }
 
   const completedTasks = $derived(tasks.filter(t => t.status === "completed").length);
@@ -374,11 +441,12 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading project..." />
+  <PageLoading presentation="inline" message="Loading project..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if project}
-  <PageHeader
+  <div class="project-detail__header">
+  <PoodlePageHeader
     section="Project"
     title={project.name}
     backHref="/projects"
@@ -388,19 +456,9 @@
       : project.status === "on_hold"
         ? "This project is on hold."
         : undefined}
-    bannerVariant={project.status === "archived" ? "warning" : "info"}
+    bannerTone={project.status === "archived" ? "warning" : "info"}
   >
-    <DetailMeta>
-      <DetailMetaId value={project.id} />
-      <DetailMetaSeparator />
-      <DetailMetaItem>
-        <PoodlePill tone={getProjectStatusTone(project.status)} appearance="badge" size="lg">
-          {statusLabel}
-        </PoodlePill>
-      </DetailMetaItem>
-    </DetailMeta>
-
-    {#snippet actions()}
+    <svelte:fragment slot="actions">
       <PoodleButton type="button" variant="secondary" on:click={handleEdit}>
         <Pencil size={16} />
         Edit
@@ -408,8 +466,18 @@
       <PoodleButton type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
         Delete
       </PoodleButton>
-    {/snippet}
-  </PageHeader>
+    </svelte:fragment>
+  </PoodlePageHeader>
+  <DetailMeta>
+    <DetailMetaId value={project.id} />
+    <DetailMetaSeparator />
+    <DetailMetaItem>
+      <PoodlePill tone={getProjectStatusTone(project.status)} appearance="badge" size="lg">
+        {statusLabel}
+      </PoodlePill>
+    </DetailMetaItem>
+  </DetailMeta>
+  </div>
 
   <PoodleAlertDialog
     open={showDeleteConfirm}
@@ -423,31 +491,41 @@
     }}
   />
 
-  <DetailsCard>
-    <DetailsSection legend="Details">
-      <DetailsItem label="Progress">
-        <div class="progress-cell">
-          <span>{completedTasks}/{tasks.length} tasks</span>
-          {#if tasks.length > 0}
-            <ProgressBar value={progress} max={100} />
-          {/if}
-        </div>
-      </DetailsItem>
-      {#if project.description}
-        <DetailsItem label="Description" value={project.description} span="full" />
-      {/if}
-    </DetailsSection>
+  <PoodleCard>
+    <div class="detail-card-grid">
+      <PoodleDetailSection title="Details" columns={2} separated={false}>
+        <PoodleDetailRow label="Progress">
+          <svelte:fragment slot="value">
+            <div class="progress-cell">
+              <span>{completedTasks}/{tasks.length} tasks</span>
+              {#if tasks.length > 0}
+                <Progress value={progress} max={100} ariaLabel="Project completion progress" />
+              {/if}
+            </div>
+          </svelte:fragment>
+        </PoodleDetailRow>
+        {#if project.description}
+          <div class="detail-span-full">
+            <PoodleDetailRow label="Description" value={project.description} />
+          </div>
+        {/if}
+      </PoodleDetailSection>
 
-    <DetailsSection legend="Metadata">
-      <DetailsItem label="Category" value={project.categoryId ? project.categoryId : "None"} />
-      <DetailsItem label="Created">
-        <TimeAgo date={project.createdAt} tooltipFormat="datetime" />
-      </DetailsItem>
-      <DetailsItem label="Updated">
-        <TimeAgo date={project.updatedAt} tooltipFormat="datetime" />
-      </DetailsItem>
-    </DetailsSection>
-  </DetailsCard>
+      <PoodleDetailSection title="Metadata" columns={2} separated={false}>
+        <PoodleDetailRow label="Category" value={project.categoryId ? project.categoryId : "None"} />
+        <PoodleDetailRow label="Created">
+          <svelte:fragment slot="value">
+            <TimeAgo datetime={project.createdAt} tooltipFormat="datetime" />
+          </svelte:fragment>
+        </PoodleDetailRow>
+        <PoodleDetailRow label="Updated">
+          <svelte:fragment slot="value">
+            <TimeAgo datetime={project.updatedAt} tooltipFormat="datetime" />
+          </svelte:fragment>
+        </PoodleDetailRow>
+      </PoodleDetailSection>
+    </div>
+  </PoodleCard>
 
   <section class="tasks-section">
     <div class="tasks-header">
@@ -487,7 +565,12 @@
     </div>
 
     {#if !isTaskReorderMode}
-      <FilterBar title="Filter tasks" onRefresh={() => pageData.refetch()}>
+      <FilterToolbar ariaLabel="Task filters" summaryText="Filter tasks">
+        <svelte:fragment slot="actions">
+          <PoodleButton type="button" variant="ghost" size="sm" onclick={() => pageData.refetch()}>
+            Refresh
+          </PoodleButton>
+        </svelte:fragment>
         <PoodleField id="project-tasks-filter-status" label="Status" let:describedBy>
           <PoodleSelect
             id="project-tasks-filter-status"
@@ -509,30 +592,34 @@
           />
         </PoodleField>
         <PoodleField id="project-tasks-filter-sort" label="Sort">
-          <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
+          <PoodleOrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} compact />
         </PoodleField>
-      </FilterBar>
+      </FilterToolbar>
     {/if}
 
     {#if tasks.length === 0}
       <p class="empty-state">No tasks yet. Add your first task to get started.</p>
     {:else if isTaskReorderMode}
-      <ReorderableList
-        controller={reorderController}
+      <PoodleReorderableList
+        items={reorderController.pending}
+        ariaLabel="Reorder tasks"
+        dirty={reorderController.isDirty}
+        submitting={reorderController.isPending}
+        errorMessage={taskReorderSubmitError}
+        onsubmit={handleTaskReorderSubmit}
         oncancel={exitTaskReorderMode}
-        onsuccess={handleTaskReorderSuccess}
-        onsubmiterror={handleTaskReorderError}
+        on:reorder={(event) => handleTaskReorderItems(event.detail.items)}
       >
         {#snippet item(task)}
-          <ListCard
+          <PoodleListCard
             title={task.title}
-            variant="compact"
-            showDragHandle
+            layout="compact"
+            showReorderHandle
           >
-            {#snippet media()}
+            <svelte:fragment slot="leading">
               <CheckSquare size={16} />
-            {/snippet}
-            {#snippet titleSuffix()}
+            </svelte:fragment>
+            <svelte:fragment slot="badges">
               <PoodlePill
                 tone={task.status === "completed" ? "success" : "neutral"}
                 appearance="badge"
@@ -540,32 +627,25 @@
               >
                 {task.status === "completed" ? "Done" : task.status === "in_progress" ? "In Progress" : "Pending"}
               </PoodlePill>
-            {/snippet}
-          </ListCard>
+            </svelte:fragment>
+          </PoodleListCard>
         {/snippet}
-      </ReorderableList>
+      </PoodleReorderableList>
     {:else}
-      <ListGrid minItemWidth={24}>
+      <PoodleGrid columns="repeat(auto-fit, minmax(min(24em, 100%), 1fr))" gap="lg">
         {#each tasks as task}
-          <ListCard
+          <PoodleListCard
             title={task.title}
             href={isTaskSelectionMode ? undefined : `/projects/${project.id}/tasks/${task.id}`}
-            variant="compact"
+            layout="compact"
+            selectable={isTaskSelectionMode}
+            selected={selectedTaskIds.has(task.id)}
+            on:selectedChange={(event) => handleTaskSelectionChange(task.id, event.detail.selected)}
           >
-            {#snippet media()}
-              {#if isTaskSelectionMode}
-                <label class="task-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={selectedTaskIds.has(task.id)}
-                    onchange={(e) => handleTaskSelectionChange(task.id, (e.target as HTMLInputElement).checked)}
-                  />
-                </label>
-              {:else}
-                <CheckSquare size={16} />
-              {/if}
-            {/snippet}
-            {#snippet titleSuffix()}
+            <svelte:fragment slot="leading">
+              <CheckSquare size={16} />
+            </svelte:fragment>
+            <svelte:fragment slot="badges">
               <PoodlePill
                 tone={task.status === "completed" ? "success" : "neutral"}
                 appearance="badge"
@@ -580,29 +660,91 @@
               >
                 {task.priority}
               </PoodlePill>
-            {/snippet}
-          </ListCard>
+            </svelte:fragment>
+          </PoodleListCard>
         {/each}
-      </ListGrid>
+      </PoodleGrid>
     {/if}
 
-    <BatchActionBar
-      selectedCount={selectedTaskIds.size}
+    <PoodleBulkActionBar
+      selectionCount={selectedTaskIds.size}
       totalCount={tasks.length}
+      actions={batchActions}
       loading={batchLoading}
-      showStatusUpdate={true}
-      statusOptions={taskStatusOptions}
-      onClearSelection={clearTaskSelection}
-      onSelectAll={selectAllTasks}
-      onBatchDelete={handleBatchDeleteTasks}
-      onBatchStatusUpdate={handleBatchUpdateTaskStatus}
+      showSelectAll
+      allSelected={selectedTaskIds.size > 0 && selectedTaskIds.size === tasks.length}
+      on:clear={clearTaskSelection}
+      on:selectAll={selectAllTasks}
+      on:action={(event) => handleBatchAction(event.detail.id)}
     />
   </section>
 {:else}
   <PoodleCallout tone="danger" message="Project not found" announceMode="polite" />
 {/if}
 
+<PoodleAlertDialog
+  open={showBatchDeleteConfirm}
+  title="Delete selected tasks"
+  description={`Are you sure you want to delete ${selectedTaskIds.size} selected task${selectedTaskIds.size === 1 ? "" : "s"}?`}
+  confirmLabel={`Delete ${selectedTaskIds.size} task${selectedTaskIds.size === 1 ? "" : "s"}`}
+  tone="danger"
+  onConfirm={handleBatchDeleteTasks}
+  onCancel={() => {
+    showBatchDeleteConfirm = false;
+  }}
+/>
+
+<PoodleDialog
+  open={showBatchStatusDialog}
+  title="Update task status"
+  description={`Choose a new status for ${selectedTaskIds.size} selected task${selectedTaskIds.size === 1 ? "" : "s"}.`}
+  on:openChange={(event) => {
+    showBatchStatusDialog = event.detail.open;
+  }}
+>
+  <PoodleField id="batch-status" label="Status">
+    <PoodleSelect
+      value={pendingBatchStatus}
+      items={taskStatusOptions}
+      on:valueChange={(event) => {
+        pendingBatchStatus = event.detail.value as TaskStatus;
+      }}
+    />
+  </PoodleField>
+
+  <svelte:fragment slot="actions">
+    <PoodleButton type="button" variant="ghost" on:click={() => {
+      showBatchStatusDialog = false;
+    }}>
+      Cancel
+    </PoodleButton>
+    <PoodleButton
+      type="button"
+      variant="primary"
+      disabled={!pendingBatchStatus}
+      on:click={() => handleBatchUpdateTaskStatus(pendingBatchStatus)}
+    >
+      Update status
+    </PoodleButton>
+  </svelte:fragment>
+</PoodleDialog>
+
 <style>
+  .project-detail__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-card-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .detail-span-full {
+    grid-column: 1 / -1;
+  }
+
   .progress-cell {
     display: flex;
     flex-direction: column;
@@ -643,17 +785,4 @@
     color: var(--text-secondary, #6b7280);
   }
 
-  .task-checkbox {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-
-  .task-checkbox input[type="checkbox"] {
-    width: 1.125rem;
-    height: 1.125rem;
-    accent-color: var(--accent-color, #6366f1);
-    cursor: pointer;
-  }
 </style>

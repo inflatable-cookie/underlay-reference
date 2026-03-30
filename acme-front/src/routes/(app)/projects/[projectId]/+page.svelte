@@ -1,14 +1,21 @@
 <script lang="ts">
-  import type { PageData } from "./$types";
-  import { goto } from "$app/navigation";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+import {
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  goto } from "$app/navigation";
+  import { auth,
+  authLoading,
+  currentUser } from "$lib/stores/auth";
   import * as userCommands from "@api-client/commands/user-commands.js";
-  import type { UserProject, UserTask } from "@api-client/commands/user-commands.js";
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { FormDialog } from "@decodelabs/underlay/patterns/FormDialog";
-  import { useAuthenticatedData } from "@decodelabs/underlay/patterns/authenticated-data";
-  import { useToasts } from "@decodelabs/underlay/patterns/useToasts";
-  import {
+  import type { UserProject,
+  UserTask } from "@api-client/commands/user-commands.js";
+  import { FormDialog,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
+  import type { PageData } from "./$types";
+    import {
     AlertDialog,
     Button,
     Callout,
@@ -19,9 +26,6 @@
     TextArea,
     TextInput
   } from "@poodle/svelte-primitives";
-  import PageLoading from "@decodelabs/underlay/components/PageLoading.svelte";
-  import ListCard from "@decodelabs/underlay/components/ListCard.svelte";
-  import ListGrid from "@decodelabs/underlay/components/ListGrid.svelte";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -164,7 +168,7 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading project..." />
+  <PageLoading presentation="inline" message="Loading project..." />
 {:else if pageData.error}
   <Callout tone="danger" message={pageData.error} announceMode="assertive" />
 {:else if project}
@@ -259,10 +263,11 @@
   title="Add Task"
   subtitle="Add a new task to this project."
   submitting={creating}
-  onCancel={() => { showCreateDialog = false; }}
+  showDefaultActions={false}
+  on:cancel={() => { showCreateDialog = false; }}
 >
-  {#snippet children(submitting)}
-    <form
+  <form
+      id="create-task-form"
       onsubmit={(event) => {
         event.preventDefault();
         void handleCreateTask();
@@ -275,7 +280,7 @@
             value={newTaskTitle}
             describedBy={describedBy}
             placeholder="What needs to be done?"
-            disabled={submitting}
+            disabled={creating}
             on:valueChange={(event) => { newTaskTitle = event.detail.value; }}
           />
         </Field>
@@ -286,7 +291,7 @@
             describedBy={describedBy}
             placeholder="Optional details"
             rows={3}
-            disabled={submitting}
+            disabled={creating}
             on:valueChange={(event) => { newTaskDescription = event.detail.value; }}
           />
         </Field>
@@ -296,22 +301,23 @@
             value={newTaskPriority}
             describedBy={describedBy}
             options={priorityOptions}
-            disabled={submitting}
+            disabled={creating}
             on:valueChange={(event) => { newTaskPriority = event.detail.value; }}
           />
         </Field>
       </div>
 
-      <FormActions align="end">
-        <Button type="button" variant="ghost" disabled={submitting} on:click={() => (showCreateDialog = false)}>
-          Cancel
-        </Button>
-        <Button type="submit" variant="primary" disabled={submitting || !newTaskTitle.trim()}>
-          {submitting ? "Adding..." : "Add Task"}
-        </Button>
-      </FormActions>
-    </form>
-  {/snippet}
+  </form>
+  <svelte:fragment slot="actions">
+    <FormActions align="end">
+      <Button type="button" variant="ghost" disabled={creating} on:click={() => (showCreateDialog = false)}>
+        Cancel
+      </Button>
+      <Button type="submit" form="create-task-form" variant="primary" disabled={creating || !newTaskTitle.trim()}>
+        {creating ? "Adding..." : "Add Task"}
+      </Button>
+    </FormActions>
+  </svelte:fragment>
 </FormDialog>
 
 <style>

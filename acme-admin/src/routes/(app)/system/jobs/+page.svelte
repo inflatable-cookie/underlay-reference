@@ -1,16 +1,23 @@
 <script lang="ts">
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+import {
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
   import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
-  import { adminCommands, type JobSummary, type JobStats, type JobStatus } from "acme-client";
+  import { adminCommands,
+  type JobSummary,
+  type JobStats,
+  type JobStatus } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
-  import {
+    import {
     PageLoading,
         DataTable,
-    TimeAgo,
-    type DataTableColumn
-  } from "@decodelabs/underlay/components";
+    type TableColumn,
+    type TableRow
+  } from "@poodle/svelte-composites";
   import {
     Button as PoodleButton,
     Card as PoodleCard,
@@ -18,7 +25,8 @@
     IconButton as PoodleIconButton,
     Menu as PoodleMenu,
     Pill as PoodlePill,
-    Select as PoodleSelect
+    Select as PoodleSelect,
+    TimeAgo
   } from "@poodle/svelte-primitives";
   import type { MenuItem } from "@poodle/svelte-primitives";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
@@ -68,6 +76,20 @@
 
   const jobs = $derived(pageData.data?.jobs ?? []);
   const stats = $derived(pageData.data?.stats);
+  const rows = $derived<TableRow<JobSummary>[]>(
+    jobs.map((job) => ({
+      id: job.id,
+      cells: {
+        jobType: formatJobType(job.jobType),
+        status: getStatusLabel(job.status),
+        attempts: `${job.attempts}/${job.maxAttempts}`,
+        createdAt: job.createdAt,
+        finishedAt: job.finishedAt ?? "—",
+        actions: ""
+      },
+      data: job
+    }))
+  );
 
   function navigateToJob(job: JobSummary) {
     goto(`/system/jobs/${encodeURIComponent(job.id)}`);
@@ -166,13 +188,13 @@
     { value: "cancelled", label: "Cancelled" }
   ];
 
-  const columns: DataTableColumn<JobSummary>[] = [
-    { key: "jobType", label: "Job Type", width: "minmax(200px, 2fr)" },
-    { key: "status", label: "Status", width: "100px" },
-    { key: "attempts", label: "Attempts", width: "80px", align: "center" },
-    { key: "createdAt", label: "Created", width: "120px", hideOnMobile: true },
-    { key: "finishedAt", label: "Finished", width: "120px", hideOnMobile: true },
-    { key: "actions", label: "", width: "60px", align: "center", hideable: false }
+  const columns: TableColumn[] = [
+    { id: "jobType", label: "Job Type", width: "minmax(200px, 2fr)" },
+    { id: "status", label: "Status", width: "100px" },
+    { id: "attempts", label: "Attempts", width: "80px", align: "center" },
+    { id: "createdAt", label: "Created", width: "120px", hideOnMobile: true },
+    { id: "finishedAt", label: "Finished", width: "120px", hideOnMobile: true },
+    { id: "actions", label: "", width: "60px", align: "center", hideable: false, isRowHeader: false }
   ];
 </script>
 
@@ -186,7 +208,7 @@
 </PoodlePageHeader>
 
 {#if pageData.loading && jobs.length === 0}
-  <PageLoading message="Loading jobs..." />
+  <PageLoading presentation="inline" message="Loading jobs..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else}
@@ -258,32 +280,30 @@
   <!-- Jobs table -->
   <div class="jobs-list">
     <DataTable
-      data={jobs}
       {columns}
+      {rows}
       loading={pageData.loading}
       emptyMessage="No jobs found"
       showLimitSelector={false}
-      onRowClick={navigateToJob}
-      extendedRowWhen={(row) => !!row.errorMessage}
+      showRowActions={false}
+      expandedRowWhen={(row) => Boolean((row.data as JobSummary | undefined)?.errorMessage)}
+      on:rowClick={(event) => navigateToJob(event.detail.row.data as JobSummary)}
     >
-      {#snippet cell({ column, row })}
-        {#if column.key === "jobType"}
-          {formatJobType(row.jobType)}
-        {:else if column.key === "status"}
-          <PoodlePill tone={getStatusTone(row.status)} appearance="badge" size="lg">
-            {getStatusLabel(row.status)}
+      <svelte:fragment slot="cell" let:column let:row>
+        {@const job = row.data as JobSummary | undefined}
+        {#if column.id === "status" && job}
+          <PoodlePill tone={getStatusTone(job.status)} appearance="badge" size="lg">
+            {getStatusLabel(job.status)}
           </PoodlePill>
-        {:else if column.key === "attempts"}
-          {row.attempts}/{row.maxAttempts}
-        {:else if column.key === "createdAt"}
-          <TimeAgo date={row.createdAt} tooltipFormat="datetime" short />
-        {:else if column.key === "finishedAt"}
-          {#if row.finishedAt}
-            <TimeAgo date={row.finishedAt} tooltipFormat="datetime" short />
+        {:else if column.id === "createdAt" && job}
+          <TimeAgo datetime={job.createdAt} tooltipFormat="datetime" short />
+        {:else if column.id === "finishedAt" && job}
+          {#if job.finishedAt}
+            <TimeAgo datetime={job.finishedAt} tooltipFormat="datetime" short />
           {:else}
             —
           {/if}
-        {:else if column.key === "actions"}
+        {:else if column.id === "actions" && job}
           <div
             class="actions-cell"
             role="button"
@@ -291,22 +311,23 @@
             onclick={(e) => e.stopPropagation()}
             onkeydown={(e) => e.stopPropagation()}
           >
-            <PoodleMenu items={getMenuItems(row)} ariaLabel="Job actions" placement="bottom-end" on:action={(event) => handleMenuAction(row, event.detail.value)}>
+            <PoodleMenu items={getMenuItems(job)} ariaLabel="Job actions" placement="bottom-end" on:action={(event) => handleMenuAction(job, event.detail.value)}>
               <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Job actions" />
             </PoodleMenu>
           </div>
         {:else}
-          —
+          {row.cells[column.id] ?? "—"}
         {/if}
-      {/snippet}
-      {#snippet extendedRow({ row })}
-        {#if row.errorMessage}
+      </svelte:fragment>
+      <svelte:fragment slot="expandedRow" let:row>
+        {@const job = row.data as JobSummary | undefined}
+        {#if job?.errorMessage}
           <div class="error-message">
             <AlertCircle size={14} />
-            {row.errorMessage}
+            {job.errorMessage}
           </div>
         {/if}
-      {/snippet}
+      </svelte:fragment>
     </DataTable>
   </div>
 {/if}

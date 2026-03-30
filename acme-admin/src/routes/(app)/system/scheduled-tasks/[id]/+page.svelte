@@ -1,36 +1,37 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  DetailMetaId,
+  DetailMetaSeparator,
+  DetailMeta
+} from "@decodelabs/underlay/patterns";
+import {
+  useToasts,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout,
+  Tabs } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import {
-    DetailPageShell,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaSeparator,
-    useToasts,
-    useAuthenticatedData
-  } from "@decodelabs/underlay/patterns";
-  import {
-    DataTable,
-        PageLoading,
-    TimeAgo,
-    type DataTableColumn
-  } from "@decodelabs/underlay/components";
+    import { DataTable, PageHeader as PoodlePageHeader, PageLoading, type TableColumn, type TableRow } from "@poodle/svelte-composites";
   import {
     Card as PoodleCard,
     IconButton as PoodleIconButton,
     Menu as PoodleMenu,
-    Pill as PoodlePill
+    Pill as PoodlePill,
+    TimeAgo
   } from "@poodle/svelte-primitives";
   import type { MenuItem } from "@poodle/svelte-primitives";
-  import { adminCommands } from "acme-client";
+  import { adminCommands } from "@api-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import type { ScheduledTaskDetail, JobSummary } from "acme-client";
+  import type { ScheduledTaskDetail, JobSummary } from "@api-client";
 
   const toastStore = useToasts();
   const taskId = $page.params.id;
 
   let activeTab = $state("details");
+  const mountedTabsSet = new Set<string>();
+  let mountedTabsVersion = $state(0);
 
   // Fetch task detail
   const pageData = useAuthenticatedData(
@@ -68,8 +69,32 @@
     }
   });
 
+  $effect(() => {
+    if (activeTab && !mountedTabsSet.has(activeTab)) {
+      mountedTabsSet.add(activeTab);
+      mountedTabsVersion++;
+    }
+  });
+
+  function isTabMounted(value: string): boolean {
+    void mountedTabsVersion;
+    return mountedTabsSet.has(value);
+  }
+
   const task = $derived(pageData.data?.task);
   const jobs = $derived(jobsData.data?.jobs ?? []);
+  const jobRows = $derived<TableRow<JobSummary>[]>(
+    jobs.map((job) => ({
+      id: job.id,
+      cells: {
+        status: getStatusLabel(job.status),
+        attempts: `${job.attempts}/${job.maxAttempts}`,
+        createdAt: job.createdAt,
+        finishedAt: job.finishedAt ?? "—"
+      },
+      data: job
+    }))
+  );
 
   function formatDate(dateStr: string | null | undefined): string {
     if (!dateStr) return "Never";
@@ -182,31 +207,35 @@
     goto(`/system/jobs/${encodeURIComponent(job.id)}`);
   }
 
-  const jobColumns: DataTableColumn<JobSummary>[] = [
-    { key: "status", label: "Status", width: "minmax(100px, 1fr)" },
-    { key: "attempts", label: "Attempts", width: "minmax(80px, 1fr)", align: "center" },
-    { key: "createdAt", label: "Created", width: "minmax(120px, 1fr)" },
-    { key: "finishedAt", label: "Finished", width: "minmax(120px, 1fr)" }
+  const jobColumns: TableColumn[] = [
+    { id: "status", label: "Status", width: "minmax(100px, 1fr)" },
+    { id: "attempts", label: "Attempts", width: "minmax(80px, 1fr)", align: "center" },
+    { id: "createdAt", label: "Created", width: "minmax(120px, 1fr)" },
+    { id: "finishedAt", label: "Finished", width: "minmax(120px, 1fr)" }
   ];
 </script>
 
 {#if pageData.loading && !task}
-  <PageLoading message="Loading task details..." />
+    <PageLoading presentation="inline" message="Loading task details..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if task}
-  <DetailPageShell
-    section="Scheduled Task"
-    title={formatTaskName(task.name)}
-    backHref="/system/scheduled-tasks"
-    backLabel="Back to tasks"
-    tabs={[
-      { value: "details", label: "Details" },
-      { value: "job-runs", label: "Job Runs" }
-    ]}
-    bind:activeTab
-  >
-    {#snippet meta()}
+  <section class="task-detail-page">
+    <div class="task-detail-page__header">
+      <PoodlePageHeader
+        section="Scheduled Task"
+        title={formatTaskName(task.name)}
+        backHref="/system/scheduled-tasks"
+        backLabel="Back to tasks"
+      >
+        <svelte:fragment slot="actions">
+          <PoodleMenu items={menuItems} ariaLabel="Task actions" placement="bottom-end" on:action={(event) => handleMenuAction(event.detail.value)}>
+            <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Task actions" />
+          </PoodleMenu>
+        </svelte:fragment>
+      </PoodlePageHeader>
+
+      <div class="task-detail-page__meta">
       <DetailMeta>
         <DetailMetaId value={task.id} />
         <DetailMetaSeparator />
@@ -214,16 +243,22 @@
           {task.enabled ? "Enabled" : "Disabled"}
         </PoodlePill>
       </DetailMeta>
-    {/snippet}
+      </div>
+    </div>
 
-    {#snippet actions()}
-      <PoodleMenu items={menuItems} ariaLabel="Task actions" placement="bottom-end" on:action={(event) => handleMenuAction(event.detail.value)}>
-        <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Task actions" />
-      </PoodleMenu>
-    {/snippet}
-
-    {#snippet tabContent(tab)}
-      {#if tab === "details"}
+    <Tabs
+      bind:value={activeTab}
+      items={[
+        { value: "details", label: "Details" },
+        { value: "job-runs", label: "Job Runs" }
+      ]}
+      variant="card"
+      size="sm"
+      ariaLabel="Detail sections"
+      let:activeValue
+    >
+      {#if isTabMounted(activeValue)}
+      {#if activeValue === "details"}
         <div class="details-content">
         <div class="task-detail-page__grid">
           <PoodleCard>
@@ -281,45 +316,64 @@
             <h3>Payload</h3>
             <pre class="task-detail-page__code">{JSON.stringify(task.payload, null, 2)}</pre>
           </div>
-        </PoodleCard>
+          </PoodleCard>
         </div>
-      {:else if tab === "job-runs"}
+      {:else if activeValue === "job-runs"}
         <div class="jobs-list">
           <DataTable
-            data={jobs}
+            rows={jobRows}
             columns={jobColumns}
             loading={jobsData.loading}
             emptyMessage="No job runs found for this task"
             showLimitSelector={false}
-            onRowClick={navigateToJob}
+            showRowActions={false}
+            on:rowClick={(event) => navigateToJob(event.detail.row.data as JobSummary)}
           >
-            {#snippet cell({ column, row })}
-              {#if column.key === "status"}
-                <PoodlePill tone={getStatusTone(row.status)} appearance="badge" size="lg">
-                  {getStatusLabel(row.status)}
+            <svelte:fragment slot="cell" let:column let:row>
+              {@const job = row.data as JobSummary | undefined}
+              {#if column.id === "status" && job}
+                <PoodlePill tone={getStatusTone(job.status)} appearance="badge" size="lg">
+                  {getStatusLabel(job.status)}
                 </PoodlePill>
-              {:else if column.key === "attempts"}
-                {row.attempts}/{row.maxAttempts}
-              {:else if column.key === "createdAt"}
-                <TimeAgo date={row.createdAt} tooltipFormat="datetime" short />
-              {:else if column.key === "finishedAt"}
-                {#if row.finishedAt}
-                  <TimeAgo date={row.finishedAt} tooltipFormat="datetime" short />
+              {:else if column.id === "createdAt" && job}
+                <TimeAgo datetime={job.createdAt} tooltipFormat="datetime" short />
+              {:else if column.id === "finishedAt" && job}
+                {#if job.finishedAt}
+                  <TimeAgo datetime={job.finishedAt} tooltipFormat="datetime" short />
                 {:else}
                   —
                 {/if}
               {:else}
-                —
+                {row.cells[column.id] ?? "—"}
               {/if}
-            {/snippet}
+            </svelte:fragment>
           </DataTable>
         </div>
       {/if}
-    {/snippet}
-  </DetailPageShell>
+      {/if}
+    </Tabs>
+  </section>
 {/if}
 
 <style>
+  .task-detail-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .task-detail-page__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .task-detail-page__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
   .details-content {
     display: flex;
     flex-direction: column;

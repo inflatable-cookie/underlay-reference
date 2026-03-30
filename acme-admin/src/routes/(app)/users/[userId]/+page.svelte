@@ -1,40 +1,42 @@
 <script lang="ts">
-  import {
-    AlertDialog as PoodleAlertDialog,
-    Callout as PoodleCallout
+import {
+  DetailMetaId,
+  DetailMetaSeparator,
+  DetailMeta
+} from "@decodelabs/underlay/patterns";
+import {
+  computeBackInfo,
+  consumeNavigationContext,
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  AlertDialog as PoodleAlertDialog,
+  Callout as PoodleCallout,
+  Card as PoodleCard,
+  DetailRow as PoodleDetailRow,
+  Tabs
   } from "@poodle/svelte-primitives";
+  import { DetailSection as PoodleDetailSection,
+  FormDialog,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
   import { goto } from "$app/navigation";
   import {
     Button as PoodleButton,
-    Field as PoodleField,
-    FormActions as PoodleFormActions,
-    IconButton as PoodleIconButton,
-    Menu as PoodleMenu,
-    Pill as PoodlePill,
-    Select as PoodleSelect,
-    type MenuItem
+  Field as PoodleField,
+  FormActions as PoodleFormActions,
+  IconButton as PoodleIconButton,
+  Menu as PoodleMenu,
+  Pill as PoodlePill,
+  Select as PoodleSelect,
+  type MenuItem
   } from "@poodle/svelte-primitives";
-  import {
-    DataTable,
-    DetailsCard,
-    DetailsItem,
-    DetailsSection,
-        PageLoading,
-    type DataTableAction,
-    type DataTableColumn
-  } from "@decodelabs/underlay/components";
-  import {
-    FormDialog,
-    DetailPageShell,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaSeparator,
-    computeBackInfo,
-    consumeNavigationContext,
-    useAuthenticatedData,
-    useToasts
-  } from "@decodelabs/underlay/patterns";
-  import { gotoWithContext } from "@decodelabs/underlay/client";
+  import { DataTable,
+  type TableColumn,
+  type TableRow,
+  type TableRowAction } from "@poodle/svelte-composites";
+    import { gotoWithContext } from "@decodelabs/underlay/client";
   import {
     adminCommands,
     type ActivityEntry,
@@ -89,6 +91,8 @@
   );
 
   let activeTab = $state("details");
+  const mountedTabsSet = new Set<string>();
+  let mountedTabsVersion = $state(0);
 
   $effect(() => {
     if (activeTab === "sessions") {
@@ -102,9 +106,47 @@
     }
   });
 
+  $effect(() => {
+    if (activeTab && !mountedTabsSet.has(activeTab)) {
+      mountedTabsSet.add(activeTab);
+      mountedTabsVersion++;
+    }
+  });
+
+  function isTabMounted(value: string): boolean {
+    void mountedTabsVersion;
+    return mountedTabsSet.has(value);
+  }
+
   const user = $derived(userData.data ?? null);
   const sessions = $derived(sessionsData.data ?? []);
   const activity = $derived(activityData.data ?? []);
+  const sessionRows = $derived<TableRow<Session>[]>(
+    sessions.map((session) => ({
+      id: session.id,
+      cells: {
+        status: session.status,
+        ipAddress: session.ipAddress || "—",
+        userAgent: truncateUserAgent(session.userAgent),
+        createdAt: formatDate(session.createdAt),
+        lastUsedAt: formatDate(session.lastUsedAt)
+      },
+      data: session
+    }))
+  );
+  const activityRows = $derived<TableRow<ActivityEntry>[]>(
+    activity.map((entry) => ({
+      id: entry.id,
+      cells: {
+        occurredAt: formatDate(entry.occurredAt),
+        action: entry.action,
+        resourceType: entry.resourceType,
+        resourceId: entry.resourceId,
+        "actor.email": entry.actor?.email ?? "—"
+      },
+      data: entry
+    }))
+  );
 
   const computedBackInfo = $derived(
     computeBackInfo(
@@ -172,72 +214,105 @@
     }
   }
 
-  const sessionColumns: DataTableColumn<Session>[] = [
-    { key: "status", label: "Status", width: "110px" },
-    { key: "ipAddress", label: "IP", width: "140px", hideOnMobile: true, formatter: (v) => (v as string) || "—" },
+  const sessionColumns: TableColumn[] = [
+    { id: "status", label: "Status", width: "110px" },
+    { id: "ipAddress", label: "IP", width: "140px", hideOnMobile: true },
     {
-      key: "userAgent",
+      id: "userAgent",
       label: "User Agent",
       width: "2fr",
-      hideOnMobile: true,
-      formatter: (v) => truncateUserAgent(v as string | null | undefined)
+      hideOnMobile: true
     },
-    { key: "createdAt", label: "Created", width: "160px", formatter: (v) => formatDate(v as string) },
-    { key: "lastUsedAt", label: "Last Used", width: "160px", formatter: (v) => formatDate(v as string) }
+    { id: "createdAt", label: "Created", width: "160px" },
+    { id: "lastUsedAt", label: "Last Used", width: "160px" }
   ];
 
-  const activityColumns: DataTableColumn<ActivityEntry>[] = [
+  const activityColumns: TableColumn[] = [
     {
-      key: "occurredAt",
+      id: "occurredAt",
       label: "When",
-      width: "180px",
-      formatter: (v) => formatDate(v as string)
+      width: "180px"
     },
     {
-      key: "action",
+      id: "action",
       label: "Action",
       width: "140px"
     },
     {
-      key: "resourceType",
+      id: "resourceType",
       label: "Resource",
       width: "140px"
     },
     {
-      key: "resourceId",
+      id: "resourceId",
       label: "Resource ID",
-      width: "1.5fr",
-      hideOnMobile: true
+      width: "1.5fr"
     },
     {
-      key: "actor.email",
+      id: "actor.email",
       label: "Actor",
-      width: "1.5fr",
-      formatter: (_v, row) => row.actor?.email ?? "—"
+      width: "1.5fr"
     }
   ];
 
-  function activityActions(row: ActivityEntry): DataTableAction<ActivityEntry>[] {
+  function activityActions(_row: TableRow): TableRowAction[] {
     return [
-      { label: "Copy Activity ID", onClick: () => void copyToClipboard(row.id) },
-      { label: "Copy Resource ID", onClick: () => void copyToClipboard(row.resourceId) }
+      { value: "copy-activity-id", label: "Copy Activity ID" },
+      { value: "copy-resource-id", label: "Copy Resource ID" }
     ];
   }
 
-  function sessionActions(row: Session): DataTableAction<Session>[] {
-    const actions: DataTableAction<Session>[] = [
-      { label: "Copy Session ID", onClick: () => void copyToClipboard(row.id) }
+  function sessionActions(row: TableRow): TableRowAction[] {
+    const session = row.data as Session | undefined;
+    if (!session) {
+      return [];
+    }
+
+    const actions: TableRowAction[] = [
+      { value: "copy-session-id", label: "Copy Session ID" }
     ];
 
-    if (row.status === "active") {
+    if (session.status === "active") {
       actions.unshift({
+        value: "revoke",
         label: "Revoke",
-        variant: "danger",
-        onClick: () => (sessionToRevoke = row)
+        tone: "danger"
       });
     }
 
     return actions;
+  }
+
+  function handleSessionRowAction(event: CustomEvent<{ rowId: string; row: TableRow; action: TableRowAction }>) {
+    const session = event.detail.row.data as Session | undefined;
+    if (!session) {
+      return;
+    }
+
+    switch (event.detail.action.value) {
+      case "revoke":
+        sessionToRevoke = session;
+        break;
+      case "copy-session-id":
+        void copyToClipboard(session.id);
+        break;
+    }
+  }
+
+  function handleActivityRowAction(event: CustomEvent<{ rowId: string; row: TableRow; action: TableRowAction }>) {
+    const entry = event.detail.row.data as ActivityEntry | undefined;
+    if (!entry) {
+      return;
+    }
+
+    switch (event.detail.action.value) {
+      case "copy-activity-id":
+        void copyToClipboard(entry.id);
+        break;
+      case "copy-resource-id":
+        void copyToClipboard(entry.resourceId);
+        break;
+    }
   }
 
   async function handleRevokeSession() {
@@ -370,105 +445,118 @@
 </script>
 
 {#if userData.loading}
-  <PageLoading message="Loading user..." />
+  <PageLoading presentation="inline" message="Loading user..." />
 {:else if userData.error}
   <PoodleCallout tone="danger" message={userData.error} announceMode="polite" />
 {:else if user}
-  <DetailPageShell
-    section="User"
-    title={user.email}
-    subtitle={user.displayName ?? undefined}
-    backHref={computedBackInfo.href}
-    backLabel={computedBackInfo.label}
-    backIsContextual={computedBackInfo.isContextual ?? false}
-    bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
-    tabs={[
-      { value: "details", label: "Details" },
-      { value: "sessions", label: "Sessions", count: user.activeSessionCount },
-      { value: "activity", label: "Activity" }
-    ]}
-    bind:activeTab
-  >
-    {#snippet meta()}
+  <section class="user-view">
+    <div class="user-view__header">
+      <PoodlePageHeader
+        section="User"
+        title={user.email}
+        subtitle={user.displayName ?? undefined}
+        backHref={computedBackInfo.href}
+        backLabel={computedBackInfo.label}
+        backIsContextual={computedBackInfo.isContextual ?? false}
+        bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
+      >
+        <svelte:fragment slot="actions">
+          <PoodleMenu items={getUserMenuItems(user)} ariaLabel="User actions" placement="bottom-end" on:action={(event) => handleUserMenuAction(user, event.detail.value)}>
+            <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="User actions" />
+          </PoodleMenu>
+        </svelte:fragment>
+      </PoodlePageHeader>
+
+      <div class="user-view__meta">
       <DetailMeta>
         <DetailMetaId value={user.id} />
         <DetailMetaSeparator />
         <PoodlePill tone={getUserRoleTone(user.role)} appearance="badge" size="lg">{user.role}</PoodlePill>
         <PoodlePill tone={getUserStatusTone(user.status)} appearance="badge" size="lg">{user.status}</PoodlePill>
       </DetailMeta>
-    {/snippet}
+      </div>
+    </div>
 
-    {#snippet actions()}
-      <PoodleMenu items={getUserMenuItems(user)} ariaLabel="User actions" placement="bottom-end" on:action={(event) => handleUserMenuAction(user, event.detail.value)}>
-        <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="User actions" />
-      </PoodleMenu>
-    {/snippet}
+    <Tabs
+      bind:value={activeTab}
+      items={[
+        { value: "details", label: "Details" },
+        { value: "sessions", label: "Sessions", count: user.activeSessionCount },
+        { value: "activity", label: "Activity" }
+      ]}
+      variant="card"
+      size="sm"
+      ariaLabel="Detail sections"
+      let:activeValue
+    >
+      {#if isTabMounted(activeValue)}
+      {#if activeValue === "details"}
+        <PoodleCard>
+          <PoodleDetailSection title="Account" columns={2} separated={false}>
+            <PoodleDetailRow label="Created" value={formatDate(user.createdAt)} />
+            <PoodleDetailRow label="Updated" value={formatDate(user.updatedAt)} />
+          </PoodleDetailSection>
 
-    {#snippet tabContent(tab)}
-      {#if tab === "details"}
-        <DetailsCard>
-          <DetailsSection legend="Account">
-            <DetailsItem label="Created" value={formatDate(user.createdAt)} />
-            <DetailsItem label="Updated" value={formatDate(user.updatedAt)} />
-          </DetailsSection>
-
-          <DetailsSection legend="Security">
-            <DetailsItem label="Active sessions" value={user.activeSessionCount} />
-            <DetailsItem label="Failed logins" value={user.failedLoginCount} />
-            <DetailsItem label="Lockout until" value={user.lockoutUntil ? formatDate(user.lockoutUntil) : null} />
-          </DetailsSection>
-        </DetailsCard>
-      {:else if tab === "sessions"}
+          <PoodleDetailSection title="Security" columns={2} separated={false}>
+            <PoodleDetailRow label="Active sessions" value={String(user.activeSessionCount)} />
+            <PoodleDetailRow label="Failed logins" value={String(user.failedLoginCount)} />
+            <PoodleDetailRow label="Lockout until" value={user.lockoutUntil ? formatDate(user.lockoutUntil) : "—"} />
+          </PoodleDetailSection>
+        </PoodleCard>
+      {:else if activeValue === "sessions"}
         {#if activeTab === "sessions" && sessionsData.loading}
-          <PageLoading message="Loading sessions..." />
+          <PageLoading presentation="inline" message="Loading sessions..." />
         {:else if sessionsData.error}
           <PoodleCallout tone="danger" message={sessionsData.error} announceMode="polite" />
         {:else}
           <DataTable
-            data={sessions}
+            rows={sessionRows}
             columns={sessionColumns}
-            actions={sessionActions}
+            rowActions={sessionActions}
             emptyMessage="No sessions found"
             showLimitSelector={false}
+            on:rowActionSelect={handleSessionRowAction}
           >
-            {#snippet cell({ column, value })}
-              {#if column.key === "status"}
-                <PoodlePill tone={getSessionStatusTone(value)} appearance="badge" size="lg">{value}</PoodlePill>
-              {:else if column.key === "ipAddress"}
+            <svelte:fragment slot="cell" let:column let:value>
+              {#if column.id === "status"}
+                <PoodlePill tone={getSessionStatusTone(String(value ?? ""))} appearance="badge" size="lg">{value}</PoodlePill>
+              {:else if column.id === "ipAddress"}
                 <code>{value || "—"}</code>
               {:else}
                 {value}
               {/if}
-            {/snippet}
+            </svelte:fragment>
           </DataTable>
         {/if}
-      {:else if tab === "activity"}
+      {:else if activeValue === "activity"}
         {#if activeTab === "activity" && activityData.loading}
-          <PageLoading message="Loading activity..." />
+          <PageLoading presentation="inline" message="Loading activity..." />
         {:else if activityData.error}
           <PoodleCallout tone="danger" message={activityData.error} announceMode="polite" />
         {:else}
           <DataTable
-            data={activity}
+            rows={activityRows}
             columns={activityColumns}
-            actions={activityActions}
+            rowActions={activityActions}
             emptyMessage="No activity recorded for this user"
             showLimitSelector={false}
+            on:rowActionSelect={handleActivityRowAction}
           >
-            {#snippet cell({ column, value })}
-              {#if column.key === "action"}
-                <PoodlePill tone={getActivityTone(value)} appearance="badge" size="lg">{value}</PoodlePill>
-              {:else if column.key === "resourceId"}
+            <svelte:fragment slot="cell" let:column let:value>
+              {#if column.id === "action"}
+                <PoodlePill tone={getActivityTone(String(value ?? ""))} appearance="badge" size="lg">{value}</PoodlePill>
+              {:else if column.id === "resourceId"}
                 <code>{value}</code>
               {:else}
                 {value}
               {/if}
-            {/snippet}
+            </svelte:fragment>
           </DataTable>
         {/if}
       {/if}
-    {/snippet}
-  </DetailPageShell>
+      {/if}
+    </Tabs>
+  </section>
 {/if}
 
 <FormDialog
@@ -476,10 +564,11 @@
   title="Change role"
   subtitle="Select a new role for this user."
   submitting={updatingRole}
-  onCancel={() => (showRoleDialog = false)}
+  showDefaultActions={false}
+  on:cancel={() => (showRoleDialog = false)}
 >
-  {#snippet children(submitting)}
-    <form
+  <form
+      id="user-role-form"
       onsubmit={(event) => {
         event.preventDefault();
         void handleRoleChange();
@@ -492,21 +581,21 @@
           describedBy={describedBy}
           options={roleItems}
           placeholder="Select role"
-          disabled={submitting}
+          disabled={updatingRole}
           on:valueChange={(event) => { selectedRole = event.detail.value as UserRole; }}
         />
       </PoodleField>
-
-      <PoodleFormActions align="end">
-        <PoodleButton type="button" variant="ghost" disabled={submitting} on:click={() => (showRoleDialog = false)}>
-          Cancel
-        </PoodleButton>
-        <PoodleButton type="submit" variant="primary" disabled={submitting}>
-          {submitting ? "Saving..." : "Save"}
-        </PoodleButton>
-      </PoodleFormActions>
-    </form>
-  {/snippet}
+  </form>
+  <svelte:fragment slot="actions">
+    <PoodleFormActions align="end">
+      <PoodleButton type="button" variant="ghost" disabled={updatingRole} on:click={() => (showRoleDialog = false)}>
+        Cancel
+      </PoodleButton>
+      <PoodleButton type="submit" form="user-role-form" variant="primary" disabled={updatingRole}>
+        {updatingRole ? "Saving..." : "Save"}
+      </PoodleButton>
+    </PoodleFormActions>
+  </svelte:fragment>
 </FormDialog>
 
 <PoodleAlertDialog
@@ -518,3 +607,23 @@
   onCancel={() => (sessionToRevoke = null)}
   tone="danger"
 />
+
+<style>
+  .user-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .user-view__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .user-view__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+</style>

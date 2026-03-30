@@ -1,21 +1,25 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+import {
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  goto } from "$app/navigation";
+  import { auth,
+  authLoading,
+  currentUser } from "$lib/stores/auth";
   import * as userCommands from "@api-client/commands/user-commands.js";
   import type { UserProject } from "@api-client/commands/user-commands.js";
-  import { FormDialog } from "@decodelabs/underlay/patterns/FormDialog";
-  import { useAuthenticatedData } from "@decodelabs/underlay/patterns/authenticated-data";
-  import { useToasts } from "@decodelabs/underlay/patterns/useToasts";
-  import {
+    import {
     Button,
     Callout,
     Field,
     FormActions,
+    Grid,
+    ListCard,
     TextInput
   } from "@poodle/svelte-primitives";
-  import PageLoading from "@decodelabs/underlay/components/PageLoading.svelte";
-  import ListCard from "@decodelabs/underlay/components/ListCard.svelte";
-  import ListGrid from "@decodelabs/underlay/components/ListGrid.svelte";
+  import { FormDialog, PageLoading } from "@poodle/svelte-composites";
   import Plus from "lucide-svelte/icons/plus";
   import FolderOpen from "lucide-svelte/icons/folder-open";
 
@@ -91,7 +95,7 @@
 </div>
 
 {#if pageData.loading}
-  <PageLoading message="Loading projects..." />
+  <PageLoading presentation="inline" message="Loading projects..." />
 {:else if pageData.error}
   <Callout tone="danger" message={pageData.error} announceMode="assertive" />
 {:else if (pageData.data?.projects ?? []).length === 0}
@@ -105,20 +109,20 @@
     </Button>
   </div>
 {:else}
-  <ListGrid minItemWidth={20}>
+  <Grid columns="repeat(auto-fill, minmax(20rem, 1fr))" gap="lg">
     {#each pageData.data?.projects ?? [] as project}
       <ListCard
         title={project.name}
-        href={`/projects/${project.id}`}
-        variant="default"
         subtitle={project.description || "No description"}
+        interactive
+        on:click={() => goto(`/projects/${project.id}`)}
       >
-        {#snippet media()}
+        <svelte:fragment slot="leading">
           <FolderOpen size={20} />
-        {/snippet}
+        </svelte:fragment>
       </ListCard>
     {/each}
-  </ListGrid>
+  </Grid>
 {/if}
 
 <FormDialog
@@ -126,10 +130,11 @@
   title="Create Project"
   subtitle="Create a new project to organize your tasks."
   submitting={creating}
-  onCancel={() => { showCreateDialog = false; }}
+  showDefaultActions={false}
+  on:cancel={() => { showCreateDialog = false; }}
 >
-  {#snippet children(submitting)}
-    <form
+  <form
+      id="create-project-form"
       onsubmit={(event) => {
         event.preventDefault();
         void handleCreateProject();
@@ -142,7 +147,7 @@
             value={newProjectName}
             describedBy={describedBy}
             placeholder="My Project"
-            disabled={submitting}
+            disabled={creating}
             on:valueChange={(event) => { newProjectName = event.detail.value; }}
           />
         </Field>
@@ -152,22 +157,23 @@
             value={newProjectDescription}
             describedBy={describedBy}
             placeholder="Optional description"
-            disabled={submitting}
+            disabled={creating}
             on:valueChange={(event) => { newProjectDescription = event.detail.value; }}
           />
         </Field>
       </div>
 
-      <FormActions align="end">
-        <Button type="button" variant="ghost" disabled={submitting} on:click={() => (showCreateDialog = false)}>
-          Cancel
-        </Button>
-        <Button type="submit" variant="primary" disabled={submitting || !newProjectName.trim()}>
-          {submitting ? "Creating..." : "Create"}
-        </Button>
-      </FormActions>
-    </form>
-  {/snippet}
+  </form>
+  <svelte:fragment slot="actions">
+    <FormActions align="end">
+      <Button type="button" variant="ghost" disabled={creating} on:click={() => (showCreateDialog = false)}>
+        Cancel
+      </Button>
+      <Button type="submit" form="create-project-form" variant="primary" disabled={creating || !newProjectName.trim()}>
+        {creating ? "Creating..." : "Create"}
+      </Button>
+    </FormActions>
+  </svelte:fragment>
 </FormDialog>
 
 <style>

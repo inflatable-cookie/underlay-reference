@@ -1,21 +1,21 @@
 <script lang="ts">
-  import {
-    AlertDialog as PoodleAlertDialog,
-    Button as PoodleButton,
-    Callout as PoodleCallout,
-    Field as PoodleField,
-    FormActions as PoodleFormActions,
-    TextInput as PoodleTextInput
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  AlertDialog as PoodleAlertDialog,
+  Button as PoodleButton,
+  Callout as PoodleCallout,
+  Field as PoodleField,
+  FormActions as PoodleFormActions,
+  TextInput as PoodleTextInput,
+  TimeAgo
   } from "@poodle/svelte-primitives";
   import { tick } from "svelte";
-  import {
-        TimeAgo,
-    PageLoading
-  } from "@decodelabs/underlay/components";
-  import { authCommands } from "acme-client";
+  import { PageLoading } from "@poodle/svelte-composites";
+  import { authCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { useAuthenticatedData } from "@decodelabs/underlay/patterns";
-  import { toPublicKeyCreationOptions, credentialCreationToJson } from "@decodelabs/underlay/utils";
+    import { toPublicKeyCreationOptions, credentialCreationToJson } from "@decodelabs/underlay/utils";
 
   // Passkey type
   type PasskeyCredential = {
@@ -238,7 +238,7 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading passkeys..." />
+  <PageLoading presentation="inline" message="Loading passkeys..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else}
@@ -330,9 +330,9 @@
           </div>
 
           <div class="passkey-item__meta">
-            <span>Created <TimeAgo date={pk.createdAt} /></span>
+            <span>Created <TimeAgo datetime={pk.createdAt} /></span>
             {#if pk.lastUsedAt}
-              <span>Last used <TimeAgo date={pk.lastUsedAt} /></span>
+              <span>Last used <TimeAgo datetime={pk.lastUsedAt} /></span>
             {/if}
           </div>
         {/if}

@@ -1,10 +1,10 @@
 /**
  * Media Library types for acme-client.
  *
- * Re-exports types from Underlay patterns for use in Acme applications.
+ * Re-exports types from Underlay runtime helpers for use in Acme applications.
  */
 
-// Re-export all media types from Underlay patterns
+// Re-export all media types from Underlay runtime helpers
 export {
   // Enums
   MediaKind,
@@ -38,10 +38,10 @@ export {
   detectMediaKindFromMimeType,
   isMediaDeleted,
   getMediaDisplayName,
-} from "@decodelabs/underlay/patterns";
+} from "@decodelabs/underlay/runtime";
 
 // Re-export pagination types that may be used with media
 export type {
   PaginatedResponse,
   PaginationParams,
-} from "@decodelabs/underlay/patterns";
+} from "@decodelabs/underlay/runtime";

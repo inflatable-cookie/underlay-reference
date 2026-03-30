@@ -3,7 +3,7 @@
  *
  * Extracts error messages and field errors from API responses.
  */
-import { toUserMessage } from "acme-client";
+import { toUserMessage } from "@api-client";
 
 interface ExtractedError {
   message: string;

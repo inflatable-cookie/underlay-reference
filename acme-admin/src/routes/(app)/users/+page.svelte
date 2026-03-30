@@ -1,16 +1,25 @@
 <script lang="ts">
-	import { adminCommands, type User, type UserRole, type UserStatus, UserRole as UserRoleConst, UserStatus as UserStatusConst } from "@api-client";
-	import {
-		DataTable,
-		type DataTableColumn,
-		type DataTablePagination,
-		type DataTableSort,
-		type DataTableFilters
-	} from "@decodelabs/underlay/components";
-	import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-	import { IconButton as PoodleIconButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
-	import { useAuthenticatedData, useToasts } from "@decodelabs/underlay/patterns";
-	import { gotoWithContext } from "@decodelabs/underlay/client";
+import {
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  adminCommands,
+  type User,
+  type UserRole,
+  type UserStatus,
+  UserRole as UserRoleConst,
+  UserStatus as UserStatusConst } from "@api-client";
+	import { DataTable,
+  PageHeader as PoodlePageHeader,
+  type TableColumn,
+  type TableFilters,
+  type TablePagination,
+  type TableRow,
+  type TableRowAction } from "@poodle/svelte-composites";
+	import { IconButton as PoodleIconButton,
+  Pill as PoodlePill } from "@poodle/svelte-primitives";
+		import { gotoWithContext } from "@decodelabs/underlay/client";
 	import Plus from "lucide-svelte/icons/plus";
 	import { auth } from "$lib/stores/auth";
 	import { getUserRoleTone, getUserStatusTone } from "$lib/utils/accents";
@@ -25,7 +34,8 @@
 	let statusFilter = $state<UserStatus | "">("");
 	let searchQuery = $state("");
 	let displayNameQuery = $state("");
-	let sort = $state<DataTableSort | null>(null);
+	let sortColumnId = $state<string | null>(null);
+	let sortDirection = $state<"asc" | "desc">("asc");
 
 	// Fetch users using authenticated data pattern
 	const pageData = useAuthenticatedData(
@@ -69,35 +79,48 @@
 	const total = $derived(pageData.data?.total ?? 0);
 
 	// Pagination state for DataTable
-	const pagination = $derived<DataTablePagination>({
+	const pagination = $derived<TablePagination>({
 		page,
 		limit: PAGE_SIZE,
 		total
 	});
+
+	const rows = $derived<TableRow<User>[]>(
+		users.map((user) => ({
+			id: user.id,
+			cells: {
+				email: user.email,
+				displayName: user.displayName || "—",
+				role: user.role,
+				status: user.status,
+				createdAt: formatDate(user.createdAt)
+			},
+			data: user
+		}))
+	);
 
 	function formatDate(dateStr: string): string {
 		return new Date(dateStr).toLocaleDateString();
 	}
 
 	// Column configuration
-	const columns: DataTableColumn<User>[] = [
+	const columns: TableColumn[] = [
 		{
-			key: "email",
+			id: "email",
 			label: "Email",
 			width: "2fr",
 			filterable: true,
 			filterType: "text"
 		},
 		{
-			key: "displayName",
+			id: "displayName",
 			label: "Display Name",
 			width: "1.5fr",
 			filterable: true,
-			filterType: "text",
-			formatter: (value) => (value as string) || "—"
+			filterType: "text"
 		},
 		{
-			key: "role",
+			id: "role",
 			label: "Role",
 			width: "120px",
 			filterable: true,
@@ -112,7 +135,7 @@
 			]
 		},
 		{
-			key: "status",
+			id: "status",
 			label: "Status",
 			width: "100px",
 			filterable: true,
@@ -124,35 +147,27 @@
 			]
 		},
 		{
-			key: "createdAt",
+			id: "createdAt",
 			label: "Created",
 			width: "100px",
-			hideOnMobile: true,
-			formatter: (value) => formatDate(value as string)
+			hideOnMobile: true
 		}
 	];
 
-	// Row actions
-	const actions = [
-		{
-			label: "Edit",
-			href: (row: User) => `/users/${row.id}/edit`
-		},
-		{
-			label: "Copy ID",
-			onClick: (row: User) => void copyToClipboard(row.id)
-		},
-		{
-			label: "Copy Email",
-			onClick: (row: User) => void copyToClipboard(row.email)
-		}
-	];
-
-	function handlePageChange(newPage: number) {
-		page = newPage;
+	function getRowActions(_row: TableRow): TableRowAction[] {
+		return [
+			{ value: "edit", label: "Edit" },
+			{ value: "copy-id", label: "Copy ID" },
+			{ value: "copy-email", label: "Copy Email" }
+		];
 	}
 
-	function handleFilterChange(filters: DataTableFilters) {
+	function handlePageChange(event: CustomEvent<{ page: number }>) {
+		page = event.detail.page;
+	}
+
+	function handleFilterChange(event: CustomEvent<{ filters: TableFilters }>) {
+		const filters = event.detail.filters;
 		if (filters.email !== undefined) {
 			searchQuery = filters.email;
 		}
@@ -168,8 +183,32 @@
 		page = 1;
 	}
 
-	function handleSortChange(newSort: DataTableSort) {
-		sort = newSort;
+	function handleSortChange(event: CustomEvent<{ columnId: string; direction: "asc" | "desc" }>) {
+		sortColumnId = event.detail.columnId;
+		sortDirection = event.detail.direction;
+	}
+
+	function handleRowActionSelect(event: CustomEvent<{ rowId: string; row: TableRow; action: TableRowAction }>) {
+		const user = event.detail.row.data as User | undefined;
+		if (!user) {
+			return;
+		}
+
+		switch (event.detail.action.value) {
+			case "edit":
+				void gotoWithContext(`/users/${user.id}/edit`, {
+					label: "Users",
+					href: "/users",
+					type: "list"
+				});
+				break;
+			case "copy-id":
+				void copyToClipboard(user.id);
+				break;
+			case "copy-email":
+				void copyToClipboard(user.email);
+				break;
+		}
 	}
 
 	async function copyToClipboard(text: string): Promise<void> {
@@ -222,29 +261,38 @@
 </PoodlePageHeader>
 
 <DataTable
-	data={users}
 	{columns}
-	{actions}
+	{rows}
+	rowActions={getRowActions}
 	{pagination}
-	{sort}
+	filters={{
+		email: searchQuery,
+		displayName: displayNameQuery,
+		role: roleFilter,
+		status: statusFilter
+	}}
+	sortColumnId={sortColumnId}
+	sortDirection={sortDirection}
 	loading={pageData.loading}
 	emptyMessage="No users found"
 	showLimitSelector={false}
-	onPage={handlePageChange}
-	onFilter={handleFilterChange}
-	onSort={handleSortChange}
+	on:pageChange={handlePageChange}
+	on:filterChange={handleFilterChange}
+	on:sortChange={handleSortChange}
+	on:rowActionSelect={handleRowActionSelect}
 >
-	{#snippet cell({ column, row, value })}
-		{#if column.key === "email"}
-			<a href={`/users/${row.id}`} class="email-link">{value}</a>
-		{:else if column.key === "role"}
-			<PoodlePill tone={getUserRoleTone(row.role)} appearance="badge" size="lg">{row.role}</PoodlePill>
-		{:else if column.key === "status"}
-			<PoodlePill tone={getUserStatusTone(row.status)} appearance="badge" size="lg">{row.status}</PoodlePill>
+	<svelte:fragment slot="cell" let:column let:row let:value>
+		{@const user = row.data as User | undefined}
+		{#if column.id === "email" && user}
+			<a href={`/users/${user.id}`} class="email-link">{value}</a>
+		{:else if column.id === "role" && user}
+			<PoodlePill tone={getUserRoleTone(user.role)} appearance="badge" size="lg">{user.role}</PoodlePill>
+		{:else if column.id === "status" && user}
+			<PoodlePill tone={getUserStatusTone(user.status)} appearance="badge" size="lg">{user.status}</PoodlePill>
 		{:else}
 			{value}
 		{/if}
-	{/snippet}
+	</svelte:fragment>
 </DataTable>
 
 <style>

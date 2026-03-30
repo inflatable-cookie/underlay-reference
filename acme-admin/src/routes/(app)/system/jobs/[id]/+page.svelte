@@ -1,32 +1,33 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  DetailMetaId,
+  DetailMetaItem,
+  DetailMetaSeparator,
+  DetailMeta
+} from "@decodelabs/underlay/patterns";
+import {
+  useToasts,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout,
+  DetailRow as PoodleDetailRow
+  } from "@poodle/svelte-primitives";
+  import { DetailSection as PoodleDetailSection,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
   import { page } from "$app/stores";
-  import {
-    PageHeader,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaItem,
-    DetailMetaSeparator,
-    useToasts,
-    useAuthenticatedData
-  } from "@decodelabs/underlay/patterns";
-  import {
-    Code,
-        PageLoading,
-    DetailsCard,
-    DetailsSection,
-    DetailsItem
-  } from "@decodelabs/underlay/components";
-  import {
+    import {
     Button as PoodleButton,
     Card as PoodleCard,
+    Code,
     IconButton as PoodleIconButton,
     Pill as PoodlePill
   } from "@poodle/svelte-primitives";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Ban from "lucide-svelte/icons/ban";
-  import { adminCommands, type JobDetail } from "acme-client";
+  import { adminCommands, type JobDetail } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import { getJobStatusTone } from "$lib/utils/accents";
   import { refreshCwIcon } from "$lib/ui/poodle-icon-nodes";
@@ -92,25 +93,14 @@
   }
 </script>
 
-<PageHeader
+<div class="job-detail__header">
+<PoodlePageHeader
   section="Job"
   title={job ? formatJobType(job.jobType) : "Not Found"}
   backHref="/system/jobs"
   backLabel="Back to jobs"
 >
-  {#if job}
-    <DetailMeta>
-      <DetailMetaId value={job.id} />
-      <DetailMetaSeparator />
-      <DetailMetaItem>
-        <PoodlePill tone={getJobStatusTone(job.status)} appearance="badge" size="lg">
-          {getStatusLabel(job.status)}
-        </PoodlePill>
-      </DetailMetaItem>
-    </DetailMeta>
-  {/if}
-
-  {#snippet actions()}
+  <svelte:fragment slot="actions">
     {#if job}
       {#if job.status === "pending" || job.status === "running"}
         <PoodleButton variant="secondary" on:click={handleCancel}>
@@ -132,29 +122,45 @@
         on:click={() => pageData.refetch()}
       />
     {/if}
-  {/snippet}
-</PageHeader>
+  </svelte:fragment>
+</PoodlePageHeader>
+{#if job}
+  <DetailMeta>
+    <DetailMetaId value={job.id} />
+    <DetailMetaSeparator />
+    <DetailMetaItem>
+      <PoodlePill tone={getJobStatusTone(job.status)} appearance="badge" size="lg">
+        {getStatusLabel(job.status)}
+      </PoodlePill>
+    </DetailMetaItem>
+  </DetailMeta>
+{/if}
+</div>
 
 {#if pageData.loading && !job}
-  <PageLoading message="Loading job details..." />
+  <PageLoading presentation="inline" message="Loading job details..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if job}
   <div class="job-detail">
-  <DetailsCard>
-    <DetailsSection legend="Details">
-      <DetailsItem label="Type" value={job.jobType} code />
-      <DetailsItem label="Attempts" value={`${job.attempts} / ${job.maxAttempts}`} />
-    </DetailsSection>
-    <DetailsSection legend="Timestamps">
-      <DetailsItem label="Created" value={formatDate(job.createdAt)} />
-      {#if job.scheduledFor}
-        <DetailsItem label="Scheduled for" value={formatDate(job.scheduledFor)} />
-      {/if}
-      <DetailsItem label="Started at" value={formatDate(job.startedAt)} />
-      <DetailsItem label="Finished at" value={formatDate(job.finishedAt)} />
-    </DetailsSection>
-  </DetailsCard>
+  <PoodleCard>
+    <div class="detail-card-grid">
+      <PoodleDetailSection title="Details" columns={2} separated={false}>
+        <PoodleDetailRow label="Type">
+          <svelte:fragment slot="value"><Code inline source={job.jobType} /></svelte:fragment>
+        </PoodleDetailRow>
+        <PoodleDetailRow label="Attempts" value={`${job.attempts} / ${job.maxAttempts}`} />
+      </PoodleDetailSection>
+      <PoodleDetailSection title="Timestamps" columns={2} separated={false}>
+        <PoodleDetailRow label="Created" value={formatDate(job.createdAt)} />
+        {#if job.scheduledFor}
+          <PoodleDetailRow label="Scheduled for" value={formatDate(job.scheduledFor)} />
+        {/if}
+        <PoodleDetailRow label="Started at" value={formatDate(job.startedAt)} />
+        <PoodleDetailRow label="Finished at" value={formatDate(job.finishedAt)} />
+      </PoodleDetailSection>
+    </div>
+  </PoodleCard>
 
     {#if job.errorMessage}
       <PoodleCard>
@@ -188,6 +194,17 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+  }
+
+  .job-detail__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-card-grid {
+    display: grid;
+    gap: 1rem;
   }
 
   .job-detail__section {

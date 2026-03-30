@@ -1,24 +1,32 @@
 <script lang="ts">
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  DetailMeta,
+  DetailMetaId,
+  DetailMetaItem,
+  DetailMetaSeparator,
+  type SpaFormResult,
+  SpaFormShell
+} from "@decodelabs/underlay/patterns";
+import {
+  computeBackInfo,
+  consumeNavigationContext,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  Callout as PoodleCallout,
+  Code } from "@poodle/svelte-primitives";
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
-  import { adminCommands, type UserDetail, type UserRole, type UserStatus } from "@api-client";
+  import { adminCommands,
+  type UserDetail,
+  type UserRole,
+  type UserStatus } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { extractApiError, isPreconditionFailed } from "$lib/utils/api-errors";
+  import { extractApiError,
+  isPreconditionFailed } from "$lib/utils/api-errors";
   import UserForm from "$lib/forms/UserForm.svelte";
-  import {
-    SpaFormShell,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaItem,
-    DetailMetaSeparator,
-    computeBackInfo,
-    consumeNavigationContext,
-    useAuthenticatedData,
-    type SpaFormResult
-  } from "@decodelabs/underlay/patterns";
-  import { Code, PageLoading } from "@decodelabs/underlay/components";
+    import { PageLoading } from "@poodle/svelte-composites";
 
   interface Props {
     data: PageData;
@@ -161,7 +169,7 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading user..." />
+  <PageLoading presentation="inline" message="Loading user..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if user}
@@ -170,7 +178,7 @@
       <DetailMetaId value={user.id} />
       <DetailMetaSeparator />
       <DetailMetaItem label="Email">
-        <Code copy>{user.email}</Code>
+        <Code inline source={user.email} showCopyButton />
       </DetailMetaItem>
     </DetailMeta>
   {/snippet}

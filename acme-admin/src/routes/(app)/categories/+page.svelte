@@ -1,24 +1,23 @@
 <script lang="ts">
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  createReorderController,
+  useToasts,
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime";
+import {
+  EmptyState as PoodleEmptyState,
+  FilterToolbar,
+  PageHeader as PoodlePageHeader,
+  PageLoading,
+  ReorderableList as PoodleReorderableList } from "@poodle/svelte-composites";
+  import { Callout as PoodleCallout,
+  Grid as PoodleGrid,
+  ListCard as PoodleListCard,
+  OrderBy as PoodleOrderBy,
+  type OrderByValue } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import {
-    FilterBar,
-    ReorderableList,
-    createReorderController,
-    useToasts,
-    useAuthenticatedData
-  } from "@decodelabs/underlay/patterns";
-  import {
-    EmptyState,
-        ListGrid,
-    ListCard,
-    OrderBy,
-    PageLoading,
-    type OrderByValue
-  } from "@decodelabs/underlay/components";
-  import {
+    import {
     Button as PoodleButton,
     Field as PoodleField,
     IconButton as PoodleIconButton,
@@ -29,7 +28,7 @@
   import { CategoryListCard } from "$lib/cards";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
   import { arrowUpDownIcon } from "$lib/ui/poodle-icon-nodes";
-  import { adminCommands, type CategoryWithCounts } from "acme-client";
+  import { adminCommands, type CategoryWithCounts } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import ArrowUpDown from "lucide-svelte/icons/arrow-up-down";
   import Plus from "lucide-svelte/icons/plus";
@@ -65,6 +64,7 @@
   });
 
   let isReorderMode = $state(false);
+  let reorderSubmitError = $state<string | null>(null);
 
   // Parse current state from URL
   const currentQuery = $derived(parseQueryParams($page.url.searchParams));
@@ -169,10 +169,12 @@
   );
 
   function enterReorderMode() {
+    reorderSubmitError = null;
     isReorderMode = true;
   }
 
   async function handleReorderSuccess() {
+    reorderSubmitError = null;
     isReorderMode = false;
     await pageData.refetch();
   }
@@ -200,7 +202,24 @@
   }
 
   function exitReorderMode() {
+    reorderController.reset();
+    reorderSubmitError = null;
     isReorderMode = false;
+  }
+
+  function handleReorderItems(items: typeof reorderController.pending) {
+    reorderController.updatePending(items);
+  }
+
+  async function handleReorderSubmit() {
+    reorderSubmitError = null;
+    try {
+      await reorderController.submit();
+      await handleReorderSuccess();
+    } catch (error) {
+      const transformed = await handleReorderError(error);
+      reorderSubmitError = transformed ?? (error instanceof Error ? error.message : String(error));
+    }
   }
 
   async function handleDeleteCategory(categoryId: string) {
@@ -251,7 +270,12 @@
 </PoodlePageHeader>
 
 {#if !isReorderMode}
-  <FilterBar title="Filters" onRefresh={() => pageData.refetch()}>
+  <FilterToolbar ariaLabel="Category filters" summaryText="Filters">
+    <svelte:fragment slot="actions">
+      <PoodleButton type="button" variant="ghost" size="sm" onclick={() => pageData.refetch()}>
+        Refresh
+      </PoodleButton>
+    </svelte:fragment>
     <PoodleField id="categories-filter-name" label="Name" let:describedBy>
       <PoodleSearchField
         id="categories-filter-name"
@@ -272,41 +296,47 @@
       />
     </PoodleField>
     <PoodleField id="categories-filter-sort" label="Sort">
-      <OrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} />
+      <PoodleOrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} compact />
     </PoodleField>
-  </FilterBar>
+  </FilterToolbar>
 {/if}
 
 {#if pageData.loading}
-  <PageLoading message="Loading categories..." />
+  <PageLoading presentation="inline" message="Loading categories..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if (pageData.data?.categories ?? []).length === 0}
-  <EmptyState title="No categories found" description="Create your first category to get started." actionLabel="Add category" actionHref="/categories/new" />
+  <PoodleEmptyState title="No categories found" message="Create your first category to get started.">
+    <a slot="actions" href="/categories/new">Add category</a>
+  </PoodleEmptyState>
 {:else if isReorderMode}
-  <ReorderableList
-    controller={reorderController}
+  <PoodleReorderableList
+    items={reorderController.pending}
+    ariaLabel="Reorder categories"
+    dirty={reorderController.isDirty}
+    submitting={reorderController.isPending}
+    errorMessage={reorderSubmitError}
+    onsubmit={handleReorderSubmit}
     oncancel={exitReorderMode}
-    onsuccess={handleReorderSuccess}
-    onsubmiterror={handleReorderError}
+    on:reorder={(event) => handleReorderItems(event.detail.items)}
   >
     {#snippet item(category)}
-      <ListCard
+      <PoodleListCard
         title={category.name}
-        variant="compact"
-        showDragHandle
-        accent={category.color ?? "#6366f1"}
+        layout="compact"
+        showReorderHandle
+        accentColor={category.color ?? "#6366f1"}
       >
-        {#snippet media()}
+        <svelte:fragment slot="leading">
           <FolderOpen size={16} />
-        {/snippet}
-      </ListCard>
+        </svelte:fragment>
+      </PoodleListCard>
     {/snippet}
-  </ReorderableList>
+  </PoodleReorderableList>
 {:else}
-  <ListGrid minItemWidth={26}>
+  <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
     {#each pageData.data?.categories ?? [] as category}
       <CategoryListCard {category} onDelete={handleDeleteCategory} />
     {/each}
-  </ListGrid>
+  </PoodleGrid>
 {/if}

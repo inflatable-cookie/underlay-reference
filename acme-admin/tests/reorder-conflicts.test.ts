@@ -1,5 +1,5 @@
+import type { ReorderController } from "@decodelabs/underlay/runtime";
 import { describe, expect, it } from "vitest";
-import type { ReorderController } from "@decodelabs/underlay/patterns";
 import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
 
 interface Item {
@@ -23,7 +23,7 @@ function createController(initial: Item[]) {
     removeItems(idsToRemove: string[]) {
       const removeSet = new Set(idsToRemove);
       pending = pending.filter((item) => !removeSet.has(item.id));
-    }
+    },
   };
 }
 
@@ -31,7 +31,7 @@ describe("recoverReorderConflict", () => {
   it("applies added and removed IDs and returns guidance message", () => {
     const controller = createController([
       { id: "a", label: "A" },
-      { id: "b", label: "B" }
+      { id: "b", label: "B" },
     ]);
 
     const result = recoverReorderConflict({
@@ -43,16 +43,16 @@ describe("recoverReorderConflict", () => {
           error: {
             context: {
               added_ids: ["c"],
-              removed_ids: ["b"]
-            }
-          }
-        }
+              removed_ids: ["b"],
+            },
+          },
+        },
       },
       latestItems: [
         { id: "a", label: "A" },
-        { id: "c", label: "C" }
+        { id: "c", label: "C" },
       ],
-      entityLabel: "project"
+      entityLabel: "project",
     });
 
     expect(result.handled).toBe(true);
@@ -67,7 +67,7 @@ describe("recoverReorderConflict", () => {
       controller: controller as unknown as ReorderController<Item>,
       error: { status: 400, message: "Bad request" },
       latestItems: [{ id: "a", label: "A" }],
-      entityLabel: "category"
+      entityLabel: "category",
     });
 
     expect(result).toEqual({ handled: false, message: "" });

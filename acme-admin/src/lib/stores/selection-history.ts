@@ -1,19 +1,22 @@
+import { createSelectionHistory } from "@decodelabs/underlay/runtime";
 /**
  * Selection history stores for RelationSelector components.
  *
  * These track recently selected items to provide better suggestions
  * when users open relation pickers.
  */
-import { createSelectionHistory } from "@decodelabs/underlay/patterns";
 
 /**
  * History of recently selected categories.
  * Used in project forms when selecting a category.
  */
-export const categorySelectionHistory = createSelectionHistory("acme.categories", {
-  maxItems: 10,
-  storageType: "local"
-});
+export const categorySelectionHistory = createSelectionHistory(
+  "acme.categories",
+  {
+    maxItems: 10,
+    storageType: "local",
+  },
+);
 
 /**
  * History of recently selected projects.
@@ -21,7 +24,7 @@ export const categorySelectionHistory = createSelectionHistory("acme.categories"
  */
 export const projectSelectionHistory = createSelectionHistory("acme.projects", {
   maxItems: 10,
-  storageType: "local"
+  storageType: "local",
 });
 
 /**
@@ -30,5 +33,5 @@ export const projectSelectionHistory = createSelectionHistory("acme.projects", {
  */
 export const labelSelectionHistory = createSelectionHistory("acme.labels", {
   maxItems: 20,
-  storageType: "local"
+  storageType: "local",
 });

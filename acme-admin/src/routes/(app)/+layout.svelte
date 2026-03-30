@@ -1,19 +1,22 @@
 <script lang="ts">
+import {
+  UNDERLAY_TOASTS_CONTEXT_KEY,
+  createToastStore,
+  configureAuth
+} from "@decodelabs/underlay/runtime";
+import {
+  setContext,
+  onMount } from "svelte";
+	import { goto } from "$app/navigation";
+	import { page } from "$app/stores";
+	import { ToastHost } from "@poodle/svelte-composites";
 	import Menu from "lucide-svelte/icons/menu";
 	import X from "lucide-svelte/icons/x";
 	import PanelRight from "lucide-svelte/icons/panel-right";
-	import { setContext, onMount } from "svelte";
-	import { goto } from "$app/navigation";
-	import { page } from "$app/stores";
-	import { ErrorBoundary, ToastHost } from "@decodelabs/underlay/components";
-	import {
-		UNDERLAY_TOASTS_CONTEXT_KEY,
-		createToastStore,
-		configureAuth
-	} from "@decodelabs/underlay/patterns";
-	import { auth, authLoading, currentUser } from "$lib/stores/auth";
+		import { auth, authLoading, currentUser } from "$lib/stores/auth";
 	import AdminNavList from "$lib/ui/AdminNavList.svelte";
 	import AdminUserMenu from "$lib/ui/AdminUserMenu.svelte";
+	import AdminErrorBoundary from "$lib/ui/AdminErrorBoundary.svelte";
 
 	// Configure global auth handlers for useAuthenticatedData
 	// Enables automatic token refresh on 401 errors and auto-fetch on auth readiness
@@ -134,9 +137,9 @@
 
 		<div class="admin-content">
 			<main class="admin-content__body">
-				<ErrorBoundary>
+				<AdminErrorBoundary>
 					{@render children()}
-				</ErrorBoundary>
+				</AdminErrorBoundary>
 			</main>
 		</div>
 

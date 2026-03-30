@@ -1,15 +1,15 @@
+import {
+  computeFileHash,
+  uploadToBlob,
+  type UploadProgress,
+} from "@decodelabs/underlay/runtime";
+import { mediaCommands, detectMediaKindFromMimeType } from "@api-client";
 /**
  * Shared upload pipeline for media files.
  *
  * Encapsulates the hash → initiate → upload → finalize sequence
  * used by both the bulk upload queue and single-file replace mode.
  */
-import { mediaCommands, detectMediaKindFromMimeType } from "acme-client";
-import {
-  computeFileHash,
-  uploadToBlob,
-  type UploadProgress,
-} from "@decodelabs/underlay/patterns";
 
 // File size limit (50MB)
 export const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -38,14 +38,16 @@ export interface UploadPipelineResult {
 /**
  * Build the upload plan object from an initiate-upload response.
  */
-function buildPlan(uploadInfo: { uploadPlan: {
-  uploadUrl: string;
-  method: string;
-  headers: Record<string, string>;
-  maxBytes?: number | null;
-  allowedContentTypes?: string[] | null;
-  expiresAt: string;
-}}) {
+function buildPlan(uploadInfo: {
+  uploadPlan: {
+    uploadUrl: string;
+    method: string;
+    headers: Record<string, string>;
+    maxBytes?: number | null;
+    allowedContentTypes?: string[] | null;
+    expiresAt: string;
+  };
+}) {
   return {
     uploadUrl: uploadInfo.uploadPlan.uploadUrl,
     method: uploadInfo.uploadPlan.method,
@@ -118,7 +120,14 @@ export async function createAndUpload(
     accessToken,
   );
 
-  await uploadAndFinalize(mediaRecord.id, file, hash, fetchFn, accessToken, onProgress);
+  await uploadAndFinalize(
+    mediaRecord.id,
+    file,
+    hash,
+    fetchFn,
+    accessToken,
+    onProgress,
+  );
 
   return { mediaId: mediaRecord.id, hash };
 }
@@ -135,7 +144,14 @@ export async function replaceUpload(
 
   const hash = await computeFileHash(file);
 
-  await uploadAndFinalize(mediaId, file, hash, fetchFn, accessToken, onProgress);
+  await uploadAndFinalize(
+    mediaId,
+    file,
+    hash,
+    fetchFn,
+    accessToken,
+    onProgress,
+  );
 
   return { mediaId, hash };
 }
@@ -147,7 +163,15 @@ export async function checkDuplicate(
   file: File,
   fetchFn: typeof fetch,
   accessToken: string,
-): Promise<{ hash: string; exists: boolean; media?: { id: string; title?: string | null; originalFilename?: string | null } | null }> {
+): Promise<{
+  hash: string;
+  exists: boolean;
+  media?: {
+    id: string;
+    title?: string | null;
+    originalFilename?: string | null;
+  } | null;
+}> {
   const hash = await computeFileHash(file);
   const result = await mediaCommands.checkDuplicate(
     { sha256: hash },

@@ -1,19 +1,31 @@
 <script lang="ts">
-  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  DetailMeta,
+  DetailMetaId,
+  DetailMetaItem,
+  DetailMetaSeparator
+} from "@decodelabs/underlay/patterns";
+import {
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  AlertDialog as PoodleAlertDialog,
+  Callout as PoodleCallout,
+  Card as PoodleCard,
+  DetailRow as PoodleDetailRow
+  } from "@poodle/svelte-primitives";
+  import { DetailSection as PoodleDetailSection,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
-  import { adminCommands, type Task, type Label, type Project } from "acme-client";
+  import { adminCommands,
+  type Task,
+  type Label,
+  type Project } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import {
-    useAuthenticatedData,
-    PageHeader,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaItem,
-    DetailMetaSeparator,
-    useToasts
-  } from "@decodelabs/underlay/patterns";
-  import { PageLoading, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
+    import { TimeAgo } from "@poodle/svelte-primitives";
   import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import { getTaskStatusTone, getTaskPriorityTone } from "$lib/utils/accents";
@@ -103,11 +115,12 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading task..." />
+  <PageLoading presentation="inline" message="Loading task..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if task && project}
-  <PageHeader
+  <div class="task-detail__header">
+  <PoodlePageHeader
     section="Task"
     title={task.title}
     backHref={`/projects/${data.projectId}`}
@@ -117,24 +130,9 @@
       : task.status === "cancelled"
         ? "This task has been cancelled."
         : undefined}
-    bannerVariant={task.status === "completed" ? "success" : "warning"}
+    bannerTone={task.status === "completed" ? "success" : "warning"}
   >
-    <DetailMeta>
-      <DetailMetaId value={task.id} />
-      <DetailMetaSeparator />
-      <DetailMetaItem>
-        <PoodlePill tone={getTaskStatusTone(task.status)} appearance="badge" size="lg">
-          {statusLabel}
-        </PoodlePill>
-      </DetailMetaItem>
-      <DetailMetaItem>
-        <PoodlePill tone={getTaskPriorityTone(task.priority)} appearance="badge" size="lg">
-          {priorityLabel}
-        </PoodlePill>
-      </DetailMetaItem>
-    </DetailMeta>
-
-    {#snippet actions()}
+    <svelte:fragment slot="actions">
       <PoodleButton type="button" variant="secondary" on:click={handleEdit}>
         <Pencil size={16} />
         Edit
@@ -142,8 +140,23 @@
       <PoodleButton type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
         Delete
       </PoodleButton>
-    {/snippet}
-  </PageHeader>
+    </svelte:fragment>
+  </PoodlePageHeader>
+  <DetailMeta>
+    <DetailMetaId value={task.id} />
+    <DetailMetaSeparator />
+    <DetailMetaItem>
+      <PoodlePill tone={getTaskStatusTone(task.status)} appearance="badge" size="lg">
+        {statusLabel}
+      </PoodlePill>
+    </DetailMetaItem>
+    <DetailMetaItem>
+      <PoodlePill tone={getTaskPriorityTone(task.priority)} appearance="badge" size="lg">
+        {priorityLabel}
+      </PoodlePill>
+    </DetailMetaItem>
+  </DetailMeta>
+  </div>
 
   <PoodleAlertDialog
     open={showDeleteConfirm}
@@ -157,61 +170,94 @@
     }}
   />
 
-  <DetailsCard>
-    <DetailsSection legend="Details">
-      <DetailsItem label="Priority">
-        <PoodlePill
-          tone={getTaskPriorityTone(task.priority)}
-          appearance="badge"
-          size="sm"
-        >
-          {priorityLabel}
-        </PoodlePill>
-      </DetailsItem>
-      <DetailsItem label="Due Date">
-        <span class="due-date">
-          <Calendar size={14} />
-          {formatDate(task.dueDate)}
-        </span>
-      </DetailsItem>
-      {#if labels.length > 0}
-        <DetailsItem label="Labels" span="full">
-          <div class="labels">
-            {#each labels as label}
-              <PoodlePill
-                tone="neutral"
-                appearance="badge"
-                size="sm"
-              >
-                {label.name}
-              </PoodlePill>
-            {/each}
+  <PoodleCard>
+    <div class="detail-card-grid">
+      <PoodleDetailSection title="Details" columns={2} separated={false}>
+        <PoodleDetailRow label="Priority">
+          <svelte:fragment slot="value">
+            <PoodlePill
+              tone={getTaskPriorityTone(task.priority)}
+              appearance="badge"
+              size="sm"
+            >
+              {priorityLabel}
+            </PoodlePill>
+          </svelte:fragment>
+        </PoodleDetailRow>
+        <PoodleDetailRow label="Due Date">
+          <svelte:fragment slot="value">
+            <span class="due-date">
+              <Calendar size={14} />
+              {formatDate(task.dueDate)}
+            </span>
+          </svelte:fragment>
+        </PoodleDetailRow>
+        {#if labels.length > 0}
+          <div class="detail-span-full">
+            <PoodleDetailRow label="Labels">
+              <svelte:fragment slot="value">
+                <div class="labels">
+                  {#each labels as label}
+                    <PoodlePill
+                      tone="neutral"
+                      appearance="badge"
+                      size="sm"
+                    >
+                      {label.name}
+                    </PoodlePill>
+                  {/each}
+                </div>
+              </svelte:fragment>
+            </PoodleDetailRow>
           </div>
-        </DetailsItem>
-      {/if}
-      {#if task.description}
-        <DetailsItem label="Description" value={task.description} span="full" />
-      {/if}
-    </DetailsSection>
+        {/if}
+        {#if task.description}
+          <div class="detail-span-full">
+            <PoodleDetailRow label="Description" value={task.description} />
+          </div>
+        {/if}
+      </PoodleDetailSection>
 
-    <DetailsSection legend="Metadata">
-      <DetailsItem label="Project">
-        <a href={`/projects/${project.id}`}>{project.name}</a>
-      </DetailsItem>
-      <DetailsItem label="Position" value={task.position} />
-      <DetailsItem label="Created">
-        <TimeAgo date={task.createdAt} tooltipFormat="datetime" />
-      </DetailsItem>
-      <DetailsItem label="Updated">
-        <TimeAgo date={task.updatedAt} tooltipFormat="datetime" />
-      </DetailsItem>
-    </DetailsSection>
-  </DetailsCard>
+      <PoodleDetailSection title="Metadata" columns={2} separated={false}>
+        <PoodleDetailRow label="Project">
+          <svelte:fragment slot="value">
+            <a href={`/projects/${project.id}`}>{project.name}</a>
+          </svelte:fragment>
+        </PoodleDetailRow>
+        <PoodleDetailRow label="Position" value={String(task.position)} />
+        <PoodleDetailRow label="Created">
+          <svelte:fragment slot="value">
+            <TimeAgo datetime={task.createdAt} tooltipFormat="datetime" />
+          </svelte:fragment>
+        </PoodleDetailRow>
+        <PoodleDetailRow label="Updated">
+          <svelte:fragment slot="value">
+            <TimeAgo datetime={task.updatedAt} tooltipFormat="datetime" />
+          </svelte:fragment>
+        </PoodleDetailRow>
+      </PoodleDetailSection>
+    </div>
+  </PoodleCard>
 {:else}
   <PoodleCallout tone="danger" message="Task not found" announceMode="polite" />
 {/if}
 
 <style>
+  .task-detail__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-card-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .detail-span-full {
+    grid-column: 1 / -1;
+  }
+
   .due-date {
     display: flex;
     align-items: center;

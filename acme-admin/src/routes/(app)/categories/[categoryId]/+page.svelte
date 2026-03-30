@@ -1,20 +1,30 @@
 <script lang="ts">
-  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  DetailMeta,
+  DetailMetaId,
+  DetailMetaStatus,
+  DetailMetaSeparator
+} from "@decodelabs/underlay/patterns";
+import {
+  useAuthenticatedData,
+  useToasts
+} from "@decodelabs/underlay/runtime";
+import {
+  AlertDialog as PoodleAlertDialog,
+  Callout as PoodleCallout,
+  Card as PoodleCard,
+  DetailRow as PoodleDetailRow
+  } from "@poodle/svelte-primitives";
+  import { DetailSection as PoodleDetailSection,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
-  import { adminCommands, type Category } from "acme-client";
+  import { adminCommands,
+  type Category } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import {
-    CopyActionsMenu,
-    useAuthenticatedData,
-    useToasts,
-    DetailPageShell,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaStatus,
-    DetailMetaSeparator
-  } from "@decodelabs/underlay/patterns";
-  import { PageLoading, DetailsCard, DetailsSection, DetailsItem, TimeAgo } from "@decodelabs/underlay/components";
+  import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
+    import { TimeAgo } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
 
   interface Props {
@@ -50,58 +60,74 @@
 </script>
 
 {#if pageData.loading}
-  <PageLoading message="Loading category..." />
+  <PageLoading presentation="inline" message="Loading category..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if category}
-  <DetailPageShell
-    section="Category"
-    title={category.name}
-    backHref="/categories"
-    backLabel="Back to categories"
-    subtitle={category.description ?? undefined}
-    bannerMessage={!category.isActive ? "This category is inactive and won't appear in selection lists." : undefined}
-    bannerVariant={!category.isActive ? "warning" : undefined}
-  >
-    {#snippet meta()}
+  <section class="category-detail">
+    <div class="category-detail__header">
+      <PoodlePageHeader
+        section="Category"
+        title={category.name}
+        backHref="/categories"
+        backLabel="Back to categories"
+        subtitle={category.description ?? undefined}
+        bannerMessage={!category.isActive ? "This category is inactive and won't appear in selection lists." : undefined}
+        bannerTone={!category.isActive ? "warning" : "warning"}
+      >
+        <svelte:fragment slot="actions">
+          <CopyActionsMenu
+            toastStore={toastStore}
+            triggerLabel="Actions"
+            copies={[{ label: "Copy ID", text: category.id, successMessage: "Copied category ID" }]}
+            actions={[
+              { label: "Edit", onSelect: handleEdit },
+              { label: "Delete", destructive: true, onSelect: () => { showDeleteConfirm = true; } }
+            ]}
+          />
+        </svelte:fragment>
+      </PoodlePageHeader>
+
+      <div class="category-detail__meta">
       <DetailMeta>
         <DetailMetaId value={category.id} />
         <DetailMetaSeparator />
         <DetailMetaStatus value={category.isActive} trueLabel="Active" falseLabel="Inactive" />
       </DetailMeta>
-    {/snippet}
+      </div>
+    </div>
 
-    {#snippet actions()}
-      <CopyActionsMenu
-        toastStore={toastStore}
-        triggerLabel="Actions"
-        copies={[{ label: "Copy ID", text: category.id, successMessage: "Copied category ID" }]}
-        actions={[
-          { label: "Edit", onSelect: handleEdit },
-          { label: "Delete", destructive: true, onSelect: () => { showDeleteConfirm = true; } }
-        ]}
-      />
-    {/snippet}
+    <PoodleCard>
+      <div class="detail-card-grid">
+        <PoodleDetailSection title="Details" columns={2} separated={false}>
+          <PoodleDetailRow label="Slug">
+            <svelte:fragment slot="value"><code>{category.slug}</code></svelte:fragment>
+          </PoodleDetailRow>
+          <PoodleDetailRow label="Color">
+            <svelte:fragment slot="value">
+              <span class="color-value">
+                <span class="color-swatch" style:background={category.color ?? "#6366f1"}></span>
+                <span>{category.color ?? "#6366f1"}</span>
+              </span>
+            </svelte:fragment>
+          </PoodleDetailRow>
+        </PoodleDetailSection>
 
-    <DetailsCard>
-      <DetailsSection legend="Details">
-        <DetailsItem label="Slug" value={category.slug} code />
-        <DetailsItem label="Color">
-          <span class="color-swatch" style:background={category.color ?? "#6366f1"}></span>
-          <span class="color-value">{category.color ?? "#6366f1"}</span>
-        </DetailsItem>
-      </DetailsSection>
-
-      <DetailsSection legend="Metadata">
-        <DetailsItem label="Created">
-          <TimeAgo date={category.createdAt} tooltipFormat="datetime" />
-        </DetailsItem>
-        <DetailsItem label="Updated">
-          <TimeAgo date={category.updatedAt} tooltipFormat="datetime" />
-        </DetailsItem>
-      </DetailsSection>
-    </DetailsCard>
-  </DetailPageShell>
+        <PoodleDetailSection title="Metadata" columns={2} separated={false}>
+          <PoodleDetailRow label="Created">
+            <svelte:fragment slot="value">
+              <TimeAgo datetime={category.createdAt} tooltipFormat="datetime" />
+            </svelte:fragment>
+          </PoodleDetailRow>
+          <PoodleDetailRow label="Updated">
+            <svelte:fragment slot="value">
+              <TimeAgo datetime={category.updatedAt} tooltipFormat="datetime" />
+            </svelte:fragment>
+          </PoodleDetailRow>
+        </PoodleDetailSection>
+      </div>
+    </PoodleCard>
+  </section>
 
   <PoodleAlertDialog
     open={showDeleteConfirm}
@@ -126,6 +152,29 @@
 {/if}
 
 <style>
+  .category-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .category-detail__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .category-detail__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .detail-card-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
   .color-swatch {
     display: inline-block;
     width: 1rem;
@@ -137,6 +186,8 @@
   }
 
   .color-value {
-    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 </style>

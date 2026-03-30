@@ -1,22 +1,23 @@
 <script lang="ts">
-  import { MediaThumbnail as PoodleMediaThumbnail, PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { AlertDialog as PoodleAlertDialog, Callout as PoodleCallout } from "@poodle/svelte-primitives";
+import {
+  useToasts,
+  useAuthenticatedData,
+  getMediaKindLabel,
+  getMediaKindAccent,
+  formatFileSize
+} from "@decodelabs/underlay/runtime";
+import {
+  EmptyState as PoodleEmptyState,
+  MediaThumbnail as PoodleMediaThumbnail,
+  PageHeader as PoodlePageHeader,
+  PageLoading } from "@poodle/svelte-composites";
+  import { AlertDialog as PoodleAlertDialog,
+  Callout as PoodleCallout,
+  Grid as PoodleGrid,
+  ListCard as PoodleListCard } from "@poodle/svelte-primitives";
   import { goto } from "$app/navigation";
-  import {
-    useToasts,
-    useAuthenticatedData,
-    getMediaKindLabel,
-    getMediaKindAccent,
-    formatFileSize
-  } from "@decodelabs/underlay/patterns";
-  import {
-    EmptyState,
-    ListGrid,
-    ListCard,
-    PageLoading
-  } from "@decodelabs/underlay/components";
-  import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
-  import { mediaCommands, type MediaSummary } from "acme-client";
+    import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
+  import { mediaCommands, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -82,25 +83,29 @@
 <PoodlePageHeader title="Media Trash" backHref="/media" backLabel="Back to media" />
 
 {#if pageData.loading}
-  <PageLoading message="Loading trash..." />
+  <PageLoading presentation="inline" message="Loading trash..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
 {:else if (pageData.data?.media ?? []).length === 0}
-  <EmptyState title="Trash is empty" description="Deleted media items will appear here." actionLabel="Back to Media Library" actionHref="/media" />
+  <PoodleEmptyState title="Trash is empty" message="Deleted media items will appear here.">
+    <svelte:fragment slot="visual">
+      <Trash2 size={18} />
+    </svelte:fragment>
+    <a slot="actions" href="/media">Back to Media Library</a>
+  </PoodleEmptyState>
 {:else}
   <p class="trash-info">
     Items in trash can be restored or permanently deleted. Permanently deleted items cannot be recovered.
   </p>
 
-  <ListGrid minItemWidth={26}>
+  <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
     {#each pageData.data?.media ?? [] as item}
-      <ListCard
+      <PoodleListCard
         title={item.title ?? item.originalFilename ?? "Untitled"}
         href={`/media/${item.id}`}
-        accent="#64748b"
-        actionsPlacement={item.thumbnailUrl ? "media-overlay" : "media"}
+        accentColor="#64748b"
       >
-        {#snippet media()}
+        <svelte:fragment slot="leading">
           <PoodleMediaThumbnail
             kind={toPoodleMediaKind(item.kind)}
             presentation="compact"
@@ -115,16 +120,16 @@
               />
             {/if}
           </PoodleMediaThumbnail>
-        {/snippet}
+        </svelte:fragment>
 
-        {#snippet trailing()}
+        <svelte:fragment slot="trailing">
           <div class="media-pills">
             <PoodlePill tone="neutral" appearance="badge" size="lg">{getMediaKindLabel(item.kind)}</PoodlePill>
             <PoodlePill tone="danger" appearance="badge" size="lg">Deleted</PoodlePill>
           </div>
-        {/snippet}
+        </svelte:fragment>
 
-        <span class="media-meta">
+        <span slot="footer" class="media-meta">
           {#if item.byteSize}
             {formatFileSize(item.byteSize)} &middot;
           {/if}
@@ -133,7 +138,7 @@
           {/if}
         </span>
 
-        {#snippet actions({ trigger, align })}
+        <div slot="actions" class="trash-actions">
           <div class="trash-actions">
             <PoodleButton type="button" variant="ghost" size="sm" on:click={() => handleRestore(item.id)}>
               <RotateCcw size={14} />
@@ -150,10 +155,10 @@
               Delete
             </PoodleButton>
           </div>
-        {/snippet}
-      </ListCard>
+        </div>
+      </PoodleListCard>
     {/each}
-  </ListGrid>
+  </PoodleGrid>
 {/if}
 
 <PoodleAlertDialog
@@ -194,11 +199,6 @@
   .media-meta {
     font-size: 0.875rem;
     color: var(--admin-color-text-muted, #9ca3af);
-  }
-
-  .trash-actions {
-    display: flex;
-    gap: 0.5rem;
   }
 
   :global(.media-thumbnail-image) {

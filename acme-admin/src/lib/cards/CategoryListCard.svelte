@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { ListCard } from "@decodelabs/underlay/components";
   import {
     AlertDialog as PoodleAlertDialog,
+    IconButton as PoodleIconButton,
+    ListCard as PoodleListCard,
     Menu as PoodleMenu,
     Pill as PoodlePill
   } from "@poodle/svelte-primitives";
   import type { MenuItem } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
-  import type { CategoryWithCounts } from "acme-client";
+  import type { CategoryWithCounts } from "@api-client";
   import FolderOpen from "lucide-svelte/icons/folder-open";
 
   interface Props {
@@ -58,36 +59,34 @@
   }
 </script>
 
-<ListCard
+<PoodleListCard
   title={category.name}
   href={`/categories/${category.id}`}
-  accent={category.color ?? "#6366f1"}
+  accentColor={category.color ?? "#6366f1"}
 >
-  {#snippet media()}
-    <FolderOpen size={30} />
-  {/snippet}
+  <svelte:fragment slot="leading">
+    <FolderOpen size={20} />
+  </svelte:fragment>
 
-  {#snippet trailing()}
+  <svelte:fragment slot="trailing">
     {#if !category.isActive}
       <PoodlePill tone="danger" appearance="badge" size="lg">Inactive</PoodlePill>
     {/if}
-  {/snippet}
+  </svelte:fragment>
 
-  {#snippet actions({ trigger: mediaContent, align })}
-    <PoodleMenu items={menuItems} placement={align === "end" ? "bottom-end" : "bottom-start"} on:action={(event) => handleMenuAction(event.detail.value)}>
-      <div slot="trigger">
-        {@render mediaContent()}
-      </div>
+  <svelte:fragment slot="actions">
+    <PoodleMenu items={menuItems} placement="bottom-end" ariaLabel="Category actions" on:action={(event) => handleMenuAction(event.detail.value)}>
+      <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Category actions" variant="ghost" />
     </PoodleMenu>
-  {/snippet}
+  </svelte:fragment>
 
-  <span class="meta">
+  <span slot="footer" class="meta">
     <span class="meta-item">{category.projectCount} projects</span>
     {#if category.description}
       <span class="meta-item">{category.description}</span>
     {/if}
   </span>
-</ListCard>
+</PoodleListCard>
 
 <PoodleAlertDialog
   bind:open={confirmDeleteOpen}

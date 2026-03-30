@@ -1,12 +1,20 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { adminCommands, type Category } from "acme-client";
+import {
+  type SpaFormResult,
+  SpaFormShell
+} from "@decodelabs/underlay/patterns";
+import {
+  consumeNavigationContext
+} from "@decodelabs/underlay/runtime";
+import { slugify } from "@decodelabs/underlay/utils";
+import {
+  goto } from "$app/navigation";
+  import { adminCommands,
+  type Category } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
   import CategoryForm from "$lib/forms/CategoryForm.svelte";
-  import { SpaFormShell, consumeNavigationContext, type SpaFormResult } from "@decodelabs/underlay/patterns";
-  import { slugify } from "@decodelabs/underlay/patterns";
-
+    
   // Navigation context
   const defaultBackHref = "/categories";
   const { backInfo, returnTo } = consumeNavigationContext("Back to categories", defaultBackHref);

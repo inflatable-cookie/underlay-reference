@@ -11,7 +11,7 @@ import { env } from "$env/dynamic/public";
 import { env as privateEnv } from "$env/dynamic/private";
 
 import { configureAcmeClient as configureAliasedAcmeClient } from "@api-client";
-import { configureAcmeClient as configurePackageAcmeClient } from "acme-client";
+import { configureAcmeClient as configurePackageAcmeClient } from "@api-client";
 
 const config = {
   baseUrl: env.PUBLIC_API_URL ?? "http://localhost:40011",

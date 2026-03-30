@@ -34,7 +34,7 @@ import {
   createAuthManager,
   type LoginUser,
   type LoginResponse
-} from 'acme-client';
+} from '@api-client';
 
 export interface AuthState {
   /** Whether auth has been initialized (checked cookies). */

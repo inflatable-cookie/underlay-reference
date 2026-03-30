@@ -1,8 +1,8 @@
 <script lang="ts">
-  import {
-    createClientPagination
-  } from "@decodelabs/underlay/patterns";
-  import {
+import {
+  createClientPagination
+} from "@decodelabs/underlay/runtime";
+    import {
     Button as PoodleButton,
     Card as PoodleCard,
     Field as PoodleField,

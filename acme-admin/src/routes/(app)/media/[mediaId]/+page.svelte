@@ -1,47 +1,48 @@
 <script lang="ts">
+import {
+  DetailMetaId,
+  DetailMetaSeparator,
+  DetailMeta
+} from "@decodelabs/underlay/patterns";
+import {
+  getBackButtonInfo,
+  useToasts,
+  useAuthenticatedData,
+  getMediaKindLabel,
+  getMediaKindAccent,
+  getMediaVisibilityLabel,
+  getMediaVersionStateLabel,
+  getMediaVersionStateAccent,
+  formatFileSize
+} from "@decodelabs/underlay/runtime";
+import {
+  EmptyState as PoodleEmptyState,
+  DetailSection as PoodleDetailSection,
+  FormDialog,
+  PageHeader as PoodlePageHeader,
+  PageLoading
+  } from "@poodle/svelte-composites";
   import {
     AlertDialog as PoodleAlertDialog,
-    Callout as PoodleCallout,
-    Dialog as PoodleDialog
+  Callout as PoodleCallout,
+  Code,
+  Dialog as PoodleDialog,
+  Tabs
   } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
-  import {
-    DetailPageShell,
-    DetailMeta,
-    DetailMetaId,
-    DetailMetaSeparator,
-    getBackButtonInfo,
-    useToasts,
-    useAuthenticatedData,
-    FormDialog,
-    getMediaKindLabel,
-    getMediaKindAccent,
-    getMediaVisibilityLabel,
-    getMediaVersionStateLabel,
-    getMediaVersionStateAccent,
-    formatFileSize
-  } from "@decodelabs/underlay/patterns";
-  import {
-    Code,
-    DetailsCard,
-    DetailsItem,
-    DetailsSection,
-    EmptyState,
-        InlineListCard,
-    InlineListItem,
-    PageLoading,
-    TimeAgo
-  } from "@decodelabs/underlay/components";
-  import {
+    import {
     Button as PoodleButton,
+    Card as PoodleCard,
+    DetailRow as PoodleDetailRow,
     Field as PoodleField,
     FormActions as PoodleFormActions,
     IconButton as PoodleIconButton,
     Pill as PoodlePill,
     Select as PoodleSelect,
-    TextInput as PoodleTextInput
+    TextInput as PoodleTextInput,
+    TimeAgo
   } from "@poodle/svelte-primitives";
   import {
     mediaCommands,
@@ -51,7 +52,7 @@
     MediaKind,
     MediaVisibility,
     MediaVersionState
-  } from "acme-client";
+  } from "@api-client";
   import { gotoWithContext } from "@decodelabs/underlay/client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { isPreconditionFailed } from "$lib/utils/api-errors";
@@ -370,25 +371,49 @@
     ...(showPreviewTab ? [{ value: "preview", label: "Preview" }] : []),
     { value: "usage", label: "Usage", count: usageCount }
   ]);
+
+  const mountedTabsSet = new Set<string>();
+  let mountedTabsVersion = $state(0);
+
+  $effect(() => {
+    if (activeTab && !mountedTabsSet.has(activeTab)) {
+      mountedTabsSet.add(activeTab);
+      mountedTabsVersion++;
+    }
+  });
+
+  function isTabMounted(value: string): boolean {
+    void mountedTabsVersion;
+    return mountedTabsSet.has(value);
+  }
 </script>
 
 {#if mediaData.loading}
-  <PageLoading message="Loading media..." />
+  <PageLoading presentation="inline" message="Loading media..." />
 {:else if mediaData.error}
   <PoodleCallout tone="danger" message={mediaData.error} announceMode="polite" />
 {:else if media}
-  <DetailPageShell
-    section="Media"
-    title={media.title || media.originalFilename || "Untitled"}
-    backHref={backInfo.href}
-    backLabel={backInfo.label}
-    backIsContextual={backInfo.isContextual ?? false}
-    bannerMessage={media.deletedAt ? "This media has been soft-deleted." : undefined}
-    tabs={mediaTabs}
-    bind:activeTab
-    tabsHistoryKey="tab"
-  >
-    {#snippet meta()}
+  <div class="underlay-detail-page">
+    <div class="underlay-detail-page__header">
+      <PoodlePageHeader
+        section="Media"
+        title={media.title || media.originalFilename || "Untitled"}
+        backHref={backInfo.href}
+        backLabel={backInfo.label}
+        backIsContextual={backInfo.isContextual ?? false}
+        bannerMessage={media.deletedAt ? "This media has been soft-deleted." : undefined}
+      >
+        <svelte:fragment slot="actions">
+          <MediaActionsMenu
+            {media}
+            onEditRequest={openEditDialog}
+            onSoftDeleteSuccess={() => goto("/media")}
+            onRestoreSuccess={() => mediaData.refetch()}
+          />
+        </svelte:fragment>
+      </PoodlePageHeader>
+
+      <div class="underlay-detail-page__meta">
       <DetailMeta>
         <DetailMetaId value={media.id} />
         <DetailMetaSeparator />
@@ -400,106 +425,135 @@
           <PoodlePill tone={getMediaMetaTone("deleted")} appearance="badge" size="lg">Deleted</PoodlePill>
         {/if}
       </DetailMeta>
-    {/snippet}
+      </div>
+    </div>
 
-    {#snippet actions()}
-      <MediaActionsMenu
-        {media}
-        onEditRequest={openEditDialog}
-        onSoftDeleteSuccess={() => goto("/media")}
-        onRestoreSuccess={() => mediaData.refetch()}
-      />
-    {/snippet}
-
-    {#snippet tabContent(tab)}
-      {#if tab === "details"}
+    <Tabs bind:value={activeTab} items={mediaTabs} variant="card" size="sm" historyKey="tab" ariaLabel="Detail sections" let:activeValue>
+      {#if isTabMounted(activeValue)}
+      {#if activeValue === "details"}
         <div class="underlay-details-content">
-          <DetailsCard>
-            <DetailsSection legend="File Details">
-              <DetailsItem label="Original Filename" value={media.originalFilename} />
-              {#if media.currentVersion}
-                <DetailsItem label="File Size" value={formatFileSize(media.currentVersion.byteSize)} />
-                <DetailsItem label="MIME Type">
-                  <Code>{media.currentVersion.mimeType ?? "—"}</Code>
-                </DetailsItem>
-              {/if}
-            </DetailsSection>
+          <PoodleCard>
+            <div class="detail-card-grid">
+              <PoodleDetailSection title="File Details" columns={2} separated={false}>
+                <PoodleDetailRow label="Original Filename" value={media.originalFilename ?? "—"} />
+                {#if media.currentVersion}
+                  <PoodleDetailRow label="File Size" value={formatFileSize(media.currentVersion.byteSize)} />
+                  <PoodleDetailRow label="MIME Type">
+                    <svelte:fragment slot="value">
+                      <Code inline source={media.currentVersion.mimeType ?? "—"} />
+                    </svelte:fragment>
+                  </PoodleDetailRow>
+                {/if}
+              </PoodleDetailSection>
 
-            <DetailsSection legend="Timestamps">
-              <DetailsItem label="Created">
-                <TimeAgo date={media.createdAt} short />
-              </DetailsItem>
-              <DetailsItem label="Last Updated">
-                <TimeAgo date={media.updatedAt} short />
-              </DetailsItem>
-              {#if media.deletedAt}
-                <DetailsItem label="Deleted">
-                  <span class="deleted-date"><TimeAgo date={media.deletedAt} short /></span>
-                </DetailsItem>
-              {/if}
-            </DetailsSection>
-          </DetailsCard>
+              <PoodleDetailSection title="Timestamps" columns={2} separated={false}>
+                <PoodleDetailRow label="Created">
+                  <svelte:fragment slot="value">
+                    <TimeAgo datetime={media.createdAt} short />
+                  </svelte:fragment>
+                </PoodleDetailRow>
+                <PoodleDetailRow label="Last Updated">
+                  <svelte:fragment slot="value">
+                    <TimeAgo datetime={media.updatedAt} short />
+                  </svelte:fragment>
+                </PoodleDetailRow>
+                {#if media.deletedAt}
+                  <PoodleDetailRow label="Deleted">
+                    <svelte:fragment slot="value">
+                      <span class="deleted-date"><TimeAgo datetime={media.deletedAt} short /></span>
+                    </svelte:fragment>
+                  </PoodleDetailRow>
+                {/if}
+              </PoodleDetailSection>
+            </div>
+          </PoodleCard>
 
           <!-- Versions -->
-          <InlineListCard
-            title="Versions"
-            emptyMessage="No versions uploaded yet."
-            hasItems={versions.length > 0}
-          >
-            {#snippet action()}
-              <PoodleIconButton
-                type="button"
-                variant="primary"
-                size="sm"
-                icon={uploadIcon}
-                ariaLabel="Upload new version"
-                on:click={() => goto(`/media/upload?replace=${media.id}`)}
-              />
-            {/snippet}
-            {#if activeTab === "details" && versionsData.loading}
-              <PageLoading message="Loading versions..." />
-            {:else if versionsData.error}
-              <PoodleCallout tone="danger" message={versionsData.error} announceMode="polite" />
-            {:else}
-              {#each versions as version (version.id)}
-                <InlineListItem
-                  label={version.sha256 ?? "No hash"}
-                  accent={getMediaVersionStateAccent(version.state)}
-                  onclick={canPreviewVersion(version) ? () => openVersionPreview(version) : undefined}
-                >
-                  {#snippet sublabelContent()}
-                    {formatFileSize(version.byteSize)} · <Code>{version.mimeType ?? "Unknown type"}</Code> · <TimeAgo date={version.createdAt} short />
-                  {/snippet}
-                  {#snippet trailing()}
-                    <PoodlePill tone={getVersionStateTone(version.state)} appearance="badge" size="lg">
-                      {getMediaVersionStateLabel(version.state)}
-                    </PoodlePill>
-                    {#if isCurrentVersion(version)}
-                      <PoodlePill tone={getMediaMetaTone("current")} appearance="badge" size="lg">Current</PoodlePill>
-                    {/if}
-                  {/snippet}
-                  {#snippet actions()}
-                    <button
-                      type="button"
-                      onclick={() => requestActivate(version)}
-                      disabled={!canActivateVersion(version)}
-                      aria-label="Activate version"
-                    >
-                      <Check size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onclick={() => requestDelete(version)}
-                      disabled={!canDeleteVersion(version)}
-                      aria-label="Delete version"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  {/snippet}
-                </InlineListItem>
-              {/each}
-            {/if}
-          </InlineListCard>
+          <PoodleCard>
+            <div class="inline-list-card">
+              <div class="inline-list-card__header">
+                <h4 class="inline-list-card__title">Versions</h4>
+                <div class="inline-list-card__header-actions">
+                  <PoodleIconButton
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    icon={uploadIcon}
+                    ariaLabel="Upload new version"
+                    on:click={() => goto(`/media/upload?replace=${media.id}`)}
+                  />
+                </div>
+              </div>
+
+              {#if activeTab === "details" && versionsData.loading}
+                <PageLoading presentation="inline" message="Loading versions..." />
+              {:else if versionsData.error}
+                <PoodleCallout tone="danger" message={versionsData.error} announceMode="polite" />
+              {:else if versions.length === 0}
+                <p class="inline-list-card__empty">No versions uploaded yet.</p>
+              {:else}
+                <ul class="inline-list-card__items">
+                  {#each versions as version (version.id)}
+                    <li class="inline-list-card__item">
+                      {#if canPreviewVersion(version)}
+                        <button
+                          type="button"
+                          class="inline-list-card__item-content inline-list-card__item-content--button"
+                          onclick={() => openVersionPreview(version)}
+                        >
+                          <span class="inline-list-card__dot" style:--inline-list-accent={getMediaVersionStateAccent(version.state)}></span>
+                          <span class="inline-list-card__label-group">
+                            <span class="inline-list-card__label">{version.sha256 ?? "No hash"}</span>
+                            <span class="inline-list-card__sublabel">
+                              {formatFileSize(version.byteSize)} · <Code inline source={version.mimeType ?? "Unknown type"} /> · <TimeAgo datetime={version.createdAt} short />
+                            </span>
+                          </span>
+                        </button>
+                      {:else}
+                        <div class="inline-list-card__item-content">
+                          <span class="inline-list-card__dot" style:--inline-list-accent={getMediaVersionStateAccent(version.state)}></span>
+                          <span class="inline-list-card__label-group">
+                            <span class="inline-list-card__label">{version.sha256 ?? "No hash"}</span>
+                            <span class="inline-list-card__sublabel">
+                              {formatFileSize(version.byteSize)} · <Code inline source={version.mimeType ?? "Unknown type"} /> · <TimeAgo datetime={version.createdAt} short />
+                            </span>
+                          </span>
+                        </div>
+                      {/if}
+
+                      <div class="inline-list-card__trailing">
+                        <PoodlePill tone={getVersionStateTone(version.state)} appearance="badge" size="lg">
+                          {getMediaVersionStateLabel(version.state)}
+                        </PoodlePill>
+                        {#if isCurrentVersion(version)}
+                          <PoodlePill tone={getMediaMetaTone("current")} appearance="badge" size="lg">Current</PoodlePill>
+                        {/if}
+                      </div>
+
+                      <div class="inline-list-card__actions">
+                        <button
+                          type="button"
+                          onclick={() => requestActivate(version)}
+                          disabled={!canActivateVersion(version)}
+                          aria-label="Activate version"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onclick={() => requestDelete(version)}
+                          disabled={!canDeleteVersion(version)}
+                          aria-label="Delete version"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+          </PoodleCard>
 
           <!-- Renditions -->
           {#if media.currentVersion?.renditions && media.currentVersion.renditions.length > 0}
@@ -529,7 +583,7 @@
             </section>
           {/if}
         </div>
-      {:else if tab === "preview"}
+      {:else if activeValue === "preview"}
         <div class="media-preview-container">
           {#if mediaPreviewUrl}
             {#if isImage(media.kind)}
@@ -546,41 +600,50 @@
               ></iframe>
             {/if}
           {:else}
-            <EmptyState title="Preview not available" description="Preview is not available for this version." variant="compact" />
+            <PoodleEmptyState title="Preview not available" message="Preview is not available for this version." size="compact" />
           {/if}
         </div>
-      {:else if tab === "usage"}
+      {:else if activeValue === "usage"}
         <div class="underlay-details-content">
           {#if activeTab === "usage" && usagesData.loading}
-            <PageLoading message="Loading usage..." />
+            <PageLoading presentation="inline" message="Loading usage..." />
           {:else if usagesData.error}
             <PoodleCallout tone="danger" message={usagesData.error} announceMode="polite" />
           {:else if usages.length === 0}
-            <EmptyState title="No usage found" description="This media is not used anywhere yet." variant="compact" />
+            <PoodleEmptyState title="No usage found" message="This media is not used anywhere yet." size="compact" />
           {:else}
-            <InlineListCard
-              title="Usages"
-              hasItems={true}
-            >
-              {#each usages as usage}
-                <InlineListItem
-                  label={usage.usedByType}
-                  accent={getMediaMetaAccent("usage")}
-                >
-                  {#snippet sublabelContent()}
-                    <Code>{usage.usedById}</Code>
-                    {#if usage.field}
-                      <span class="usage-field"> · {usage.field}</span>
-                    {/if}
-                  {/snippet}
-                </InlineListItem>
-              {/each}
-            </InlineListCard>
+            <PoodleCard>
+              <div class="inline-list-card">
+                <div class="inline-list-card__header">
+                  <h4 class="inline-list-card__title">Usages</h4>
+                </div>
+
+                <ul class="inline-list-card__items">
+                  {#each usages as usage}
+                    <li class="inline-list-card__item">
+                      <div class="inline-list-card__item-content">
+                        <span class="inline-list-card__dot" style:--inline-list-accent={getMediaMetaAccent("usage")}></span>
+                        <span class="inline-list-card__label-group">
+                          <span class="inline-list-card__label">{usage.usedByType}</span>
+                          <span class="inline-list-card__sublabel">
+                            <Code inline source={usage.usedById} />
+                            {#if usage.field}
+                              <span class="usage-field"> · {usage.field}</span>
+                            {/if}
+                          </span>
+                        </span>
+                      </div>
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            </PoodleCard>
           {/if}
         </div>
       {/if}
-    {/snippet}
-  </DetailPageShell>
+      {/if}
+    </Tabs>
+  </div>
 
   <!-- Edit Dialog -->
   <FormDialog
@@ -589,11 +652,11 @@
     subtitle={media.originalFilename ?? undefined}
     error={editDialogError}
     submitting={editDialogSubmitting}
-    onCancel={closeEditDialog}
+    showDefaultActions={false}
+    on:cancel={closeEditDialog}
   >
-    {#snippet children(submitting)}
-      <form onsubmit={handleEditSubmit}>
-        <div class="form-fields">
+    <form id="media-edit-form" onsubmit={handleEditSubmit}>
+      <div class="form-fields">
           <PoodleField id="edit-title" label="Title" let:describedBy>
             <PoodleTextInput
               id="edit-title"
@@ -601,7 +664,7 @@
               value={editTitle}
               describedBy={describedBy}
               placeholder="Enter a title for this media"
-              disabled={submitting}
+              disabled={editDialogSubmitting}
               on:valueChange={(event) => { editTitle = event.detail.value; }}
             />
           </PoodleField>
@@ -613,7 +676,7 @@
               value={editFilename}
               describedBy={describedBy}
               placeholder="e.g. document.pdf"
-              disabled={submitting}
+              disabled={editDialogSubmitting}
               on:valueChange={(event) => { editFilename = event.detail.value; }}
             />
           </PoodleField>
@@ -625,22 +688,23 @@
               value={editVisibility}
               describedBy={describedBy}
               options={editVisibilityOptions}
-              disabled={submitting}
+              disabled={editDialogSubmitting}
               on:valueChange={(event) => { editVisibility = event.detail.value; }}
             />
           </PoodleField>
-        </div>
+      </div>
+    </form>
 
-        <PoodleFormActions align="between">
-          <PoodleButton type="button" variant="ghost" disabled={submitting} on:click={closeEditDialog}>
+    <svelte:fragment slot="actions">
+      <PoodleFormActions align="between">
+        <PoodleButton type="button" variant="ghost" disabled={editDialogSubmitting} on:click={closeEditDialog}>
             Cancel
-          </PoodleButton>
-          <PoodleButton type="submit" variant="primary" disabled={submitting}>
-            {submitting ? "Saving..." : "Save"}
-          </PoodleButton>
-        </PoodleFormActions>
-      </form>
-    {/snippet}
+        </PoodleButton>
+        <PoodleButton type="submit" form="media-edit-form" variant="primary" disabled={editDialogSubmitting}>
+          {editDialogSubmitting ? "Saving..." : "Save"}
+        </PoodleButton>
+      </PoodleFormActions>
+    </svelte:fragment>
   </FormDialog>
 
   <!-- Activate Version Dialog -->
@@ -656,7 +720,7 @@
   >
     {#if selectedVersion}
       <p>
-        Version: <Code>{selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...</Code>
+        Version: <Code inline source={`${selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...`} />
       </p>
     {/if}
   </PoodleAlertDialog>
@@ -674,7 +738,7 @@
   >
     {#if selectedVersion}
       <p>
-        Version: <Code>{selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...</Code>
+        Version: <Code inline source={`${selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...`} />
       </p>
     {/if}
   </PoodleAlertDialog>
@@ -703,6 +767,29 @@
 {/if}
 
 <style>
+  .underlay-detail-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .underlay-detail-page__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .underlay-detail-page__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .detail-card-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
   .deleted-date {
     color: var(--color-danger, #ef4444);
   }
@@ -736,6 +823,109 @@
     flex-direction: column;
     gap: 1rem;
     margin-bottom: 1.5rem;
+  }
+
+  .inline-list-card {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .inline-list-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .inline-list-card__title {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--underlay-color-text-muted, rgba(148, 163, 184, 0.85));
+  }
+
+  .inline-list-card__header-actions,
+  .inline-list-card__trailing,
+  .inline-list-card__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .inline-list-card__items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .inline-list-card__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.5rem 0.625rem;
+    border-radius: var(--underlay-radius-sm, 0.375rem);
+    background: var(--underlay-color-surface-muted, rgba(255, 255, 255, 0.02));
+  }
+
+  .inline-list-card__item-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .inline-list-card__item-content--button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .inline-list-card__dot {
+    --inline-list-accent: var(--poodle-color-accent-base);
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 999rem;
+    background: var(--inline-list-accent);
+    flex-shrink: 0;
+  }
+
+  .inline-list-card__label-group {
+    min-width: 0;
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  .inline-list-card__label {
+    display: block;
+    min-width: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .inline-list-card__sublabel {
+    font-size: 0.8rem;
+    color: var(--underlay-color-text-muted, #9ca3af);
+  }
+
+  .inline-list-card__empty {
+    margin: 0;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--underlay-color-text-muted, rgba(148, 163, 184, 0.7));
   }
 
   /* Full preview tab */
