@@ -7,7 +7,7 @@ import {
 } from "@decodelabs/underlay/runtime";
 import {
   Callout as PoodleCallout,
-  TotpInput as PoodleTotpInput
+  CodeInput as PoodleCodeInput
 } from "@poodle/svelte-primitives";
 import { PageLoading } from "@poodle/svelte-composites";
 import {
@@ -208,7 +208,7 @@ import { auth } from "$lib/stores/auth";
   {:else if verificationMethod === "totp"}
     <PoodleCard>
       <p class="muted">Enter the 6-digit code from your authenticator app.</p>
-      <PoodleTotpInput
+      <PoodleCodeInput
         value={verificationCode}
         label="Authenticator code"
         disabled={verificationBusy}
@@ -230,7 +230,7 @@ import { auth } from "$lib/stores/auth";
     {#if emailTotpSent}
       <PoodleCard>
         <p class="muted">We've sent a 6-digit code to your email address. Enter it below.</p>
-        <PoodleTotpInput
+        <PoodleCodeInput
           value={verificationCode}
           label="Email code"
           disabled={verificationBusy}

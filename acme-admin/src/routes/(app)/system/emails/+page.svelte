@@ -6,7 +6,9 @@ import {
 import {
   Callout as PoodleCallout,
   Grid as PoodleGrid,
-  ListCard as PoodleListCard } from "@poodle/svelte-primitives";
+  ListCard as PoodleListCard,
+  Menu as PoodleMenu,
+  type MenuItem } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
     import {
@@ -23,7 +25,7 @@ import {
   import Filter from "lucide-svelte/icons/filter";
   import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
+  import { copyToClipboard } from "@decodelabs/underlay/runtime";
   import type { CapturedEmailSummary } from "@api-client";
 
   const toastStore = useToasts();
@@ -99,6 +101,37 @@ import {
       await pageData.refetch();
     } catch (err) {
       toastStore.push({ variant: "error", message: "Failed to delete email" });
+    }
+  }
+
+  function getActionItems(entry: CapturedEmailSummary): MenuItem[] {
+    return [
+      { value: `open:${entry.id}`, label: "Open" },
+      { value: `delete:${entry.id}`, label: "Delete", tone: "danger" },
+      { value: `separator-copy:${entry.id}`, label: "", kind: "separator" },
+      { value: `copy-id:${entry.id}`, label: "Copy email ID" }
+    ];
+  }
+
+  async function handleAction(value: string) {
+    const [action, id] = value.split(":");
+    if (!action || !id) return;
+
+    const entry = entries.find((item) => item.id === id);
+    if (!entry) return;
+
+    if (action === "open") {
+      openEmail(id);
+      return;
+    }
+
+    if (action === "delete") {
+      await deleteEmail(id);
+      return;
+    }
+
+    if (action === "copy-id") {
+      await copyToClipboard(toastStore, entry.emailId, "Copied email ID");
     }
   }
 </script>
@@ -203,28 +236,16 @@ import {
           </svelte:fragment>
 
           <svelte:fragment slot="actions">
-            <CopyActionsMenu
-              toastStore={toastStore}
-              triggerLabel="Actions"
-              copies={[
-                {
-                  label: "Copy email ID",
-                  text: entry.emailId,
-                  successMessage: "Copied email ID"
-                }
-              ]}
-              actions={[
-                {
-                  label: "Open",
-                  onSelect: () => openEmail(entry.id)
-                },
-                {
-                  label: "Delete",
-                  onSelect: () => deleteEmail(entry.id),
-                  destructive: true
-                }
-              ]}
-            />
+            <PoodleMenu
+              items={getActionItems(entry)}
+              placement="bottom-end"
+              triggerAriaLabel="Email actions"
+              on:action={(event) => void handleAction(event.detail.value)}
+            >
+              <svelte:fragment slot="trigger">
+                <PoodleIconButton icon="ellipsis" ariaLabel="Email actions" variant="ghost" />
+              </svelte:fragment>
+            </PoodleMenu>
           </svelte:fragment>
 
           <span slot="footer">

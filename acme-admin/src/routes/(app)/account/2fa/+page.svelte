@@ -3,7 +3,7 @@ import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime";
 import {
-  TotpInput as PoodleTotpInput,
+  CodeInput as PoodleCodeInput,
   AlertDialog as PoodleAlertDialog,
   Button as PoodleButton,
   Callout as PoodleCallout,
@@ -211,7 +211,7 @@ import {
           </pre>
         </details>
 
-        <PoodleTotpInput
+        <PoodleCodeInput
           value={enableCode}
           label="Enter code from your authenticator app"
           on:valueChange={(event) => { enableCode = event.detail.value; }}

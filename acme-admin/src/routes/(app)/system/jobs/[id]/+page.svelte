@@ -5,7 +5,7 @@ import {
 } from "@decodelabs/underlay/runtime";
 import {
   Callout as PoodleCallout,
-  DetailRow as PoodleDetailRow
+  DetailItem as PoodleDetailItem
   } from "@poodle/svelte-primitives";
   import { DetailSection as PoodleDetailSection,
   PageHeader as PoodlePageHeader,
@@ -96,7 +96,7 @@ import {
   backHref="/system/jobs"
   backLabel="Back to jobs"
 >
-  <svelte:fragment slot="actions">
+  {#snippet actions()}
     {#if job}
       {#if job.status === "pending" || job.status === "running"}
         <PoodleButton variant="secondary" on:click={handleCancel}>
@@ -118,7 +118,7 @@ import {
         on:click={() => pageData.refetch()}
       />
     {/if}
-  </svelte:fragment>
+  {/snippet}
 </PoodlePageHeader>
 {#if job}
   <PoodleMetaBar ariaLabel="Job metadata">
@@ -141,18 +141,18 @@ import {
   <PoodleCard>
     <div class="detail-card-grid">
       <PoodleDetailSection title="Details" columns={2} separated={false}>
-        <PoodleDetailRow label="Type">
+        <PoodleDetailItem presentation="surface" label="Type">
           <svelte:fragment slot="value"><Code inline source={job.jobType} /></svelte:fragment>
-        </PoodleDetailRow>
-        <PoodleDetailRow label="Attempts" value={`${job.attempts} / ${job.maxAttempts}`} />
+        </PoodleDetailItem>
+        <PoodleDetailItem presentation="surface" label="Attempts" value={`${job.attempts} / ${job.maxAttempts}`} />
       </PoodleDetailSection>
       <PoodleDetailSection title="Timestamps" columns={2} separated={false}>
-        <PoodleDetailRow label="Created" value={formatDate(job.createdAt)} />
+        <PoodleDetailItem presentation="surface" label="Created" value={formatDate(job.createdAt)} />
         {#if job.scheduledFor}
-          <PoodleDetailRow label="Scheduled for" value={formatDate(job.scheduledFor)} />
+          <PoodleDetailItem presentation="surface" label="Scheduled for" value={formatDate(job.scheduledFor)} />
         {/if}
-        <PoodleDetailRow label="Started at" value={formatDate(job.startedAt)} />
-        <PoodleDetailRow label="Finished at" value={formatDate(job.finishedAt)} />
+        <PoodleDetailItem presentation="surface" label="Started at" value={formatDate(job.startedAt)} />
+        <PoodleDetailItem presentation="surface" label="Finished at" value={formatDate(job.finishedAt)} />
       </PoodleDetailSection>
     </div>
   </PoodleCard>

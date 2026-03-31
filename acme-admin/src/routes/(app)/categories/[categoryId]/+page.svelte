@@ -5,10 +5,13 @@ import {
 } from "@decodelabs/underlay/runtime";
 import {
   AlertDialog as PoodleAlertDialog,
+  Button as PoodleButton,
   Callout as PoodleCallout,
   Card as PoodleCard,
   Code as PoodleCode,
-  DetailRow as PoodleDetailRow
+  DetailItem as PoodleDetailItem,
+  Menu as PoodleMenu,
+  type MenuItem
   } from "@poodle/svelte-primitives";
   import { DetailSection as PoodleDetailSection,
   PageHeader as PoodlePageHeader,
@@ -17,8 +20,8 @@ import {
   import { goto } from "$app/navigation";
   import { adminCommands,
   type Category } from "@api-client";
+  import { copyToClipboard } from "@decodelabs/underlay/runtime";
   import { auth } from "$lib/stores/auth";
-  import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
     import { MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill, TimeAgo } from "@poodle/svelte-primitives";
   import { gotoWithContext } from "@decodelabs/underlay/client";
 
@@ -43,6 +46,12 @@ import {
 
   const category = $derived(pageData.data?.category);
   let showDeleteConfirm = $state(false);
+  const actionItems: MenuItem[] = [
+    { value: "edit", label: "Edit" },
+    { value: "delete", label: "Delete", tone: "danger" },
+    { value: "separator-copy", label: "", kind: "separator" },
+    { value: "copy-id", label: "Copy ID" }
+  ];
 
   function handleEdit() {
     if (!category) return;
@@ -51,6 +60,24 @@ import {
       href: `/categories/${category.id}`,
       type: "detail"
     });
+  }
+
+  async function handleAction(value: string) {
+    if (!category) return;
+
+    if (value === "edit") {
+      handleEdit();
+      return;
+    }
+
+    if (value === "delete") {
+      showDeleteConfirm = true;
+      return;
+    }
+
+    if (value === "copy-id") {
+      await copyToClipboard(toastStore, category.id, "Copied category ID");
+    }
   }
 </script>
 
@@ -70,17 +97,18 @@ import {
         bannerMessage={!category.isActive ? "This category is inactive and won't appear in selection lists." : undefined}
         bannerTone={!category.isActive ? "warning" : "warning"}
       >
-        <svelte:fragment slot="actions">
-          <CopyActionsMenu
-            toastStore={toastStore}
-            triggerLabel="Actions"
-            copies={[{ label: "Copy ID", text: category.id, successMessage: "Copied category ID" }]}
-            actions={[
-              { label: "Edit", onSelect: handleEdit },
-              { label: "Delete", destructive: true, onSelect: () => { showDeleteConfirm = true; } }
-            ]}
-          />
-        </svelte:fragment>
+        {#snippet actions()}
+          <PoodleMenu
+            items={actionItems}
+            placement="bottom-end"
+            triggerAriaLabel="Category actions"
+            on:action={(event) => void handleAction(event.detail.value)}
+          >
+            <svelte:fragment slot="trigger">
+              <PoodleButton variant="secondary">Actions</PoodleButton>
+            </svelte:fragment>
+          </PoodleMenu>
+        {/snippet}
       </PoodlePageHeader>
 
       <div class="category-detail__meta">
@@ -98,30 +126,30 @@ import {
     <PoodleCard>
       <div class="detail-card-grid">
         <PoodleDetailSection title="Details" columns={2} separated={false}>
-          <PoodleDetailRow label="Slug">
+          <PoodleDetailItem presentation="surface" label="Slug">
             <svelte:fragment slot="value"><code>{category.slug}</code></svelte:fragment>
-          </PoodleDetailRow>
-          <PoodleDetailRow label="Color">
+          </PoodleDetailItem>
+          <PoodleDetailItem presentation="surface" label="Color">
             <svelte:fragment slot="value">
               <span class="color-value">
                 <span class="color-swatch" style:background={category.color ?? "#6366f1"}></span>
                 <span>{category.color ?? "#6366f1"}</span>
               </span>
             </svelte:fragment>
-          </PoodleDetailRow>
+          </PoodleDetailItem>
         </PoodleDetailSection>
 
         <PoodleDetailSection title="Metadata" columns={2} separated={false}>
-          <PoodleDetailRow label="Created">
+          <PoodleDetailItem presentation="surface" label="Created">
             <svelte:fragment slot="value">
               <TimeAgo datetime={category.createdAt} tooltipFormat="datetime" />
             </svelte:fragment>
-          </PoodleDetailRow>
-          <PoodleDetailRow label="Updated">
+          </PoodleDetailItem>
+          <PoodleDetailItem presentation="surface" label="Updated">
             <svelte:fragment slot="value">
               <TimeAgo datetime={category.updatedAt} tooltipFormat="datetime" />
             </svelte:fragment>
-          </PoodleDetailRow>
+          </PoodleDetailItem>
         </PoodleDetailSection>
       </div>
     </PoodleCard>

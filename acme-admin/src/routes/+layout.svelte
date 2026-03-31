@@ -32,11 +32,11 @@
 	:global(.admin-theme-shell) {
 		/* Core colors */
 		--admin-color-bg: var(--poodle-color-background-canvas);
-		--admin-color-surface: color-mix(in srgb, var(--poodle-color-background-panel) 72%, #050608);
-		--admin-color-surface-subtle: color-mix(in srgb, var(--poodle-color-background-panel) 88%, #16181d);
-		--admin-color-surface-card: color-mix(in srgb, var(--poodle-color-background-surface) 82%, #101318);
-		--admin-color-border-subtle: color-mix(in srgb, var(--poodle-color-border-subtle) 72%, transparent);
-		--admin-color-border-strong: color-mix(in srgb, var(--poodle-color-border-default) 84%, transparent);
+		--admin-color-surface: var(--poodle-color-background-panel);
+		--admin-color-surface-subtle: var(--poodle-color-background-surface);
+		--admin-color-surface-card: var(--poodle-color-background-surface);
+		--admin-color-border-subtle: var(--poodle-color-border-subtle);
+		--admin-color-border-strong: var(--poodle-color-border-default);
 		--admin-color-text: var(--poodle-color-text-primary);
 		--admin-color-text-muted: var(--poodle-color-text-secondary);
 		--admin-color-accent: var(--poodle-color-accent-base);
@@ -48,8 +48,8 @@
 		--admin-color-warning-subtle: color-mix(in srgb, var(--poodle-color-status-warning) 18%, transparent);
 		--admin-color-danger: var(--poodle-color-status-danger);
 		--admin-color-danger-subtle: color-mix(in srgb, var(--poodle-color-status-danger) 18%, transparent);
-		--admin-color-danger-text: color-mix(in srgb, var(--poodle-color-status-danger) 64%, white);
-		--admin-color-info: color-mix(in srgb, var(--poodle-color-accent-base) 72%, #3b82f6);
+		--admin-color-danger-text: var(--poodle-color-status-danger);
+		--admin-color-info: var(--poodle-color-accent-base);
 		--admin-color-info-subtle: color-mix(in srgb, var(--admin-color-info) 18%, transparent);
 
 		/* Underlay token mappings */
@@ -61,23 +61,23 @@
 		--underlay-color-surface-hover: var(--admin-color-surface-subtle);
 		--underlay-color-on-surface: var(--admin-color-text);
 		--underlay-color-primary: var(--admin-color-accent);
-		--underlay-color-primary-strong: color-mix(in srgb, var(--admin-color-accent) 72%, black);
+		--underlay-color-primary-strong: color-mix(in srgb, var(--admin-color-accent) 82%, black);
 		--underlay-color-primary-subtle: color-mix(in srgb, var(--admin-color-accent) 18%, transparent);
 		--underlay-color-accent: var(--admin-color-accent);
-		--underlay-color-button-neutral-bg: color-mix(in srgb, var(--admin-color-surface-subtle) 84%, black);
+		--underlay-color-button-neutral-bg: var(--admin-color-surface-subtle);
 		--underlay-color-button-neutral-hover: color-mix(in srgb, var(--admin-color-surface-subtle) 92%, white);
 		--underlay-color-on-primary: #ffffff;
 		--underlay-color-border: var(--admin-color-border-subtle);
 		--underlay-color-border-subtle: var(--admin-color-border-subtle);
 		--underlay-color-border-strong: var(--admin-color-border-strong);
 		--underlay-color-border-hover: var(--admin-color-border-strong);
-		--underlay-color-popover-bg: color-mix(in srgb, var(--admin-color-surface-card) 88%, black);
+		--underlay-color-popover-bg: var(--admin-color-surface-card);
 		--underlay-color-success: var(--admin-color-success);
 		--underlay-color-warning: var(--admin-color-warning);
 		--underlay-color-danger: var(--admin-color-danger);
 		--underlay-color-error: var(--admin-color-danger);
-		--underlay-shadow-popover: 0 22px 60px color-mix(in srgb, black 72%, transparent);
-		--underlay-color-field-bg: color-mix(in srgb, var(--poodle-color-background-surface) 78%, transparent);
+		--underlay-shadow-popover: var(--poodle-shadow-lg);
+		--underlay-color-field-bg: var(--poodle-color-background-surface);
 		--underlay-color-text-secondary: var(--poodle-color-text-secondary);
 		--underlay-color-text-muted: var(--admin-color-text-muted);
 		--underlay-color-surface-raised: var(--admin-color-surface-subtle);
@@ -85,7 +85,7 @@
 		/* DataTable specific tokens */
 		--underlay-table-border: 1px solid var(--admin-color-border-subtle);
 		--underlay-table-header-bg: var(--admin-color-surface-subtle);
-		--underlay-table-row-hover: color-mix(in srgb, var(--poodle-color-text-secondary) 8%, transparent);
+		--underlay-table-row-hover: color-mix(in srgb, var(--poodle-color-text-secondary) 6%, transparent);
 		--underlay-table-row-selected: color-mix(in srgb, var(--admin-color-accent) 12%, transparent);
 		--underlay-table-stripe: var(--admin-color-surface-subtle);
 		--color-surface: var(--admin-color-surface-card);
@@ -101,6 +101,7 @@
 
 	:global(.admin-theme-shell) {
 		min-height: 100vh;
+		--poodle-surface: var(--poodle-color-background-canvas);
 	}
 
 	:global(html) {
@@ -113,14 +114,7 @@
 		min-height: 100vh;
 		background: var(--poodle-color-background-canvas);
 		color: var(--poodle-color-text-primary);
-		font-family:
-			"Avenir Next",
-			Avenir,
-			system-ui,
-			-ui-sans-serif,
-			-apple-system,
-			BlinkMacSystemFont,
-			"Segoe UI",
-			sans-serif;
+		font-family: var(--poodle-typography-font-family-sans);
+		--poodle-surface: var(--poodle-color-background-canvas);
 	}
 </style>

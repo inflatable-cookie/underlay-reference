@@ -8,7 +8,7 @@ import {
   Callout as PoodleCallout,
   Card as PoodleCard,
   Code as PoodleCode,
-  DetailRow as PoodleDetailRow
+  DetailItem as PoodleDetailItem
   } from "@poodle/svelte-primitives";
   import { DetailSection as PoodleDetailSection,
   PageHeader as PoodlePageHeader,
@@ -127,7 +127,7 @@ import {
         : undefined}
     bannerTone={task.status === "completed" ? "success" : "warning"}
   >
-    <svelte:fragment slot="actions">
+    {#snippet actions()}
       <PoodleButton type="button" variant="secondary" on:click={handleEdit}>
         <Pencil size={16} />
         Edit
@@ -135,7 +135,7 @@ import {
       <PoodleButton type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
         Delete
       </PoodleButton>
-    </svelte:fragment>
+    {/snippet}
   </PoodlePageHeader>
   <PoodleMetaBar ariaLabel="Task metadata">
     <PoodleMetaItem label="ID">
@@ -165,7 +165,7 @@ import {
   <PoodleCard>
     <div class="detail-card-grid">
       <PoodleDetailSection title="Details" columns={2} separated={false}>
-        <PoodleDetailRow label="Priority">
+        <PoodleDetailItem presentation="surface" label="Priority">
           <svelte:fragment slot="value">
             <PoodlePill
               tone={getTaskPriorityTone(task.priority)}
@@ -175,18 +175,18 @@ import {
               {priorityLabel}
             </PoodlePill>
           </svelte:fragment>
-        </PoodleDetailRow>
-        <PoodleDetailRow label="Due Date">
+        </PoodleDetailItem>
+        <PoodleDetailItem presentation="surface" label="Due Date">
           <svelte:fragment slot="value">
             <span class="due-date">
               <Calendar size={14} />
               {formatDate(task.dueDate)}
             </span>
           </svelte:fragment>
-        </PoodleDetailRow>
+        </PoodleDetailItem>
         {#if labels.length > 0}
           <div class="detail-span-full">
-            <PoodleDetailRow label="Labels">
+            <PoodleDetailItem presentation="surface" label="Labels">
               <svelte:fragment slot="value">
                 <div class="labels">
                   {#each labels as label}
@@ -200,33 +200,33 @@ import {
                   {/each}
                 </div>
               </svelte:fragment>
-            </PoodleDetailRow>
+            </PoodleDetailItem>
           </div>
         {/if}
         {#if task.description}
           <div class="detail-span-full">
-            <PoodleDetailRow label="Description" value={task.description} />
+            <PoodleDetailItem presentation="surface" label="Description" value={task.description} />
           </div>
         {/if}
       </PoodleDetailSection>
 
       <PoodleDetailSection title="Metadata" columns={2} separated={false}>
-        <PoodleDetailRow label="Project">
+        <PoodleDetailItem presentation="surface" label="Project">
           <svelte:fragment slot="value">
             <a href={`/projects/${project.id}`}>{project.name}</a>
           </svelte:fragment>
-        </PoodleDetailRow>
-        <PoodleDetailRow label="Position" value={String(task.position)} />
-        <PoodleDetailRow label="Created">
+        </PoodleDetailItem>
+        <PoodleDetailItem presentation="surface" label="Position" value={String(task.position)} />
+        <PoodleDetailItem presentation="surface" label="Created">
           <svelte:fragment slot="value">
             <TimeAgo datetime={task.createdAt} tooltipFormat="datetime" />
           </svelte:fragment>
-        </PoodleDetailRow>
-        <PoodleDetailRow label="Updated">
+        </PoodleDetailItem>
+        <PoodleDetailItem presentation="surface" label="Updated">
           <svelte:fragment slot="value">
             <TimeAgo datetime={task.updatedAt} tooltipFormat="datetime" />
           </svelte:fragment>
-        </PoodleDetailRow>
+        </PoodleDetailItem>
       </PoodleDetailSection>
     </div>
   </PoodleCard>

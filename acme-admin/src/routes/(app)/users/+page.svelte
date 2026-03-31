@@ -248,7 +248,7 @@ import {
 </script>
 
 <PoodlePageHeader title="Users" count={total} backHref="/" backLabel="Back to dashboard">
-	<svelte:fragment slot="actions">
+	{#snippet actions()}
 		<PoodleIconButton
 			type="button"
 			variant="primary"
@@ -257,7 +257,7 @@ import {
 			tooltip="Add User"
 			on:click={handleAddUser}
 		/>
-	</svelte:fragment>
+	{/snippet}
 </PoodlePageHeader>
 
 <DataTable

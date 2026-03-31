@@ -173,11 +173,11 @@ import {
   <Callout tone="danger" message={pageData.error} announceMode="assertive" />
 {:else if project}
   <PoodlePageHeader title={project.name} backHref="/dashboard" backLabel="Back to projects">
-    <svelte:fragment slot="actions">
+    {#snippet actions()}
       <Button type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
         Delete
       </Button>
-    </svelte:fragment>
+    {/snippet}
   </PoodlePageHeader>
 
   <AlertDialog

@@ -10,13 +10,14 @@ import {
 	import { goto } from "$app/navigation";
 	import { page } from "$app/stores";
 	import { ToastHost } from "@poodle/svelte-composites";
+	import { Drawer } from "@poodle/svelte-primitives";
 	import Menu from "lucide-svelte/icons/menu";
 	import X from "lucide-svelte/icons/x";
 	import PanelRight from "lucide-svelte/icons/panel-right";
 		import { auth, authLoading, currentUser } from "$lib/stores/auth";
 	import AdminNavList from "$lib/ui/AdminNavList.svelte";
 	import AdminUserMenu from "$lib/ui/AdminUserMenu.svelte";
-	import AdminErrorBoundary from "$lib/ui/AdminErrorBoundary.svelte";
+	import { ErrorBoundary as AdminErrorBoundary } from "@poodle/svelte-composites";
 
 	// Configure global auth handlers for useAuthenticatedData
 	// Enables automatic token refresh on 401 errors and auto-fetch on auth readiness
@@ -34,6 +35,7 @@ import {
 
 	let mobileMenuOpen = $state(false);
 	let contextPanelOpen = $state(false);
+	let contextPanelIsMobile = $state(false);
 
 	const closeMobileMenu = () => {
 		mobileMenuOpen = false;
@@ -58,6 +60,18 @@ import {
 	// Initialize auth on mount
 	onMount(() => {
 		auth.initialize();
+
+		const mediaQuery = window.matchMedia("(max-width: 900px)");
+		const updateContextPanelViewport = () => {
+			contextPanelIsMobile = mediaQuery.matches;
+		};
+
+		updateContextPanelViewport();
+		mediaQuery.addEventListener("change", updateContextPanelViewport);
+
+		return () => {
+			mediaQuery.removeEventListener("change", updateContextPanelViewport);
+		};
 	});
 
 	// Redirect to login if not authenticated after initialization
@@ -66,6 +80,19 @@ import {
 			goto('/login');
 		}
 	});
+
+	const handleContextPanelOpenChange = (nextOpen: boolean) => {
+		if (nextOpen === contextPanelOpen) {
+			return;
+		}
+
+		if (nextOpen) {
+			toggleContextPanel();
+			return;
+		}
+
+		closeContextPanel();
+	};
 </script>
 
 {#if $authLoading}
@@ -123,7 +150,7 @@ import {
 		</div>
 	{/if}
 
-	<div class="admin-main" class:admin-main--panel-open={contextPanelOpen}>
+	<div class="admin-main">
 		<nav class="admin-nav" aria-label="Main">
 			<div class="admin-nav__inner">
 				<a href="/" class="admin-nav__brand">
@@ -143,49 +170,48 @@ import {
 			</main>
 		</div>
 
-		<aside
-			class="admin-context-panel"
-			class:admin-context-panel--open={contextPanelOpen}
-			aria-label="Context panel"
-		>
+		{#if !contextPanelIsMobile}
 			<button
 				type="button"
-				class="admin-context-panel__toggle"
+				class="admin-context-panel__toggle-strip"
 				aria-label={contextPanelOpen ? "Close context panel" : "Open context panel"}
+				aria-pressed={contextPanelOpen}
 				onclick={toggleContextPanel}
 			>
 				<PanelRight class="admin-context-panel__toggle-icon" />
 			</button>
-
-			<div class="admin-context-panel__content">
-				<div class="admin-context-panel__header">
-					<h2 class="admin-context-panel__title">Context</h2>
-					<button
-						type="button"
-						class="admin-context-panel__close"
-						aria-label="Close context panel"
-						onclick={closeContextPanel}
-					>
-						<X class="admin-context-panel__close-icon" />
-					</button>
-				</div>
-				<div class="admin-context-panel__body">
-					<p class="admin-context-panel__placeholder">
-						Context actions and assistive tools live here.
-					</p>
-				</div>
-			</div>
-		</aside>
-
-		{#if contextPanelOpen}
-			<button
-				type="button"
-				class="admin-context-panel__backdrop"
-				aria-label="Close context panel"
-				onclick={closeContextPanel}
-			></button>
 		{/if}
 	</div>
+
+	<Drawer
+		open={contextPanelOpen}
+		edge="right"
+		modal={contextPanelIsMobile}
+		ariaLabel="Context panel"
+		on:requestClose={closeContextPanel}
+		on:openChange={(event) => {
+			handleContextPanelOpenChange(event.detail.open);
+		}}
+	>
+		<div class="admin-context-panel__content">
+			<div class="admin-context-panel__header">
+				<h2 class="admin-context-panel__title">Context</h2>
+				<button
+					type="button"
+					class="admin-context-panel__close"
+					aria-label="Close context panel"
+					onclick={closeContextPanel}
+				>
+					<X class="admin-context-panel__close-icon" />
+				</button>
+			</div>
+			<div class="admin-context-panel__body">
+				<p class="admin-context-panel__placeholder">
+					Context actions and assistive tools live here.
+				</p>
+			</div>
+		</div>
+	</Drawer>
 
 	<ToastHost store={toastStore} />
 </div>
@@ -302,21 +328,6 @@ import {
 		flex: 1;
 	}
 
-	.admin-context-panel {
-		grid-area: panel;
-		display: flex;
-		flex-direction: column;
-		background: #0b0d11;
-		width: 55px;
-		flex-shrink: 0;
-		overflow: hidden;
-		transition: width 0.25s ease;
-	}
-
-	.admin-context-panel--open {
-		width: 368px;
-	}
-
 	.admin-context-panel__content {
 		display: flex;
 		flex-direction: column;
@@ -324,8 +335,44 @@ import {
 		overflow: hidden;
 	}
 
-	.admin-context-panel__toggle {
-		display: none;
+	.admin-context-panel__toggle-strip {
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 55px;
+		padding: 0;
+		border: none;
+		border-left: 1px solid rgba(15, 23, 42, 0.9);
+		border-right: 1px solid rgba(15, 23, 42, 0.9);
+		background: #0b0d11;
+		color: var(--admin-color-text-muted);
+		cursor: pointer;
+		z-index: 70;
+		overflow: hidden;
+		transition:
+			opacity 0.2s ease,
+			background-color 0.15s ease,
+			color 0.15s ease,
+			border-color 0.15s ease;
+	}
+
+	.admin-context-panel__toggle-strip:hover {
+		background: rgba(148, 163, 184, 0.12);
+		color: var(--admin-color-text);
+	}
+
+	.admin-context-panel__toggle-strip:focus-visible {
+		outline: 2px solid var(--admin-color-accent);
+		outline-offset: -2px;
+	}
+
+	.admin-context-panel__toggle-strip[aria-pressed="true"] {
+		opacity: 0;
+		pointer-events: none;
 	}
 
 	.admin-context-panel__header {
@@ -346,10 +393,6 @@ import {
 		margin: 0;
 	}
 
-	.admin-context-panel__close {
-		display: none;
-	}
-
 	.admin-context-panel__body {
 		flex: 1;
 		padding: 0 1rem 1rem;
@@ -362,117 +405,66 @@ import {
 		opacity: 0.5;
 	}
 
-	.admin-context-panel__backdrop {
-		display: none;
+	.admin-context-panel__close {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		padding: 0;
+		background: transparent;
+		border: none;
+		border-radius: 0.4rem;
+		color: var(--admin-color-text-muted);
+		cursor: pointer;
 	}
 
-	@media (min-width: 1501px) {
-		.admin-main {
-			grid-template-columns: 304px 1fr 55px;
-			grid-template-areas: "nav content panel";
-			transition: grid-template-columns 0.25s ease;
-		}
-
-		.admin-main--panel-open {
-			grid-template-columns: 304px 1fr 368px;
-		}
-
-		.admin-context-panel {
-			border-left: 1px solid rgba(15, 23, 42, 0.9);
-			position: relative;
-			width: 100%;
-		}
+	.admin-context-panel__close:hover {
+		background: rgba(148, 163, 184, 0.16);
+		color: var(--admin-color-text);
 	}
 
-	@media (min-width: 901px) and (max-width: 1500px) {
-		.admin-context-panel--open {
-			box-shadow: -8px 0 24px rgba(0, 0, 0, 0.3);
-		}
+	.admin-context-panel__close:focus-visible {
+		outline: 2px solid var(--admin-color-accent);
+		outline-offset: 2px;
+	}
+
+	:global(.admin-context-panel__toggle-icon) {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	:global(.admin-context-panel__close-icon) {
+		width: 1rem;
+		height: 1rem;
+	}
+
+	:global(.drawer[data-edge="right"]) {
+		padding-right: 55px;
+		z-index: 65;
+		transition: padding-right 0.2s ease;
+	}
+
+	.admin-context-panel__toggle-strip[aria-pressed="true"] + :global(.drawer[data-edge="right"]) {
+		padding-right: 0;
+	}
+
+	:global(.drawer[data-edge="right"] .drawer__surface) {
+		width: min(368px, calc(100vw - 55px));
+		height: 100vh;
+		margin: 0;
+		padding: 0;
+		border: 1px solid rgba(15, 23, 42, 0.9);
+		border-right: none;
+		border-radius: 0;
+		background: #0b0d11;
+		box-shadow: -8px 0 24px rgba(0, 0, 0, 0.3);
+		overflow: hidden;
 	}
 
 	@media (min-width: 901px) {
-		.admin-context-panel__toggle {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			width: 100%;
-			height: 100%;
-			padding: 0;
-			background: transparent;
-			border: none;
-			color: var(--admin-color-text-muted);
-			cursor: pointer;
-			flex-shrink: 0;
-		}
-
-		.admin-context-panel__toggle:hover {
-			background: rgba(148, 163, 184, 0.12);
-			color: var(--admin-color-text);
-		}
-
-		.admin-context-panel__toggle:focus-visible {
-			outline: 2px solid var(--admin-color-accent);
-			outline-offset: -2px;
-		}
-
-		:global(.admin-context-panel__toggle-icon) {
-			width: 1.25rem;
-			height: 1.25rem;
-		}
-
-		.admin-context-panel__content {
-			display: none;
-		}
-
-		.admin-context-panel--open .admin-context-panel__content {
-			display: flex;
-		}
-
-		.admin-context-panel--open .admin-context-panel__toggle {
-			display: none;
-		}
-
-		.admin-context-panel--open .admin-context-panel__close {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			width: 2rem;
-			height: 2rem;
-			padding: 0;
-			background: transparent;
-			border: none;
-			border-radius: 0.4rem;
-			color: var(--admin-color-text-muted);
-			cursor: pointer;
-		}
-
-		.admin-context-panel--open .admin-context-panel__close:hover {
-			background: rgba(148, 163, 184, 0.16);
-			color: var(--admin-color-text);
-		}
-
-		.admin-context-panel--open .admin-context-panel__close:focus-visible {
-			outline: 2px solid var(--admin-color-accent);
-			outline-offset: 2px;
-		}
-
-		:global(.admin-context-panel--open .admin-context-panel__close-icon) {
-			width: 1rem;
-			height: 1rem;
-		}
-	}
-
-	@media (min-width: 901px) and (max-width: 1500px) {
 		.admin-content {
 			padding-right: calc(2.25rem + 55px);
-		}
-
-		.admin-context-panel {
-			position: absolute;
-			right: 0;
-			top: 0;
-			bottom: 0;
-			z-index: 50;
 		}
 	}
 
@@ -597,34 +589,34 @@ import {
 			grid-template-areas: "content";
 		}
 
-		.admin-main--panel-open {
-			grid-template-columns: 1fr;
-		}
-
 		.admin-content {
 			padding: 1.25rem;
 			font-size: 0.95rem;
 		}
 
-		.admin-context-panel {
-			position: fixed;
-			top: 3.5rem;
-			right: 0;
-			bottom: 0;
-			width: min(368px, 85vw);
-			transform: translateX(100%);
-			transition: transform 0.25s ease;
-			z-index: 110;
-			border-left: 1px solid var(--admin-color-border-subtle);
-			grid-area: auto;
-		}
-
-		.admin-context-panel--open {
-			transform: translateX(0);
-		}
-
-		.admin-context-panel__toggle {
+		.admin-context-panel__toggle-strip {
 			display: none;
+		}
+
+		:global(.drawer[data-edge="right"]) {
+			padding-right: 0;
+			z-index: 110;
+		}
+
+		:global(.drawer[data-edge="right"] .drawer__backdrop) {
+			top: 3.5rem;
+			background: rgba(0, 0, 0, 0.5);
+		}
+
+		:global(.drawer[data-edge="right"] .drawer__surface) {
+			width: min(368px, 85vw);
+			height: auto;
+			margin: 0;
+			border-left: 1px solid var(--admin-color-border-subtle);
+			border-top: none;
+			border-bottom: none;
+			border-radius: 0;
+			box-shadow: none;
 		}
 
 		.admin-context-panel__close {
@@ -656,16 +648,5 @@ import {
 			height: 1rem;
 		}
 
-		.admin-context-panel__backdrop {
-			display: block;
-			position: fixed;
-			inset: 0;
-			top: 3.5rem;
-			background: rgba(0, 0, 0, 0.5);
-			z-index: 105;
-			border: none;
-			padding: 0;
-			cursor: pointer;
-		}
 	}
 </style>

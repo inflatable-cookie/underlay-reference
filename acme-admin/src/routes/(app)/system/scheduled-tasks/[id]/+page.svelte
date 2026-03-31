@@ -226,11 +226,11 @@ import {
         backHref="/system/scheduled-tasks"
         backLabel="Back to tasks"
       >
-        <svelte:fragment slot="actions">
+        {#snippet actions()}
           <PoodleMenu items={menuItems} ariaLabel="Task actions" placement="bottom-end" on:action={(event) => handleMenuAction(event.detail.value)}>
             <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Task actions" />
           </PoodleMenu>
-        </svelte:fragment>
+        {/snippet}
       </PoodlePageHeader>
 
       <div class="task-detail-page__meta">

@@ -348,7 +348,7 @@ import {
 </script>
 
 <PoodlePageHeader title="Projects" backHref="/" backLabel="Back to dashboard">
-  <svelte:fragment slot="actions">
+  {#snippet actions()}
     {#if (pageData.data?.projects ?? []).length > 0 && !isReorderMode}
       <PoodleIconButton
         type="button"
@@ -386,7 +386,7 @@ import {
           })}
       />
     {/if}
-  </svelte:fragment>
+  {/snippet}
 </PoodlePageHeader>
 
 {#if !isReorderMode}

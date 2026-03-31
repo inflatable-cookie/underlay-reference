@@ -32,7 +32,7 @@ import {
     import {
     Button as PoodleButton,
     Card as PoodleCard,
-    DetailRow as PoodleDetailRow,
+    DetailItem as PoodleDetailItem,
     Field as PoodleField,
     FormActions as PoodleFormActions,
     IconButton as PoodleIconButton,
@@ -400,14 +400,14 @@ import {
         backIsContextual={backInfo.isContextual ?? false}
         bannerMessage={media.deletedAt ? "This media has been soft-deleted." : undefined}
       >
-        <svelte:fragment slot="actions">
+        {#snippet actions()}
           <MediaActionsMenu
             {media}
             onEditRequest={openEditDialog}
             onSoftDeleteSuccess={() => goto("/media")}
             onRestoreSuccess={() => mediaData.refetch()}
           />
-        </svelte:fragment>
+        {/snippet}
       </PoodlePageHeader>
 
       <div class="underlay-detail-page__meta">
@@ -433,34 +433,34 @@ import {
           <PoodleCard>
             <div class="detail-card-grid">
               <PoodleDetailSection title="File Details" columns={2} separated={false}>
-                <PoodleDetailRow label="Original Filename" value={media.originalFilename ?? "—"} />
+                <PoodleDetailItem presentation="surface" label="Original Filename" value={media.originalFilename ?? "—"} />
                 {#if media.currentVersion}
-                  <PoodleDetailRow label="File Size" value={formatFileSize(media.currentVersion.byteSize)} />
-                  <PoodleDetailRow label="MIME Type">
+                  <PoodleDetailItem presentation="surface" label="File Size" value={formatFileSize(media.currentVersion.byteSize)} />
+                  <PoodleDetailItem presentation="surface" label="MIME Type">
                     <svelte:fragment slot="value">
                       <Code inline source={media.currentVersion.mimeType ?? "—"} />
                     </svelte:fragment>
-                  </PoodleDetailRow>
+                  </PoodleDetailItem>
                 {/if}
               </PoodleDetailSection>
 
               <PoodleDetailSection title="Timestamps" columns={2} separated={false}>
-                <PoodleDetailRow label="Created">
+                <PoodleDetailItem presentation="surface" label="Created">
                   <svelte:fragment slot="value">
                     <TimeAgo datetime={media.createdAt} short />
                   </svelte:fragment>
-                </PoodleDetailRow>
-                <PoodleDetailRow label="Last Updated">
+                </PoodleDetailItem>
+                <PoodleDetailItem presentation="surface" label="Last Updated">
                   <svelte:fragment slot="value">
                     <TimeAgo datetime={media.updatedAt} short />
                   </svelte:fragment>
-                </PoodleDetailRow>
+                </PoodleDetailItem>
                 {#if media.deletedAt}
-                  <PoodleDetailRow label="Deleted">
+                  <PoodleDetailItem presentation="surface" label="Deleted">
                     <svelte:fragment slot="value">
                       <span class="deleted-date"><TimeAgo datetime={media.deletedAt} short /></span>
                     </svelte:fragment>
-                  </PoodleDetailRow>
+                  </PoodleDetailItem>
                 {/if}
               </PoodleDetailSection>
             </div>

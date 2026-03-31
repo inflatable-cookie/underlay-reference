@@ -233,6 +233,7 @@
 	}
 
 	:global(.admin-nav__section-toggle) {
+		justify-content: flex-start;
 		opacity: 0.7;
 		transition: opacity 0.15s ease;
 	}
@@ -357,6 +358,7 @@
 	:global(.admin-mobile-overlay__link) {
 		display: flex;
 		align-items: center;
+		justify-content: flex-start;
 		gap: 0.55rem;
 		padding: 0.6rem 0.75rem;
 		border-radius: 0.5rem;

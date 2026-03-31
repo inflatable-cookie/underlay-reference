@@ -199,12 +199,12 @@ import {
 </script>
 
 <PoodlePageHeader title="Job Queue" backHref="/system" backLabel="Back to system">
-  <svelte:fragment slot="actions">
+  {#snippet actions()}
     <PoodleButton type="button" variant="ghost" on:click={() => pageData.refetch()}>
       <RefreshCw size={16} />
       Refresh
     </PoodleButton>
-  </svelte:fragment>
+  {/snippet}
 </PoodlePageHeader>
 
 {#if pageData.loading && jobs.length === 0}

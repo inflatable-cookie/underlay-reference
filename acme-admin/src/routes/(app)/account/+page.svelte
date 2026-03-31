@@ -5,7 +5,7 @@ import {
 } from "@decodelabs/underlay/runtime";
 import {
   Callout as PoodleCallout,
-  DetailRow as PoodleDetailRow
+  DetailItem as PoodleDetailItem
   } from "@poodle/svelte-primitives";
   import { FormDialog,
   PageLoading } from "@poodle/svelte-composites";
@@ -265,10 +265,10 @@ import {
         <div class="account-detail-card">
           <h3 class="account-detail-title">Locale</h3>
           <div class="account-detail-list">
-            <PoodleDetailRow label="Time Zone" value={profile.timeZone ?? "—"} />
-            <PoodleDetailRow label="Language" value={profile.language ?? "—"} />
-            <PoodleDetailRow label="Country" value={profile.countryCode ?? "—"} />
-            <PoodleDetailRow label="Currency" value={profile.currencyPreference ?? "—"} />
+            <PoodleDetailItem presentation="surface" label="Time Zone" value={profile.timeZone ?? "—"} />
+            <PoodleDetailItem presentation="surface" label="Language" value={profile.language ?? "—"} />
+            <PoodleDetailItem presentation="surface" label="Country" value={profile.countryCode ?? "—"} />
+            <PoodleDetailItem presentation="surface" label="Currency" value={profile.currencyPreference ?? "—"} />
           </div>
         </div>
       </PoodleCard>
@@ -277,9 +277,9 @@ import {
         <div class="account-detail-card">
           <h3 class="account-detail-title">Communication</h3>
           <div class="account-detail-list">
-            <PoodleDetailRow label="Marketing Emails" value={profile.emailMarketingOptIn ? "Yes" : "No"} />
-            <PoodleDetailRow label="Transactional Emails" value={profile.emailTransactionalOptIn ? "Yes" : "No"} />
-            <PoodleDetailRow label="Email Frequency" value={profile.emailFrequency ? `${profile.emailFrequency.charAt(0).toUpperCase()}${profile.emailFrequency.slice(1)}` : "—"} />
+            <PoodleDetailItem presentation="surface" label="Marketing Emails" value={profile.emailMarketingOptIn ? "Yes" : "No"} />
+            <PoodleDetailItem presentation="surface" label="Transactional Emails" value={profile.emailTransactionalOptIn ? "Yes" : "No"} />
+            <PoodleDetailItem presentation="surface" label="Email Frequency" value={profile.emailFrequency ? `${profile.emailFrequency.charAt(0).toUpperCase()}${profile.emailFrequency.slice(1)}` : "—"} />
           </div>
         </div>
       </PoodleCard>

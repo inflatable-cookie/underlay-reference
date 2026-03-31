@@ -5,24 +5,27 @@ import {
 } from "@decodelabs/underlay/runtime";
 import {
   AlertDialog as PoodleAlertDialog,
+  Button as PoodleButton,
   Callout as PoodleCallout,
   Card as PoodleCard,
   Code as PoodleCode,
-  DetailRow as PoodleDetailRow,
+  DetailItem as PoodleDetailItem,
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem,
+  Menu as PoodleMenu,
   Tabs,
+  type MenuItem,
   type TabItem
   } from "@poodle/svelte-primitives";
   import { DetailSection as PoodleDetailSection,
   PageHeader as PoodlePageHeader,
   PageLoading } from "@poodle/svelte-composites";
-  import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
+import { goto } from "$app/navigation";
+import { page } from "$app/stores";
     import { Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
+  import { copyToClipboard } from "@decodelabs/underlay/runtime";
   import type { CapturedEmailDetail } from "@api-client";
 
   const toastStore = useToasts();
@@ -41,6 +44,13 @@ import {
 
   let activeTab = $state("html");
   let showDeleteConfirm = $state(false);
+  const actionItems: MenuItem[] = [
+    { value: "delete", label: "Delete", tone: "danger" },
+    { value: "separator-copy", label: "", kind: "separator" },
+    { value: "copy-id", label: "Copy ID" },
+    { value: "copy-from", label: "Copy from address" },
+    { value: "copy-to", label: "Copy to addresses" }
+  ];
 
   function getStatusLabel() {
     if (!email) return "Captured";
@@ -68,6 +78,29 @@ import {
     }
     return tabs;
   });
+
+  async function handleAction(value: string) {
+    if (!email) return;
+
+    if (value === "delete") {
+      showDeleteConfirm = true;
+      return;
+    }
+
+    if (value === "copy-id") {
+      await copyToClipboard(toastStore, email.emailId, "Copied email ID");
+      return;
+    }
+
+    if (value === "copy-from") {
+      await copyToClipboard(toastStore, email.fromAddress, "Copied from address");
+      return;
+    }
+
+    if (value === "copy-to") {
+      await copyToClipboard(toastStore, email.toAddresses.join(", "), "Copied to addresses");
+    }
+  }
 </script>
 
 {#if pageData.loading}
@@ -83,20 +116,18 @@ import {
         backHref="/system/emails"
         backLabel="Back to emails"
       >
-        <svelte:fragment slot="actions">
-          <CopyActionsMenu
-            toastStore={toastStore}
-            triggerLabel="Actions"
-            copies={[
-              { label: "Copy ID", text: email.emailId, successMessage: "Copied email ID" },
-              { label: "Copy from address", text: email.fromAddress, successMessage: "Copied from address" },
-              { label: "Copy to addresses", text: email.toAddresses.join(", "), successMessage: "Copied to addresses" }
-            ]}
-            actions={[
-              { label: "Delete", destructive: true, onSelect: () => { showDeleteConfirm = true; } }
-            ]}
-          />
-        </svelte:fragment>
+        {#snippet actions()}
+          <PoodleMenu
+            items={actionItems}
+            placement="bottom-end"
+            triggerAriaLabel="Email actions"
+            on:action={(event) => void handleAction(event.detail.value)}
+          >
+            <svelte:fragment slot="trigger">
+              <PoodleButton variant="secondary">Actions</PoodleButton>
+            </svelte:fragment>
+          </PoodleMenu>
+        {/snippet}
       </PoodlePageHeader>
 
       <div class="email-detail__meta">
@@ -116,20 +147,20 @@ import {
         <PoodleCard>
           <div class="detail-card-grid">
             <PoodleDetailSection title="Addresses" columns={2} separated={false}>
-              <PoodleDetailRow label="From" value={email.fromAddress} />
-              <PoodleDetailRow label="To" value={email.toAddresses.join(", ")} />
+              <PoodleDetailItem presentation="surface" label="From" value={email.fromAddress} />
+              <PoodleDetailItem presentation="surface" label="To" value={email.toAddresses.join(", ")} />
               {#if email.replyTo}
-                <PoodleDetailRow label="Reply-To" value={email.replyTo} />
+                <PoodleDetailItem presentation="surface" label="Reply-To" value={email.replyTo} />
               {/if}
               {#if email.ccAddresses.length > 0}
-                <PoodleDetailRow label="CC" value={email.ccAddresses.join(", ")} />
+                <PoodleDetailItem presentation="surface" label="CC" value={email.ccAddresses.join(", ")} />
               {/if}
               {#if email.bccAddresses.length > 0}
-                <PoodleDetailRow label="BCC" value={email.bccAddresses.join(", ")} />
+                <PoodleDetailItem presentation="surface" label="BCC" value={email.bccAddresses.join(", ")} />
               {/if}
             </PoodleDetailSection>
             <PoodleDetailSection title="Metadata" columns={2} separated={false}>
-              <PoodleDetailRow label="Captured" value={new Date(email.capturedAt).toLocaleString()} />
+              <PoodleDetailItem presentation="surface" label="Captured" value={new Date(email.capturedAt).toLocaleString()} />
             </PoodleDetailSection>
           </div>
         </PoodleCard>

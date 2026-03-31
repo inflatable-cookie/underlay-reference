@@ -10,7 +10,7 @@ import {
   Callout as PoodleCallout,
   Card as PoodleCard,
   Code as PoodleCode,
-  DetailRow as PoodleDetailRow,
+  DetailItem as PoodleDetailItem,
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem,
   Tabs
@@ -458,11 +458,11 @@ import {
         backIsContextual={computedBackInfo.isContextual ?? false}
         bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
       >
-        <svelte:fragment slot="actions">
+        {#snippet actions()}
           <PoodleMenu items={getUserMenuItems(user)} ariaLabel="User actions" placement="bottom-end" on:action={(event) => handleUserMenuAction(user, event.detail.value)}>
             <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="User actions" />
           </PoodleMenu>
-        </svelte:fragment>
+        {/snippet}
       </PoodlePageHeader>
 
       <div class="user-view__meta">
@@ -492,14 +492,14 @@ import {
       {#if activeValue === "details"}
         <PoodleCard>
           <PoodleDetailSection title="Account" columns={2} separated={false}>
-            <PoodleDetailRow label="Created" value={formatDate(user.createdAt)} />
-            <PoodleDetailRow label="Updated" value={formatDate(user.updatedAt)} />
+            <PoodleDetailItem presentation="surface" label="Created" value={formatDate(user.createdAt)} />
+            <PoodleDetailItem presentation="surface" label="Updated" value={formatDate(user.updatedAt)} />
           </PoodleDetailSection>
 
           <PoodleDetailSection title="Security" columns={2} separated={false}>
-            <PoodleDetailRow label="Active sessions" value={String(user.activeSessionCount)} />
-            <PoodleDetailRow label="Failed logins" value={String(user.failedLoginCount)} />
-            <PoodleDetailRow label="Lockout until" value={user.lockoutUntil ? formatDate(user.lockoutUntil) : "—"} />
+            <PoodleDetailItem presentation="surface" label="Active sessions" value={String(user.activeSessionCount)} />
+            <PoodleDetailItem presentation="surface" label="Failed logins" value={String(user.failedLoginCount)} />
+            <PoodleDetailItem presentation="surface" label="Lockout until" value={user.lockoutUntil ? formatDate(user.lockoutUntil) : "—"} />
           </PoodleDetailSection>
         </PoodleCard>
       {:else if activeValue === "sessions"}

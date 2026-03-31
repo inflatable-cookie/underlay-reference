@@ -22,8 +22,10 @@ import {
   Callout as PoodleCallout,
   Grid as PoodleGrid,
   ListCard as PoodleListCard,
+  Menu as PoodleMenu,
   OrderBy as PoodleOrderBy,
   type BulkAction,
+  type MenuItem,
   type OrderByValue } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
@@ -39,7 +41,7 @@ import {
   import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
   import { mediaCommands, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import CopyActionsMenu from "$lib/components/CopyActionsMenu.svelte";
+  import { copyToClipboard } from "@decodelabs/underlay/runtime";
   import { squareCheckIcon, trash2Icon, uploadIcon } from "$lib/ui/poodle-icon-nodes";
   import Upload from "lucide-svelte/icons/upload";
   import Image from "lucide-svelte/icons/image";
@@ -211,6 +213,38 @@ import {
     }
   }
 
+  function getActionItems(item: MediaSummary): MenuItem[] {
+    return [
+      { value: `view:${item.id}`, label: "View details" },
+      { value: `delete:${item.id}`, label: "Move to trash", tone: "danger" },
+      { value: `separator-copy:${item.id}`, label: "", kind: "separator" },
+      { value: `copy-id:${item.id}`, label: "Copy media ID" }
+    ];
+  }
+
+  async function handleItemAction(value: string) {
+    const [action, id] = value.split(":");
+    if (!action || !id) return;
+
+    if (action === "view") {
+      await gotoWithContext(`/media/${id}`, {
+        label: "Media",
+        href: "/media",
+        type: "list"
+      });
+      return;
+    }
+
+    if (action === "delete") {
+      await handleDeleteMedia(id);
+      return;
+    }
+
+    if (action === "copy-id") {
+      await copyToClipboard(toastStore, id, "Copied media ID");
+    }
+  }
+
   // Selection mode state
   let isSelectionMode = $state(false);
   const selection = useBatchSelection<string>();
@@ -278,7 +312,7 @@ import {
 </script>
 
 <PoodlePageHeader title="Media Library" backHref="/" backLabel="Back to dashboard">
-  <svelte:fragment slot="actions">
+  {#snippet actions()}
     {#if (pageData.data?.items ?? []).length > 0}
       <PoodleIconButton
         type="button"
@@ -316,7 +350,7 @@ import {
           })}
       />
     {/if}
-  </svelte:fragment>
+  {/snippet}
 </PoodlePageHeader>
 
 <FilterToolbar ariaLabel="Media filters" summaryText="Filters">
@@ -415,33 +449,16 @@ import {
         </svelte:fragment>
         <svelte:fragment slot="actions">
           {#if !isSelectionMode}
-            <CopyActionsMenu
-              toastStore={toastStore}
-              triggerLabel="Actions"
-              copies={[
-                {
-                  label: "Copy media ID",
-                  text: item.id,
-                  successMessage: "Copied media ID"
-                }
-              ]}
-              actions={[
-                {
-                  label: "View details",
-                  onSelect: () =>
-                    void gotoWithContext(`/media/${item.id}`, {
-                      label: "Media",
-                      href: "/media",
-                      type: "list"
-                    })
-                },
-                {
-                  label: "Move to trash",
-                  destructive: true,
-                  onSelect: () => handleDeleteMedia(item.id)
-                }
-              ]}
-            />
+            <PoodleMenu
+              items={getActionItems(item)}
+              placement="bottom-end"
+              triggerAriaLabel="Media actions"
+              on:action={(event: CustomEvent<{ value: string }>) => void handleItemAction(event.detail.value)}
+            >
+              <svelte:fragment slot="trigger">
+                <PoodleIconButton icon="ellipsis" ariaLabel="Media actions" variant="ghost" />
+              </svelte:fragment>
+            </PoodleMenu>
           {/if}
         </svelte:fragment>
 

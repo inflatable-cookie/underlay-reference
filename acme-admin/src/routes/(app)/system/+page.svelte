@@ -1,6 +1,6 @@
 <script lang="ts">
   import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { NavCard as PoodleNavCard, NavCardGrid as PoodleNavCardGrid } from "@poodle/svelte-primitives";
+  import { Grid, NavCard as PoodleNavCard } from "@poodle/svelte-primitives";
   import { getSystemCardAccent } from "$lib/utils/accents";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import Calendar from "lucide-svelte/icons/calendar";
@@ -12,7 +12,7 @@
 
 <PoodlePageHeader title="System" />
 
-<PoodleNavCardGrid>
+<Grid columns="repeat(auto-fit, minmax(18rem, 1fr))" gap="md" asRole="navigation" ariaLabel="System sections">
   <PoodleNavCard
     href="/system/errors"
     title="Error log"
@@ -79,7 +79,7 @@
       </span>
     </svelte:fragment>
   </PoodleNavCard>
-</PoodleNavCardGrid>
+</Grid>
 
 <style>
   .system-nav-icon {

@@ -27,23 +27,10 @@
 <style>
 	:global(body) {
 		margin: 0;
-		font-family:
-			"Avenir Next",
-			Avenir,
-			system-ui,
-			-ui-sans-serif,
-			-apple-system,
-			BlinkMacSystemFont,
-			"Segoe UI",
-			sans-serif;
+		font-family: var(--poodle-typography-font-family-sans);
 		background: var(--poodle-color-background-canvas);
 		color: var(--poodle-color-text-primary);
-	}
-
-	:global(a) {
-		color: inherit;
-		text-decoration: underline;
-		text-underline-offset: 0.15em;
+		--poodle-surface: var(--poodle-color-background-canvas);
 	}
 
 	.container {

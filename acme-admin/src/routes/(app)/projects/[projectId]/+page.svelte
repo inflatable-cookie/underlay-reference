@@ -9,7 +9,7 @@ import {
   BulkActionBar as PoodleBulkActionBar,
   Callout as PoodleCallout,
   Card as PoodleCard,
-  DetailRow as PoodleDetailRow,
+  DetailItem as PoodleDetailItem,
   Dialog as PoodleDialog,
   Grid as PoodleGrid,
   ListCard as PoodleListCard,
@@ -455,7 +455,7 @@ import {
         : undefined}
     bannerTone={project.status === "archived" ? "warning" : "info"}
   >
-    <svelte:fragment slot="actions">
+    {#snippet actions()}
       <PoodleButton type="button" variant="secondary" on:click={handleEdit}>
         <Pencil size={16} />
         Edit
@@ -463,7 +463,7 @@ import {
       <PoodleButton type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
         Delete
       </PoodleButton>
-    </svelte:fragment>
+    {/snippet}
   </PoodlePageHeader>
   <PoodleMetaBar ariaLabel="Project metadata">
     <PoodleMetaItem label="ID">
@@ -490,7 +490,7 @@ import {
   <PoodleCard>
     <div class="detail-card-grid">
       <PoodleDetailSection title="Details" columns={2} separated={false}>
-        <PoodleDetailRow label="Progress">
+        <PoodleDetailItem presentation="surface" label="Progress">
           <svelte:fragment slot="value">
             <div class="progress-cell">
               <span>{completedTasks}/{tasks.length} tasks</span>
@@ -499,26 +499,26 @@ import {
               {/if}
             </div>
           </svelte:fragment>
-        </PoodleDetailRow>
+        </PoodleDetailItem>
         {#if project.description}
           <div class="detail-span-full">
-            <PoodleDetailRow label="Description" value={project.description} />
+            <PoodleDetailItem presentation="surface" label="Description" value={project.description} />
           </div>
         {/if}
       </PoodleDetailSection>
 
       <PoodleDetailSection title="Metadata" columns={2} separated={false}>
-        <PoodleDetailRow label="Category" value={project.categoryId ? project.categoryId : "None"} />
-        <PoodleDetailRow label="Created">
+        <PoodleDetailItem presentation="surface" label="Category" value={project.categoryId ? project.categoryId : "None"} />
+        <PoodleDetailItem presentation="surface" label="Created">
           <svelte:fragment slot="value">
             <TimeAgo datetime={project.createdAt} tooltipFormat="datetime" />
           </svelte:fragment>
-        </PoodleDetailRow>
-        <PoodleDetailRow label="Updated">
+        </PoodleDetailItem>
+        <PoodleDetailItem presentation="surface" label="Updated">
           <svelte:fragment slot="value">
             <TimeAgo datetime={project.updatedAt} tooltipFormat="datetime" />
           </svelte:fragment>
-        </PoodleDetailRow>
+        </PoodleDetailItem>
       </PoodleDetailSection>
     </div>
   </PoodleCard>
