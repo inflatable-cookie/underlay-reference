@@ -1,8 +1,10 @@
 <script lang="ts">
 import {
-  useToasts,
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/auth";
+import {
+  useToasts
+} from "@decodelabs/underlay/runtime/feedback";
 import {
   Callout as PoodleCallout,
   Grid as PoodleGrid,

@@ -1,8 +1,11 @@
 <script lang="ts">
 import {
-  useToasts,
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/auth";
+import {
+  useToasts,
+  copyToClipboard
+} from "@decodelabs/underlay/runtime/feedback";
 import {
   AlertDialog as PoodleAlertDialog,
   Button as PoodleButton,
@@ -14,6 +17,7 @@ import {
   MetaItem as PoodleMetaItem,
   Menu as PoodleMenu,
   Tabs,
+  formatDisplayDateTime,
   type MenuItem,
   type TabItem
   } from "@poodle/svelte-primitives";
@@ -25,7 +29,6 @@ import { page } from "$app/stores";
     import { Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { copyToClipboard } from "@decodelabs/underlay/runtime";
   import type { CapturedEmailDetail } from "@api-client";
 
   const toastStore = useToasts();
@@ -160,7 +163,7 @@ import { page } from "$app/stores";
               {/if}
             </PoodleDetailSection>
             <PoodleDetailSection title="Metadata" columns={2} separated={false}>
-              <PoodleDetailItem presentation="surface" label="Captured" value={new Date(email.capturedAt).toLocaleString()} />
+              <PoodleDetailItem presentation="surface" label="Captured" value={formatDisplayDateTime(email.capturedAt)} />
             </PoodleDetailSection>
           </div>
         </PoodleCard>

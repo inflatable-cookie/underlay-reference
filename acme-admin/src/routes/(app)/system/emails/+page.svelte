@@ -1,13 +1,17 @@
 <script lang="ts">
 import {
-  useToasts,
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/auth";
+import {
+  useToasts,
+  copyToClipboard
+} from "@decodelabs/underlay/runtime/feedback";
 import {
   Callout as PoodleCallout,
   Grid as PoodleGrid,
   ListCard as PoodleListCard,
   Menu as PoodleMenu,
+  formatDisplayDateTime,
   type MenuItem } from "@poodle/svelte-primitives";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
@@ -25,7 +29,6 @@ import {
   import Filter from "lucide-svelte/icons/filter";
   import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { copyToClipboard } from "@decodelabs/underlay/runtime";
   import type { CapturedEmailSummary } from "@api-client";
 
   const toastStore = useToasts();
@@ -252,7 +255,7 @@ import {
             From: <strong>{entry.fromAddress}</strong>
           </span>
           <span slot="trailing">
-            {new Date(entry.capturedAt).toLocaleString()}
+            {formatDisplayDateTime(entry.capturedAt)}
             {#if entry.wasDelivered}
               <span class="delivered-badge">Delivered</span>
             {/if}

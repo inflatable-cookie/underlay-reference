@@ -1,8 +1,10 @@
 <script lang="ts">
 import {
-  useToasts,
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/auth";
+import {
+  useToasts
+} from "@decodelabs/underlay/runtime/feedback";
 import {
   Callout as PoodleCallout,
   Tabs } from "@poodle/svelte-primitives";
@@ -17,7 +19,8 @@ import {
     MetaItem as PoodleMetaItem,
     Menu as PoodleMenu,
     Pill as PoodlePill,
-    TimeAgo
+    TimeAgo,
+    formatDisplayDateTime
   } from "@poodle/svelte-primitives";
   import type { MenuItem } from "@poodle/svelte-primitives";
   import { adminCommands } from "@api-client";
@@ -93,11 +96,6 @@ import {
       data: job
     }))
   );
-
-  function formatDate(dateStr: string | null | undefined): string {
-    if (!dateStr) return "Never";
-    return new Date(dateStr).toLocaleString();
-  }
 
   function formatTaskName(name: string): string {
     return name
@@ -289,13 +287,13 @@ import {
               <h3>Execution History</h3>
               <dl class="task-detail-page__dl">
                 <dt>Last Scheduled</dt>
-                <dd>{formatDate(task.lastScheduledAt)}</dd>
+                <dd>{formatDisplayDateTime(task.lastScheduledAt) || "Never"}</dd>
                 <dt>Last Completed</dt>
-                <dd>{formatDate(task.lastCompletedAt)}</dd>
+                <dd>{formatDisplayDateTime(task.lastCompletedAt) || "Never"}</dd>
                 <dt>Created</dt>
-                <dd>{formatDate(task.createdAt)}</dd>
+                <dd>{formatDisplayDateTime(task.createdAt) || "Never"}</dd>
                 <dt>Updated</dt>
-                <dd>{formatDate(task.updatedAt)}</dd>
+                <dd>{formatDisplayDateTime(task.updatedAt) || "Never"}</dd>
               </dl>
             </div>
           </PoodleCard>

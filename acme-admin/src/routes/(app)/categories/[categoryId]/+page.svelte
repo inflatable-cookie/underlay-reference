@@ -1,8 +1,10 @@
 <script lang="ts">
 import {
-  useAuthenticatedData,
   useToasts
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime/auth";
 import {
   AlertDialog as PoodleAlertDialog,
   Button as PoodleButton,
@@ -20,10 +22,10 @@ import {
   import { goto } from "$app/navigation";
   import { adminCommands,
   type Category } from "@api-client";
-  import { copyToClipboard } from "@decodelabs/underlay/runtime";
+  import { copyToClipboard } from "@decodelabs/underlay/runtime/feedback";
   import { auth } from "$lib/stores/auth";
     import { MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill, TimeAgo } from "@poodle/svelte-primitives";
-  import { gotoWithContext } from "@decodelabs/underlay/client";
+  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
 
   interface Props {
     data: PageData;

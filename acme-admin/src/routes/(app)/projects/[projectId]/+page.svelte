@@ -1,9 +1,13 @@
 <script lang="ts">
 import {
-  useAuthenticatedData,
-  useToasts,
   createReorderController
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/data";
+import {
+  useToasts,
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  useAuthenticatedData,
+} from "@decodelabs/underlay/runtime/auth";
 import {
   AlertDialog as PoodleAlertDialog,
   BulkActionBar as PoodleBulkActionBar,
@@ -42,7 +46,8 @@ import {
     Pill as PoodlePill,
     Select as PoodleSelect
   } from "@poodle/svelte-primitives";
-  import { gotoWithContext, parseQueryParams } from "@decodelabs/underlay/client";
+  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+  import { parseQueryParams } from "@decodelabs/underlay/client/query";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
   import { getProjectStatusTone } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";

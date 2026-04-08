@@ -1,7 +1,7 @@
 <script lang="ts">
 import {
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/auth";
 import {
   LogList,
   PageHeader as PoodlePageHeader,

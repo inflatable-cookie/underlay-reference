@@ -3,7 +3,7 @@ import {
   createLocalSearchFns,
   type SearchResult,
   type SuggestionOptions
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/relations";
 import {
   Button,
   Field,
@@ -14,7 +14,7 @@ import {
   TextInput,
   TextArea
   } from "@poodle/svelte-primitives";
-    import { navigateOnCancel } from "@decodelabs/underlay/client";
+    import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
   import { categorySelectionHistory } from "$lib/stores/selection-history";
   import { untrack } from "svelte";
   import type { Category, CategoryWithCounts } from "@api-client";

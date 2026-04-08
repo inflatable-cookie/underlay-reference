@@ -3,7 +3,7 @@ import {
   extractReorderConflict,
   type ReorderController,
   type ReorderableItem,
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/data";
 
 export interface ReorderConflictRecoveryResult {
   handled: boolean;

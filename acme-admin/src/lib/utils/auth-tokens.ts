@@ -9,7 +9,7 @@
  * - Logout routes (clearAuthTokens, readRefreshToken)
  */
 
-import { createAuthCookieHelpers } from "@decodelabs/underlay/client";
+import { createAuthCookieHelpers } from "@decodelabs/underlay/client/sveltekit";
 
 export const ACCESS_TOKEN_COOKIE = "acme_access_token";
 export const REFRESH_TOKEN_COOKIE = "acme_refresh_token";

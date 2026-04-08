@@ -13,7 +13,7 @@ import { getAdminHttpClient } from "../../utils/client-factory.js";
 import {
   appendQueryParams,
   type QueryParams,
-} from "@decodelabs/underlay/client";
+} from "@decodelabs/underlay/client/query";
 import {
   getHeaderValueCaseInsensitive,
   toSnakeQueryParams,

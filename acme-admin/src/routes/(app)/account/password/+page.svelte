@@ -4,7 +4,7 @@ import {
 } from "@decodelabs/underlay/patterns";
 import {
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/auth";
 import {
   Callout as PoodleCallout,
   CodeInput as PoodleCodeInput

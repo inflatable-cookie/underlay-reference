@@ -1,8 +1,10 @@
 <script lang="ts">
 import {
-  useAuthenticatedData,
   useToasts
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime/auth";
 import {
   PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
   import { Callout as PoodleCallout } from "@poodle/svelte-primitives";

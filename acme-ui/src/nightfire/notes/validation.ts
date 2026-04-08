@@ -1,4 +1,4 @@
-import { registerBlockValidator } from "@decodelabs/underlay/nightfire";
+import { registerBlockValidator } from "@decodelabs/underlay/nightfire/validator-registry";
 
 const TASK_NOTES_SCHEMA = "acme:task/notes@1";
 

@@ -1,7 +1,7 @@
 import TaskNotesRenderer from "./TaskNotesRenderer.svelte";
 import TaskChecklistRenderer from "./TaskChecklistRenderer.svelte";
 
-import { registerBlockRenderer } from "@decodelabs/underlay/nightfire";
+import { registerBlockRenderer } from "@decodelabs/underlay/nightfire/render-registry";
 
 const TASK_NOTES_SCHEMA = "acme:task/notes@1";
 

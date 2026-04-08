@@ -1,12 +1,12 @@
 import {
   appendSuggestionParams,
   type SuggestionRequestOptions,
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/data";
 import { getAdminHttpClient } from "../../utils/client-factory.js";
 import {
   appendQueryParams,
   type QueryParams,
-} from "@decodelabs/underlay/client";
+} from "@decodelabs/underlay/client/query";
 import type { ListResponse, SingleResponse } from "../../types/common-types.js";
 import type {
   Category,

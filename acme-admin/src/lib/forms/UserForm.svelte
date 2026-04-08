@@ -9,7 +9,7 @@
     Switch,
     TextInput
   } from "@poodle/svelte-primitives";
-  import { navigateOnCancel } from "@decodelabs/underlay/client";
+  import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
   import { untrack } from "svelte";
 
   type UserFormMode = "create" | "edit";

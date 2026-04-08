@@ -5,7 +5,7 @@ import {
   registerSchema,
   registerBlockEditor,
   type SchemaDefinition
-} from "@decodelabs/underlay/nightfire";
+} from "@decodelabs/underlay/nightfire/editor-registry";
 
 // Task notes schema - supports multiple block types for rich task content.
 const TASK_NOTES_SCHEMA: SchemaDefinition = {

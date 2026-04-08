@@ -5,8 +5,8 @@ import {
 } from "@decodelabs/underlay/patterns";
 import {
   consumeNavigationContext
-} from "@decodelabs/underlay/runtime";
-import { slugify } from "@decodelabs/underlay/utils";
+} from "@decodelabs/underlay/runtime/navigation";
+import { slugify } from "@decodelabs/underlay/utils/slug";
 import {
   goto } from "$app/navigation";
   import { adminCommands,

@@ -3,8 +3,10 @@ import type {
   SearchResult,
   SelectableRelation,
   SuggestionOptions,
+} from "@decodelabs/underlay/runtime/relations";
+import type {
   SelectionHistory
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/data";
 import {
   onMount } from "svelte";
   import {

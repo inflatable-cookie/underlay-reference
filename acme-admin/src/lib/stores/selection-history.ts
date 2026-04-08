@@ -1,4 +1,4 @@
-import { createSelectionHistory } from "@decodelabs/underlay/runtime";
+import { createSelectionHistory } from "@decodelabs/underlay/runtime/data";
 /**
  * Selection history stores for RelationSelector components.
  *

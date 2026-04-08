@@ -2,12 +2,12 @@ import {
   appendPaginationParams,
   type PaginatedResponse,
   type PaginationParams,
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/data";
 import { getAdminHttpClient } from "../utils/client-factory.js";
 import {
   appendQueryParams,
   type QueryParams,
-} from "@decodelabs/underlay/client";
+} from "@decodelabs/underlay/client/query";
 /**
  * Media Library commands - media operations for admin UI
  */

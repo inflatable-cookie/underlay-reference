@@ -1,8 +1,10 @@
 <script lang="ts">
 import {
-  useAuthenticatedData,
   useToasts
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime/auth";
 import {
   DataTable,
   PageHeader as PoodlePageHeader,
@@ -21,7 +23,8 @@ import {
     Card as PoodleCard,
     Field as PoodleField,
     Pill as PoodlePill,
-    Select as PoodleSelect
+    Select as PoodleSelect,
+    formatDisplayDateTime
   } from "@poodle/svelte-primitives";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
@@ -122,11 +125,6 @@ import {
   function getStatusTone(statusCode: number): "neutral" | "danger" {
     if (statusCode >= 500) return "danger";
     return "neutral";
-  }
-
-  function formatDateTime(dateStr: string): string {
-    const date = new Date(dateStr);
-    return date.toLocaleString();
   }
 
   const statusOptions = [
@@ -275,7 +273,7 @@ import {
               <div class="detail-grid">
                 <div class="detail-item">
                   <span class="detail-label">Full Timestamp</span>
-                  <span class="detail-value">{formatDateTime(expandedLogDetail.occurredAt)}</span>
+                  <span class="detail-value">{formatDisplayDateTime(expandedLogDetail.occurredAt)}</span>
                 </div>
                 <div class="detail-item">
                   <span class="detail-label">Correlation ID</span>

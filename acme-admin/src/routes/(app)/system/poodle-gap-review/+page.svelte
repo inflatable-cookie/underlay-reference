@@ -1,7 +1,7 @@
 <script lang="ts">
 import {
   createClientPagination
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/data";
     import {
     Button as PoodleButton,
     Card as PoodleCard,

@@ -2,7 +2,7 @@ import {
   computeFileHash,
   uploadToBlob,
   type UploadProgress,
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/media";
 import { mediaCommands, detectMediaKindFromMimeType } from "@api-client";
 /**
  * Shared upload pipeline for media files.

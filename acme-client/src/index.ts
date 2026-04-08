@@ -114,7 +114,7 @@ export {
 } from "./types/admin-types.js";
 
 // Utilities - re-export from Underlay
-export { toUserMessage } from "@decodelabs/underlay/client";
+export { toUserMessage } from "@decodelabs/underlay/client/errors";
 
 // Query utilities - re-export from Underlay
 export {
@@ -132,7 +132,7 @@ export {
   appendQueryParams,
   createFilterBuilder,
   parseQueryParams,
-} from "@decodelabs/underlay/client";
+} from "@decodelabs/underlay/client/query";
 
 // Selection history and suggestion utilities - re-export from Underlay
 export {
@@ -144,7 +144,7 @@ export {
   type SelectionHistoryOptions,
   type SelectionHistory,
   type SuggestionRequestOptions,
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/data";
 
 // Client factory (for apps to configure)
 export {

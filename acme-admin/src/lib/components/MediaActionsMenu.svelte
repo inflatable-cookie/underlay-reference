@@ -1,9 +1,11 @@
 <script lang="ts">
 import {
   copyToClipboard,
-  type NavigationContext,
   useToasts
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  type NavigationContext,
+} from "@decodelabs/underlay/runtime/navigation";
 import {
   AlertDialog as PoodleAlertDialog,
   Button,
@@ -11,7 +13,7 @@ import {
   type MenuItem
   } from "@poodle/svelte-primitives";
   import type { Snippet } from "svelte";
-    import { gotoWithContext } from "@decodelabs/underlay/client";
+    import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { goto } from "$app/navigation";
   import { mediaCommands, type MediaDetail, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";

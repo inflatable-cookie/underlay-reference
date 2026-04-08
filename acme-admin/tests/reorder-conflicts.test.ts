@@ -1,4 +1,4 @@
-import type { ReorderController } from "@decodelabs/underlay/runtime";
+import type { ReorderController } from "@decodelabs/underlay/runtime/data";
 import { describe, expect, it } from "vitest";
 import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";
 

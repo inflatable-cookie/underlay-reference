@@ -10,7 +10,7 @@ import {
   authLoading,
   currentUser } from "$lib/stores/auth";
   import { authCommands } from "@api-client";
-    import { toPublicKeyRequestOptions, assertionToJson } from "@decodelabs/underlay/utils";
+    import { toPublicKeyRequestOptions, assertionToJson } from "@decodelabs/underlay/utils/webauthn";
 
   // Initialize auth and redirect if already logged in
   onMount(async () => {

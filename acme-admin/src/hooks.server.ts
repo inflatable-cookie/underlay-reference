@@ -4,7 +4,7 @@ import {
   createCspResolveOptions,
   generateNonce,
 } from "@decodelabs/underlay/server";
-import { UnderlayHttpError } from "@decodelabs/underlay/client";
+import { UnderlayHttpError } from "@decodelabs/underlay/client/errors";
 import { dev } from "$app/environment";
 import type { Handle, HandleServerError } from "@sveltejs/kit";
 import { env } from "$env/dynamic/public";

@@ -2,7 +2,7 @@
 //
 // This file should import (and thereby execute) editor registration modules that
 // call `registerBlockEditor(...)` / `registerSchema(...)` from
-// `@decodelabs/underlay/nightfire`.
+// `@decodelabs/underlay/nightfire/editor-registry`.
 
 import "./notes/editor";
 

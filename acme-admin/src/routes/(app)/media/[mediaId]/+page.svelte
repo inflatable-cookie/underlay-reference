@@ -1,15 +1,20 @@
 <script lang="ts">
 import {
-  getBackButtonInfo,
-  useToasts,
-  useAuthenticatedData,
   getMediaKindLabel,
   getMediaKindAccent,
   getMediaVisibilityLabel,
   getMediaVersionStateLabel,
-  getMediaVersionStateAccent,
-  formatFileSize
-} from "@decodelabs/underlay/runtime";
+  getMediaVersionStateAccent
+} from "@decodelabs/underlay/runtime/media";
+import {
+  useToasts,
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  getBackButtonInfo,
+} from "@decodelabs/underlay/runtime/navigation";
+import {
+  useAuthenticatedData,
+} from "@decodelabs/underlay/runtime/auth";
 import {
   EmptyState as PoodleEmptyState,
   DetailSection as PoodleDetailSection,
@@ -24,7 +29,8 @@ import {
   Dialog as PoodleDialog,
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem,
-  Tabs
+  Tabs,
+  formatFileSize
   } from "@poodle/svelte-primitives";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
@@ -50,7 +56,7 @@ import {
     MediaVisibility,
     MediaVersionState
   } from "@api-client";
-  import { gotoWithContext } from "@decodelabs/underlay/client";
+  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import { isPreconditionFailed } from "$lib/utils/api-errors";
   import { getMediaMetaAccent, getMediaMetaTone } from "$lib/utils/accents";

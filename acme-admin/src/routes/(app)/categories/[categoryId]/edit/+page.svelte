@@ -1,10 +1,12 @@
 <script lang="ts">
 import { type SpaFormResult, SpaFormShell } from "@decodelabs/underlay/patterns";
 import {
-  computeBackInfo,
-  consumeNavigationContext,
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/auth";
+import {
+  computeBackInfo,
+  consumeNavigationContext
+} from "@decodelabs/underlay/runtime/navigation";
 import {
   Callout as PoodleCallout,
   Code as PoodleCode,

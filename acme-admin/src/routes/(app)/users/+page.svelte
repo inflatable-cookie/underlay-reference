@@ -1,8 +1,10 @@
 <script lang="ts">
 import {
-  useAuthenticatedData,
   useToasts
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime/auth";
 import {
   adminCommands,
   type User,
@@ -18,8 +20,9 @@ import {
   type TableRow,
   type TableRowAction } from "@poodle/svelte-composites";
 	import { IconButton as PoodleIconButton,
-  Pill as PoodlePill } from "@poodle/svelte-primitives";
-		import { gotoWithContext } from "@decodelabs/underlay/client";
+  Pill as PoodlePill,
+  formatDisplayDate } from "@poodle/svelte-primitives";
+		import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
 	import Plus from "lucide-svelte/icons/plus";
 	import { auth } from "$lib/stores/auth";
 	import { getUserRoleTone, getUserStatusTone } from "$lib/utils/accents";
@@ -93,15 +96,11 @@ import {
 				displayName: user.displayName || "—",
 				role: user.role,
 				status: user.status,
-				createdAt: formatDate(user.createdAt)
+				createdAt: formatDisplayDate(user.createdAt)
 			},
 			data: user
 		}))
 	);
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString();
-	}
 
 	// Column configuration
 	const columns: TableColumn[] = [

@@ -1,8 +1,10 @@
 <script lang="ts">
 import {
-  useAuthenticatedData,
   useToasts
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime/auth";
 import {
   AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
@@ -22,7 +24,7 @@ import {
   import { auth } from "$lib/stores/auth";
     import { TimeAgo } from "@poodle/svelte-primitives";
   import { Button as PoodleButton, MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill } from "@poodle/svelte-primitives";
-  import { gotoWithContext } from "@decodelabs/underlay/client";
+  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { getTaskStatusTone, getTaskPriorityTone } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";

@@ -1,16 +1,21 @@
 <script lang="ts">
 import {
-  computeBackInfo,
-  consumeNavigationContext,
-  useAuthenticatedData,
   useToasts
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/feedback";
+import {
+  useAuthenticatedData
+} from "@decodelabs/underlay/runtime/auth";
+import {
+  computeBackInfo,
+  consumeNavigationContext
+} from "@decodelabs/underlay/runtime/navigation";
 import {
   AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
   Card as PoodleCard,
   Code as PoodleCode,
   DetailItem as PoodleDetailItem,
+  formatDisplayDateTime,
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem,
   Tabs
@@ -34,7 +39,7 @@ import {
   type TableColumn,
   type TableRow,
   type TableRowAction } from "@poodle/svelte-composites";
-    import { gotoWithContext } from "@decodelabs/underlay/client";
+    import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import {
     adminCommands,
     type ActivityEntry,
@@ -126,8 +131,8 @@ import {
         status: session.status,
         ipAddress: session.ipAddress || "—",
         userAgent: truncateUserAgent(session.userAgent),
-        createdAt: formatDate(session.createdAt),
-        lastUsedAt: formatDate(session.lastUsedAt)
+        createdAt: formatDisplayDateTime(session.createdAt),
+        lastUsedAt: formatDisplayDateTime(session.lastUsedAt)
       },
       data: session
     }))
@@ -136,7 +141,7 @@ import {
     activity.map((entry) => ({
       id: entry.id,
       cells: {
-        occurredAt: formatDate(entry.occurredAt),
+        occurredAt: formatDisplayDateTime(entry.occurredAt),
         action: entry.action,
         resourceType: entry.resourceType,
         resourceId: entry.resourceId,
@@ -175,10 +180,6 @@ import {
       selectedRole = user.role;
     }
   });
-
-  function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleString();
-  }
 
   function truncateUserAgent(ua: string | null | undefined, max = 70): string {
     if (!ua) return "—";
@@ -492,14 +493,14 @@ import {
       {#if activeValue === "details"}
         <PoodleCard>
           <PoodleDetailSection title="Account" columns={2} separated={false}>
-            <PoodleDetailItem presentation="surface" label="Created" value={formatDate(user.createdAt)} />
-            <PoodleDetailItem presentation="surface" label="Updated" value={formatDate(user.updatedAt)} />
+            <PoodleDetailItem presentation="surface" label="Created" value={formatDisplayDateTime(user.createdAt)} />
+            <PoodleDetailItem presentation="surface" label="Updated" value={formatDisplayDateTime(user.updatedAt)} />
           </PoodleDetailSection>
 
           <PoodleDetailSection title="Security" columns={2} separated={false}>
             <PoodleDetailItem presentation="surface" label="Active sessions" value={String(user.activeSessionCount)} />
             <PoodleDetailItem presentation="surface" label="Failed logins" value={String(user.failedLoginCount)} />
-            <PoodleDetailItem presentation="surface" label="Lockout until" value={user.lockoutUntil ? formatDate(user.lockoutUntil) : "—"} />
+            <PoodleDetailItem presentation="surface" label="Lockout until" value={user.lockoutUntil ? formatDisplayDateTime(user.lockoutUntil) : "—"} />
           </PoodleDetailSection>
         </PoodleCard>
       {:else if activeValue === "sessions"}

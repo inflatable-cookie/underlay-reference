@@ -38,10 +38,10 @@ export {
   detectMediaKindFromMimeType,
   isMediaDeleted,
   getMediaDisplayName,
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/media";
 
 // Re-export pagination types that may be used with media
 export type {
   PaginatedResponse,
   PaginationParams,
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/data";

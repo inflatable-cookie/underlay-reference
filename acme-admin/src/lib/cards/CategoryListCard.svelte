@@ -7,7 +7,7 @@
     Pill as PoodlePill
   } from "@poodle/svelte-primitives";
   import type { MenuItem } from "@poodle/svelte-primitives";
-  import { gotoWithContext } from "@decodelabs/underlay/client";
+  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import type { CategoryWithCounts } from "@api-client";
   import FolderOpen from "lucide-svelte/icons/folder-open";
 

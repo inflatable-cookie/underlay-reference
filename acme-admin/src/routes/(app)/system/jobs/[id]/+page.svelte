@@ -1,8 +1,10 @@
 <script lang="ts">
 import {
-  useToasts,
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime";
+} from "@decodelabs/underlay/runtime/auth";
+import {
+  useToasts
+} from "@decodelabs/underlay/runtime/feedback";
 import {
   Callout as PoodleCallout,
   DetailItem as PoodleDetailItem
@@ -15,6 +17,7 @@ import {
     Button as PoodleButton,
     Card as PoodleCard,
     Code,
+    formatDisplayDateTime,
     IconButton as PoodleIconButton,
     MetaBar as PoodleMetaBar,
     MetaItem as PoodleMetaItem,
@@ -47,11 +50,6 @@ import {
 
   function getStatusLabel(status: string): string {
     return status.charAt(0).toUpperCase() + status.slice(1);
-  }
-
-  function formatDate(dateStr: string | null | undefined): string {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleString();
   }
 
   function formatJobType(jobType: string): string {
@@ -147,12 +145,12 @@ import {
         <PoodleDetailItem presentation="surface" label="Attempts" value={`${job.attempts} / ${job.maxAttempts}`} />
       </PoodleDetailSection>
       <PoodleDetailSection title="Timestamps" columns={2} separated={false}>
-        <PoodleDetailItem presentation="surface" label="Created" value={formatDate(job.createdAt)} />
+        <PoodleDetailItem presentation="surface" label="Created" value={formatDisplayDateTime(job.createdAt) || "-"} />
         {#if job.scheduledFor}
-          <PoodleDetailItem presentation="surface" label="Scheduled for" value={formatDate(job.scheduledFor)} />
+          <PoodleDetailItem presentation="surface" label="Scheduled for" value={formatDisplayDateTime(job.scheduledFor) || "-"} />
         {/if}
-        <PoodleDetailItem presentation="surface" label="Started at" value={formatDate(job.startedAt)} />
-        <PoodleDetailItem presentation="surface" label="Finished at" value={formatDate(job.finishedAt)} />
+        <PoodleDetailItem presentation="surface" label="Started at" value={formatDisplayDateTime(job.startedAt) || "-"} />
+        <PoodleDetailItem presentation="surface" label="Finished at" value={formatDisplayDateTime(job.finishedAt) || "-"} />
       </PoodleDetailSection>
     </div>
   </PoodleCard>

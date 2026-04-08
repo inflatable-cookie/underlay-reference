@@ -1,4 +1,4 @@
-import type { QueryParams } from "@decodelabs/underlay/client";
+import type { QueryParams } from "@decodelabs/underlay/client/query";
 
 export interface WithEtag<T> {
   data: T;
