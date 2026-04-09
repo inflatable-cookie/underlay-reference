@@ -641,7 +641,7 @@ import {
   <FormDialog
     bind:open={editDialogOpen}
     title="Edit Media"
-    subtitle={media.originalFilename ?? undefined}
+    subtitle={`For ${media.title || media.originalFilename || media.id}`}
     error={editDialogError}
     submitting={editDialogSubmitting}
     showDefaultActions={false}
