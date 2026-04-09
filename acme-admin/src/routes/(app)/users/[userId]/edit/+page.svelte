@@ -188,9 +188,9 @@ import {
     backLabel={computedBackInfo.label}
     backIsContextual={computedBackInfo.isContextual ?? false}
     bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
-    {success}
+    success={success === true}
     successMessage="User updated successfully."
-    {error}
+    error={success === false && !fieldErrors ? error : null}
     {fieldErrors}
     {headerMeta}
     onSubmit={handleSubmit}

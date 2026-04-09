@@ -104,9 +104,9 @@ import {
   backHref={backInfo.href}
   backLabel={backInfo.label}
   backIsContextual={backInfo.isContextual ?? false}
-  {success}
+  success={success === true}
   successMessage="User created successfully."
-  {error}
+  error={success === false && !fieldErrors ? error : null}
   {fieldErrors}
   onSubmit={handleSubmit}
   onResult={handleResult}

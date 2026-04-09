@@ -210,9 +210,9 @@ import {
     backLabel={computedBackInfo.label}
     backIsContextual={computedBackInfo.isContextual ?? false}
     bannerMessage={project.status === "archived" ? "This project is archived." : undefined}
-    {success}
+    success={success === true}
     successMessage="Project updated successfully."
-    {error}
+    error={success === false && !fieldErrors ? error : null}
     {fieldErrors}
     {headerMeta}
     onSubmit={handleSubmit}

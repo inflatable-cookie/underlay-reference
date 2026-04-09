@@ -207,9 +207,9 @@ import {
     backLabel={computedBackInfo.label}
     backIsContextual={computedBackInfo.isContextual ?? false}
     bannerMessage={!category.isActive ? "This category is inactive." : undefined}
-    {success}
+    success={success === true}
     successMessage="Category updated successfully."
-    {error}
+    error={success === false && !fieldErrors ? error : null}
     {fieldErrors}
     {headerMeta}
     onSubmit={handleSubmit}
