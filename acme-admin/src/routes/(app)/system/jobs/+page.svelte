@@ -92,6 +92,9 @@ import {
       data: job
     }))
   );
+  const expandedRowIds = $derived(
+    rows.filter((row) => Boolean((row.data as JobSummary | undefined)?.errorMessage)).map((row) => row.id)
+  );
 
   function navigateToJob(job: JobSummary) {
     goto(`/system/jobs/${encodeURIComponent(job.id)}`);
@@ -284,11 +287,11 @@ import {
     <DataTable
       {columns}
       {rows}
+      {expandedRowIds}
       loading={pageData.loading}
       emptyMessage="No jobs found"
       showLimitSelector={false}
       showRowActions={false}
-      expandedRowWhen={(row) => Boolean((row.data as JobSummary | undefined)?.errorMessage)}
       on:rowClick={(event) => navigateToJob(event.detail.row.data as JobSummary)}
     >
       <svelte:fragment slot="cell" let:column let:row>

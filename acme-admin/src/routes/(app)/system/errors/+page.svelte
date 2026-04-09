@@ -92,6 +92,7 @@ import {
       data: log
     }))
   );
+  const expandedRowIds = $derived(expandedLogId ? [expandedLogId] : []);
 
   function getRowLog(row: TableRow): ErrorLogSummary | null {
     return (row.data as ErrorLogSummary | undefined) ?? null;
@@ -221,9 +222,9 @@ import {
     <DataTable
       rows={tableRows}
       {columns}
+      {expandedRowIds}
       emptyMessage="No error logs found"
       showRowActions={false}
-      expandedRowWhen={(row: TableRow) => expandedLogId === row.id}
     >
       <svelte:fragment slot="cell" let:column let:row>
         {@const log = getRowLog(row)}

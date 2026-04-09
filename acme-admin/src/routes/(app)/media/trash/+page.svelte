@@ -9,17 +9,16 @@ import {
 import {
   useAuthenticatedData,
 } from "@decodelabs/underlay/runtime/auth";
-import {
+  import {
   EmptyState as PoodleEmptyState,
   MediaThumbnail as PoodleMediaThumbnail,
   PageHeader as PoodlePageHeader,
   PageLoading } from "@poodle/svelte-composites";
   import { AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
-  Grid as PoodleGrid,
   ListCard as PoodleListCard,
+  ListGrid,
   formatFileSize } from "@poodle/svelte-primitives";
-  import { goto } from "$app/navigation";
     import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
   import { mediaCommands, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";
@@ -102,7 +101,7 @@ import {
     Items in trash can be restored or permanently deleted. Permanently deleted items cannot be recovered.
   </p>
 
-  <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
+  <ListGrid minItemWidth={26}>
     {#each pageData.data?.media ?? [] as item}
       <PoodleListCard
         title={item.title ?? item.originalFilename ?? "Untitled"}
@@ -143,26 +142,24 @@ import {
         </span>
 
         <div slot="actions" class="trash-actions">
-          <div class="trash-actions">
-            <PoodleButton type="button" variant="ghost" size="sm" on:click={() => handleRestore(item.id)}>
-              <RotateCcw size={14} />
-              Restore
-            </PoodleButton>
-            <PoodleButton
-              type="button"
-              variant="ghost"
-              tone="danger"
-              size="sm"
-              on:click={() => (purgeCandidate = item)}
-            >
-              <Trash2 size={14} />
-              Delete
-            </PoodleButton>
-          </div>
+          <PoodleButton type="button" variant="ghost" size="sm" on:click={() => handleRestore(item.id)}>
+            <RotateCcw size={14} />
+            Restore
+          </PoodleButton>
+          <PoodleButton
+            type="button"
+            variant="ghost"
+            tone="danger"
+            size="sm"
+            on:click={() => (purgeCandidate = item)}
+          >
+            <Trash2 size={14} />
+            Delete
+          </PoodleButton>
         </div>
       </PoodleListCard>
     {/each}
-  </PoodleGrid>
+  </ListGrid>
 {/if}
 
 <PoodleAlertDialog

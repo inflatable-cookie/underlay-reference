@@ -19,6 +19,7 @@ import {
   EmptyState as PoodleEmptyState,
   DetailSection as PoodleDetailSection,
   FormDialog,
+  InlineListSection,
   PageHeader as PoodlePageHeader,
   PageLoading
   } from "@poodle/svelte-composites";
@@ -473,32 +474,32 @@ import {
           </PoodleCard>
 
           <!-- Versions -->
-          <PoodleCard>
-            <div class="inline-list-card">
-              <div class="inline-list-card__header">
-                <h4 class="inline-list-card__title">Versions</h4>
-                <div class="inline-list-card__header-actions">
-                  <PoodleIconButton
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    icon={uploadIcon}
-                    ariaLabel="Upload new version"
-                    on:click={() => goto(`/media/upload?replace=${media.id}`)}
-                  />
-                </div>
-              </div>
+          {#if activeTab === "details" && versionsData.loading}
+            <PoodleCard>
+              <PageLoading presentation="inline" message="Loading versions..." />
+            </PoodleCard>
+          {:else if versionsData.error}
+            <PoodleCard>
+              <PoodleCallout tone="danger" message={versionsData.error} announceMode="polite" />
+            </PoodleCard>
+          {:else}
+            <InlineListSection
+              title="Versions"
+              items={versions}
+              emptyMessage="No versions uploaded yet."
+            >
+              {#snippet actions()}
+                <PoodleIconButton
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  icon={uploadIcon}
+                  ariaLabel="Upload new version"
+                  on:click={() => goto(`/media/upload?replace=${media.id}`)}
+                />
+              {/snippet}
 
-              {#if activeTab === "details" && versionsData.loading}
-                <PageLoading presentation="inline" message="Loading versions..." />
-              {:else if versionsData.error}
-                <PoodleCallout tone="danger" message={versionsData.error} announceMode="polite" />
-              {:else if versions.length === 0}
-                <p class="inline-list-card__empty">No versions uploaded yet.</p>
-              {:else}
-                <ul class="inline-list-card__items">
-                  {#each versions as version (version.id)}
-                    <li class="inline-list-card__item">
+              {#snippet item(version: MediaVersion)}
                       {#if canPreviewVersion(version)}
                         <button
                           type="button"
@@ -552,12 +553,9 @@ import {
                           <Trash2 size={14} />
                         </button>
                       </div>
-                    </li>
-                  {/each}
-                </ul>
-              {/if}
-            </div>
-          </PoodleCard>
+              {/snippet}
+            </InlineListSection>
+          {/if}
 
           <!-- Renditions -->
           {#if media.currentVersion?.renditions && media.currentVersion.renditions.length > 0}
@@ -616,32 +614,22 @@ import {
           {:else if usages.length === 0}
             <PoodleEmptyState title="No usage found" message="This media is not used anywhere yet." size="compact" />
           {:else}
-            <PoodleCard>
-              <div class="inline-list-card">
-                <div class="inline-list-card__header">
-                  <h4 class="inline-list-card__title">Usages</h4>
+            <InlineListSection title="Usages" items={usages}>
+              {#snippet item(usage: MediaUsage)}
+                <div class="inline-list-card__item-content inline-list-card__item-content--usage">
+                  <span class="inline-list-card__dot" style:--inline-list-accent={getMediaMetaAccent("usage")}></span>
+                  <span class="inline-list-card__label-group">
+                    <span class="inline-list-card__label">{usage.usedByType}</span>
+                    <span class="inline-list-card__sublabel">
+                      <Code inline source={usage.usedById} />
+                      {#if usage.field}
+                        <span class="usage-field"> · {usage.field}</span>
+                      {/if}
+                    </span>
+                  </span>
                 </div>
-
-                <ul class="inline-list-card__items">
-                  {#each usages as usage}
-                    <li class="inline-list-card__item">
-                      <div class="inline-list-card__item-content">
-                        <span class="inline-list-card__dot" style:--inline-list-accent={getMediaMetaAccent("usage")}></span>
-                        <span class="inline-list-card__label-group">
-                          <span class="inline-list-card__label">{usage.usedByType}</span>
-                          <span class="inline-list-card__sublabel">
-                            <Code inline source={usage.usedById} />
-                            {#if usage.field}
-                              <span class="usage-field"> · {usage.field}</span>
-                            {/if}
-                          </span>
-                        </span>
-                      </div>
-                    </li>
-                  {/each}
-                </ul>
-              </div>
-            </PoodleCard>
+              {/snippet}
+            </InlineListSection>
           {/if}
         </div>
       {/if}
@@ -829,52 +817,11 @@ import {
     margin-bottom: 1.5rem;
   }
 
-  .inline-list-card {
-    display: grid;
-    gap: 0.75rem;
-  }
-
-  .inline-list-card__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-  }
-
-  .inline-list-card__title {
-    margin: 0;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--underlay-color-text-muted, rgba(148, 163, 184, 0.85));
-  }
-
-  .inline-list-card__header-actions,
   .inline-list-card__trailing,
   .inline-list-card__actions {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-  }
-
-  .inline-list-card__items {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-  }
-
-  .inline-list-card__item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-width: 0;
-    padding: 0.5rem 0.625rem;
-    border-radius: var(--underlay-radius-sm, 0.375rem);
-    background: var(--underlay-color-surface-muted, rgba(255, 255, 255, 0.02));
   }
 
   .inline-list-card__item-content {
@@ -885,6 +832,10 @@ import {
     gap: 0.625rem;
     color: inherit;
     text-decoration: none;
+  }
+
+  .inline-list-card__item-content--usage {
+    align-items: flex-start;
   }
 
   .inline-list-card__item-content--button {
@@ -923,13 +874,6 @@ import {
   .inline-list-card__sublabel {
     font-size: 0.8rem;
     color: var(--underlay-color-text-muted, #9ca3af);
-  }
-
-  .inline-list-card__empty {
-    margin: 0;
-    font-size: 0.9rem;
-    font-style: italic;
-    color: var(--underlay-color-text-muted, rgba(148, 163, 184, 0.7));
   }
 
   /* Full preview tab */
