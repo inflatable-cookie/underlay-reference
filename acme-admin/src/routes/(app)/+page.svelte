@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
-	import { LogList, MetricTile, type LogEntry } from "@poodle/svelte-composites";
+	import { LogList, MetricTile, PageHeader, type LogEntry } from "@poodle/svelte-composites";
 	import { Pill } from "@poodle/svelte-primitives";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
@@ -62,10 +62,7 @@
 </script>
 
 <div class="dashboard">
-	<header class="dashboard__header">
-		<h1 class="dashboard__title">Dashboard</h1>
-		<p class="dashboard__subtitle">Platform overview and key metrics</p>
-	</header>
+	<PageHeader title="Dashboard" subtitle="Platform overview and key metrics" />
 
 	<div class="dashboard__metrics">
 		<a class="dashboard__metric-link" href="/users">
@@ -163,26 +160,6 @@
 </div>
 
 <style>
-	.dashboard__header {
-		display: flex;
-		flex-direction: column;
-		gap: 0.35rem;
-		margin-bottom: 1rem;
-	}
-
-	.dashboard__title {
-		margin: 0;
-		font-size: 1.8rem;
-		letter-spacing: -0.02em;
-		font-weight: 650;
-	}
-
-	.dashboard__subtitle {
-		margin: 0;
-		color: var(--admin-color-text-muted);
-		font-size: 0.95rem;
-	}
-
 	.dashboard__metrics {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
