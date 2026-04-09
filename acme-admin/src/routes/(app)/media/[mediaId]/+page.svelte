@@ -704,36 +704,28 @@ import {
     bind:open={activateDialogOpen}
     title="Activate version?"
     description="This will set this version as the current active version for this media item."
-    confirmLabel="Activate"
+    itemLabel="Version"
+    itemValue={selectedVersion ? `${selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...` : null}
+    confirmLabel="Activate version"
     cancelLabel="Cancel"
     onConfirm={confirmActivate}
     onCancel={cancelActivate}
     tone="warning"
-  >
-    {#if selectedVersion}
-      <p>
-        Version: <Code inline source={`${selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...`} />
-      </p>
-    {/if}
-  </PoodleAlertDialog>
+  />
 
   <!-- Delete Version Dialog -->
   <PoodleAlertDialog
     bind:open={deleteDialogOpen}
-    title="Delete version?"
-    description="This will permanently delete this version and its stored file. This action cannot be undone."
-    confirmLabel="Delete"
+    title="Permanently delete version?"
+    description="This will permanently delete this version and its stored file. This cannot be undone."
+    itemLabel="Version"
+    itemValue={selectedVersion ? `${selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...` : null}
+    confirmLabel="Permanently delete version"
     cancelLabel="Cancel"
     onConfirm={confirmDelete}
     onCancel={cancelDelete}
     tone="danger"
-  >
-    {#if selectedVersion}
-      <p>
-        Version: <Code inline source={`${selectedVersion.sha256?.slice(0, 16) ?? selectedVersion.id}...`} />
-      </p>
-    {/if}
-  </PoodleAlertDialog>
+  />
 
   <PoodleDialog
     bind:open={previewDialogOpen}
