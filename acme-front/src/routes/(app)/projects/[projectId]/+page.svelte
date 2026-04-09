@@ -25,7 +25,6 @@ import {
     FormActions,
     Pill,
     Select,
-    TextArea,
     TextInput
   } from "@poodle/svelte-primitives";
   import Plus from "lucide-svelte/icons/plus";
@@ -287,7 +286,7 @@ import {
           />
         </Field>
         <Field id="front-task-description" label="Description" let:describedBy>
-          <TextArea
+          <TextInput
             id="front-task-description"
             value={newTaskDescription}
             describedBy={describedBy}

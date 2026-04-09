@@ -24,7 +24,6 @@ import {
     Field as PoodleField,
     FormActions as PoodleFormActions,
     Select as PoodleSelect,
-    TextArea as PoodleTextArea,
     TextInput as PoodleTextInput
   } from "@poodle/svelte-primitives";
 
@@ -238,7 +237,7 @@ import {
         label="Description"
         let:describedBy
       >
-        <PoodleTextArea
+        <PoodleTextInput
           id="task-edit-description"
           value={description}
           describedBy={describedBy}

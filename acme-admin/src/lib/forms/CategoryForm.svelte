@@ -12,7 +12,6 @@ import {
   FormActions,
   SplitButton,
   Switch,
-  TextArea,
   TextInput,
   type InputValidationStatus,
   } from "@poodle/svelte-primitives";
@@ -226,7 +225,7 @@ import {
       let:describedBy
       let:validationState={descriptionValidationState}
     >
-      <TextArea
+      <TextInput
         id="category-description"
         name="description"
         value={descriptionValue}

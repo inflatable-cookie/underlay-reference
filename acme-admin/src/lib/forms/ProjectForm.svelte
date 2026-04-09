@@ -11,8 +11,7 @@ import {
   FormActions,
   SplitButton,
   Select,
-  TextInput,
-  TextArea
+  TextInput
   } from "@poodle/svelte-primitives";
     import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
   import { categorySelectionHistory } from "$lib/stores/selection-history";
@@ -222,7 +221,7 @@ import {
       let:describedBy
       let:validationState={descriptionValidationState}
     >
-      <TextArea
+      <TextInput
         id="project-description"
         name="description"
         value={descriptionValue}
