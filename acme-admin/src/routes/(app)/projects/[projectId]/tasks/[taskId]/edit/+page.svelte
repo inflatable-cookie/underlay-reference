@@ -6,7 +6,8 @@ import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
 import {
-  Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  Callout as PoodleCallout,
+  Card as PoodleCard } from "@poodle/svelte-primitives";
   import { PageHeader as PoodlePageHeader,
   PageLoading } from "@poodle/svelte-composites";
   import type { PageData } from "./$types";
@@ -204,10 +205,12 @@ import {
     title="Edit Task"
     backHref={`/projects/${data.projectId}/tasks/${data.taskId}`}
     backLabel={`Back to ${task.title}`}
+    subtitle={`For project: ${project.name}`}
   />
 
   <div class="form-container">
-    <form onsubmit={handleSubmit}>
+    <PoodleCard>
+      <form onsubmit={handleSubmit}>
       {#if error}
         <PoodleCallout tone="danger" message={error} announceMode="polite" />
       {/if}
@@ -323,7 +326,8 @@ import {
           {submitting ? "Saving..." : "Save Changes"}
         </PoodleButton>
       </PoodleFormActions>
-    </form>
+      </form>
+    </PoodleCard>
   </div>
 {:else}
   <PoodleCallout tone="danger" message="Task not found" announceMode="polite" />
