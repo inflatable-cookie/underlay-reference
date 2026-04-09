@@ -530,7 +530,12 @@ import {
 
   <section class="tasks-section">
     <div class="tasks-header">
-      <h2>Tasks</h2>
+      <div class="tasks-heading">
+        <h2>Tasks</h2>
+        <PoodlePill tone="neutral" appearance="badge" size="sm">
+          {tasks.length}
+        </PoodlePill>
+      </div>
       <div class="tasks-header-actions">
         {#if tasks.length > 1 && !isTaskSelectionMode}
           <PoodleButton
@@ -765,6 +770,12 @@ import {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+  }
+
+  .tasks-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .tasks-header h2 {
