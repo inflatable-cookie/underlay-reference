@@ -24,6 +24,6 @@
 
 ## Next Task
 
-Execute `g01.007` as the active post-proof milestone by auditing the retained
-Underlay surface in `acme-admin` and freezing the approved retained boundary
-before downstream app rollouts begin.
+Execute `g01.007` from the strict wrapper around the current ready card
+`001-audit-retained-acme-admin-underlay-surface.md`, then open `g01.008` only
+when the retained-surface owner is honestly closed.

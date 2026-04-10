@@ -51,4 +51,9 @@ Workspace notes:
 
 ## Source of Truth
 
-For reference-app planning and architecture, prefer `acme-docs/`. For shared framework conventions, prefer Underlay docs in `underlay/docs/guides/`. Do not create parallel roadmap or report docs elsewhere in this repo.
+For reference-app planning and architecture, prefer `acme-docs/`. In the
+active strict lane, a bare `continue` should resolve through the previous
+`Next Task` into the current ready card under `acme-docs/specs/` or back into
+planning if no ready card exists. For shared framework conventions, prefer
+Underlay docs in `underlay/docs/guides/`. Do not create parallel roadmap or
+report docs elsewhere in this repo.

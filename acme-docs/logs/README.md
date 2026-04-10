@@ -11,5 +11,5 @@ Logs capture meaningful execution batches for the reference implementation.
 
 ## Next Task
 
-Record the next completed reference-app rollout or docs batch under the current
-month shard and tie it back to the roadmap item it closes or advances.
+Record the next completed `g01.007` batch under the current month shard and
+tie it back to the active strict card or the closeout that replaces it.

@@ -395,7 +395,13 @@ import {
 {#if mediaData.loading}
   <PageLoading presentation="inline" message="Loading media..." />
 {:else if mediaData.error}
-  <PoodleCallout tone="danger" message={mediaData.error} announceMode="polite" />
+  <PoodleCallout tone="danger" title="Unable to load media" message={mediaData.error} announceMode="polite">
+    <svelte:fragment slot="actions">
+      <PoodleButton type="button" variant="ghost" size="sm" onclick={() => mediaData.refetch()}>
+        Retry
+      </PoodleButton>
+    </svelte:fragment>
+  </PoodleCallout>
 {:else if media}
   <div class="underlay-detail-page">
     <div class="underlay-detail-page__header">
@@ -480,7 +486,13 @@ import {
             </PoodleCard>
           {:else if versionsData.error}
             <PoodleCard>
-              <PoodleCallout tone="danger" message={versionsData.error} announceMode="polite" />
+              <PoodleCallout tone="danger" title="Unable to load versions" message={versionsData.error} announceMode="polite">
+                <svelte:fragment slot="actions">
+                  <PoodleButton type="button" variant="ghost" size="sm" onclick={() => versionsData.refetch()}>
+                    Retry
+                  </PoodleButton>
+                </svelte:fragment>
+              </PoodleCallout>
             </PoodleCard>
           {:else}
             <InlineListSection
@@ -610,7 +622,13 @@ import {
           {#if activeTab === "usage" && usagesData.loading}
             <PageLoading presentation="inline" message="Loading usage..." />
           {:else if usagesData.error}
-            <PoodleCallout tone="danger" message={usagesData.error} announceMode="polite" />
+            <PoodleCallout tone="danger" title="Unable to load usage" message={usagesData.error} announceMode="polite">
+              <svelte:fragment slot="actions">
+                <PoodleButton type="button" variant="ghost" size="sm" onclick={() => usagesData.refetch()}>
+                  Retry
+                </PoodleButton>
+              </svelte:fragment>
+            </PoodleCallout>
           {:else if usages.length === 0}
             <PoodleEmptyState title="No usage found" message="This media is not used anywhere yet." size="compact" />
           {:else}

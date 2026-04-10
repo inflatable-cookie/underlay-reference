@@ -21,6 +21,8 @@ Reference-app planning and architecture live in `acme-docs/`.
 - Start with `acme-docs/README.md`
 - Use `acme-docs/vision/001-acme-reference-implementation-vision.md` for the long-term role of the repo
 - Use `acme-docs/architecture/000-overview.md` for the package map and system layout
+- Use `acme-docs/architecture/product-guardrails.md` for the active retained-surface guardrails
+- Use `acme-docs/policy/001-working-rules.md` for the active strict execution rules
 - Use `acme-docs/processes/210-reference-implementation-notes.md` for implementation notes and validation commands
 
 `AGENTS.md` files in this repository are intentionally kept lean and point back to that docs authority.

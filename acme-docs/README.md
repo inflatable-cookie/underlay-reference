@@ -5,6 +5,9 @@ Northstar-aligned documentation authority for the Underlay reference implementat
 Use this repo section for four things:
 - `vision/` for the long-term purpose of the reference app
 - `architecture/` for structural and technical decisions
+- `policy/` for compact execution and authority rules
+- `specs/` for active strict-lane execution wrappers when a milestone needs
+  tighter control
 - `roadmaps/` for executable work queues
 - `logs/` for timestamped execution history tied to roadmap work
 
@@ -12,7 +15,9 @@ Use this repo section for four things:
 
 - `vision/`
 - `architecture/`
+- `policy/`
 - `processes/`
+- `specs/`
 - `roadmaps/`
 - `logs/`
 
@@ -53,12 +58,15 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 
 - Start with [vision/001-acme-reference-implementation-vision.md](vision/001-acme-reference-implementation-vision.md).
 - Use [architecture/000-overview.md](architecture/000-overview.md) for the package map and system layout.
+- Use [architecture/product-guardrails.md](architecture/product-guardrails.md) for the current retained-surface guardrails.
+- Use [policy/001-working-rules.md](policy/001-working-rules.md) for the active strict execution contract.
+- Use [specs/README.md](specs/README.md) for the current ready-card surface.
 - Read [processes/210-reference-implementation-notes.md](processes/210-reference-implementation-notes.md) for implementation notes and validation commands.
 - Track active execution in [roadmaps/README.md](roadmaps/README.md).
 - Record meaningful work batches in [logs/README.md](logs/README.md).
 
 ## Next Task
 
-Use `effigy acme-docs/qa:docs` and `effigy acme-docs/qa:northstar` as the
-default docs baseline on the next reference-app docs batch, then keep rollout
-audits layered on top of that native surface.
+Execute `001-audit-retained-acme-admin-underlay-surface.md` as the active ready
+card for `g01.007`, then keep `effigy acme-docs/qa:docs` and
+`effigy acme-docs/qa:northstar` as the default docs validation baseline.

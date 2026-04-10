@@ -1,5 +1,11 @@
 # g01.007 Retained Underlay Surface Formalization
 
+Status: active
+Owner: repo maintainers
+Updated: 2026-04-10
+Governing refs: `acme-docs/architecture/product-guardrails.md`, `acme-docs/policy/001-working-rules.md`, `acme-docs/specs/001-retained-underlay-surface-strict-lane.md`
+Planning state: ready
+
 ## Goal
 
 Turn the completed Poodle coexistence proof into an explicit retained-Underlay contract for the reference implementation so downstream app rollouts do not have to rediscover the boundary route by route.
@@ -36,4 +42,7 @@ Turn the completed Poodle coexistence proof into an explicit retained-Underlay c
 
 ## Next
 
-Execute `g01.007` by auditing the retained Underlay surface in `acme-admin`, then write the contract artifact that freezes what still belongs to Underlay after the Poodle migration proof and what should only remain as future review candidates.
+Execute `001-audit-retained-acme-admin-underlay-surface.md` as the active ready
+card, then write the contract artifact that freezes what still belongs to
+Underlay after the Poodle migration proof and what should only remain as future
+review candidates.

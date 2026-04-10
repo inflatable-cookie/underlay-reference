@@ -29,5 +29,5 @@ Roadmaps hold executable work for the reference implementation.
 
 ## Next Task
 
-Execute `g01.007` as the active next milestone after the completed coexistence
-proof.
+Execute `g01.007` from the strict wrapper around the current ready card
+`001-audit-retained-acme-admin-underlay-surface.md`.
