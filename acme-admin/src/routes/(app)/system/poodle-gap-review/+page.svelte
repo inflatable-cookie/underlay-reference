@@ -7,10 +7,10 @@ import {
     Card as PoodleCard,
     Field as PoodleField,
     Pill as PoodlePill,
-    SearchField as PoodleSearchField,
+    TextInput as PoodleSearchField,
     Select as PoodleSelect
-  } from "@poodle/svelte-primitives";
-  import { ListContainer as PoodleListContainer, PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
+  } from "@poodle/svelte";
+  import { ListContainer as PoodleListContainer, PageHeader as PoodlePageHeader } from "@poodle/svelte";
   import Activity from "lucide-svelte/icons/activity";
   import Layers from "lucide-svelte/icons/layers";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
@@ -205,7 +205,7 @@ import {
       <svelte:fragment slot="filters">
         <div class="review-filters">
           <PoodleField id="review-list-search" label="Search" let:describedBy>
-            <PoodleSearchField
+            <PoodleSearchField type="search"
               id="review-list-search"
               value={listQuery}
               describedBy={describedBy}
@@ -268,7 +268,7 @@ import {
 
     <div class="review-inline-filter">
       <PoodleField id="review-grid-search" label="Queue filter" let:describedBy>
-        <PoodleSearchField
+        <PoodleSearchField type="search"
           id="review-grid-search"
           value={gridQuery}
           describedBy={describedBy}

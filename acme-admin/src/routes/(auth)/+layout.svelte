@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Card } from "@poodle/svelte-primitives";
+	import { Card } from "@poodle/svelte";
 
 	let { children } = $props();
 </script>

@@ -8,13 +8,13 @@ import {
 import {
   Callout as PoodleCallout,
   Grid as PoodleGrid,
-  ListCard as PoodleListCard } from "@poodle/svelte-primitives";
+  ListCard as PoodleListCard } from "@poodle/svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
     import {
     FilterToolbar,
     ListContainer
-  } from "@poodle/svelte-composites";
+  } from "@poodle/svelte";
   import {
     Field as PoodleField,
     IconButton as PoodleIconButton,
@@ -22,7 +22,7 @@ import {
     Select as PoodleSelect,
     TimeAgo,
     type MenuItem
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import Calendar from "lucide-svelte/icons/calendar";
   import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";

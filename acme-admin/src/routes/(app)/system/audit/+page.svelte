@@ -8,7 +8,7 @@ import {
   type LogActor,
   type LogEntry,
   type LogFilter
-  } from "@poodle/svelte-composites";
+  } from "@poodle/svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
     import { adminCommands } from "@api-client";

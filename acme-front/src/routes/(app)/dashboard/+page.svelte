@@ -20,8 +20,8 @@ import {
     Grid,
     ListCard,
     TextInput
-  } from "@poodle/svelte-primitives";
-  import { FormDialog, PageLoading } from "@poodle/svelte-composites";
+  } from "@poodle/svelte";
+  import { FormDialog, PageLoading } from "@poodle/svelte";
   import Plus from "lucide-svelte/icons/plus";
   import FolderOpen from "lucide-svelte/icons/folder-open";
 

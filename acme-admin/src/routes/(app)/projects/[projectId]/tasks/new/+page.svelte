@@ -7,9 +7,9 @@ import {
 } from "@decodelabs/underlay/runtime/auth";
 import {
   Callout as PoodleCallout,
-  Card as PoodleCard } from "@poodle/svelte-primitives";
+  Card as PoodleCard } from "@poodle/svelte";
   import { PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands,
@@ -23,7 +23,7 @@ import {
     FormActions as PoodleFormActions,
     Select as PoodleSelect,
     TextInput as PoodleTextInput
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
 
   interface Props {
     data: PageData;

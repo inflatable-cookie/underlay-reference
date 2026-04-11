@@ -14,17 +14,17 @@ import {
   DetailItem as PoodleDetailItem,
   Menu as PoodleMenu,
   type MenuItem
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { DetailSection as PoodleDetailSection,
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands,
   type Category } from "@api-client";
   import { copyToClipboard } from "@decodelabs/underlay/runtime/feedback";
   import { auth } from "$lib/stores/auth";
-    import { MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill, TimeAgo } from "@poodle/svelte-primitives";
+    import { MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill, TimeAgo } from "@poodle/svelte";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
 
   interface Props {

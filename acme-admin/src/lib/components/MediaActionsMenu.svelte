@@ -11,7 +11,7 @@ import {
   Button,
   Menu,
   type MenuItem
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import type { Snippet } from "svelte";
     import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { goto } from "$app/navigation";

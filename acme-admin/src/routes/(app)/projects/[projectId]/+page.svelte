@@ -22,12 +22,12 @@ import {
   OrderBy as PoodleOrderBy,
   type BulkAction,
   type OrderByValue
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { DetailSection as PoodleDetailSection,
   FilterToolbar,
   PageHeader as PoodlePageHeader,
   PageLoading,
-  ReorderableList as PoodleReorderableList } from "@poodle/svelte-composites";
+  EditableList as PoodleReorderableList } from "@poodle/svelte";
   import type { PageData } from "./$types";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
@@ -37,15 +37,15 @@ import {
   TaskStatus,
   TaskPriority } from "@api-client";
   import { auth } from "$lib/stores/auth";
-    import { Progress } from "@poodle/svelte-primitives";
-  import { TimeAgo } from "@poodle/svelte-primitives";
+    import { Progress } from "@poodle/svelte";
+  import { TimeAgo } from "@poodle/svelte";
   import {
     Button as PoodleButton,
     Code as PoodleCode,
     Field as PoodleField,
     Pill as PoodlePill,
     Select as PoodleSelect
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { parseQueryParams } from "@decodelabs/underlay/client/query";
   import { recoverReorderConflict } from "$lib/lists/reorder-conflicts";

@@ -10,19 +10,19 @@ import {
 } from "@decodelabs/underlay/runtime/feedback";
 import {
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import { Callout as PoodleCallout,
   FileUpload,
   Progress,
   formatFileSize,
-  type FileUploadItem } from "@poodle/svelte-primitives";
+  type FileUploadItem } from "@poodle/svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { mediaCommands } from "@api-client";
   import { auth,
   authLoading,
   currentUser } from "$lib/stores/auth";
-    import { Button as PoodleButton } from "@poodle/svelte-primitives";
+    import { Button as PoodleButton } from "@poodle/svelte";
   import Upload from "lucide-svelte/icons/upload";
   import AlertCircle from "lucide-svelte/icons/alert-circle";
   import CheckCircle from "lucide-svelte/icons/check-circle";

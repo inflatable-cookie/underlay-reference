@@ -18,10 +18,10 @@ import {
   type TableFilters,
   type TablePagination,
   type TableRow,
-  type TableRowAction } from "@poodle/svelte-composites";
+  type TableRowAction } from "@poodle/svelte";
 	import { IconButton as PoodleIconButton,
   Pill as PoodlePill,
-  formatDisplayDate } from "@poodle/svelte-primitives";
+  formatDisplayDate } from "@poodle/svelte";
 		import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
 	import Plus from "lucide-svelte/icons/plus";
 	import { auth } from "$lib/stores/auth";

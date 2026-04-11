@@ -11,10 +11,10 @@ import {
   Card as PoodleCard,
   Code as PoodleCode,
   DetailItem as PoodleDetailItem
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { DetailSection as PoodleDetailSection,
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands,
@@ -22,8 +22,8 @@ import {
   type Label,
   type Project } from "@api-client";
   import { auth } from "$lib/stores/auth";
-    import { TimeAgo } from "@poodle/svelte-primitives";
-  import { Button as PoodleButton, MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill } from "@poodle/svelte-primitives";
+    import { TimeAgo } from "@poodle/svelte";
+  import { Button as PoodleButton, MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill } from "@poodle/svelte";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { getTaskStatusTone, getTaskPriorityTone } from "$lib/utils/accents";
   import Pencil from "lucide-svelte/icons/pencil";

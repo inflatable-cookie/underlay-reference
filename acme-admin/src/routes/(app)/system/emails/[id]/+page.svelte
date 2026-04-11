@@ -20,13 +20,13 @@ import {
   formatDisplayDateTime,
   type MenuItem,
   type TabItem
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { DetailSection as PoodleDetailSection,
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-    import { Pill as PoodlePill } from "@poodle/svelte-primitives";
+    import { Pill as PoodlePill } from "@poodle/svelte";
   import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import type { CapturedEmailDetail } from "@api-client";

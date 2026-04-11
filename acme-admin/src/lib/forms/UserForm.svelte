@@ -8,7 +8,7 @@
     Select,
     Switch,
     TextInput
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
   import { untrack } from "svelte";
 

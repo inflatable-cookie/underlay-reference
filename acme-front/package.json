@@ -28,8 +28,7 @@
 	},
 	"dependencies": {
 		"@decodelabs/underlay": "file:../underlay",
-		"@poodle/svelte-composites": "file:../../poodle/packages/svelte/composites",
-		"@poodle/svelte-primitives": "file:../../poodle/packages/svelte/primitives",
+		"@poodle/svelte": "file:../../poodle/packages/svelte/components",
 		"@poodle/svelte-tokens": "file:../../poodle/packages/svelte/tokens",
 		"acme-client": "file:../acme-client"
 	}

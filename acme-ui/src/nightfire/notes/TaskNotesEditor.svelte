@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MarkdownEditor } from "@poodle/svelte-composites";
+  import { MarkdownEditor } from "@poodle/svelte";
 
   type TaskNotesBlock = {
     type: string;

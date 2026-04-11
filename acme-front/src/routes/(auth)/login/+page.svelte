@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { auth } from "$lib/stores/auth";
-  import { Button, Callout, Field, TextInput } from "@poodle/svelte-primitives";
+  import { Button, Callout, Field, TextInput } from "@poodle/svelte";
 
   let email = $state("");
   let password = $state("");

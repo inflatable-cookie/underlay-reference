@@ -15,7 +15,7 @@ import {
   UserTask } from "@api-client/commands/user-commands.js";
   import { FormDialog,
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import type { PageData } from "./$types";
     import {
     AlertDialog,
@@ -26,7 +26,7 @@ import {
     Pill,
     Select,
     TextInput
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import Trash2 from "lucide-svelte/icons/trash-2";

@@ -13,13 +13,13 @@ import {
   EmptyState as PoodleEmptyState,
   MediaThumbnail as PoodleMediaThumbnail,
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import { AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
   ListCard as PoodleListCard,
   ListGrid,
-  formatFileSize } from "@poodle/svelte-primitives";
-    import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte-primitives";
+  formatFileSize } from "@poodle/svelte";
+    import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte";
   import { mediaCommands, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";

@@ -13,21 +13,21 @@ import {
   FilterToolbar,
   PageHeader as PoodlePageHeader,
   PageLoading,
-  ReorderableList as PoodleReorderableList } from "@poodle/svelte-composites";
+  EditableList as PoodleReorderableList } from "@poodle/svelte";
   import { Callout as PoodleCallout,
   Grid as PoodleGrid,
   ListCard as PoodleListCard,
   OrderBy as PoodleOrderBy,
-  type OrderByValue } from "@poodle/svelte-primitives";
+  type OrderByValue } from "@poodle/svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
     import {
     Button as PoodleButton,
     Field as PoodleField,
     IconButton as PoodleIconButton,
-    SearchField as PoodleSearchField,
+    TextInput as PoodleSearchField,
     Select as PoodleSelect
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { parseQueryParams } from "@decodelabs/underlay/client/query";
   import { CategoryListCard } from "$lib/cards";
@@ -282,7 +282,7 @@ import {
       </PoodleButton>
     </svelte:fragment>
     <PoodleField id="categories-filter-name" label="Name" let:describedBy>
-      <PoodleSearchField
+      <PoodleSearchField type="search"
         id="categories-filter-name"
         value={nameFilterInput}
         describedBy={describedBy}

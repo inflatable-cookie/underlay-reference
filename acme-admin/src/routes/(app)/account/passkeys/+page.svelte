@@ -10,9 +10,9 @@ import {
   FormActions as PoodleFormActions,
   TextInput as PoodleTextInput,
   TimeAgo
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { tick } from "svelte";
-  import { PageLoading } from "@poodle/svelte-composites";
+  import { PageLoading } from "@poodle/svelte";
   import { authCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
     import { toPublicKeyCreationOptions, credentialCreationToJson } from "@decodelabs/underlay/utils/webauthn";

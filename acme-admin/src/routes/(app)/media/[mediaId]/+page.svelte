@@ -22,7 +22,7 @@ import {
   InlineListSection,
   PageHeader as PoodlePageHeader,
   PageLoading
-  } from "@poodle/svelte-composites";
+  } from "@poodle/svelte";
   import {
     AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
@@ -32,7 +32,7 @@ import {
   MetaItem as PoodleMetaItem,
   Tabs,
   formatFileSize
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { env } from "$env/dynamic/public";
@@ -47,7 +47,7 @@ import {
     Select as PoodleSelect,
     TextInput as PoodleTextInput,
     TimeAgo
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import {
     mediaCommands,
     type MediaDetail,

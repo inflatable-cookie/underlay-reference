@@ -12,19 +12,19 @@ import {
   ListCard as PoodleListCard,
   Menu as PoodleMenu,
   formatDisplayDateTime,
-  type MenuItem } from "@poodle/svelte-primitives";
+  type MenuItem } from "@poodle/svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
     import {
     FilterToolbar,
     ListContainer
-  } from "@poodle/svelte-composites";
+  } from "@poodle/svelte";
   import {
     Button as PoodleButton,
     Field as PoodleField,
     IconButton as PoodleIconButton,
     TextInput as PoodleTextInput
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import Mail from "lucide-svelte/icons/mail";
   import Filter from "lucide-svelte/icons/filter";
   import { adminCommands } from "@api-client";

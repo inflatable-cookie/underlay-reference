@@ -6,8 +6,8 @@ import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
 import {
-  PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  PageHeader as PoodlePageHeader } from "@poodle/svelte";
+  import { Callout as PoodleCallout } from "@poodle/svelte";
   import { goto } from "$app/navigation";
   import { adminCommands,
   type JobSummary,
@@ -19,7 +19,7 @@ import {
         DataTable,
     type TableColumn,
     type TableRow
-  } from "@poodle/svelte-composites";
+  } from "@poodle/svelte";
   import {
     Button as PoodleButton,
     Card as PoodleCard,
@@ -29,8 +29,8 @@ import {
     Pill as PoodlePill,
     Select as PoodleSelect,
     TimeAgo
-  } from "@poodle/svelte-primitives";
-  import type { MenuItem } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
+  import type { MenuItem } from "@poodle/svelte";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import Clock from "lucide-svelte/icons/clock";
   import Play from "lucide-svelte/icons/play";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { TextInput } from "@poodle/svelte-primitives";
+  import { TextInput } from "@poodle/svelte";
 
   type ChecklistItem = {
     text: string;

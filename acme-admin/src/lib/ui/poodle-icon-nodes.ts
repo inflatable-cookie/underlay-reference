@@ -1,4 +1,4 @@
-import type { IconNodes } from "@poodle/svelte-primitives";
+import type { IconNodes } from "@poodle/svelte";
 
 export const arrowUpDownIcon: IconNodes = [
   ["path", { d: "m21 16-4 4-4-4" }],

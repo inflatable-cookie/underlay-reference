@@ -9,8 +9,8 @@ import {
   Callout as PoodleCallout,
   Card as PoodleCard,
   FormActions as PoodleFormActions
-  } from "@poodle/svelte-primitives";
-  import { PageLoading } from "@poodle/svelte-composites";
+  } from "@poodle/svelte";
+  import { PageLoading } from "@poodle/svelte";
   import { authCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
   

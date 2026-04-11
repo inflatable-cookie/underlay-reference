@@ -4,7 +4,7 @@
 	import {
 		AlertDialog as PoodleAlertDialog,
 		Popover as PoodlePopover
-	} from "@poodle/svelte-primitives";
+	} from "@poodle/svelte";
 	import { auth } from "$lib/stores/auth";
 	import type { LoginUser } from "@api-client";
 

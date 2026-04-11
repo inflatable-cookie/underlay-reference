@@ -8,15 +8,15 @@ import {
 import {
   Callout as PoodleCallout,
   CodeInput as PoodleCodeInput
-} from "@poodle/svelte-primitives";
-import { PageLoading } from "@poodle/svelte-composites";
+} from "@poodle/svelte";
+import { PageLoading } from "@poodle/svelte";
 import {
   Button as PoodleButton,
   Card as PoodleCard,
   Field as PoodleField,
   FormActions as PoodleFormActions,
   TextInput as PoodleTextInput
-} from "@poodle/svelte-primitives";
+} from "@poodle/svelte";
 import { authCommands } from "@api-client";
 import { auth } from "$lib/stores/auth";
 

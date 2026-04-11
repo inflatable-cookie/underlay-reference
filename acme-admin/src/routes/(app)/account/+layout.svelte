@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { Tabs, type TabItem } from "@poodle/svelte-primitives";
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte";
+  import { Tabs, type TabItem } from "@poodle/svelte";
 
   let { children } = $props();
 

@@ -3,7 +3,7 @@
 	import { goto } from "$app/navigation";
 	import { auth, currentUser } from "$lib/stores/auth";
 	import * as healthCommands from "@api-client/commands/health-commands.js";
-	import { Button } from "@poodle/svelte-primitives";
+	import { Button } from "@poodle/svelte";
 
 	let healthStatus = $state<string | null>(null);
 

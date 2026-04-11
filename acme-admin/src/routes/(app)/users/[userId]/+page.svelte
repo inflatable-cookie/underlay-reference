@@ -19,11 +19,11 @@ import {
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem,
   Tabs
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { DetailSection as PoodleDetailSection,
   FormDialog,
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import { goto } from "$app/navigation";
   import {
     Button as PoodleButton,
@@ -34,11 +34,11 @@ import {
   Pill as PoodlePill,
   Select as PoodleSelect,
   type MenuItem
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { DataTable,
   type TableColumn,
   type TableRow,
-  type TableRowAction } from "@poodle/svelte-composites";
+  type TableRowAction } from "@poodle/svelte";
     import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import {
     adminCommands,

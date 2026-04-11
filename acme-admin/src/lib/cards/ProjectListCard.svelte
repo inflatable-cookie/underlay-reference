@@ -5,8 +5,8 @@
     ListCard as PoodleListCard,
     Menu as PoodleMenu,
     Pill as PoodlePill
-  } from "@poodle/svelte-primitives";
-  import type { MenuItem } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
+  import type { MenuItem } from "@poodle/svelte";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import type { ProjectWithCounts } from "@api-client";
   import Briefcase from "lucide-svelte/icons/briefcase";

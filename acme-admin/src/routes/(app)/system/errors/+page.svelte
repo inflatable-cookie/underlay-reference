@@ -8,16 +8,16 @@ import {
 import {
   DataTable,
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import type { TableColumn,
-  TableRow } from "@poodle/svelte-composites";
-  import { Callout as PoodleCallout } from "@poodle/svelte-primitives";
+  TableRow } from "@poodle/svelte";
+  import { Callout as PoodleCallout } from "@poodle/svelte";
   import { adminCommands,
   type ErrorLogSummary,
   type ErrorLogStats,
   type ErrorLogDetail } from "@api-client";
   import { auth } from "$lib/stores/auth";
-    import { TimeAgo } from "@poodle/svelte-primitives";
+    import { TimeAgo } from "@poodle/svelte";
   import {
     Button as PoodleButton,
     Card as PoodleCard,
@@ -25,7 +25,7 @@ import {
     Pill as PoodlePill,
     Select as PoodleSelect,
     formatDisplayDateTime
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import AlertCircle from "lucide-svelte/icons/alert-circle";

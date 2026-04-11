@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte-composites";
-  import { Grid, NavCard as PoodleNavCard } from "@poodle/svelte-primitives";
+  import { PageHeader as PoodlePageHeader } from "@poodle/svelte";
+  import { Grid, NavCard as PoodleNavCard } from "@poodle/svelte";
   import { getSystemCardAccent } from "$lib/utils/accents";
   import AlertTriangle from "lucide-svelte/icons/alert-triangle";
   import Calendar from "lucide-svelte/icons/calendar";

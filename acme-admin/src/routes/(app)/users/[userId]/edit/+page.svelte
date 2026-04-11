@@ -11,7 +11,7 @@ import {
   Callout as PoodleCallout,
   Code,
   MetaBar as PoodleMetaBar,
-  MetaItem as PoodleMetaItem } from "@poodle/svelte-primitives";
+  MetaItem as PoodleMetaItem } from "@poodle/svelte";
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
@@ -23,7 +23,7 @@ import {
   import { extractApiError,
   isPreconditionFailed } from "$lib/utils/api-errors";
   import UserForm from "$lib/forms/UserForm.svelte";
-    import { PageLoading } from "@poodle/svelte-composites";
+    import { PageLoading } from "@poodle/svelte";
 
   interface Props {
     data: PageData;

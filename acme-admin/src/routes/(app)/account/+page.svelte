@@ -8,9 +8,9 @@ import {
 import {
   Callout as PoodleCallout,
   DetailItem as PoodleDetailItem
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { FormDialog,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import {
     Button as PoodleButton,
   Card as PoodleCard,
@@ -20,7 +20,7 @@ import {
   Select as PoodleSelect,
   Switch as PoodleSwitch,
   TextInput as PoodleTextInput
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { accountCommands,
   type UserProfile,
   type UserProfileUpdate } from "@api-client";

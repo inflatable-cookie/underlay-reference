@@ -7,10 +7,10 @@ import {
 } from "@decodelabs/underlay/runtime/feedback";
 import {
   Callout as PoodleCallout,
-  Tabs } from "@poodle/svelte-primitives";
+  Tabs } from "@poodle/svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-    import { DataTable, PageHeader as PoodlePageHeader, PageLoading, type TableColumn, type TableRow } from "@poodle/svelte-composites";
+    import { DataTable, PageHeader as PoodlePageHeader, PageLoading, type TableColumn, type TableRow } from "@poodle/svelte";
   import {
     Card as PoodleCard,
     Code as PoodleCode,
@@ -21,8 +21,8 @@ import {
     Pill as PoodlePill,
     TimeAgo,
     formatDisplayDateTime
-  } from "@poodle/svelte-primitives";
-  import type { MenuItem } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
+  import type { MenuItem } from "@poodle/svelte";
   import { adminCommands } from "@api-client";
   import { auth, authLoading, currentUser } from "$lib/stores/auth";
   import type { ScheduledTaskDetail, JobSummary } from "@api-client";

@@ -8,10 +8,10 @@ import {
 import {
   Callout as PoodleCallout,
   DetailItem as PoodleDetailItem
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import { DetailSection as PoodleDetailSection,
   PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte-composites";
+  PageLoading } from "@poodle/svelte";
   import { page } from "$app/stores";
     import {
     Button as PoodleButton,
@@ -22,7 +22,7 @@ import {
     MetaBar as PoodleMetaBar,
     MetaItem as PoodleMetaItem,
     Pill as PoodlePill
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Ban from "lucide-svelte/icons/ban";

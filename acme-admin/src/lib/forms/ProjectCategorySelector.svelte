@@ -13,8 +13,7 @@ import {
     Button,
   Callout,
   Dialog,
-  SearchField
-  } from "@poodle/svelte-primitives";
+  TextInput } from "@poodle/svelte";
   import CategoryForm from "./CategoryForm.svelte";
 
   interface Props {
@@ -296,7 +295,7 @@ import {
   {:else}
     <div class="project-category-selector__body">
       <div class="project-category-selector__toolbar">
-        <SearchField
+        <TextInput type="search"
           id="project-category-search"
           value={searchQuery}
           placeholder="Search categories..."

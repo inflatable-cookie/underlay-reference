@@ -12,7 +12,7 @@ import {
   SplitButton,
   Select,
   TextInput
-  } from "@poodle/svelte-primitives";
+  } from "@poodle/svelte";
     import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
   import { categorySelectionHistory } from "$lib/stores/selection-history";
   import { untrack } from "svelte";
