@@ -57,3 +57,9 @@ active strict lane, a bare `continue` should resolve through the previous
 planning if no ready card exists. For shared framework conventions, prefer
 Underlay docs in `underlay/docs/guides/`. Do not create parallel roadmap or
 report docs elsewhere in this repo.
+
+## Internal Writing Style
+
+Use the repo-local style reference for internal work and normal replies:
+
+- `acme-docs/policy/internal-writing-style.md`

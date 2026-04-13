@@ -39,3 +39,9 @@ Use `../acme-docs/` as the reference-app docs authority. Do not create package-l
 - `../underlay/docs/guides/050-database.md`
 - `../underlay/docs/guides/055-background-jobs.md`
 - `../underlay/docs/guides/070-api-handlers.md`
+
+## Internal Writing Style
+
+Use the repo-local style reference for internal work and normal replies:
+
+- `../acme-docs/policy/internal-writing-style.md`

@@ -40,3 +40,9 @@ Repo notes:
 - `processes/210-reference-implementation-notes.md`
 - `roadmaps/README.md`
 - `logs/README.md`
+
+## Internal Writing Style
+
+Use the repo-local style reference for internal work and normal replies:
+
+- `policy/internal-writing-style.md`
