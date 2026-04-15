@@ -12,7 +12,7 @@ Opened `g01.007` as the next post-proof milestone after the completion of `g01.0
 
 ## What changed
 
-- Added [g01.007 Retained Underlay Surface Formalization](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/g01/007-retained-underlay-surface-formalization.md) as the next active roadmap.
+- Added [g01.007 Retained Underlay Surface Formalization](~/Dev/projects/underlay-reference/acme-docs/roadmaps/g01/007-retained-underlay-surface-formalization.md) as the next active roadmap.
 - Moved the roadmap spine out of coexistence-proof execution mode and into retained-surface contract definition.
 - Updated the roadmap indexes so the next operator sees one active milestone rather than a completed proof plus an open-ended suggestion list.
 
@@ -24,4 +24,4 @@ Opened `g01.007` as the next post-proof milestone after the completion of `g01.0
 
 ## Next Task
 
-Execute [g01.007 Retained Underlay Surface Formalization](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/g01/007-retained-underlay-surface-formalization.md) by auditing the retained Underlay surface in `acme-admin` and writing the contract artifact that distinguishes intentionally retained surfaces from future Poodle review candidates.
+Execute [g01.007 Retained Underlay Surface Formalization](~/Dev/projects/underlay-reference/acme-docs/roadmaps/g01/007-retained-underlay-surface-formalization.md) by auditing the retained Underlay surface in `acme-admin` and writing the contract artifact that distinguishes intentionally retained surfaces from future Poodle review candidates.

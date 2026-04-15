@@ -1,5 +1,3 @@
-node_modules/
-dist/
 .claude/settings.local.json
 .effigy/
 .DS_Store

@@ -17,9 +17,9 @@ Roadmaps hold executable work for the reference implementation.
 
 ## Index
 
-- [generation-index.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/generation-index.md)
-- [g01/README.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/g01/README.md)
-- [backlog/README.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/backlog/README.md)
+- [generation-index.md](~/Dev/projects/underlay-reference/acme-docs/roadmaps/generation-index.md)
+- [g01/README.md](~/Dev/projects/underlay-reference/acme-docs/roadmaps/g01/README.md)
+- [backlog/README.md](~/Dev/projects/underlay-reference/acme-docs/roadmaps/backlog/README.md)
 
 ## Historical language boundary
 

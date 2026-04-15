@@ -16,9 +16,9 @@ implementation.
 
 ## Validation
 
-- `git -C /Users/betterthanclay/Dev/projects/underlay-reference diff --check`
-- `effigy acme-docs/qa:docs --repo /Users/betterthanclay/Dev/projects/underlay-reference`
-- `effigy acme-docs/qa:northstar --repo /Users/betterthanclay/Dev/projects/underlay-reference`
+- `git -C ~/Dev/projects/underlay-reference diff --check`
+- `effigy acme-docs/qa:docs --repo ~/Dev/projects/underlay-reference`
+- `effigy acme-docs/qa:northstar --repo ~/Dev/projects/underlay-reference`
 
 ## Next Task
 

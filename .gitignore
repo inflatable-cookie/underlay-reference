@@ -27,3 +27,4 @@ bun.lockb
 # Logs
 *.log
 .effigy/
+.claude/settings.local.json

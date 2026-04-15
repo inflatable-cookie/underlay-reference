@@ -12,9 +12,9 @@ The shared `CategoryForm` and `ProjectForm` surfaces now use direct Poodle primi
 
 ## What changed
 
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/CategoryForm.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/CategoryForm.svelte) now uses Poodle `Field`, `FieldSet`, `TextInput`, `TextArea`, `ColorPicker`, `Switch`, `Button`, `FormActions`, and `SplitButton` directly.
+- [~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/CategoryForm.svelte](~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/CategoryForm.svelte) now uses Poodle `Field`, `FieldSet`, `TextInput`, `TextArea`, `ColorPicker`, `Switch`, `Button`, `FormActions`, and `SplitButton` directly.
 - The category form no longer depends on Underlay `FieldSetGrid`, `FormValidationProvider`, `SaveSplitButton`, or `TextButton`; validity and save-intent handling now live explicitly in local form logic.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/ProjectForm.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/ProjectForm.svelte) now uses Poodle `Field`, `FieldSet`, `TextInput`, `TextArea`, `Select`, `Button`, `FormActions`, and `SplitButton` directly.
+- [~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/ProjectForm.svelte](~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/ProjectForm.svelte) now uses Poodle `Field`, `FieldSet`, `TextInput`, `TextArea`, `Select`, `Button`, `FormActions`, and `SplitButton` directly.
 - The inline category-create affordance inside `ProjectForm` also now uses Poodle buttons, so the shared form surface is consistent even when the retained Underlay `RelationSelector` opens its embedded create flow.
 
 ## Coexistence notes
@@ -31,4 +31,4 @@ The shared `CategoryForm` and `ProjectForm` surfaces now use direct Poodle primi
 
 ## Next Task
 
-Take the next account-security migration batch in `acme-admin`: replace the remaining Underlay `Field`, `TextInput`, `FormActions`, and adjacent simple action controls in [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/2fa/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/2fa/+page.svelte) and [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/passkeys/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/passkeys/+page.svelte), while keeping the surrounding workflows and route shells stable.
+Take the next account-security migration batch in `acme-admin`: replace the remaining Underlay `Field`, `TextInput`, `FormActions`, and adjacent simple action controls in [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/2fa/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/2fa/+page.svelte) and [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/passkeys/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/passkeys/+page.svelte), while keeping the surrounding workflows and route shells stable.

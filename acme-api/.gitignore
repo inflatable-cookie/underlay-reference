@@ -7,3 +7,6 @@ node_modules/
 config/local.*
 config/*.local.*
 !config/local.toml.example
+.claude/settings.local.json
+.effigy/
+.DS_Store

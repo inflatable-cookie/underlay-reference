@@ -12,8 +12,8 @@ The remaining account security controls in `2fa` and `passkeys` now use direct P
 
 ## What changed
 
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/2fa/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/2fa/+page.svelte) now uses Poodle `Button` and `FormActions` for enable/disable/setup actions instead of the Underlay equivalents.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/passkeys/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/passkeys/+page.svelte) now uses Poodle `Field`, `TextInput`, `Button`, and `FormActions` for rename, create-name, and add-passkey controls.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/2fa/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/2fa/+page.svelte) now uses Poodle `Button` and `FormActions` for enable/disable/setup actions instead of the Underlay equivalents.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/passkeys/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/passkeys/+page.svelte) now uses Poodle `Field`, `TextInput`, `Button`, and `FormActions` for rename, create-name, and add-passkey controls.
 - The passkey naming dialog no longer depends on the old Underlay input ref API; it now focuses the Poodle input by DOM id after the retained Underlay `AlertDialog` opens.
 - The rename and delete actions now use explicit Poodle button treatments, including smaller ghost actions for row-level controls and a danger tone for delete.
 
@@ -31,4 +31,4 @@ The remaining account security controls in `2fa` and `passkeys` now use direct P
 
 ## Next Task
 
-Take the next task-form migration batch in `acme-admin`: replace the remaining Underlay `Field`, `TextInput`, `TextArea`, and `Select` usage in [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/new/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/new/+page.svelte) and [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/edit/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/edit/+page.svelte), while keeping route-level orchestration and command wiring stable.
+Take the next task-form migration batch in `acme-admin`: replace the remaining Underlay `Field`, `TextInput`, `TextArea`, and `Select` usage in [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/new/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/new/+page.svelte) and [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/edit/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/edit/+page.svelte), while keeping route-level orchestration and command wiring stable.

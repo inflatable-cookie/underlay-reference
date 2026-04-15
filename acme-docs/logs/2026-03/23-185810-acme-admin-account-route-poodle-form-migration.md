@@ -12,9 +12,9 @@ The `account` route family now uses direct Poodle form primitives for its editab
 
 ## What changed
 
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/+page.svelte) now uses Poodle `Field`, `FieldSet`, `TextInput`, `Select`, `Switch`, `Button`, and `FormActions` inside the profile-edit dialog instead of the equivalent Underlay form primitives.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/+page.svelte) now uses Poodle `Field`, `FieldSet`, `TextInput`, `Select`, `Switch`, `Button`, and `FormActions` inside the profile-edit dialog instead of the equivalent Underlay form primitives.
 - The profile dialog now owns its grid layout and switch-label composition locally rather than depending on Underlay `FieldSetGrid` and Underlay switch label affordances.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/password/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/password/+page.svelte) now uses Poodle `Field`, `TextInput`, `Button`, and `FormActions` for the password reset and verification actions.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/password/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/password/+page.svelte) now uses Poodle `Field`, `TextInput`, `Button`, and `FormActions` for the password reset and verification actions.
 - Underlay still owns the surrounding route-shell responsibilities for this family, including `Card`, `FormDialog`, `PageLoading`, `FormError`, `PasswordRequirements`, and `TotpInput`.
 
 ## Coexistence notes
@@ -31,4 +31,4 @@ The `account` route family now uses direct Poodle form primitives for its editab
 
 ## Next Task
 
-Take the next shared-form migration batch in `acme-admin`: replace the remaining Underlay foundational form primitives in [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/CategoryForm.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/CategoryForm.svelte) and [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/ProjectForm.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/ProjectForm.svelte), while leaving relation-heavy selectors and route-level orchestration in Underlay until the right Poodle boundary is clearer.
+Take the next shared-form migration batch in `acme-admin`: replace the remaining Underlay foundational form primitives in [~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/CategoryForm.svelte](~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/CategoryForm.svelte) and [~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/ProjectForm.svelte](~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/ProjectForm.svelte), while leaving relation-heavy selectors and route-level orchestration in Underlay until the right Poodle boundary is clearer.

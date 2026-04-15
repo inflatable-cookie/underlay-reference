@@ -12,9 +12,9 @@ The project and category listing routes now use direct Poodle primitives for the
 
 ## What changed
 
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/+page.svelte) now uses Poodle `Button`, `Field`, `SearchField`, and `Select` for the top-level toolbar and filter row instead of the old Underlay button/input/select surfaces.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/+page.svelte) now uses Poodle `Button`, `Field`, `SearchField`, and `Select` for the top-level toolbar and filter row instead of the old Underlay button/input/select surfaces.
 - The projects list route now owns two pieces of behavior explicitly in route logic: the debounced name filter and the category filter option loading for `listCategoriesForSuggestions`, which are now visible route concerns rather than hidden inside an Underlay async select.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/categories/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/categories/+page.svelte) now uses the same Poodle toolbar and filter primitives for reorder/add actions plus name/status filtering.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/categories/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/categories/+page.svelte) now uses the same Poodle toolbar and filter primitives for reorder/add actions plus name/status filtering.
 
 ## Coexistence notes
 
@@ -28,4 +28,4 @@ The project and category listing routes now use direct Poodle primitives for the
 
 ## Next Task
 
-Take the next project-area batch in `acme-admin`: replace the remaining Underlay `Button`, `Field`, and `Select` surfaces around task filtering and simple actions in [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/+page.svelte) and [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/+page.svelte), while keeping detail shells, confirm actions, progress, and route-level orchestration stable.
+Take the next project-area batch in `acme-admin`: replace the remaining Underlay `Button`, `Field`, and `Select` surfaces around task filtering and simple actions in [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/+page.svelte) and [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/+page.svelte), while keeping detail shells, confirm actions, progress, and route-level orchestration stable.

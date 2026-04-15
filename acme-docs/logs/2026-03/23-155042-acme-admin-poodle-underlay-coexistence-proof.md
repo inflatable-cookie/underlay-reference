@@ -12,15 +12,15 @@ tags: [execution, migration, poodle, underlay]
 
 ## What changed
 
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/+layout.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/+layout.svelte) now imports the Poodle token stylesheet, binds a root theme shell, and applies Poodle theme attributes with `theme="dark"`, `density="compact"`, and `controlSize="md"`.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/+page.svelte) replaces Underlay `StatGrid` and `StatCard` usage with direct Poodle `MetricTile` and `Pill` composition for the dashboard metrics.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/+layout.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/+layout.svelte#L137) continues to host retained Underlay `ErrorBoundary`, proving that a structural Underlay surface can coexist under Poodle-owned theming.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/+layout.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/+layout.svelte) now imports the Poodle token stylesheet, binds a root theme shell, and applies Poodle theme attributes with `theme="dark"`, `density="compact"`, and `controlSize="md"`.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/+page.svelte) replaces Underlay `StatGrid` and `StatCard` usage with direct Poodle `MetricTile` and `Pill` composition for the dashboard metrics.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/+layout.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/+layout.svelte#L137) continues to host retained Underlay `ErrorBoundary`, proving that a structural Underlay surface can coexist under Poodle-owned theming.
 
 ## Coexistence notes
 
 - The original proof used a temporary canonical-package alias bridge while Poodle packaging was still incomplete.
-- `acme-admin` now installs [`@poodle/svelte-tokens`](\/Users\/betterthanclay\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L19), [`@poodle/svelte-primitives`](\/Users\/betterthanclay\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L20), and [`@poodle/svelte-composites`](\/Users\/betterthanclay\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L21) directly via local `file:` dependencies.
-- The temporary alias bridge has been removed from [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/svelte.config.js](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/svelte.config.js), and the root layout now imports [`@poodle/svelte-tokens/styles.css`](\/Users\/betterthanclay\/Dev\/projects\/underlay-reference\/acme-admin\/src\/routes\/+layout.svelte#L7) instead of a raw filesystem token path.
+- `acme-admin` now installs [`@poodle/svelte-tokens`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L19), [`@poodle/svelte-primitives`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L20), and [`@poodle/svelte-composites`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L21) directly via local `file:` dependencies.
+- The temporary alias bridge has been removed from [~/Dev/projects/underlay-reference/acme-admin/svelte.config.js](~/Dev/projects/underlay-reference/acme-admin/svelte.config.js), and the root layout now imports [`@poodle/svelte-tokens/styles.css`](~\/Dev\/projects\/underlay-reference\/acme-admin\/src\/routes\/+layout.svelte#L7) instead of a raw filesystem token path.
 
 ## Validation
 

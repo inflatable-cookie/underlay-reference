@@ -339,7 +339,7 @@ Make it easy for others to use as a reference.
 
 ## Phase 9: Advanced Features → Backlog
 
-*Moved to backlog: See [backlog/advanced-features.md](/Users/betterthanclay/Dev/projects/underlay-reference/acme-docs/roadmaps/backlog/advanced-features.md)*
+*Moved to backlog: See [backlog/advanced-features.md](~/Dev/projects/underlay-reference/acme-docs/roadmaps/backlog/advanced-features.md)*
 
 Lower priority items (OAuth/SSO, Real-time, Multi-tenancy, Advanced Media) have been deferred to allow focus on core patterns and infrastructure.
 

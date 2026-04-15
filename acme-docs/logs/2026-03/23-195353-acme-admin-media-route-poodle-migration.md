@@ -12,10 +12,10 @@ The media route family now uses direct Poodle primitives for its remaining found
 
 ## What changed
 
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/+page.svelte) now uses Poodle `Field`, `SearchField`, `Select`, and `Button` for list filtering and top-level toolbar actions.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/+page.svelte) now uses Poodle `Field`, `SearchField`, `Select`, and `Button` for list filtering and top-level toolbar actions.
 - The media list route now owns its title-filter debounce explicitly in route logic rather than relying on old Underlay input behavior.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/upload/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/upload/+page.svelte) now uses Poodle buttons throughout the replace/upload queue surface, including ghost-button replacements for the old text-button actions.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/[mediaId]/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/[mediaId]/+page.svelte) now uses Poodle `Button`, `Field`, `TextInput`, `Select`, and `FormActions` inside the retained Underlay media detail and edit-dialog shells.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/upload/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/upload/+page.svelte) now uses Poodle buttons throughout the replace/upload queue surface, including ghost-button replacements for the old text-button actions.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/[mediaId]/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/[mediaId]/+page.svelte) now uses Poodle `Button`, `Field`, `TextInput`, `Select`, and `FormActions` inside the retained Underlay media detail and edit-dialog shells.
 
 ## Coexistence notes
 
@@ -31,4 +31,4 @@ The media route family now uses direct Poodle primitives for its remaining found
 
 ## Next Task
 
-Take the next project/category listing batch in `acme-admin`: replace the remaining Underlay `Field`, `TextInput`, `Select`, and adjacent simple toolbar button usage in [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/+page.svelte) and [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/categories/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/categories/+page.svelte), while keeping selection and reorder orchestration stable.
+Take the next project/category listing batch in `acme-admin`: replace the remaining Underlay `Field`, `TextInput`, `Select`, and adjacent simple toolbar button usage in [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/projects/+page.svelte) and [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/categories/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/categories/+page.svelte), while keeping selection and reorder orchestration stable.

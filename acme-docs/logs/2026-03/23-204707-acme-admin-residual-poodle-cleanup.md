@@ -12,9 +12,9 @@ The final obvious Underlay primitive action-button residue in `acme-admin` has b
 
 ## What changed
 
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/+page.svelte) now uses a Poodle button for the add-user action.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/trash/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/trash/+page.svelte) now uses a Poodle button for the restore action.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/[userId]/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/[userId]/+page.svelte) had its leftover Underlay `Button` import removed because the route was already functionally on Poodle for the remaining primitive action surface.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/+page.svelte) now uses a Poodle button for the add-user action.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/trash/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/media/trash/+page.svelte) now uses a Poodle button for the restore action.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/[userId]/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/[userId]/+page.svelte) had its leftover Underlay `Button` import removed because the route was already functionally on Poodle for the remaining primitive action surface.
 
 ## Completion note
 

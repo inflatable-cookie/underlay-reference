@@ -12,10 +12,10 @@ The `users` route family now has a real direct-Poodle form cluster. The shared `
 
 ## What changed
 
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/UserForm.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/lib/forms/UserForm.svelte) now imports Poodle primitives directly instead of Underlay field/form components.
+- [~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/UserForm.svelte](~/Dev/projects/underlay-reference/acme-admin/src/lib/forms/UserForm.svelte) now imports Poodle primitives directly instead of Underlay field/form components.
 - The shared form no longer uses Underlay `FormValidationProvider`, `FieldSetGrid`, `SaveSplitButton`, `TextButton`, `Select`, `Switch`, `TextInput`, or `Field`.
 - Validation and field messaging now flow through Poodle `Field` contracts, with direct Poodle control events (`valueChange`, `checkedChange`) and a hidden `intent` input used to preserve the existing save/save-close submission semantics.
-- [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/[userId]/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/[userId]/+page.svelte) now uses Poodle `Field`, `Select`, `Button`, and `FormActions` inside the retained Underlay `FormDialog`.
+- [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/[userId]/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/users/[userId]/+page.svelte) now uses Poodle `Field`, `Select`, `Button`, and `FormActions` inside the retained Underlay `FormDialog`.
 
 ## Coexistence notes
 
@@ -31,4 +31,4 @@ The `users` route family now has a real direct-Poodle form cluster. The shared `
 
 ## Next Task
 
-Take the next account-oriented form batch in `acme-admin`: replace the remaining Underlay form primitives in [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/+page.svelte) and [/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/password/+page.svelte](/Users/betterthanclay/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/password/+page.svelte), keeping the route shells stable while shrinking the remaining foundational Underlay surface.
+Take the next account-oriented form batch in `acme-admin`: replace the remaining Underlay form primitives in [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/+page.svelte) and [~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/password/+page.svelte](~/Dev/projects/underlay-reference/acme-admin/src/routes/(app)/account/password/+page.svelte), keeping the route shells stable while shrinking the remaining foundational Underlay surface.
