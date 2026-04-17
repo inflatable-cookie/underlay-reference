@@ -19,6 +19,15 @@ reference-app milestone needs tighter execution control.
 - Use batch cards for work that should run from a bounded owner, not from fresh
   planning judgment.
 - If there is no ready card, re-enter planning instead of guessing.
+- Archive or delete stale strict-lane specs and batch cards once their owning
+  roadmap work is fully implemented or otherwise closed.
+- Do not roll a roadmap generation while stale generation-specific strict-lane
+  material is still sitting in the active `specs/` tree.
+
+## Archive
+
+- Completed or superseded strict-lane material belongs in `archive/`.
+- Completed or superseded batch cards belong in `archive/batch-cards/`.
 
 ## Active spec
 
