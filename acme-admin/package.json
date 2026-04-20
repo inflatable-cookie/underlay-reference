@@ -20,7 +20,7 @@
 		"@poodle/svelte": "file:../../poodle/packages/svelte/components",
 		"@poodle/svelte-tokens": "file:../../poodle/packages/svelte/tokens",
 		"acme-client": "file:../acme-client",
-		"@decodelabs/underlay": "file:../underlay",
+		"@decodelabs/underlay": "file:../../underlay",
 		"bits-ui": "^2.16.2",
 		"lucide-svelte": "^0.575.0"
 	},

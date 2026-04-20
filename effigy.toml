@@ -8,11 +8,6 @@ js = "bun"
 setup = ["bootstrap:deps"]
 start = "dev"
 
-[[bootstrap.children]]
-path = ".bootstrap/underlay"
-repo = "git@github.com:inflatable-cookie/underlay.git"
-branch = "main"
-
 [containers]
 default = "stack"
 
@@ -118,7 +113,7 @@ run = [
 ]
 
 [tasks."bootstrap:deps"]
-run = "if [ -d .bootstrap/underlay ]; then rm -rf underlay && ln -s .bootstrap/underlay underlay; else if [ -L underlay ] && [ ! -e underlay ]; then rm underlay; fi; if [ ! -e underlay ] && [ -e ../underlay ]; then ln -s ../underlay underlay; fi; fi && test -e underlay && (cd underlay && bun install && cargo fetch) && (cd acme-api && cargo fetch) && (cd acme-client && bun install) && (cd acme-ui && bun install) && (cd acme-front && bun install) && (cd acme-admin && bun install)"
+run = "test -d ../underlay && test -d ../poodle && effigy container up --detach && effigy exec sh -lc 'cd /workspace-root/underlay && bun install && cargo fetch && cd /workspace-root/underlay-reference/acme-api && cargo fetch && cd /workspace-root/underlay-reference/acme-client && bun install && cd /workspace-root/underlay-reference/acme-ui && bun install && cd /workspace-root/underlay-reference/acme-front && bun install && cd /workspace-root/underlay-reference/acme-admin && bun install'"
 host = true
 
 [tasks."proof:pwd"]

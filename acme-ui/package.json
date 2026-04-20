@@ -41,7 +41,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@decodelabs/underlay": "file:../underlay",
+    "@decodelabs/underlay": "file:../../underlay",
     "@poodle/svelte": "file:../../poodle/packages/svelte/components"
   }
 }

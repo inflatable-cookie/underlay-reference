@@ -1,6 +1,3 @@
-# Symlink to underlay library (local development)
-underlay
-
 # Rust
 **/*.rs.bk
 **/build/

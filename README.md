@@ -59,20 +59,20 @@ effigy db:migrate
 
 Bootstrap notes:
 - `effigy bootstrap ...` clones the reference workspace and runs `bootstrap:deps`
-- setup fetches/install dependencies for `underlay`, `acme-api`, `acme-client`, `acme-ui`, `acme-front`, and `acme-admin`
+- setup expects sibling `../underlay` and `../poodle` repos, starts the workspace container, and installs dependencies inside it
 - add `--start` when you want it to launch the root `dev` stack after setup
 
 ## Development Setup
 
-This repository uses a **symlink** to reference the Underlay library for development:
+This repository expects sibling `underlay` and `poodle` repos mounted into the workspace container:
 
 ```bash
-# Create symlink to your underlay clone
-ln -s /path/to/underlay ./underlay
+../underlay
+../poodle
 ```
 
-All `package.json` files reference `@decodelabs/underlay` via `file:../underlay`.
-The `Cargo.toml` uses path dependencies like `../underlay/rust/crates/...`.
+All `package.json` files reference `@decodelabs/underlay` via `file:../../underlay`.
+The `Cargo.toml` uses path dependencies like `../../underlay/rust/crates/...`.
 
 ## What's Included
 
@@ -142,8 +142,9 @@ Add `--start` if you want the dev stack to launch after setup.
 git clone <this-repo> underlay-reference
 cd underlay-reference
 
-# Link to your underlay library
-ln -s /path/to/underlay ./underlay
+# Place sibling repos next to the workspace
+git clone <underlay-repo> ../underlay
+git clone <poodle-repo> ../poodle
 
 # Run automated setup (requires Docker)
 ./scripts/setup.sh
@@ -164,8 +165,9 @@ The setup script will:
 git clone <this-repo> underlay-reference
 cd underlay-reference
 
-# Link to your underlay library
-ln -s /path/to/underlay ./underlay
+# Place sibling repos next to the workspace
+git clone <underlay-repo> ../underlay
+git clone <poodle-repo> ../poodle
 ```
 
 #### 2. Start Services (Docker)
@@ -273,8 +275,9 @@ cp -r /path/to/underlay-reference/acme-client ./api-client
 cp -r /path/to/underlay-reference/acme-admin ./admin
 cp -r /path/to/underlay-reference/acme-front ./front
 
-# Link underlay
-ln -s /path/to/underlay ./underlay
+# Place sibling repos next to the workspace
+git clone <underlay-repo> ../underlay
+git clone <poodle-repo> ../poodle
 ```
 
 ### 2. Rename Everything
@@ -296,13 +299,13 @@ Replace `acme` with your project name throughout:
 If your underlay is at a different relative path, update `package.json` files:
 
 ```json
-"@decodelabs/underlay": "file:../underlay"
+"@decodelabs/underlay": "file:../../underlay"
 ```
 
 And `Cargo.toml` workspace dependencies:
 
 ```toml
-underlay-core = { path = "../underlay/rust/crates/underlay-core" }
+underlay-core = { path = "../../underlay/rust/crates/underlay-core" }
 ```
 
 ## Environment Variables
