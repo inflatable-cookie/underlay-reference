@@ -13,7 +13,7 @@ validate = [
 qa = [{ task = "validate" }]
 
 [tasks.build]
-run = "tsc -p tsconfig.json"
+run = "bun x tsc -p tsconfig.json"
 
 [tasks.check]
-run = "tsc -p tsconfig.json --noEmit"
+run = "bun x tsc -p tsconfig.json --noEmit"

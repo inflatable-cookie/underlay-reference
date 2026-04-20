@@ -58,6 +58,11 @@ export default defineConfig({
   },
   server: {
     port: 41003,
+    allowedHosts: [
+      "underlay-reference.test",
+      "admin.underlay-reference.test",
+      "api.underlay-reference.test",
+    ],
     watch: {
       ignored: [
         "!**/node_modules/@decodelabs/underlay/**",

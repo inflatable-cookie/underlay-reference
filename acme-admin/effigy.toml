@@ -16,32 +16,32 @@ qa = [{ task = "validate" }]
 run = [
   { task = "clean" },
   { task = "sync" },
-  "vite dev --force"
+  "PUBLIC_API_URL=http://api.underlay-reference.test PUBLIC_ADMIN_URL=http://admin.underlay-reference.test PUBLIC_FRONT_URL=http://underlay-reference.test bun x vite dev --host 0.0.0.0 --port 41002 --strictPort --force"
 ]
 
 [tasks.build]
-run = "vite build"
+run = "bun x vite build"
 
 [tasks.preview]
-run = "vite preview"
+run = "bun x vite preview"
 
 [tasks.clean]
 run = "rm -rf .svelte-kit node_modules/.vite"
 
 [tasks.sync]
-run = "svelte-kit sync"
+run = "bun x svelte-kit sync"
 
 [tasks.prepare]
-run = "svelte-kit sync || echo ''"
+run = "bun x svelte-kit sync || echo ''"
 
 [tasks.check]
 run = [
   { task = "sync" },
-  "svelte-check --tsconfig ./tsconfig.json"
+  "bun x svelte-check --tsconfig ./tsconfig.json"
 ]
 
 [tasks."check:watch"]
 run = [
   { task = "sync" },
-  "svelte-check --tsconfig ./tsconfig.json --watch"
+  "bun x svelte-check --tsconfig ./tsconfig.json --watch"
 ]

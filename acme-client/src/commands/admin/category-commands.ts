@@ -1,7 +1,7 @@
 import {
   appendSuggestionParams,
   type SuggestionRequestOptions,
-} from "@decodelabs/underlay/runtime/data";
+} from "@decodelabs/underlay/client/suggestions";
 import { getAdminHttpClient } from "../../utils/client-factory.js";
 import {
   appendQueryParams,

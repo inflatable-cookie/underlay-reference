@@ -10,7 +10,7 @@ validate = [{ task = "check" }]
 qa = [{ task = "validate" }]
 
 [tasks.check]
-run = "svelte-check --tsconfig ./tsconfig.json"
+run = "bun x svelte-check --tsconfig ./tsconfig.json"
 
 [tasks."refresh:deps"]
 run = "bun install"

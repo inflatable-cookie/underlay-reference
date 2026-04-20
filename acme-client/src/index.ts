@@ -136,15 +136,12 @@ export {
 
 // Selection history and suggestion utilities - re-export from Underlay
 export {
-  createSelectionHistory,
   formatHintsParam,
   parseHintsParam,
   buildSuggestionParams,
   appendSuggestionParams,
-  type SelectionHistoryOptions,
-  type SelectionHistory,
   type SuggestionRequestOptions,
-} from "@decodelabs/underlay/runtime/data";
+} from "@decodelabs/underlay/client/suggestions";
 
 // Client factory (for apps to configure)
 export {
@@ -186,7 +183,7 @@ export type {
 // Account types
 export type { UserProfile, UserProfileUpdate } from "./types/account-types.js";
 
-// Media types (re-exported from Underlay patterns)
+// Media types (re-exported from Underlay client helpers)
 export {
   // Enums
   MediaKind,

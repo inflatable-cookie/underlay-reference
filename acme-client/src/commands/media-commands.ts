@@ -2,7 +2,7 @@ import {
   appendPaginationParams,
   type PaginatedResponse,
   type PaginationParams,
-} from "@decodelabs/underlay/runtime/data";
+} from "@decodelabs/underlay/client/pagination";
 import { getAdminHttpClient } from "../utils/client-factory.js";
 import {
   appendQueryParams,

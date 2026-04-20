@@ -1,18 +1,5 @@
 {
   "name": "underlay-reference",
   "private": true,
-  "version": "0.0.1",
-  "scripts": {
-    "tasks": "effigy tasks",
-    "health": "effigy health",
-    "doctor": "effigy doctor",
-    "validate": "effigy validate",
-    "qa": "effigy qa",
-    "dev": "effigy dev",
-    "dev:front": "effigy dev front",
-    "dev:admin": "effigy dev admin",
-    "db:reset": "effigy db:reset",
-    "db:migrate": "effigy db:migrate",
-    "effigy:dev": "effigy-dev"
-  }
+  "version": "0.0.1"
 }

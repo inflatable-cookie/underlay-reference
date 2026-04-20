@@ -13,10 +13,69 @@ path = ".bootstrap/underlay"
 repo = "git@github.com:inflatable-cookie/underlay.git"
 branch = "main"
 
-[tasks]
-"bootstrap:deps" = "(rm -f underlay && ln -s .bootstrap/underlay underlay) && (cd underlay && cargo fetch) && (cd acme-api && cargo fetch) && (cd acme-client && bun install) && (cd acme-ui && bun install) && (cd acme-front && bun install) && (cd acme-admin && bun install)"
+[containers]
+default = "stack"
 
-health = [
+[systems]
+default = "dev"
+
+[systems.dev]
+default_workspace = "app"
+
+[systems.dev.workspaces.app]
+container = "stack"
+
+[containers.stack]
+driver = "colima"
+startup = "detached"
+context = "dev"
+profile = "underlay-reference"
+project_name = "underlay-reference-dev"
+primary_service = "workspace"
+compose_file = "infra/dev/docker-compose.yml"
+
+[containers.stack.exec]
+working_dir = "/workspace-root/underlay-reference"
+
+[containers.stack.exec.aliases.psql]
+service = "postgres"
+command = "psql"
+
+[containers.stack.lifecycle]
+on_task_exit = "stop"
+shutdown = "graceful"
+detach_timeout_secs = 10
+
+[containers.stack.health]
+check = "tcp://127.0.0.1:5432"
+timeout_secs = 90
+
+[containers.stack.dns]
+domain = "underlay-reference.test"
+port = 41003
+routes = [
+  { domain = "admin.underlay-reference.test", port = 41002 },
+  { domain = "api.underlay-reference.test", port = 41001 },
+  { domain = "mailpit.underlay-reference.test", port = 8025 },
+  { domain = "minio-console.underlay-reference.test", port = 9001 },
+]
+
+[containers.stack.host]
+ports = ["41001:41001", "41002:41002", "41003:41003", "5432:5432", "9000:9000", "9001:9001", "1025:1025", "8025:8025"]
+
+[containers.stack.workspace]
+user = "dev"
+home = "/home/dev"
+extra_mounts = ["../underlay", "../poodle"]
+
+[containers.stack.ui]
+tabs = ["overview", "workspace", "postgres", "minio", "mailpit"]
+
+[tasks]
+
+[tasks.health]
+host = true
+run = [
   { task = "acme-docs/health" },
   { task = "acme-api/health" },
   { task = "acme-client/health" },
@@ -25,7 +84,9 @@ health = [
   { task = "acme-ui/health" },
 ]
 
-validate = [
+[tasks.validate]
+host = true
+run = [
   { task = "acme-docs/validate" },
   { task = "acme-api/validate" },
   { task = "acme-client/validate" },
@@ -34,46 +95,54 @@ validate = [
   { task = "acme-ui/validate" },
 ]
 
-"qa:docs:workspace-contract" = "effigy docs check-forbidden AGENTS.md README.md package.json --forbid '--repo .'"
-
-"qa:docs" = [
+[tasks."qa:docs"]
+host = true
+run = [
   { task = "qa:docs:workspace-contract" },
   { task = "acme-docs/qa:docs" },
 ]
 
-"qa:northstar" = [
+[tasks."qa:northstar"]
+host = true
+run = [
   { task = "acme-docs/qa:northstar" },
 ]
 
-qa = [
+[tasks.qa]
+host = true
+run = [
   { task = "health" },
   { task = "validate" },
   { task = "qa:docs" },
   { task = "qa:northstar" },
 ]
 
+[tasks."bootstrap:deps"]
+run = "if [ -d .bootstrap/underlay ]; then rm -rf underlay && ln -s .bootstrap/underlay underlay; else if [ -L underlay ] && [ ! -e underlay ]; then rm underlay; fi; if [ ! -e underlay ] && [ -e ../underlay ]; then ln -s ../underlay underlay; fi; fi && test -e underlay && (cd underlay && bun install && cargo fetch) && (cd acme-api && cargo fetch) && (cd acme-client && bun install) && (cd acme-ui && bun install) && (cd acme-front && bun install) && (cd acme-admin && bun install)"
+host = true
+
+[tasks."proof:pwd"]
+run = "pwd"
+host = true
+
+[tasks."qa:docs:workspace-contract"]
+run = "effigy docs check-forbidden AGENTS.md README.md package.json --forbid '--repo .'"
+host = true
+
 [tasks.dev]
 mode = "tui"
+workspace = "app"
 concurrent = [
-  { task = "acme-api/dev", start = 1, tab = 3 },
-  { task = "acme-api/jobs", start = 2, tab = 4, start_after_ms = 1500 },
-  { task = "acme-front/dev", start = 3, tab = 2 },
-  { task = "acme-admin/dev", start = 4, tab = 1 },
-  { task = "shell", start = 5, tab = 5 }
+  { role = "lifecycle", start = 1, tab = 6 },
+  { role = "shell", service = "workspace", start = 2, tab = 5 },
+  { task = "acme-api/dev", start = 3, tab = 4 },
+  { task = "acme-api/jobs", start = 4, tab = 3, start_after_ms = 1500 },
+  { task = "acme-front/dev", start = 5, tab = 2 },
+  { task = "acme-admin/dev", start = 6, tab = 1 }
 ]
 
-[tasks.dev.profiles.front]
-concurrent = [
-  { task = "acme-api/dev", start = 1, tab = 2 },
-  { task = "acme-api/jobs", start = 2, tab = 3, start_after_ms = 1500 },
-  { task = "acme-front/dev", start = 3, tab = 1 },
-  { task = "shell", start = 4, tab = 4 }
-]
-
-[tasks.dev.profiles.admin]
-concurrent = [
-  { task = "acme-api/dev", start = 1, tab = 3 },
-  { task = "acme-api/jobs", start = 2, tab = 2, start_after_ms = 1500 },
-  { task = "acme-admin/dev", start = 3, tab = 1 },
-  { task = "shell", start = 4, tab = 4 }
-]
+[tasks.dev.managed]
+container_lifecycle = true
+gateway = true
+health_wait = true
+ready_message = "front http://underlay-reference.test | admin http://admin.underlay-reference.test | api http://api.underlay-reference.test | mailpit http://mailpit.underlay-reference.test | minio console http://minio-console.underlay-reference.test"
