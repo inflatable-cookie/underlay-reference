@@ -8,65 +8,35 @@ js = "bun"
 setup = ["bootstrap:deps"]
 start = "dev"
 
-[containers]
-default = "stack"
-
-[systems]
-default = "dev"
-
 [systems.dev]
-default_workspace = "app"
-
-[systems.dev.workspaces.app]
 container = "stack"
+workdir = "/workspace-root/underlay-reference"
+user = "dev"
+home = "/home/dev"
+mounts = ["../underlay", "../poodle"]
 
 [containers.stack]
-driver = "colima"
 startup = "detached"
 context = "dev"
-profile = "underlay-reference"
-project_name = "underlay-reference-dev"
 primary_service = "workspace"
 compose_file = "infra/dev/docker-compose.yml"
 
-[containers.stack.exec]
-working_dir = "/workspace-root/underlay-reference"
-
-[containers.stack.exec.aliases.psql]
-service = "postgres"
-command = "psql"
-
-[containers.stack.lifecycle]
-on_task_exit = "stop"
-shutdown = "graceful"
-detach_timeout_secs = 10
+[containers.stack.aliases]
+psql = "postgres"
 
 [containers.stack.health]
 check = "tcp://127.0.0.1:5432"
 timeout_secs = 90
 
 [containers.stack.dns]
-domain = "underlay-reference.test"
-port = 41003
 routes = [
-  { domain = "admin.underlay-reference.test", port = 41002 },
-  { domain = "api.underlay-reference.test", port = 41001 },
-  { domain = "mailpit.underlay-reference.test", port = 8025 },
-  { domain = "minio-console.underlay-reference.test", port = 9001 },
+  { domain = "underlay-reference.test", port = 41003, service = "workspace" },
+  { domain = "admin.underlay-reference.test", port = 41002, service = "workspace" },
+  { domain = "api.underlay-reference.test", port = 41001, service = "workspace" },
+  { domain = "mailpit.underlay-reference.test", port = 8025, service = "mailpit" },
+  { domain = "minio-console.underlay-reference.test", port = 9001, service = "minio" },
 ]
 
-[containers.stack.host]
-ports = ["41001:41001", "41002:41002", "41003:41003", "5432:5432", "9000:9000", "9001:9001", "1025:1025", "8025:8025"]
-
-[containers.stack.workspace]
-user = "dev"
-home = "/home/dev"
-extra_mounts = ["../underlay", "../poodle"]
-
-[containers.stack.ui]
-tabs = ["overview", "workspace", "postgres", "minio", "mailpit"]
-
-[tasks]
 
 [tasks.health]
 host = true
@@ -126,7 +96,10 @@ host = true
 
 [tasks.dev]
 mode = "tui"
-workspace = "app"
+container_lifecycle = true
+gateway = true
+health_wait = true
+ready_message = "front http://underlay-reference.test | admin http://admin.underlay-reference.test | api http://api.underlay-reference.test | mailpit http://mailpit.underlay-reference.test | minio console http://minio-console.underlay-reference.test"
 concurrent = [
   { role = "lifecycle", start = 1, tab = 6 },
   { role = "shell", service = "workspace", start = 2, tab = 5 },
@@ -135,9 +108,3 @@ concurrent = [
   { task = "acme-front/dev", start = 5, tab = 2 },
   { task = "acme-admin/dev", start = 6, tab = 1 }
 ]
-
-[tasks.dev.managed]
-container_lifecycle = true
-gateway = true
-health_wait = true
-ready_message = "front http://underlay-reference.test | admin http://admin.underlay-reference.test | api http://api.underlay-reference.test | mailpit http://mailpit.underlay-reference.test | minio console http://minio-console.underlay-reference.test"
