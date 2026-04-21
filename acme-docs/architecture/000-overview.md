@@ -171,17 +171,10 @@ See [003-domain-patterns.md](./003-domain-patterns.md) for CRUD patterns.
 ### Starting Development
 
 ```bash
-# Start services
-docker compose up -d
-
-# Run API
-cd acme-api && cargo run
-
-# Run admin (separate terminal)
-cd acme-admin && bun dev
-
-# Run front (separate terminal)
-cd acme-front && bun dev
+effigy bootstrap:deps
+effigy health
+effigy validate
+effigy dev
 ```
 
 ### Running Tests
@@ -198,8 +191,7 @@ cd acme-front && bun test
 ### Database Migrations
 
 ```bash
-cd acme-api
-cargo run -p acme-db --bin migrate_dev_db
+effigy db:migrate
 ```
 
 ## Configuration

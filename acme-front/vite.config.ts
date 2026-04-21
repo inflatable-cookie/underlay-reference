@@ -59,9 +59,9 @@ export default defineConfig({
   server: {
     port: 41003,
     allowedHosts: [
-      "underlay-reference.test",
-      "admin.underlay-reference.test",
-      "api.underlay-reference.test",
+      "acme.test",
+      "admin.acme.test",
+      "api.acme.test",
     ],
     watch: {
       ignored: [

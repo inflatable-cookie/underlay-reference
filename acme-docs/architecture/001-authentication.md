@@ -272,7 +272,7 @@ The `AuthManager` handles automatic token refresh:
 import { createAuthManager, configureAcmeClient } from "acme-client";
 
 // Configure once at app startup
-configureAcmeClient({ apiUrl: "http://localhost:40011" });
+configureAcmeClient({ apiUrl: "https://api.acme.test" });
 
 const auth = createAuthManager({
   onLogout: () => goto("/login"),

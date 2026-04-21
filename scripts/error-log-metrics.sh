@@ -9,7 +9,7 @@ WINDOW_HOURS="${WINDOW_HOURS:-24}"
 info() { echo "[INFO] $1"; }
 fail() { echo "[ERROR] $1"; exit 1; }
 
-command -v docker >/dev/null 2>&1 || fail "docker is required"
+command -v effigy >/dev/null 2>&1 || fail "effigy is required"
 
 cd "$PROJECT_ROOT"
 
@@ -44,7 +44,7 @@ SELECT json_build_object(
 FROM stats;
 "
 
-result="$(docker compose exec -T postgres psql -U root -d acme -t -A -c "$sql" | tail -n 1 | tr -d '\r')"
+result="$(effigy exec --service postgres psql -U postgres -d acme -t -A -c "$sql" | tail -n 1 | tr -d '\r')"
 
 if [[ -z "$result" ]]; then
   fail "Failed to query error log metrics"

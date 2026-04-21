@@ -9,7 +9,7 @@ build = "cargo build {args}"
 health = [{ task = "build" }]
 validate = [{ task = "build" }]
 qa = [{ task = "validate" }]
-dev = "HOST=0.0.0.0 PORT=41001 APP_URL=http://api.underlay-reference.test DATABASE_URL=postgres://postgres:postgres@postgres:5432/acme CORS_ORIGINS=http://underlay-reference.test,http://admin.underlay-reference.test COOKIE_DOMAIN=.underlay-reference.test COOKIE_SECURE=false WEBAUTHN_RP_ID=admin.underlay-reference.test WEBAUTHN_RP_ORIGIN=http://admin.underlay-reference.test cargo run -p acme-api {args}"
+dev = "HOST=0.0.0.0 PORT=41001 APP_URL=https://api.acme.test DATABASE_URL=postgres://postgres:postgres@postgres:5432/acme CORS_ORIGINS=https://acme.test,https://admin.acme.test COOKIE_DOMAIN=.acme.test COOKIE_SECURE=true WEBAUTHN_RP_ID=admin.acme.test WEBAUTHN_RP_ORIGIN=https://admin.acme.test cargo run -p acme-api {args}"
 "dev:watch" = "cargo watch -x 'run -p acme-api'"
 jobs = "DATABASE_URL=postgres://postgres:postgres@postgres:5432/acme cargo run -p acme-jobs {args}"
 "db:drop" = "cargo run -p acme-db --bin reset_dev_db {args}"

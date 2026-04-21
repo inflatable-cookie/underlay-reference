@@ -128,7 +128,9 @@ Public-facing frontend:
 
 ## Quick Start (for Development)
 
-### Option A: Effigy Bootstrap (Recommended)
+Use the Effigy-owned path. The older raw Docker and localhost setup flow is not the supported bootstrap model for this workspace anymore.
+
+### First clone from outside the repo
 
 ```bash
 effigy bootstrap git@github.com:inflatable-cookie/underlay-reference.git
@@ -136,82 +138,18 @@ effigy bootstrap git@github.com:inflatable-cookie/underlay-reference.git
 
 Add `--start` if you want the dev stack to launch after setup.
 
-### Option B: Automated Setup
+### If the repo is already cloned
 
 ```bash
-git clone <this-repo> underlay-reference
-cd underlay-reference
-
-# Place sibling repos next to the workspace
-git clone <underlay-repo> ../underlay
-git clone <poodle-repo> ../poodle
-
-# Run automated setup (requires Docker)
-./scripts/setup.sh
+effigy bootstrap:deps
+effigy health
+effigy validate
+effigy dev
 ```
 
-The setup script will:
-- Start PostgreSQL, MinIO, and MailHog via Docker
-- Create environment files from templates
-- Run database migrations
-- Generate JWT keys
-- Install frontend dependencies
-
-### Option C: Manual Setup
-
-#### 1. Clone and Set Up
-
-```bash
-git clone <this-repo> underlay-reference
-cd underlay-reference
-
-# Place sibling repos next to the workspace
-git clone <underlay-repo> ../underlay
-git clone <poodle-repo> ../poodle
-```
-
-#### 2. Start Services (Docker)
-
-```bash
-# Start all development services
-docker compose up -d
-
-# Or start individually
-docker compose up -d postgres    # PostgreSQL only
-docker compose up -d minio       # MinIO (S3) only
-docker compose up -d mailhog     # MailHog (email) only
-```
-
-#### 3. Set Up Database
-
-```bash
-# Configure connection
-cp acme-api/.env.example acme-api/.env
-# Edit acme-api/.env with your DATABASE_URL
-
-# Optional: copy local config overrides (otherwise defaults come from config/default.toml)
-cp acme-api/config/local.toml.example acme-api/config/local.toml
-
-# Run migrations
-cd acme-api
-cargo run -p acme-db --bin migrate_dev_db
-```
-
-#### 4. Generate Auth Keys
-
-```bash
-cd acme-api
-cargo run -p acme-auth --bin generate-jwt-env >> .env
-```
-
-#### 5. Install Dependencies
-
-```bash
-# Use bun for all TypeScript projects
-cd acme-client && bun install
-cd acme-admin && bun install
-cd acme-front && bun install
-```
+Compatibility note:
+- `./scripts/setup.sh` now just forwards to `effigy bootstrap:deps`
+- use it only if you need the old entrypoint name while moving to the Effigy flow
 
 ### Running the Application
 
@@ -224,17 +162,17 @@ effigy dev
 
 | Service | URL |
 |---------|-----|
-| Front | http://underlay-reference.test |
-| Admin | http://admin.underlay-reference.test |
-| API | http://api.underlay-reference.test |
-| Mailpit | http://mailpit.underlay-reference.test |
-| MinIO Console | http://minio-console.underlay-reference.test |
+| Front | https://acme.test |
+| Admin | https://admin.acme.test |
+| API | https://api.acme.test |
+| Mailpit | http://mailpit.acme.test |
+| MinIO Console | http://minio-console.acme.test |
 
 Notes:
 - `effigy dev` is the only supported workspace dev runner.
 - `effigy dev` starts one canonical `workspace` container and runs shell, API, jobs, front, and admin inside it.
 - The managed shell tab opens at the workspace root inside that running `workspace` container.
-- The browser-facing local shape is domain-first and HTTP on port `80` through the Effigy gateway.
+- The browser-facing local shape is domain-first through the Effigy gateway: HTTPS for front/admin/API, HTTP for Mailpit and MinIO Console.
 
 ### Error Logging Smoke Test
 
@@ -244,7 +182,7 @@ After `acme-api` is running, run:
 ./scripts/smoke-error-logging.sh
 ```
 
-This triggers a forced `ApiError` at `POST /v1/dev/error-smoke` (debug builds only), then verifies the latest `platform.error_log` row includes:
+This triggers a forced `ApiError` at `POST /v1/dev/error-smoke` against `https://api.acme.test` (debug builds only), then verifies the latest `platform.error_log` row includes:
 - `error_code`
 - `message`
 - `context.handler_context`
@@ -294,9 +232,16 @@ Replace `acme` with your project name throughout:
 | `configureAcmeClient` | `configureMyAppClient` |
 | `ACME_*` env vars | `MYAPP_*` |
 
-### 3. Update Package Paths
+### 3. Update Workspace Wiring
 
-If your underlay is at a different relative path, update `package.json` files:
+Keep the workspace-level bootstrap assumptions aligned when you rename the reference:
+
+- root `effigy.toml` `catalog.alias`
+- root `effigy.toml` `[containers.stack]` `profile`, `project_name`, and `dns.domain`
+- root `effigy.toml` `ready_message`
+- child `effigy.toml` aliases where package names change
+
+If your `underlay` checkout is at a different relative path, update `package.json` files:
 
 ```json
 "@decodelabs/underlay": "file:../../underlay"
@@ -353,8 +298,8 @@ BLOB_LOCAL_PATH=./storage
 ## Documentation
 
 See the Underlay docs for detailed patterns:
-- LLM Bootstrap Guide - Step-by-step instructions
+- LLM Bootstrap Guide - step-by-step bootstrap rules
 - Rust Backend Guide - API patterns
-- TypeScript Client Guide - Client patterns
-- Admin Guide - Admin frontend patterns
-- Frontend Guide - Public frontend patterns
+- TypeScript Client Guide - client patterns
+- Admin Guide - admin frontend patterns
+- Frontend Guide - public frontend patterns

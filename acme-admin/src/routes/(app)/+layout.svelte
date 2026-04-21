@@ -442,17 +442,12 @@ import {
 	}
 
 	:global(.drawer[data-edge="right"]) {
-		padding-right: 55px;
-		z-index: 65;
-		transition: padding-right 0.2s ease;
-	}
-
-	.admin-context-panel__toggle-strip[aria-pressed="true"] + :global(.drawer[data-edge="right"]) {
 		padding-right: 0;
+		z-index: 65;
 	}
 
 	:global(.drawer[data-edge="right"] .drawer__surface) {
-		width: min(368px, calc(100vw - 55px));
+		width: min(368px, 100vw);
 		height: 100vh;
 		margin: 0;
 		padding: 0;

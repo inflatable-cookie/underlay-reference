@@ -18,6 +18,7 @@ mounts = ["../underlay", "../poodle"]
 [containers.stack]
 startup = "detached"
 context = "dev"
+project_name = "underlay-reference-dev"
 primary_service = "workspace"
 compose_file = "infra/dev/docker-compose.yml"
 
@@ -30,11 +31,11 @@ timeout_secs = 90
 
 [containers.stack.dns]
 routes = [
-  { domain = "underlay-reference.test", port = 41003, service = "workspace" },
-  { domain = "admin.underlay-reference.test", port = 41002, service = "workspace" },
-  { domain = "api.underlay-reference.test", port = 41001, service = "workspace" },
-  { domain = "mailpit.underlay-reference.test", port = 8025, service = "mailpit" },
-  { domain = "minio-console.underlay-reference.test", port = 9001, service = "minio" },
+  { domain = "acme.test", tls = true, port = 41003, service = "workspace" },
+  { domain = "admin.acme.test", tls = true, port = 41002, service = "workspace" },
+  { domain = "api.acme.test", tls = true, port = 41001, service = "workspace" },
+  { domain = "mailpit.acme.test", port = 8025, service = "mailpit" },
+  { domain = "minio-console.acme.test", port = 9001, service = "minio" },
 ]
 
 
@@ -99,12 +100,12 @@ mode = "tui"
 container_lifecycle = true
 gateway = true
 health_wait = true
-ready_message = "front http://underlay-reference.test | admin http://admin.underlay-reference.test | api http://api.underlay-reference.test | mailpit http://mailpit.underlay-reference.test | minio console http://minio-console.underlay-reference.test"
+ready_message = "front https://acme.test | admin https://admin.acme.test | api https://api.acme.test | mailpit http://mailpit.acme.test | minio console http://minio-console.acme.test"
 concurrent = [
   { role = "lifecycle", start = 1, tab = 6 },
   { role = "shell", service = "workspace", start = 2, tab = 5 },
   { task = "acme-api/dev", start = 3, tab = 4 },
   { task = "acme-api/jobs", start = 4, tab = 3, start_after_ms = 1500 },
-  { task = "acme-front/dev", start = 5, tab = 2 },
-  { task = "acme-admin/dev", start = 6, tab = 1 }
+  { name = "front", task = "acme-front/dev", setup = [{ rhai = "scripts/dev/ui-setup.rhai" }], start = 5, tab = 2 },
+  { name = "admin", task = "acme-admin/dev", setup = [{ rhai = "scripts/dev/ui-setup.rhai" }], start = 6, tab = 1 }
 ]

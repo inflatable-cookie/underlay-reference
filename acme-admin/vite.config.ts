@@ -47,9 +47,9 @@ export default defineConfig({
     port: 41002,
     strictPort: true,
     allowedHosts: [
-      "underlay-reference.test",
-      "admin.underlay-reference.test",
-      "api.underlay-reference.test",
+      "acme.test",
+      "admin.acme.test",
+      "api.acme.test",
     ],
     watch: {
       // Watch changes in symlinked local dependencies

@@ -16,7 +16,7 @@ qa = [{ task = "validate" }]
 run = [
   { task = "clean" },
   { task = "sync" },
-  "PUBLIC_API_URL=http://api.underlay-reference.test PUBLIC_ADMIN_URL=http://admin.underlay-reference.test PUBLIC_FRONT_URL=http://underlay-reference.test bun x vite dev --host 0.0.0.0 --port 41002 --strictPort --force"
+  "PUBLIC_API_URL=https://api.acme.test PUBLIC_ADMIN_URL=https://admin.acme.test PUBLIC_FRONT_URL=https://acme.test bun x vite dev --host 0.0.0.0 --port 41002 --strictPort --force"
 ]
 
 [tasks.build]

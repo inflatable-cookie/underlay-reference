@@ -12,11 +12,11 @@ services:
     - 41002:41002
     - 41003:41003
     extra_hosts:
-    - underlay-reference.test:host-gateway
-    - admin.underlay-reference.test:host-gateway
-    - api.underlay-reference.test:host-gateway
-    - mailpit.underlay-reference.test:host-gateway
-    - minio-console.underlay-reference.test:host-gateway
+    - acme.test:192.168.5.2
+    - admin.acme.test:192.168.5.2
+    - api.acme.test:192.168.5.2
+    - mailpit.acme.test:192.168.5.2
+    - minio-console.acme.test:192.168.5.2
     volumes:
     - ../../../:/workspace-root
     - underlay-reference-dev-cargo-registry:/usr/local/cargo/registry
