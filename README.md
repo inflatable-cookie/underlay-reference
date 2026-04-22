@@ -173,6 +173,8 @@ Notes:
 - `effigy dev` starts one canonical `workspace` container and runs shell, API, jobs, front, and admin inside it.
 - The managed shell tab opens at the workspace root inside that running `workspace` container.
 - The browser-facing local shape is domain-first through the Effigy gateway: HTTPS for front/admin/API, HTTP for Mailpit and MinIO Console.
+- Postgres and MinIO persist repo-local state under `.effigy/runtime/data/postgres` and `.effigy/runtime/data/minio`.
+- Existing data in older Docker named volumes is not migrated automatically into those `.effigy/runtime/data/...` paths.
 
 ### Error Logging Smoke Test
 

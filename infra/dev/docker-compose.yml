@@ -16,7 +16,7 @@ services:
     - admin.acme.test:192.168.5.2
     - api.acme.test:192.168.5.2
     - mailpit.acme.test:192.168.5.2
-    - minio-console.acme.test:192.168.5.2
+    - minio.acme.test:192.168.5.2
     volumes:
     - ../../../:/workspace-root
     - underlay-reference-dev-cargo-registry:/usr/local/cargo/registry
@@ -67,7 +67,7 @@ services:
     - 9000:9000
     - 9001:9001
     volumes:
-    - underlay-reference-dev-minio-data:/data
+    - ../../.effigy/runtime/data/minio:/data
     healthcheck:
       test:
       - CMD
@@ -86,7 +86,7 @@ services:
     ports:
     - 5432:5432
     volumes:
-    - underlay-reference-dev-postgres-data:/var/lib/postgresql/data
+    - ../../.effigy/runtime/data/postgres:/var/lib/postgresql/data
     healthcheck:
       test:
       - CMD-SHELL
@@ -113,10 +113,6 @@ volumes:
   underlay-reference-dev-client-node-modules:
     driver: local
   underlay-reference-dev-front-node-modules:
-    driver: local
-  underlay-reference-dev-minio-data:
-    driver: local
-  underlay-reference-dev-postgres-data:
     driver: local
   underlay-reference-dev-ui-node-modules:
     driver: local

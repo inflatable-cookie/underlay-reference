@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use acme_core::Uuid;
 use chrono::{DateTime, Utc};
-use rand::Rng;
+use rand::RngExt;
 use thiserror::Error;
 use tracing::{info, instrument, warn};
 use underlay_auth_password::{Argon2Hasher, PasswordHasherExt, PasswordVerifierExt};
@@ -363,8 +363,8 @@ impl EmailTotpService {
 
 /// Generate a secure 6-digit code.
 fn generate_code() -> String {
-    let mut rng = rand::thread_rng();
-    let code: u32 = rng.gen_range(0..1_000_000);
+    let mut rng = rand::rng();
+    let code: u32 = rng.random_range(0..1_000_000);
     format!("{:06}", code)
 }
 

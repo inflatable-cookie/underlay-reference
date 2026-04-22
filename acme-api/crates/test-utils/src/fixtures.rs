@@ -4,8 +4,7 @@
 //! All fixtures use UUIDv7 for predictable, time-ordered IDs.
 
 use chrono::{DateTime, Utc};
-use rand::thread_rng;
-use rand::Rng;
+use rand::RngExt;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -89,7 +88,7 @@ pub struct CreateUserOptions {
 /// ```
 pub async fn create_test_user(pool: &PgPool, opts: CreateUserOptions) -> TestUser {
     let id = Uuid::now_v7();
-    let random_suffix: u32 = thread_rng().gen_range(10000..99999);
+    let random_suffix: u32 = rand::rng().random_range(10000..99999);
     let email = opts
         .email
         .unwrap_or_else(|| format!("test-user-{}@example.com", random_suffix));
@@ -156,7 +155,7 @@ pub struct CreateCategoryOptions {
 /// Create a test category.
 pub async fn create_test_category(pool: &PgPool, opts: CreateCategoryOptions) -> TestCategory {
     let id = Uuid::now_v7();
-    let random_suffix: u32 = thread_rng().gen_range(10000..99999);
+    let random_suffix: u32 = rand::rng().random_range(10000..99999);
     let name = opts
         .name
         .unwrap_or_else(|| format!("Test Category {}", random_suffix));
@@ -217,7 +216,7 @@ pub async fn create_test_project(
     opts: CreateProjectOptions,
 ) -> TestProject {
     let id = Uuid::now_v7();
-    let random_suffix: u32 = thread_rng().gen_range(10000..99999);
+    let random_suffix: u32 = rand::rng().random_range(10000..99999);
     let name = opts
         .name
         .unwrap_or_else(|| format!("Test Project {}", random_suffix));
@@ -294,7 +293,7 @@ pub async fn create_test_task(
     opts: CreateTaskOptions,
 ) -> TestTask {
     let id = Uuid::now_v7();
-    let random_suffix: u32 = thread_rng().gen_range(10000..99999);
+    let random_suffix: u32 = rand::rng().random_range(10000..99999);
     let title = opts
         .title
         .unwrap_or_else(|| format!("Test Task {}", random_suffix));

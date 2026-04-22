@@ -130,6 +130,7 @@ mod api_version_tests {
 mod auth_boundary_router_tests {
     use std::sync::Arc;
 
+    use async_trait::async_trait;
     use axum::{
         body::Body,
         http::{header, Request, StatusCode},
@@ -145,7 +146,7 @@ mod auth_boundary_router_tests {
     #[derive(Clone)]
     struct MockAuthProvider;
 
-    #[axum::async_trait]
+    #[async_trait]
     impl AuthProvider for MockAuthProvider {
         async fn authenticate_bearer(
             &self,

@@ -8,7 +8,7 @@ use aes_gcm::{
     Aes256Gcm, Nonce,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
-use rand::RngCore;
+use rand::RngExt;
 use thiserror::Error;
 
 /// Errors that can occur during encryption/decryption.
@@ -78,7 +78,7 @@ impl EncryptionService {
     /// Tag: 16 bytes (GCM authentication tag)
     pub fn encrypt(&self, plaintext: &str) -> Result<String> {
         let mut nonce_bytes = [0u8; 12];
-        rand::thread_rng().fill_bytes(&mut nonce_bytes);
+        rand::rng().fill(&mut nonce_bytes);
         let nonce = Nonce::from_slice(&nonce_bytes);
 
         let ciphertext = self
@@ -138,7 +138,7 @@ impl EncryptionService {
 /// Returns the key as a base64-encoded string.
 pub fn generate_encryption_key() -> String {
     let mut key = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut key);
+    rand::rng().fill(&mut key);
     BASE64.encode(key)
 }
 

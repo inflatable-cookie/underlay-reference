@@ -10,7 +10,7 @@ start = "dev"
 
 [systems.dev]
 container = "stack"
-workdir = "/workspace-root/underlay-reference"
+working_dir = "/workspace-root/underlay-reference"
 user = "dev"
 home = "/home/dev"
 mounts = ["../underlay", "../poodle"]
@@ -35,7 +35,7 @@ routes = [
   { domain = "admin.acme.test", tls = true, port = 41002, service = "workspace" },
   { domain = "api.acme.test", tls = true, port = 41001, service = "workspace" },
   { domain = "mailpit.acme.test", port = 8025, service = "mailpit" },
-  { domain = "minio-console.acme.test", port = 9001, service = "minio" },
+  { domain = "minio.acme.test", port = 9001, service = "minio" },
 ]
 
 
@@ -100,7 +100,7 @@ mode = "tui"
 container_lifecycle = true
 gateway = true
 health_wait = true
-ready_message = "front https://acme.test | admin https://admin.acme.test | api https://api.acme.test | mailpit http://mailpit.acme.test | minio console http://minio-console.acme.test"
+ready_message = "front https://acme.test | admin https://admin.acme.test | api https://api.acme.test | mailpit http://mailpit.acme.test | minio http://minio.acme.test"
 concurrent = [
   { role = "lifecycle", start = 1, tab = 6 },
   { role = "shell", service = "workspace", start = 2, tab = 5 },
