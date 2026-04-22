@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use underlay_email::{
     DevCaptureAdapter, DevCaptureConfig, EmailAdapter, EmailAddress, EmailContext, EmailManager,
-    EmailStore, EmailTemplateEngine, NoopAdapter,
+    EmailStore, EmailTemplateEngine, NoopAdapter, SmtpAdapter, SmtpConfig, TlsMode,
 };
 
 use crate::config::{EmailAdapterType, EmailConfig};
@@ -69,9 +69,33 @@ where
         }
 
         EmailAdapterType::Smtp => {
-            return Err(EmailInitError(
-                "SMTP adapter requires smtp feature and create_smtp_email_manager".to_string(),
-            ));
+            let smtp_config = config.smtp.as_ref().ok_or_else(|| {
+                EmailInitError("smtp adapter requires smtp config".to_string())
+            })?;
+
+            let tls_mode = match smtp_config.tls_mode.to_ascii_lowercase().as_str() {
+                "required" => TlsMode::Required,
+                "opportunistic" => TlsMode::Opportunistic,
+                "none" => TlsMode::None,
+                value => {
+                    return Err(EmailInitError(format!(
+                        "invalid SMTP_TLS value `{value}`; expected required, opportunistic, or none"
+                    )));
+                }
+            };
+
+            let smtp_config = SmtpConfig {
+                host: smtp_config.host.clone(),
+                port: smtp_config.port,
+                username: smtp_config.username.clone(),
+                password: smtp_config.password.clone(),
+                tls_mode,
+            };
+
+            let smtp_adapter = SmtpAdapter::new(&smtp_config)
+                .map_err(|e| EmailInitError(format!("failed to create SMTP adapter: {e}")))?;
+
+            Arc::new(smtp_adapter)
         }
 
         EmailAdapterType::Ses => {

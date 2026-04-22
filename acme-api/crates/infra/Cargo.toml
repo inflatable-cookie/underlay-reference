@@ -5,13 +5,13 @@ edition.workspace = true
 
 [dependencies]
 aes-gcm = "0.10"
-base64 = "0.21"
+base64 = "0.22"
 dotenvy = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-toml = "0.8"
+toml = "1"
 http = "1"
-rand = "0.8"
-thiserror = "1"
+rand = { workspace = true }
+thiserror = "2"
 tracing = { workspace = true }
-underlay-email = { workspace = true }
+underlay-email = { workspace = true, features = ["smtp", "templates"] }
 underlay-observability = { workspace = true }
