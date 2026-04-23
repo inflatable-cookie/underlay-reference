@@ -9,8 +9,21 @@ workspace_subdir = "underlay-reference"
 database = "acme"
 
 [bootstrap]
-setup = ["bootstrap:deps"]
+run = [
+  { task = "container up --detach" },
+  { task = "deps sync ../underlay acme-api acme-client acme-ui acme-front acme-admin" },
+]
 start = "dev"
+
+[[bootstrap.children]]
+path = "../underlay"
+repo = "git@github.com:inflatable-cookie/underlay.git"
+branch = "main"
+
+[[bootstrap.children]]
+path = "../poodle"
+repo = "git@github.com:inflatable-cookie/poodle.git"
+branch = "main"
 
 [systems.dev]
 mounts = ["../underlay", "../poodle"]
@@ -44,14 +57,6 @@ run = [
   { task = "validate" },
   { task = "qa:docs" },
   { task = "qa:northstar" },
-]
-
-[tasks."bootstrap:deps"]
-run = [
-  "test -d ../underlay",
-  "test -d ../poodle",
-  { task = "container up --detach" },
-  { task = "exec sh -lc 'cd /workspace-root/underlay && bun install && cargo fetch && cd /workspace-root/underlay-reference/acme-api && cargo fetch && cd /workspace-root/underlay-reference/acme-client && bun install && cd /workspace-root/underlay-reference/acme-ui && bun install && cd /workspace-root/underlay-reference/acme-front && bun install && cd /workspace-root/underlay-reference/acme-admin && bun install'" },
 ]
 
 [tasks.dev]
