@@ -1,6 +1,9 @@
 [catalog]
 alias = "acme-docs"
 
+[task_defaults]
+run_in = "either"
+
 [docs_policy.indexes.vision]
 file = "acme-docs/vision/README.md"
 dir = "acme-docs/vision"
@@ -22,31 +25,46 @@ validate = [
   { task = "check:reorder-conflict-rollout" },
 ]
 
-"qa:docs:links" = "effigy docs check-links acme-docs/README.md acme-docs/vision/README.md acme-docs/roadmaps/README.md acme-docs/logs/README.md"
-"qa:docs:agent-defaults" = "effigy docs check-forbidden AGENTS.md README.md --forbid '--repo .'"
-"qa:docs:headings" = "effigy docs check-headings acme-docs/README.md acme-docs/vision/README.md acme-docs/roadmaps/README.md acme-docs/logs/README.md --require-heading '## Next Task'"
-"qa:northstar:vision" = "effigy docs check-headings acme-docs/vision/README.md --require-heading '## Vision Artifacts' --require-heading '## Next Task'"
-"qa:northstar:roadmaps" = "effigy docs check-headings acme-docs/roadmaps/README.md --require-heading '## Rules' --require-heading '## Current generation' --require-heading '## Next Task'"
-"qa:northstar:g01" = "effigy docs check-headings acme-docs/roadmaps/g01/README.md --require-heading '## Sequence' --require-heading '## Next roadmap' --require-heading '## Next Task'"
-"qa:docs" = [
-  { task = "qa:docs:links" },
-  { task = "qa:docs:agent-defaults" },
-  { task = "qa:northstar" },
-]
-
 qa = [
   { task = "validate" },
   { task = "qa:docs" },
 ]
 
-"check:admin-freshness-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
-"check:auth-security-alerting-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
-"check:reorder-conflict-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
+"qa:docs" = [
+  { task = "qa:docs:links" },
+  { task = "qa:docs:agent-defaults" },
+  { task = "qa:docs:workspace-contract" },
+  { task = "qa:northstar" },
+]
 
-[tasks."qa:northstar"]
-run_in = "host"
-run = [
+"qa:docs:links" = [
+  { task = "docs check-links acme-docs/README.md acme-docs/vision/README.md acme-docs/roadmaps/README.md acme-docs/logs/README.md" },
+]
+"qa:northstar" = [
   { task = "qa:northstar:vision" },
   { task = "qa:northstar:roadmaps" },
   { task = "qa:northstar:g01" },
 ]
+
+"qa:docs:agent-defaults" = [
+  { task = "docs check-forbidden AGENTS.md README.md --forbid '--repo .'" },
+]
+"qa:docs:workspace-contract" = [
+  { task = "docs check-forbidden AGENTS.md README.md package.json --forbid '--repo .'" },
+]
+"qa:docs:headings" = [
+  { task = "docs check-headings acme-docs/README.md acme-docs/vision/README.md acme-docs/roadmaps/README.md acme-docs/logs/README.md --require-heading '## Next Task'" },
+]
+"qa:northstar:vision" = [
+  { task = "docs check-headings acme-docs/vision/README.md --require-heading '## Vision Artifacts' --require-heading '## Next Task'" },
+]
+"qa:northstar:roadmaps" = [
+  { task = "docs check-headings acme-docs/roadmaps/README.md --require-heading '## Rules' --require-heading '## Current generation' --require-heading '## Next Task'" },
+]
+"qa:northstar:g01" = [
+  { task = "docs check-headings acme-docs/roadmaps/g01/README.md --require-heading '## Sequence' --require-heading '## Next roadmap' --require-heading '## Next Task'" },
+]
+
+"check:admin-freshness-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
+"check:auth-security-alerting-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
+"check:reorder-conflict-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
