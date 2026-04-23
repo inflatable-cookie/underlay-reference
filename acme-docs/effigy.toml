@@ -28,11 +28,6 @@ validate = [
 "qa:northstar:vision" = "effigy docs check-headings acme-docs/vision/README.md --require-heading '## Vision Artifacts' --require-heading '## Next Task'"
 "qa:northstar:roadmaps" = "effigy docs check-headings acme-docs/roadmaps/README.md --require-heading '## Rules' --require-heading '## Current generation' --require-heading '## Next Task'"
 "qa:northstar:g01" = "effigy docs check-headings acme-docs/roadmaps/g01/README.md --require-heading '## Sequence' --require-heading '## Next roadmap' --require-heading '## Next Task'"
-"qa:northstar" = [
-  { task = "qa:northstar:vision" },
-  { task = "qa:northstar:roadmaps" },
-  { task = "qa:northstar:g01" },
-]
 "qa:docs" = [
   { task = "qa:docs:links" },
   { task = "qa:docs:agent-defaults" },
@@ -47,3 +42,11 @@ qa = [
 "check:admin-freshness-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
 "check:auth-security-alerting-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
 "check:reorder-conflict-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
+
+[tasks."qa:northstar"]
+run_in = "host"
+run = [
+  { task = "qa:northstar:vision" },
+  { task = "qa:northstar:roadmaps" },
+  { task = "qa:northstar:g01" },
+]

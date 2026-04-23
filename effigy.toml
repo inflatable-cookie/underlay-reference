@@ -16,7 +16,7 @@ start = "dev"
 mounts = ["../underlay", "../poodle"]
 
 [tasks.health]
-host = true
+run_in = "host"
 run = [
   { task = "acme-docs/health" },
   { task = "acme-api/health" },
@@ -27,7 +27,7 @@ run = [
 ]
 
 [tasks.validate]
-host = true
+run_in = "host"
 run = [
   { task = "acme-docs/validate" },
   { task = "acme-api/validate" },
@@ -38,20 +38,14 @@ run = [
 ]
 
 [tasks."qa:docs"]
-host = true
+run_in = "host"
 run = [
   { task = "qa:docs:workspace-contract" },
   { task = "acme-docs/qa:docs" },
 ]
 
-[tasks."qa:northstar"]
-host = true
-run = [
-  { task = "acme-docs/qa:northstar" },
-]
-
 [tasks.qa]
-host = true
+run_in = "host"
 run = [
   { task = "health" },
   { task = "validate" },
@@ -61,15 +55,15 @@ run = [
 
 [tasks."bootstrap:deps"]
 run = "test -d ../underlay && test -d ../poodle && effigy container up --detach && effigy exec sh -lc 'cd /workspace-root/underlay && bun install && cargo fetch && cd /workspace-root/underlay-reference/acme-api && cargo fetch && cd /workspace-root/underlay-reference/acme-client && bun install && cd /workspace-root/underlay-reference/acme-ui && bun install && cd /workspace-root/underlay-reference/acme-front && bun install && cd /workspace-root/underlay-reference/acme-admin && bun install'"
-host = true
+run_in = "host"
 
 [tasks."proof:pwd"]
 run = "pwd"
-host = true
+run_in = "host"
 
 [tasks."qa:docs:workspace-contract"]
 run = "effigy docs check-forbidden AGENTS.md README.md package.json --forbid '--repo .'"
-host = true
+run_in = "host"
 
 [tasks.dev]
 mode = "tui"
