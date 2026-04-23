@@ -44,9 +44,9 @@ effigy test --plan
 Repo-owned rollout checks:
 
 ```bash
-effigy acme-docs/check:admin-freshness-rollout
-effigy acme-docs/check:auth-security-alerting-rollout
-effigy acme-docs/check:reorder-conflict-rollout
+effigy acme-docs/check:rollout admin-freshness
+effigy acme-docs/check:rollout auth-security-alerting
+effigy acme-docs/check:rollout reorder-conflict
 effigy acme-docs/qa
 effigy acme-docs/qa:docs
 effigy acme-docs/qa:northstar

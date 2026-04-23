@@ -1,7 +1,7 @@
 // Consolidated docs rollout checks.
 //
-// Dispatches from the Effigy task name so the manifest can expose small,
-// readable tasks without carrying one shell file per audit.
+// Dispatches from a single Effigy task plus a rollout name argument so the
+// manifest only needs one public Rhai entrypoint.
 
 fn exists_check(path) {
     return #{ kind: "exists", path: path };
@@ -45,7 +45,7 @@ fn run_check(item) {
 
 let checks = #{};
 
-checks["check:admin-freshness-rollout"] = #{
+checks["admin-freshness"] = #{
     title: "admin freshness rollout",
     success: "Admin freshness rollout checks passed.",
     failure: "Freshness rollout checks failed",
@@ -74,7 +74,7 @@ checks["check:admin-freshness-rollout"] = #{
     ],
 };
 
-checks["check:auth-security-alerting-rollout"] = #{
+checks["auth-security-alerting"] = #{
     title: "auth security alerting rollout",
     success: "Auth security alerting checks passed.",
     failure: "Auth security alerting checks failed",
@@ -90,7 +90,7 @@ checks["check:auth-security-alerting-rollout"] = #{
     ],
 };
 
-checks["check:reorder-conflict-rollout"] = #{
+checks["reorder-conflict"] = #{
     title: "reorder conflict rollout",
     success: "Reorder conflict rollout checks passed.",
     failure: "Reorder conflict rollout checks failed",
@@ -107,15 +107,19 @@ checks["check:reorder-conflict-rollout"] = #{
     ],
 };
 
+if args.len() != 1 {
+    throw "usage: check:rollout <admin-freshness|auth-security-alerting|reorder-conflict>";
+}
+
 let selected = #{};
-if task_name == "check:admin-freshness-rollout" {
-    selected = checks["check:admin-freshness-rollout"];
-} else if task_name == "check:auth-security-alerting-rollout" {
-    selected = checks["check:auth-security-alerting-rollout"];
-} else if task_name == "check:reorder-conflict-rollout" {
-    selected = checks["check:reorder-conflict-rollout"];
+if args[0] == "admin-freshness" {
+    selected = checks["admin-freshness"];
+} else if args[0] == "auth-security-alerting" {
+    selected = checks["auth-security-alerting"];
+} else if args[0] == "reorder-conflict" {
+    selected = checks["reorder-conflict"];
 } else {
-    throw `unsupported docs rollout check task: ${task_name}`;
+    throw `unsupported docs rollout check: ${args[0]}`;
 }
 log(`Running ${selected["title"]} checks...`);
 
