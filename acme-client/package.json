@@ -1,26 +1,16 @@
 {
-    "name": "acme-client",
-    "version": "0.0.1",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "tasks": "effigy tasks",
-        "health": "effigy health",
-        "doctor": "effigy doctor",
-        "check": "effigy check",
-        "build": "effigy build",
-        "validate": "effigy validate",
-        "qa": "effigy qa",
-        "effigy:dev": "effigy-dev"
-    },
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "dependencies": {
-        "@decodelabs/underlay": "file:../../underlay"
-    },
-    "devDependencies": {
-        "@types/node": "^25.3.0",
-        "typescript": "^5.9.3",
-        "vitest": "^4.0.18"
-    }
+  "name": "acme-client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "@decodelabs/underlay": "file:../../underlay"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
 }

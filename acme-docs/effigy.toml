@@ -44,6 +44,6 @@ qa = [
   { task = "qa:docs" },
 ]
 
-"check:admin-freshness-rollout" = "bash ../scripts/check-admin-freshness-rollout.sh {args}"
-"check:auth-security-alerting-rollout" = "bash ../scripts/check-auth-security-alerting-rollout.sh {args}"
-"check:reorder-conflict-rollout" = "bash ../scripts/check-reorder-conflict-rollout.sh {args}"
+"check:admin-freshness-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
+"check:auth-security-alerting-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
+"check:reorder-conflict-rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]

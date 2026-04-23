@@ -103,8 +103,8 @@ underlay-reference/
 │   │   ├── backlog/       # Unscheduled candidate milestones
 │   └── logs/              # Month-sharded execution history
 │
-├── docker-compose.yml     # Development services
-├── scripts/               # Setup scripts
+├── effigy.toml            # Bundle-backed local dev entrypoint
+├── scripts/               # Effigy Rhai automation helpers
 └── underlay -> ...        # Symlink to Underlay library
 ```
 

@@ -3,16 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": {
-    "tasks": "effigy tasks",
-    "health": "effigy health",
-    "doctor": "effigy doctor",
-    "check": "effigy check",
-    "validate": "effigy validate",
-    "qa": "effigy qa",
-    "refresh:deps": "effigy refresh:deps",
-    "effigy:dev": "effigy-dev"
-  },
   "exports": {
     ".": {
       "types": "./src/index.ts",

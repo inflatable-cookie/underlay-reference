@@ -1,35 +1,23 @@
 {
-	"name": "acme-front",
-	"private": true,
-	"version": "0.0.1",
-	"type": "module",
-	"scripts": {
-		"tasks": "effigy tasks",
-		"health": "effigy health",
-		"doctor": "effigy doctor",
-		"dev": "effigy dev",
-		"check": "effigy check",
-		"build": "effigy build",
-		"preview": "effigy preview",
-		"validate": "effigy validate",
-		"qa": "effigy qa",
-		"effigy:dev": "effigy-dev"
-	},
-	"devDependencies": {
-		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.53.0",
-		"@sveltejs/vite-plugin-svelte": "^6.2.4",
-		"@types/node": "^25.3.0",
-		"svelte": "^5.53.2",
-		"svelte-check": "^4.4.3",
-		"typescript": "^5.9.3",
-		"vite": "^7.3.1",
-		"vitest": "^4.0.18"
-	},
-	"dependencies": {
-		"@decodelabs/underlay": "file:../../underlay",
-		"@poodle/svelte": "file:../../poodle/packages/svelte/components",
-		"@poodle/svelte-tokens": "file:../../poodle/packages/svelte/tokens",
-		"acme-client": "file:../acme-client"
-	}
+  "name": "acme-front",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.53.0",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@types/node": "^25.3.0",
+    "svelte": "^5.53.2",
+    "svelte-check": "^4.4.3",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@decodelabs/underlay": "file:../../underlay",
+    "@poodle/svelte": "file:../../poodle/packages/svelte/components",
+    "@poodle/svelte-tokens": "file:../../poodle/packages/svelte/tokens",
+    "acme-client": "file:../acme-client"
+  }
 }

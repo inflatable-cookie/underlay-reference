@@ -1,43 +1,19 @@
 [catalog]
 alias = "underlay-reference"
 
-[package_manager]
-js = "bun"
+[bundle]
+base = "underlay"
+host = "acme.test"
+project_name = "underlay-reference-dev"
+workspace_subdir = "underlay-reference"
+database = "acme"
 
 [bootstrap]
 setup = ["bootstrap:deps"]
 start = "dev"
 
 [systems.dev]
-container = "stack"
-working_dir = "/workspace-root/underlay-reference"
-user = "dev"
-home = "/home/dev"
 mounts = ["../underlay", "../poodle"]
-
-[containers.stack]
-startup = "detached"
-context = "dev"
-project_name = "underlay-reference-dev"
-primary_service = "workspace"
-compose_file = "infra/dev/docker-compose.yml"
-
-[containers.stack.aliases]
-psql = "postgres"
-
-[containers.stack.health]
-check = "tcp://127.0.0.1:5432"
-timeout_secs = 90
-
-[containers.stack.dns]
-routes = [
-  { domain = "acme.test", tls = true, port = 41003, service = "workspace" },
-  { domain = "admin.acme.test", tls = true, port = 41002, service = "workspace" },
-  { domain = "api.acme.test", tls = true, port = 41001, service = "workspace" },
-  { domain = "mailpit.acme.test", port = 8025, service = "mailpit" },
-  { domain = "minio.acme.test", port = 9001, service = "minio" },
-]
-
 
 [tasks.health]
 host = true
@@ -100,12 +76,11 @@ mode = "tui"
 container_lifecycle = true
 gateway = true
 health_wait = true
-ready_message = "front https://acme.test | admin https://admin.acme.test | api https://api.acme.test | mailpit http://mailpit.acme.test | minio http://minio.acme.test"
 concurrent = [
   { role = "lifecycle", start = 1, tab = 6 },
   { role = "shell", service = "workspace", start = 2, tab = 5 },
   { task = "acme-api/dev", start = 3, tab = 4 },
   { task = "acme-api/jobs", start = 4, tab = 3, start_after_ms = 1500 },
-  { name = "front", task = "acme-front/dev", setup = [{ rhai = "scripts/dev/ui-setup.rhai" }], start = 5, tab = 2 },
-  { name = "admin", task = "acme-admin/dev", setup = [{ rhai = "scripts/dev/ui-setup.rhai" }], start = 6, tab = 1 }
+  { name = "front", task = "acme-front/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 5, tab = 2 },
+  { name = "admin", task = "acme-admin/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 6, tab = 1 }
 ]

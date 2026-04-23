@@ -329,8 +329,8 @@ Make it easy for others to use as a reference.
 - [x] `acme-docs/architecture/003-domain-patterns.md` - CRUD, soft-delete, ordering
 
 **Files:**
-- `docker-compose.yml` (new)
-- `scripts/setup.sh` (new)
+- `effigy.toml` (new)
+- `effigy bootstrap:deps` setup task
 - `acme-admin/.env.example` (new)
 - `acme-front/.env.example` (new)
 - `acme-docs/architecture/*.md` (new)
