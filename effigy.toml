@@ -11,7 +11,7 @@ database = "acme"
 [bootstrap]
 run = [
   { task = "container up --detach" },
-  { task = "deps sync ../underlay acme-api acme-client acme-ui acme-front acme-admin" },
+  { task = "bootstrap deps sync ../underlay acme-api acme-client acme-ui acme-front acme-admin" },
 ]
 start = "dev"
 
@@ -27,9 +27,6 @@ branch = "main"
 
 [systems.dev]
 mounts = ["../underlay", "../poodle"]
-
-[task_defaults]
-run_in = "host"
 
 [tasks.health]
 run = [
@@ -61,6 +58,7 @@ run = [
 
 [tasks.dev]
 mode = "tui"
+run_in = "container"
 container_lifecycle = true
 gateway = true
 health_wait = true
