@@ -12,29 +12,24 @@ validate = [
 ]
 qa = [{ task = "validate" }]
 
-[tasks.dev]
-run = "PUBLIC_API_URL=https://api.acme.test PUBLIC_FRONT_URL=https://acme.test PUBLIC_ADMIN_URL=https://admin.acme.test bun x vite dev --host 0.0.0.0 --port 41003 --strictPort"
+dev = [
+  { task = "clean" },
+  { task = "sync" },
+  "bun x vite dev --host 0.0.0.0 --force"
+]
 
-[tasks.build]
-run = "bun x vite build"
+build = "bun x vite build"
+preview = "bun x vite preview"
 
-[tasks.preview]
-run = "bun x vite preview"
+clean = "rm -rf .svelte-kit node_modules/.vite"
+sync = "bun x svelte-kit sync"
+prepare = "bun x svelte-kit sync || echo ''"
 
-[tasks.sync]
-run = "bun x svelte-kit sync"
-
-[tasks.prepare]
-run = "bun x svelte-kit sync || echo ''"
-
-[tasks.check]
-run = [
+check = [
   { task = "sync" },
   "bun x svelte-check --tsconfig ./tsconfig.json"
 ]
-
-[tasks."check:watch"]
-run = [
+"check:watch" = [
   { task = "sync" },
   "bun x svelte-check --tsconfig ./tsconfig.json --watch"
 ]
