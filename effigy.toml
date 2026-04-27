@@ -8,22 +8,12 @@ project_name = "underlay-reference-dev"
 workspace_subdir = "underlay-reference"
 database = "acme"
 
-[bootstrap]
-run = [
-  { task = "container up --detach" },
-  { task = "bootstrap deps sync ../underlay acme-api acme-client acme-ui acme-front acme-admin" },
-]
-start = "dev"
-
-[[bootstrap.children]]
-path = "../underlay"
-repo = "git@github.com:inflatable-cookie/underlay.git"
-branch = "main"
-
-[[bootstrap.children]]
-path = "../poodle"
-repo = "git@github.com:inflatable-cookie/poodle.git"
-branch = "main"
+[bundle.dirs]
+api = "acme-api"
+client = "acme-client"
+ui = "acme-ui"
+front = "acme-front"
+admin = "acme-admin"
 
 [systems.dev]
 mounts = ["../underlay", "../poodle"]
@@ -68,5 +58,5 @@ concurrent = [
   { task = "acme-api/dev", start = 3, tab = 4 },
   { task = "acme-api/jobs", start = 4, tab = 3, start_after_ms = 1500 },
   { name = "front", task = "acme-front/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 5, tab = 2 },
-  { name = "admin", task = "acme-admin/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 6, tab = 1 }
+  { name = "admin", task = "acme-admin/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 6, tab = 1 },
 ]
