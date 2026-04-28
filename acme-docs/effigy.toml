@@ -1,9 +1,6 @@
 [catalog]
 alias = "acme-docs"
 
-[task_defaults]
-run_in = "either"
-
 [docs_policy.indexes.vision]
 file = "vision/README.md"
 dir = "vision"

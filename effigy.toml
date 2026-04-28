@@ -9,6 +9,7 @@ workspace_subdir = "underlay-reference"
 database = "acme"
 
 [bundle.dirs]
+docs = "acme-docs"
 api = "acme-api"
 client = "acme-client"
 ui = "acme-ui"
@@ -17,45 +18,3 @@ admin = "acme-admin"
 
 [systems.dev]
 mounts = ["../underlay", "../poodle"]
-
-[tasks.health]
-run = [
-  { task = "acme-docs/health" },
-  { task = "acme-api/health" },
-  { task = "acme-client/health" },
-  { task = "acme-admin/health" },
-  { task = "acme-front/health" },
-  { task = "acme-ui/health" },
-]
-
-[tasks.validate]
-run = [
-  { task = "acme-docs/validate" },
-  { task = "acme-api/validate" },
-  { task = "acme-client/validate" },
-  { task = "acme-admin/validate" },
-  { task = "acme-front/validate" },
-  { task = "acme-ui/validate" },
-]
-
-[tasks.qa]
-run = [
-  { task = "health" },
-  { task = "validate" },
-  { task = "qa:docs" },
-  { task = "qa:northstar" },
-]
-
-[tasks.dev]
-mode = "tui"
-container_lifecycle = true
-gateway = true
-health_wait = true
-concurrent = [
-  { name = "admin", task = "acme-admin/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 6, tab = 1 },
-  { name = "front", task = "acme-front/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 5, tab = 2 },
-  { name = "jobs" task = "acme-api/jobs", start = 4, tab = 3, start_after_ms = 1500 },
-  { name = "api" task = "acme-api/api", start = 3, tab = 4 },
-  { role = "shell", service = "workspace", start = 2, tab = 5 },
-  { role = "lifecycle", start = 1, tab = 6 },
-]
