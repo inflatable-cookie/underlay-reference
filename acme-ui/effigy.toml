@@ -8,9 +8,6 @@ js = "bun"
 health = [{ task = "check" }]
 validate = [{ task = "check" }]
 qa = [{ task = "validate" }]
+check = "bun x svelte-check --tsconfig ./tsconfig.json"
 
-[tasks.check]
-run = "bun x svelte-check --tsconfig ./tsconfig.json"
-
-[tasks."refresh:deps"]
-run = "bun install"
+"refresh:deps" = "bun install"

@@ -5,25 +5,24 @@ alias = "acme-front"
 js = "bun"
 
 [tasks]
-health = [{ task = "check" }]
-validate = [
-  { task = "check" },
-  { task = "build" }
-]
-qa = [{ task = "validate" }]
-
 dev = [
   { task = "clean" },
   { task = "sync" },
   "bun x vite dev --host 0.0.0.0 --force"
 ]
-
 build = "bun x vite build"
 preview = "bun x vite preview"
 
 clean = "rm -rf .svelte-kit node_modules/.vite"
 sync = "bun x svelte-kit sync"
 prepare = "bun x svelte-kit sync || echo ''"
+
+health = [{ task = "check" }]
+validate = [
+  { task = "check" },
+  { task = "build" }
+]
+qa = [{ task = "validate" }]
 
 check = [
   { task = "sync" },

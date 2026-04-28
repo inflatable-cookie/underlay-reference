@@ -5,15 +5,12 @@ alias = "acme-client"
 js = "bun"
 
 [tasks]
+build = "bun x tsc -p tsconfig.json"
+check = "bun x tsc -p tsconfig.json --noEmit"
+
+qa = [{ task = "validate" }]
 health = [{ task = "check" }]
 validate = [
   { task = "check" },
   { task = "build" }
 ]
-qa = [{ task = "validate" }]
-
-[tasks.build]
-run = "bun x tsc -p tsconfig.json"
-
-[tasks.check]
-run = "bun x tsc -p tsconfig.json --noEmit"

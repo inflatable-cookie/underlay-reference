@@ -1,19 +1,18 @@
 [catalog]
 alias = "acme-api"
 
-[package_manager]
-js = "bun"
-
 [tasks]
-build = "cargo build {args}"
-health = [{ task = "build" }]
-validate = [{ task = "build" }]
-qa = [{ task = "validate" }]
 api = "cargo run -p acme-api {args}"
 jobs = "cargo run -p acme-jobs {args}"
+build = "cargo build {args}"
+
 "db:drop" = "cargo run -p acme-db --bin reset_dev_db {args}"
 "db:migrate" = "cargo run -p acme-db --bin migrate_dev_db {args}"
 "db:reset" = [
   { task = "db:drop" },
   { task = "db:migrate" }
 ]
+
+health = [{ task = "build" }]
+validate = [{ task = "build" }]
+qa = [{ task = "validate" }]
