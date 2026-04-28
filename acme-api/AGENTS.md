@@ -13,6 +13,9 @@
 
 ## Effigy-First Execution
 
+- Let Effigy choose host vs container for normal work. Do not touch host-side `node_modules`, `vendor`, `target`, `.pnpm-store`, or `.svelte-kit` expecting it to affect the live runtime.
+- Use `effigy <task>`, `effigy prep`, or `effigy container shell` when you need to change runtime dependencies or inspect the live environment.
+
 Default flow inside `acme-api/`:
 1. Run `effigy tasks`
 2. Run `effigy health`

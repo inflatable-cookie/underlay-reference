@@ -33,6 +33,13 @@ Default flow from the workspace root:
 4. Prefer `effigy <task>` for supported workspace and child-repo work
 5. Fall back to raw package-local commands only when Effigy does not yet cover the path
 
+## Runtime Stance
+
+- Treat the live stack as Effigy-owned. Use `effigy dev`, `effigy prep`, package-owned Effigy tasks, or `effigy container shell` when you need to affect the running environment.
+- Do not run `bun install`, `npm install`, `pnpm install`, `cargo build`, or similar hydration/build commands on the host expecting them to change the live runtime unless the task is explicitly host-owned.
+- Do not treat host-side `node_modules`, `vendor`, `target`, `.pnpm-store`, `.svelte-kit`, or similar artifact dirs as the source of truth for the running stack. Those may be isolated inside the container runtime.
+- When raw `bun` or `cargo` is genuinely needed, prefer running it through `effigy container shell` when the live runtime matters.
+
 For first-time local bring-up from outside this repo:
 - use `effigy bootstrap git@github.com:inflatable-cookie/underlay-reference.git`
 - add `--start` when you want bootstrap to launch `dev` after dependency setup
@@ -42,6 +49,8 @@ Workspace notes:
 - use child-owned tasks from the workspace root when they resolve uniquely (`db:*`)
 - when modifying a specific repo, follow that repo's local `AGENTS.md`
 - do not treat `cargo build`, `bun check`, or ad hoc shell commands as the default entrypoint when an Effigy task exists
+- sibling `underlay` and `poodle` repos are mounted from `../underlay` and `../poodle`; do not recreate the old symlink/bootstrap pattern
+- treat this repo as the canonical underlay consumer shape; prefer fixing shared patterns here or in the bundle before inventing app-specific exceptions elsewhere
 
 ## Validation
 
