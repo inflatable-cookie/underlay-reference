@@ -55,7 +55,7 @@ health_wait = true
 concurrent = [
   { role = "lifecycle", start = 1, tab = 6 },
   { role = "shell", service = "workspace", start = 2, tab = 5 },
-  { task = "acme-api/dev", start = 3, tab = 4 },
+  { task = "acme-api/api", start = 3, tab = 4 },
   { task = "acme-api/jobs", start = 4, tab = 3, start_after_ms = 1500 },
   { name = "front", task = "acme-front/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 5, tab = 2 },
   { name = "admin", task = "acme-admin/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 6, tab = 1 },
