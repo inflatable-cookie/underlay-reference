@@ -31,7 +31,7 @@ fn run_search(pattern, paths) {
 fn run_check(item) {
     let check = item[1];
     if check["kind"] == "exists" {
-        return #{ success: path_exists(check["path"]), stdout: "" };
+        return #{ success: fs::exists(check["path"]), stdout: "" };
     }
     if check["kind"] == "search" {
         return run_search(check["pattern"], check["paths"]);
