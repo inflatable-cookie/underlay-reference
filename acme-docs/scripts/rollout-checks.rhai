@@ -19,7 +19,7 @@ fn run_search(pattern, paths) {
     let total = 0;
     let output = "";
     for path in paths {
-        let result = search_files(path, pattern, #{});
+        let result = search::files(path, pattern, #{});
         total += result["count"];
         if result["stdout"] != "" {
             output += result["stdout"].to_string() + "\n";
