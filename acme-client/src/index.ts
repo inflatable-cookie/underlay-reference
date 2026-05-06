@@ -39,6 +39,7 @@ export type {
   PasswordResetVerifyResponse,
   PasswordResetCompleteRequest,
   ListResponse,
+  PagedListResponse,
   SingleResponse,
 } from "./types/common-types.js";
 

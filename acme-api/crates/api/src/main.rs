@@ -122,10 +122,7 @@ async fn main() -> anyhow::Result<()> {
         if app_config.env.is_development() {
             let local_config = LocalConfig::new(
                 "./dev-uploads",
-                format!(
-                    "http://{}:{}/v1/dev-uploads",
-                    app_config.http.public_host, app_config.http.port
-                ),
+                format!("{}/v1/dev-uploads", app_config.http.public_origin()),
             );
 
             let local = LocalAdapter::new(local_config)

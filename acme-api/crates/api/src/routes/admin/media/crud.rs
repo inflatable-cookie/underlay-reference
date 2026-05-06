@@ -41,13 +41,9 @@ pub(crate) struct MediaListQuery {
     #[serde(flatten)]
     query: QueryParams,
     #[serde(default)]
-    limit: Option<i64>,
+    page: Option<u32>,
     #[serde(default)]
-    cursor: Option<String>,
-    #[serde(default)]
-    direction: Option<PaginationDirection>,
-    #[serde(default)]
-    include_total: Option<bool>,
+    limit: Option<u32>,
 }
 
 /// Check if a file with the given hash already exists.
@@ -185,62 +181,6 @@ pub async fn list_media(
     Query(params): Query<MediaListQuery>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
-    let pagination_requested = params.limit.is_some()
-        || params.cursor.is_some()
-        || params.direction.is_some()
-        || params.include_total.is_some();
-
-    if pagination_requested {
-        let mut pagination = PaginationParams::default();
-        if let Some(limit) = params.limit {
-            pagination.limit = limit;
-        }
-        pagination.cursor = params.cursor.clone();
-        if let Some(direction) = params.direction {
-            pagination.direction = direction;
-        }
-        if let Some(include_total) = params.include_total {
-            pagination.include_total = include_total;
-        }
-
-        return match media::list_media_admin_paginated(pool, pagination).await {
-            Ok(response) => {
-                let items: Vec<MediaSummaryDto> = response
-                    .data
-                    .into_iter()
-                    .map(|row| {
-                        MediaSummaryDto::from_row_with_thumbnail(row, |key| {
-                            state.blob_adapter.public_url(key)
-                        })
-                    })
-                    .collect();
-                Ok(Json(json!({
-                    "data": items,
-                    "next_cursor": response.next_cursor,
-                    "prev_cursor": response.prev_cursor,
-                    "has_more": response.has_more,
-                    "total": response.total
-                }))
-                .into_response())
-            }
-            Err(e) => {
-                tracing::error!("Failed to list media: {}", e);
-                Err(crate::db_errors::internal_with_diagnostics(
-                    "media.list_failed",
-                    "Failed to list media",
-                    &e,
-                )
-                .with_context(json!({
-                    "operation": "media.list",
-                    "profile": match params.profile {
-                        MediaListProfile::List => "list",
-                        MediaListProfile::Filter => "filter",
-                    }
-                })))
-            }
-        };
-    }
-
     let mut query = params.query.clone();
     if query.sort.is_empty() && matches!(params.profile, MediaListProfile::Filter) {
         query
@@ -248,9 +188,14 @@ pub async fn list_media(
             .push(underlay_http::query::SortField::asc("title"));
     }
 
-    match media::list_media_admin(pool, &query).await {
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(30).clamp(1, 100);
+    let offset = (page.saturating_sub(1) * limit) as i64;
+
+    match media::list_media_admin_paged(pool, &query, limit as i64, offset).await {
         Ok(rows) => {
             let items: Vec<MediaSummaryDto> = rows
+                .data
                 .into_iter()
                 .map(|row| {
                     MediaSummaryDto::from_row_with_thumbnail(row, |key| {
@@ -260,10 +205,8 @@ pub async fn list_media(
                 .collect();
             Ok(Json(json!({
                 "data": items,
-                "next_cursor": null,
-                "prev_cursor": null,
-                "has_more": false,
-                "total": items.len()
+                "has_more": rows.has_more,
+                "total": rows.total
             }))
             .into_response())
         }

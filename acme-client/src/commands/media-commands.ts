@@ -1,9 +1,4 @@
-import {
-  appendPaginationParams,
-  type PaginatedResponse,
-  type PaginationParams,
-} from "@decodelabs/underlay/client/pagination";
-import { getAdminHttpClient } from "../utils/client-factory.js";
+import { getAcmeClientConfig, getAdminHttpClient } from "../utils/client-factory.js";
 import {
   appendQueryParams,
   type QueryParams,
@@ -11,7 +6,7 @@ import {
 /**
  * Media Library commands - media operations for admin UI
  */
-import type { ListResponse, SingleResponse } from "../types/common-types.js";
+import type { ListResponse, PagedListResponse, SingleResponse } from "../types/common-types.js";
 import type {
   MediaSummary,
   MediaDetail,
@@ -25,14 +20,66 @@ import type {
   FinaliseUploadRequest,
   FinaliseUploadResponse,
 } from "../types/media-types.js";
-import { getHeaderValueCaseInsensitive, type WithEtag } from "./admin/utils.js";
+import {
+  getHeaderValueCaseInsensitive,
+  toSnakeQueryParams,
+  type WithEtag,
+} from "./admin/utils.js";
 
 export type MediaListProfile = "list" | "filter";
 
 export interface ListMediaOptions {
   profile?: MediaListProfile;
   query?: QueryParams;
-  pagination?: PaginationParams;
+}
+
+function normalizeLocalUploadPlanUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (
+      !parsed.pathname.startsWith("/v1/dev-uploads/")
+      && !parsed.pathname.startsWith("/v1/dev-blobs/")
+    ) {
+      return url;
+    }
+
+    const apiBase = new URL(getAcmeClientConfig().baseUrl);
+    parsed.protocol = apiBase.protocol;
+    parsed.hostname = apiBase.hostname;
+    parsed.port = apiBase.port;
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function normalizeMediaSummary(media: MediaSummary): MediaSummary {
+  return {
+    ...media,
+    thumbnailUrl: media.thumbnailUrl
+      ? normalizeLocalUploadPlanUrl(media.thumbnailUrl)
+      : media.thumbnailUrl,
+  };
+}
+
+function normalizeMediaVersion(version: MediaVersion): MediaVersion {
+  return {
+    ...version,
+    url: version.url ? normalizeLocalUploadPlanUrl(version.url) : version.url,
+    renditions: (version.renditions ?? []).map((rendition) => ({
+      ...rendition,
+      url: rendition.url ? normalizeLocalUploadPlanUrl(rendition.url) : rendition.url,
+    })),
+  };
+}
+
+function normalizeMediaDetail(media: MediaDetail): MediaDetail {
+  return {
+    ...media,
+    currentVersion: media.currentVersion
+      ? normalizeMediaVersion(media.currentVersion)
+      : media.currentVersion,
+  };
 }
 
 // ============================================================================
@@ -74,17 +121,20 @@ export async function listMedia(
   fetchFn: typeof fetch,
   accessToken: string,
   options?: ListMediaOptions,
-): Promise<PaginatedResponse<MediaSummary>> {
+): Promise<PagedListResponse<MediaSummary>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   let path = "/v1/admin/media";
   if (options?.query) {
-    path = appendQueryParams(path, options.query);
+    path = appendQueryParams(path, toSnakeQueryParams(options.query));
   }
   if (options?.profile) {
     path += `${path.includes("?") ? "&" : "?"}profile=${encodeURIComponent(options.profile)}`;
   }
-  path = appendPaginationParams(path, options?.pagination ?? {});
-  return await http.get<PaginatedResponse<MediaSummary>>(path);
+  const response = await http.get<PagedListResponse<MediaSummary>>(path);
+  return {
+    ...response,
+    data: response.data.map(normalizeMediaSummary),
+  };
 }
 
 export async function listMediaAdmin(
@@ -110,7 +160,7 @@ export async function listMediaTrash(
   const response = await http.get<ListResponse<MediaSummary>>(
     "/v1/admin/media/trash",
   );
-  return response.data;
+  return response.data.map(normalizeMediaSummary);
 }
 
 /**
@@ -126,7 +176,7 @@ export async function createMedia(
     "/v1/admin/media",
     request,
   );
-  return response.data;
+  return normalizeMediaDetail(response.data);
 }
 
 /**
@@ -151,7 +201,7 @@ export async function getMediaWithEtag(
     `/v1/admin/media/${encodeURIComponent(mediaId)}`,
   );
   return {
-    data: response.body!.data,
+    data: normalizeMediaDetail(response.body!.data),
     etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
   };
 }
@@ -191,7 +241,7 @@ export async function updateMediaWithEtag(
     headers,
   );
   return {
-    data: response.body!.data,
+    data: normalizeMediaDetail(response.body!.data),
     etag: getHeaderValueCaseInsensitive(response.headers, "etag"),
   };
 }
@@ -263,7 +313,13 @@ export async function initiateUpload(
     `/v1/admin/media/${encodeURIComponent(mediaId)}/versions/initiate-upload`,
     request,
   );
-  return response;
+  return {
+    ...response,
+    uploadPlan: {
+      ...response.uploadPlan,
+      uploadUrl: normalizeLocalUploadPlanUrl(response.uploadPlan.uploadUrl),
+    },
+  };
 }
 
 /**
@@ -302,7 +358,7 @@ export async function listVersions(
   const response = await http.get<ListResponse<MediaVersion>>(
     `/v1/admin/media/${encodeURIComponent(mediaId)}/versions`,
   );
-  return response.data;
+  return response.data.map(normalizeMediaVersion);
 }
 
 /**

@@ -3,7 +3,7 @@
  *
  * Re-exports all admin command modules for backward compatibility.
  */
-export { listCategories, listCategoriesForSuggestions, getCategory, getCategoryWithEtag, createCategory, updateCategory, updateCategoryWithEtag, softDeleteCategory, reorderCategories } from "./admin/category-commands.js";
+export { listCategories, listCategoriesForSuggestions, getCategory, getCategoryWithEtag, createCategory, updateCategory, updateCategoryWithEtag, softDeleteCategory, reorderCategories, batchDeleteCategories } from "./admin/category-commands.js";
 export { listProjects, getProject, getProjectWithEtag, createProject, updateProject, updateProjectWithEtag, softDeleteProject, reorderProjects, batchDeleteProjects } from "./admin/project-commands.js";
 export { listTasks, getTask, getTaskWithEtag, createTask, updateTask, updateTaskWithEtag, softDeleteTask, reorderTasks, batchDeleteTasks, batchUpdateTaskStatus } from "./admin/task-commands.js";
 export { listLabels, createLabel, getTaskLabels, setTaskLabels } from "./admin/label-commands.js";

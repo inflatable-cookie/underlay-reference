@@ -1,525 +1,172 @@
 <script lang="ts">
-import {
-  getMediaKindAccent,
-  getMediaKindLabel,
-  getMediaKindIcon,
-  getMediaVisibilityAccent,
-  getMediaVisibilityLabel,
-  MediaKind,
-  MediaVisibility
-} from "@decodelabs/underlay/runtime/media";
-import {
-  useToasts,
-  copyToClipboard,
-} from "@decodelabs/underlay/runtime/feedback";
-import {
-  useAuthenticatedData,
-} from "@decodelabs/underlay/runtime/auth";
-import {
-  useBatchSelection,
-} from "@decodelabs/underlay/runtime/data";
-import {
-  EmptyState as PoodleEmptyState,
-  FilterToolbar,
-  MediaThumbnail as PoodleMediaThumbnail,
-  PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte";
-  import { AlertDialog as PoodleAlertDialog,
-  Callout as PoodleCallout,
-  Grid as PoodleGrid,
-  ListCard as PoodleListCard,
-  Menu as PoodleMenu,
-  OrderBy as PoodleOrderBy,
-  formatFileSize,
-  type BulkAction,
-  type MenuItem,
-  type OrderByValue } from "@poodle/svelte";
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-    import {
-    BulkActionBar as PoodleBulkActionBar,
-    Button as PoodleButton,
-    Field as PoodleField,
-    IconButton as PoodleIconButton,
-    Pill as PoodlePill,
-    TextInput as PoodleSearchField,
-    Select as PoodleSelect
-  } from "@poodle/svelte";
+  import { EntityListPage } from "@decodelabs/underlay/templates";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import { parseQueryParams } from "@decodelabs/underlay/client/query";
+  import {
+    buildQueryString,
+    parseQueryParams,
+    type QueryParams
+  } from "@decodelabs/underlay/client/query";
+  import { copyToClipboard, useToasts } from "@decodelabs/underlay/runtime/feedback";
+  import { IconButton } from "@poodle/svelte";
+  import { MediaKind, MediaVisibility } from "@decodelabs/underlay/runtime/media";
+  import { MediaListCard } from "$lib/cards";
   import { mediaCommands, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { squareCheckIcon, trash2Icon, uploadIcon } from "$lib/ui/poodle-icon-nodes";
-  import Upload from "lucide-svelte/icons/upload";
-  import Image from "lucide-svelte/icons/image";
-  import Trash2 from "lucide-svelte/icons/trash-2";
-  import CheckSquare from "lucide-svelte/icons/check-square";
 
   const toastStore = useToasts();
 
-  // Track URL for refetching when filters change
-  let previousUrl = $state<string | null>(null);
-
-  // Fetch media using authenticated data pattern
-  const pageData = useAuthenticatedData(
-    async (fetch, token) => {
-      const query = parseQueryParams($page.url.searchParams);
-      const response = await mediaCommands.listMedia(fetch, token, {
-        profile: "list",
-        query,
-      });
-      return { items: response.data };
-    },
-    {
-      defaultValue: { items: [] as MediaSummary[] },
-      onSuccess: () => {
-        previousUrl = $page.url.search;
-      }
-    }
-  );
-
-  // Refetch when URL changes (for sorting/filtering)
-  $effect(() => {
-    const currentUrl = $page.url.search;
-    if (previousUrl !== null && previousUrl !== currentUrl) {
-      previousUrl = currentUrl;
-      pageData.refetch();
-    }
-  });
-
-  // Parse current state from URL
   const currentQuery = $derived(parseQueryParams($page.url.searchParams));
 
-  // Convert URL sort to OrderByValue format
-  const orderBy: OrderByValue = $derived(
-    (currentQuery.sort ?? []).map((s) => ({ key: s.field, direction: s.direction }))
-  );
-
-  // Get filter values from URL
-  const selectedTitle = $derived(
-    currentQuery.filters?.find((f) => f.field === "title")?.value ?? ""
-  );
-  const selectedKind = $derived(
-    currentQuery.filters?.find((f) => f.field === "kind")?.value ?? "All"
-  );
-  const selectedVisibility = $derived(
-    currentQuery.filters?.find((f) => f.field === "visibility")?.value ?? "All"
-  );
-
-  const sortFields = [
-    { key: "title", label: "Title" },
-    { key: "kind", label: "Kind" },
-    { key: "updatedAt", label: "Updated", defaultDirection: "desc" as const },
-    { key: "createdAt", label: "Created", defaultDirection: "desc" as const }
-  ];
-
-  const kindItems = [
-    { value: "All", label: "All types" },
-    { value: MediaKind.Image, label: "Image" },
-    { value: MediaKind.Pdf, label: "PDF" },
-    { value: MediaKind.Document, label: "Document" },
-    { value: MediaKind.Video, label: "Video" },
-    { value: MediaKind.Audio, label: "Audio" }
-  ];
-
-  const visibilityItems = [
-    { value: "All", label: "All visibility" },
-    { value: "public", label: "Public" },
-    { value: "restricted", label: "Restricted" }
-  ];
-
-  function toPoodleMediaKind(kind: string): "image" | "audio" | "video" | "document" | "embed" {
-    if (kind === MediaKind.Image) return "image";
-    if (kind === MediaKind.Audio) return "audio";
-    if (kind === MediaKind.Video) return "video";
-    return "document";
-  }
-
-  let titleFilterInput = $state("");
-  let titleFilterTimer: ReturnType<typeof setTimeout> | null = null;
-
-  $effect(() => {
-    titleFilterInput = selectedTitle.replace(/%/g, "");
-  });
-
-  // Update URL when sort changes
-  function handleSortChange(newOrderBy: OrderByValue) {
+  function updateUrl(nextQuery: QueryParams) {
     const url = new URL($page.url);
-
-    if (newOrderBy.length > 0) {
-      const sortString = newOrderBy.map((s) => `${s.key}:${s.direction}`).join(",");
-      url.searchParams.set("sort", sortString);
-    } else {
-      url.searchParams.delete("sort");
-    }
-
+    url.search = buildQueryString(nextQuery);
     goto(url.toString(), { replaceState: true, keepFocus: true });
   }
 
-  // Update URL when title filter changes
-  function handleTitleChange(title: string) {
-    const url = new URL($page.url);
-
-    if (title && title.trim()) {
-      url.searchParams.set("filter[title][like]", `%${title.trim()}%`);
-    } else {
-      url.searchParams.delete("filter[title][like]");
-    }
-
-    goto(url.toString(), { replaceState: true, keepFocus: true });
-  }
-
-  function handleTitleInput(value: string) {
-    titleFilterInput = value;
-    if (titleFilterTimer) clearTimeout(titleFilterTimer);
-    titleFilterTimer = setTimeout(() => {
-      handleTitleChange(value);
-    }, 500);
-  }
-
-  // Update URL when kind filter changes
-  function handleKindChange(value: string) {
-    const url = new URL($page.url);
-
-    if (value && value !== "All") {
-      url.searchParams.set("filter[kind]", value);
-    } else {
-      url.searchParams.delete("filter[kind]");
-    }
-
-    goto(url.toString(), { replaceState: true, keepFocus: true });
-  }
-
-  // Update URL when visibility filter changes
-  function handleVisibilityChange(value: string) {
-    const url = new URL($page.url);
-
-    if (value && value !== "All") {
-      url.searchParams.set("filter[visibility]", value);
-    } else {
-      url.searchParams.delete("filter[visibility]");
-    }
-
-    goto(url.toString(), { replaceState: true, keepFocus: true });
+  async function dataLoader(fetch: typeof window.fetch, token: string | null, query: QueryParams) {
+    if (!token) throw new Error("Not authenticated");
+    return await mediaCommands.listMedia(fetch, token, {
+      profile: "list",
+      query
+    });
   }
 
   async function handleDeleteMedia(mediaId: string) {
     const token = auth.getToken();
-    if (!token) {
-      toastStore.push({ variant: "error", message: "Not authenticated" });
-      return;
-    }
-
-    try {
-      await mediaCommands.softDeleteMedia(mediaId, fetch, token);
-      toastStore.push({ variant: "success", message: "Media moved to trash" });
-      await pageData.refetch();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to delete media";
-      toastStore.push({ variant: "error", message });
-    }
+    if (!token) throw new Error("Not authenticated");
+    await mediaCommands.softDeleteMedia(mediaId, fetch, token);
+    toastStore.push({ variant: "success", message: "Media moved to trash" });
   }
 
-  function getActionItems(item: MediaSummary): MenuItem[] {
-    return [
-      { value: `view:${item.id}`, label: "View details" },
-      { value: `delete:${item.id}`, label: "Move to trash", tone: "danger" },
-      { value: `separator-copy:${item.id}`, label: "", kind: "separator" },
-      { value: `copy-id:${item.id}`, label: "Copy media ID" }
-    ];
-  }
-
-  async function handleItemAction(value: string) {
-    const [action, id] = value.split(":");
-    if (!action || !id) return;
-
-    if (action === "view") {
-      await gotoWithContext(`/media/${id}`, {
-        label: "Media",
-        href: "/media",
-        type: "list"
-      });
-      return;
-    }
-
-    if (action === "delete") {
-      await handleDeleteMedia(id);
-      return;
-    }
-
-    if (action === "copy-id") {
-      await copyToClipboard(toastStore, id, "Copied media ID");
-    }
-  }
-
-  // Selection mode state
-  let isSelectionMode = $state(false);
-  const selection = useBatchSelection<string>();
-  let batchLoading = $state(false);
-  let showBatchDeleteConfirm = $state(false);
-
-  // Clear selection when exiting selection mode
-  $effect(() => {
-    if (!isSelectionMode) {
-      selection.clear();
-    }
-  });
-
-  function toggleSelectionMode() {
-    isSelectionMode = !isSelectionMode;
-  }
-
-  function handleClearSelection() {
-    selection.clear();
-    isSelectionMode = false;
-  }
-
-  function handleSelectAll() {
-    const allIds = (pageData.data?.items ?? []).map(m => m.id);
-    if (selection.count === allIds.length) {
-      handleClearSelection();
-      return;
-    }
-    selection.selectAll(allIds);
-  }
-
-  async function handleBatchDelete() {
+  async function handleBatchDelete(ids: string[]) {
     const token = auth.getToken();
-    if (!token) {
-      toastStore.push({ variant: "error", message: "Not authenticated" });
-      return;
-    }
-
-    showBatchDeleteConfirm = false;
-    batchLoading = true;
-    try {
-      const result = await mediaCommands.batchDeleteMedia(
-        { ids: selection.selectedIds },
-        fetch,
-        token
-      );
-      toastStore.push({
-        variant: "success",
-        message: `Moved ${result.deleted} ${result.deleted === 1 ? "item" : "items"} to trash`
-      });
-      selection.clear();
-      isSelectionMode = false;
-      await pageData.refetch();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to delete media";
-      toastStore.push({ variant: "error", message });
-    } finally {
-      batchLoading = false;
-    }
+    if (!token) throw new Error("Not authenticated");
+    const result = await mediaCommands.batchDeleteMedia({ ids }, fetch, token);
+    toastStore.push({
+      variant: "success",
+      message: `Moved ${result.deleted} ${result.deleted === 1 ? "item" : "items"} to trash`
+    });
   }
 
-  const batchActions: BulkAction[] = [
-    { id: "delete", label: "Delete", icon: trash2Icon, tone: "danger" }
+  async function handleCopyId(mediaId: string) {
+    await copyToClipboard(toastStore, mediaId, "Copied media ID");
+  }
+
+  function handleUpload() {
+    void gotoWithContext("/media/upload", {
+      label: "Media",
+      href: "/media",
+      type: "list"
+    });
+  }
+
+  function handleViewTrash() {
+    void goto("/media/trash");
+  }
+
+  const filters = [
+    {
+      id: "title",
+      type: "search" as const,
+      label: "Title",
+      placeholder: "Search by title..."
+    },
+    {
+      id: "kind",
+      type: "select" as const,
+      label: "Type",
+      options: [
+        { value: "All", label: "All types" },
+        { value: MediaKind.Image, label: "Image" },
+        { value: MediaKind.Pdf, label: "PDF" },
+        { value: MediaKind.Document, label: "Document" },
+        { value: MediaKind.Video, label: "Video" },
+        { value: MediaKind.Audio, label: "Audio" }
+      ]
+    },
+    {
+      id: "visibility",
+      type: "select" as const,
+      label: "Visibility",
+      options: [
+        { value: "All", label: "All visibility" },
+        { value: MediaVisibility.Public, label: "Public" },
+        { value: MediaVisibility.Restricted, label: "Restricted" }
+      ]
+    },
+    {
+      id: "sort",
+      type: "sort" as const,
+      label: "Sort",
+      sortFields: [
+        { key: "title", label: "Title" },
+        { key: "kind", label: "Kind" },
+        { key: "updatedAt", label: "Updated", defaultDirection: "desc" as const },
+        { key: "createdAt", label: "Created", defaultDirection: "desc" as const }
+      ]
+    }
+  ];
+
+  const batchActions = [
+    {
+      id: "delete",
+      label: "Delete",
+      tone: "danger" as const,
+      icon: "trash-2",
+      confirm: {
+        title: "Move media to trash",
+        description: (count: number) =>
+          `Are you sure you want to move ${count} media ${count === 1 ? "item" : "items"} to trash?`,
+        confirmLabel: "Move to trash",
+        cancelLabel: "Keep media"
+      },
+      handler: handleBatchDelete
+    }
   ];
 </script>
 
-<PoodlePageHeader title="Media Library" backHref="/" backLabel="Back to dashboard">
-  {#snippet actions()}
-    {#if (pageData.data?.items ?? []).length > 0}
-      <PoodleIconButton
-        type="button"
-        variant="secondary"
-        tone={isSelectionMode ? "danger" : "default"}
-        icon={squareCheckIcon}
-        ariaLabel={isSelectionMode ? "Cancel selection" : "Select items"}
-        tooltip={isSelectionMode ? "Cancel Selection" : "Select Items"}
-        on:click={toggleSelectionMode}
-      />
-    {/if}
-    {#if !isSelectionMode}
-      <PoodleIconButton
-        type="button"
-        variant="secondary"
-        tone="danger"
-        icon={trash2Icon}
-        ariaLabel="View trash"
-        tooltip="View Trash"
-        on:click={() => goto("/media/trash")}
-      />
-    {/if}
-    {#if !isSelectionMode}
-      <PoodleIconButton
-        type="button"
-        variant="primary"
-        icon={uploadIcon}
-        ariaLabel="Upload media"
-        tooltip="Upload Media"
-        on:click={() =>
-          void gotoWithContext("/media/upload", {
-            label: "Media",
-            href: "/media",
-            type: "list"
-          })}
-      />
-    {/if}
-  {/snippet}
-</PoodlePageHeader>
+{#snippet mediaHeaderActions(ctx: { selectionMode: boolean; reorderMode: boolean; visibleItemCount: number })}
+  <IconButton
+    type="button"
+    variant="secondary"
+    tone="danger"
+    icon="trash-2"
+    ariaLabel="View trash"
+    tooltip="View Trash"
+    disabled={ctx.selectionMode || ctx.reorderMode}
+    on:click={handleViewTrash}
+  />
+{/snippet}
 
-<FilterToolbar ariaLabel="Media filters" summaryText="Filters">
-  <svelte:fragment slot="actions">
-    <PoodleButton type="button" variant="ghost" size="sm" onclick={() => pageData.refetch()}>
-      Refresh
-    </PoodleButton>
-  </svelte:fragment>
-  <PoodleField id="media-filter-title" label="Title" let:describedBy>
-    <PoodleSearchField type="search"
-      id="media-filter-title"
-      value={titleFilterInput}
-      describedBy={describedBy}
-      placeholder="Search by title..."
-      on:valueChange={(event) => handleTitleInput(event.detail.value)}
-    />
-  </PoodleField>
-  <PoodleField id="media-filter-kind" label="Type" let:describedBy>
-    <PoodleSelect
-      id="media-filter-kind"
-      value={selectedKind}
-      describedBy={describedBy}
-      options={kindItems}
-      placeholder="All types"
-      on:valueChange={(event) => handleKindChange(event.detail.value)}
-    />
-  </PoodleField>
-  <PoodleField id="media-filter-visibility" label="Visibility" let:describedBy>
-    <PoodleSelect
-      id="media-filter-visibility"
-      value={selectedVisibility}
-      describedBy={describedBy}
-      options={visibilityItems}
-      placeholder="All visibility"
-      on:valueChange={(event) => handleVisibilityChange(event.detail.value)}
-    />
-  </PoodleField>
-  <PoodleField id="media-filter-sort" label="Sort">
-    <PoodleOrderBy fields={sortFields} value={orderBy} onChange={handleSortChange} compact />
-  </PoodleField>
-</FilterToolbar>
+{#snippet mediaCard(media: MediaSummary, ctx: { selectionMode: boolean; reorderMode: boolean; selected: boolean; onToggle: (selected: boolean) => void; refetch: () => Promise<void> })}
+  <MediaListCard
+    {media}
+    reorderMode={ctx.reorderMode}
+    selectionMode={ctx.selectionMode}
+    selected={ctx.selected}
+    onSelectionChange={(id, selected) => ctx.onToggle(selected)}
+    onDelete={ctx.selectionMode || ctx.reorderMode ? undefined : async (id) => {
+      await handleDeleteMedia(id);
+      await ctx.refetch();
+    }}
+    onCopyId={ctx.selectionMode || ctx.reorderMode ? undefined : handleCopyId}
+  />
+{/snippet}
 
-{#if pageData.loading}
-  <PageLoading presentation="inline" message="Loading media..." />
-{:else if pageData.error}
-  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
-{:else if (pageData.data?.items ?? []).length === 0}
-  <PoodleEmptyState title="No media found">
-    <svelte:fragment slot="visual">
-      <Image size={18} />
-    </svelte:fragment>
-    <a slot="actions" href="/media/upload">Upload your first media</a>
-  </PoodleEmptyState>
-{:else}
-  <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
-    {#each pageData.data?.items ?? [] as item}
-      {@const accent = getMediaKindAccent(item.kind)}
-      <PoodleListCard
-        title={item.title ?? item.originalFilename ?? "Untitled"}
-        subtitle={isSelectionMode ? formatFileSize(item.byteSize) : undefined}
-        href={isSelectionMode ? undefined : `/media/${item.id}`}
-        accentColor={accent}
-        selectable={isSelectionMode}
-        selected={selection.isSelected(item.id)}
-        on:selectedChange={(event) => {
-          if (isSelectionMode) {
-            selection.toggle(item.id, event.detail.selected);
-          }
-        }}
-      >
-        <svelte:fragment slot="leading">
-          <PoodleMediaThumbnail
-            kind={toPoodleMediaKind(item.kind)}
-            presentation="compact"
-            aspectRatio="square"
-            ariaLabel={item.title ?? "Media thumbnail"}
-          >
-            {#if item.thumbnailUrl}
-              <img
-                src={item.thumbnailUrl}
-                alt={item.title ?? ""}
-                class="media-thumbnail-image"
-              />
-            {/if}
-          </PoodleMediaThumbnail>
-        </svelte:fragment>
-        <svelte:fragment slot="trailing">
-          <div class="media-pills">
-            <PoodlePill tone="neutral" appearance="badge" size="lg">{getMediaKindLabel(item.kind)}</PoodlePill>
-            {#if item.visibility && item.visibility !== MediaVisibility.Public}
-              <PoodlePill tone="neutral" appearance="badge" size="lg">
-                {getMediaVisibilityLabel(item.visibility)}
-              </PoodlePill>
-            {/if}
-          </div>
-        </svelte:fragment>
-        <svelte:fragment slot="actions">
-          {#if !isSelectionMode}
-            <PoodleMenu
-              items={getActionItems(item)}
-              placement="bottom-end"
-              triggerAriaLabel="Media actions"
-              on:action={(event: CustomEvent<{ value: string }>) => void handleItemAction(event.detail.value)}
-            >
-              <svelte:fragment slot="trigger">
-                <PoodleIconButton icon="ellipsis" ariaLabel="Media actions" variant="ghost" />
-              </svelte:fragment>
-            </PoodleMenu>
-          {/if}
-        </svelte:fragment>
-
-        <span slot="footer" class="media-meta">
-          {#if item.byteSize}
-            {formatFileSize(item.byteSize)} &middot;
-          {/if}
-          Updated {new Date(item.updatedAt).toLocaleDateString()}
-        </span>
-      </PoodleListCard>
-    {/each}
-  </PoodleGrid>
-{/if}
-
-<PoodleBulkActionBar
-  selectionCount={selection.count}
-  totalCount={(pageData.data?.items ?? []).length}
-  actions={batchActions}
-  loading={batchLoading}
-  showSelectAll
-  allSelected={selection.count > 0 && selection.count === (pageData.data?.items ?? []).length}
-  on:clear={handleClearSelection}
-  on:selectAll={handleSelectAll}
-  on:action={() => (showBatchDeleteConfirm = true)}
+<EntityListPage
+  title="Media Library"
+  backHref="/"
+  backLabel="Back to dashboard"
+  {dataLoader}
+  presentation="cards"
+  renderItem={mediaCard as never}
+  {filters}
+  query={currentQuery}
+  {batchActions}
+  onQueryChange={updateUrl}
+  onAdd={handleUpload}
+  addLabel="Upload media"
+  headerLeadingActions={mediaHeaderActions as never}
 />
-
-<PoodleAlertDialog
-  open={showBatchDeleteConfirm}
-  title="Delete selected media"
-  description={`Are you sure you want to delete ${selection.count} selected ${selection.count === 1 ? "item" : "items"}?`}
-  confirmLabel={`Delete ${selection.count} ${selection.count === 1 ? "item" : "items"}`}
-  tone="danger"
-  onConfirm={handleBatchDelete}
-  onCancel={() => {
-    showBatchDeleteConfirm = false;
-  }}
-/>
-
-<style>
-  .media-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    justify-content: flex-end;
-  }
-
-  .media-meta {
-    color: var(--admin-color-text-muted);
-  }
-
-  :global(.media-thumbnail-image) {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-</style>

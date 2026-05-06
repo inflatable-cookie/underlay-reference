@@ -10,6 +10,8 @@ import type {
 } from "../../types/admin-types.js";
 import { getAdminHttpClient } from "../../utils/client-factory.js";
 import { getHeaderValueCaseInsensitive, type WithEtag } from "./utils.js";
+import { appendQueryParams } from "@decodelabs/underlay/client/query";
+import { toSnakeQueryParams } from "./utils.js";
 
 /**
  * Create a user (admin).
@@ -44,19 +46,7 @@ export async function listUsers(
   query?: ListUsersQuery
 ): Promise<UserListResponse> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-
-  // Build query params
-  const params = new URLSearchParams();
-  if (query?.role) params.set("role", query.role);
-  if (query?.status) params.set("status", query.status);
-  if (query?.search) params.set("search", query.search);
-  if (query?.displayName) params.set("display_name", query.displayName);
-  if (query?.limit !== undefined) params.set("limit", String(query.limit));
-  if (query?.offset !== undefined) params.set("offset", String(query.offset));
-
-  const queryString = params.toString();
-  const path = queryString ? `/v1/admin/users?${queryString}` : "/v1/admin/users";
-
+  const path = appendQueryParams("/v1/admin/users", toSnakeQueryParams(query));
   return await http.get<UserListResponse>(path);
 }
 

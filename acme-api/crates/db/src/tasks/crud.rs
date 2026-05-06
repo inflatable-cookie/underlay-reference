@@ -6,6 +6,13 @@ use uuid::Uuid;
 
 use crate::DbPool;
 
+#[derive(Debug)]
+pub struct TaskListResponse {
+    pub data: Vec<TaskWithLabelsRow>,
+    pub total: i64,
+    pub has_more: bool,
+}
+
 /// Row type for acme.tasks table.
 #[derive(Debug, Clone, FromRow)]
 pub struct TaskRow {
@@ -52,7 +59,7 @@ pub fn task_field_mapping() -> FieldMapping {
         .sort_only("position", "t.position")
         .sort_only("due_date", "t.due_date")
         .sort_only("created_at", "t.created_at")
-        .filter_only("project_id", "t.project_id")
+        .filter_only("project_id", "t.project_id::text")
 }
 
 /// Create a new task.
@@ -147,7 +154,9 @@ pub async fn list_tasks_admin(
     pool: &DbPool,
     project_id: Uuid,
     query: &QueryParams,
-) -> Result<Vec<TaskWithLabelsRow>, sqlx::Error> {
+    limit: i64,
+    offset: i64,
+) -> Result<TaskListResponse, sqlx::Error> {
     let mapping = task_field_mapping();
     let filters = query.filter_fields();
 
@@ -162,6 +171,21 @@ pub async fn list_tasks_admin(
     let (where_clause, filter_values) = where_builder.build();
     let order_by = query.sql_order_by_or(&mapping.sort_map(), "t.position, t.created_at");
 
+    let count_sql = format!(
+        r#"
+        SELECT COUNT(*)
+        FROM acme.tasks t
+        WHERE {}
+        "#,
+        where_clause
+    );
+
+    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql).bind(project_id);
+    for value in &filter_values {
+        count_query = count_query.bind(value);
+    }
+    let total = count_query.fetch_one(pool).await?;
+
     let sql = format!(
         r#"
         SELECT
@@ -174,8 +198,13 @@ pub async fn list_tasks_admin(
         WHERE {}
         GROUP BY t.id
         ORDER BY {}
+        LIMIT ${}
+        OFFSET ${}
         "#,
-        where_clause, order_by
+        where_clause,
+        order_by,
+        filter_values.len() + 2,
+        filter_values.len() + 3
     );
 
     let mut query_builder = sqlx::query_as::<_, TaskWithLabelsRow>(&sql);
@@ -183,8 +212,16 @@ pub async fn list_tasks_admin(
     for value in filter_values {
         query_builder = query_builder.bind(value);
     }
+    query_builder = query_builder.bind(limit).bind(offset);
 
-    query_builder.fetch_all(pool).await
+    let data = query_builder.fetch_all(pool).await?;
+    let has_more = offset + (data.len() as i64) < total;
+
+    Ok(TaskListResponse {
+        data,
+        total,
+        has_more,
+    })
 }
 
 /// Update a task.

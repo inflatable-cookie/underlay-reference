@@ -6,6 +6,13 @@ use uuid::Uuid;
 
 use crate::DbPool;
 
+#[derive(Debug)]
+pub struct ProjectListResponse {
+    pub data: Vec<ProjectWithCountsRow>,
+    pub total: i64,
+    pub has_more: bool,
+}
+
 /// Row type for acme.projects table.
 #[derive(Debug, Clone, FromRow)]
 pub struct ProjectRow {
@@ -48,8 +55,8 @@ pub fn project_field_mapping() -> FieldMapping {
         .sort_only("created_at", "p.created_at")
         .sort_only("updated_at", "p.updated_at")
         .sort_only("category_name", "c.name")
-        .filter_only("category_id", "p.category_id")
-        .filter_only("owner_id", "p.owner_id")
+        .filter_only("category_id", "p.category_id::text")
+        .filter_only("owner_id", "p.owner_id::text")
 }
 
 /// Create a new project.
@@ -142,7 +149,9 @@ pub async fn list_projects_for_user(
 pub async fn list_projects_admin(
     pool: &DbPool,
     query: &QueryParams,
-) -> Result<Vec<ProjectWithCountsRow>, sqlx::Error> {
+    limit: i64,
+    offset: i64,
+) -> Result<ProjectListResponse, sqlx::Error> {
     let mapping = project_field_mapping();
     let filters = query.filter_fields();
 
@@ -155,6 +164,21 @@ pub async fn list_projects_admin(
 
     let (where_clause, filter_values) = where_builder.build();
     let order_by = query.sql_order_by_or(&mapping.sort_map(), "p.weight, p.name");
+
+    let count_sql = format!(
+        r#"
+        SELECT COUNT(*)
+        FROM acme.projects p
+        WHERE {}
+        "#,
+        where_clause
+    );
+
+    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    for value in &filter_values {
+        count_query = count_query.bind(value);
+    }
+    let total = count_query.fetch_one(pool).await?;
 
     let sql = format!(
         r#"
@@ -170,16 +194,29 @@ pub async fn list_projects_admin(
         WHERE {}
         GROUP BY p.id, c.name
         ORDER BY {}
+        LIMIT ${}
+        OFFSET ${}
         "#,
-        where_clause, order_by
+        where_clause,
+        order_by,
+        filter_values.len() + 1,
+        filter_values.len() + 2
     );
 
     let mut query_builder = sqlx::query_as::<_, ProjectWithCountsRow>(&sql);
     for value in filter_values {
         query_builder = query_builder.bind(value);
     }
+    query_builder = query_builder.bind(limit).bind(offset);
 
-    query_builder.fetch_all(pool).await
+    let data = query_builder.fetch_all(pool).await?;
+    let has_more = offset + (data.len() as i64) < total;
+
+    Ok(ProjectListResponse {
+        data,
+        total,
+        has_more,
+    })
 }
 
 /// Update a project.

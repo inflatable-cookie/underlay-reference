@@ -10,7 +10,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use underlay_http::{context::RequestContext, ApiError};
+use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
 use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
@@ -106,21 +106,15 @@ impl From<users::UserWithSessionCountRow> for UserDetailResponse {
 }
 
 /// Query parameters for user listing.
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ListUsersQuery {
-    /// Filter by role
-    pub role: Option<String>,
-    /// Filter by status
-    pub status: Option<String>,
-    /// Search by email
-    pub search: Option<String>,
-    /// Search by display name
-    pub display_name: Option<String>,
+    #[serde(flatten)]
+    pub query: QueryParams,
+    /// Page number (1-indexed)
+    pub page: Option<u32>,
     /// Limit (default 50)
-    pub limit: Option<i64>,
-    /// Offset for pagination
-    pub offset: Option<i64>,
+    pub limit: Option<u32>,
 }
 
 /// Request to update user role.
@@ -194,17 +188,15 @@ pub async fn list_users(
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
 
-    let limit = query.limit.unwrap_or(50);
-    let offset = query.offset.unwrap_or(0);
+    let limit = query.limit.unwrap_or(50).clamp(1, 100) as i64;
+    let page = query.page.unwrap_or(1).max(1) as i64;
+    let offset = (page - 1) * limit;
 
     match users::list_users_admin(
         pool,
+        &query.query,
         limit,
         offset,
-        query.role.as_deref(),
-        query.status.as_deref(),
-        query.search.as_deref(),
-        query.display_name.as_deref(),
     )
     .await
     {

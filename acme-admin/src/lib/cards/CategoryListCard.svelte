@@ -1,26 +1,54 @@
 <script lang="ts">
-  import {
-    AlertDialog as PoodleAlertDialog,
-    IconButton as PoodleIconButton,
-    ListCard as PoodleListCard,
-    Menu as PoodleMenu,
-    Pill as PoodlePill
-  } from "@poodle/svelte";
-  import type { MenuItem } from "@poodle/svelte";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+  import { AlertDialog as PoodleAlertDialog } from "@poodle/svelte";
+  import { EntityListCard } from "@decodelabs/underlay/templates";
   import type { CategoryWithCounts } from "@api-client";
-  import FolderOpen from "lucide-svelte/icons/folder-open";
+  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
 
   interface Props {
     category: CategoryWithCounts;
     onDelete?: (categoryId: string) => void;
+    reorderMode?: boolean;
+    selectionMode?: boolean;
+    selected?: boolean;
+    onSelectionChange?: (categoryId: string, selected: boolean) => void;
   }
 
-  let { category, onDelete }: Props = $props();
+  let {
+    category,
+    onDelete,
+    reorderMode = false,
+    selectionMode = false,
+    selected = false,
+    onSelectionChange
+  }: Props = $props();
 
   let confirmDeleteOpen = $state(false);
 
-  function handleEdit() {
+  const footerText = $derived(
+    category.description
+      ? `${category.projectCount} project${category.projectCount === 1 ? "" : "s"} · ${category.description}`
+      : `${category.projectCount} project${category.projectCount === 1 ? "" : "s"}`
+  );
+
+  const menuItems = $derived([
+    { value: "edit", label: "Edit" },
+    ...(onDelete
+      ? [
+          { value: "separator", label: "", kind: "separator" as const },
+          { value: "delete", label: "Delete", kind: "action" as const }
+        ]
+      : [])
+  ]);
+
+  function handleOpen(): void {
+    void gotoWithContext(`/categories/${category.id}`, {
+      label: "Categories",
+      href: "/categories",
+      type: "list"
+    });
+  }
+
+  function handleEdit(): void {
     void gotoWithContext(`/categories/${category.id}/edit`, {
       label: "Categories",
       href: "/categories",
@@ -28,26 +56,12 @@
     });
   }
 
-  function handleDelete() {
+  function handleDelete(): void {
     onDelete?.(category.id);
     confirmDeleteOpen = false;
   }
 
-  const menuItems = $derived<MenuItem[]>([
-    { value: "edit", label: "Edit" },
-    ...(onDelete
-      ? [
-          { value: "separator", label: "", kind: "separator" as const },
-          {
-            value: "delete",
-            label: "Delete",
-            kind: "action" as const
-          }
-        ]
-      : [])
-  ]);
-
-  function handleMenuAction(value: string) {
+  function handleContextAction(value: string): void {
     if (value === "edit") {
       handleEdit();
       return;
@@ -59,52 +73,32 @@
   }
 </script>
 
-<PoodleListCard
+<EntityListCard
   title={category.name}
-  href={`/categories/${category.id}`}
+  {reorderMode}
+  selectionMode={selectionMode}
+  {selected}
   accentColor={category.color ?? "#6366f1"}
->
-  <svelte:fragment slot="leading">
-    <FolderOpen size={20} />
-  </svelte:fragment>
-
-  <svelte:fragment slot="trailing">
-    {#if !category.isActive}
-      <PoodlePill tone="danger" appearance="badge" size="lg">Inactive</PoodlePill>
-    {/if}
-  </svelte:fragment>
-
-  <svelte:fragment slot="actions">
-    <PoodleMenu items={menuItems} placement="bottom-end" ariaLabel="Category actions" on:action={(event) => handleMenuAction(event.detail.value)}>
-      <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Category actions" variant="ghost" />
-    </PoodleMenu>
-  </svelte:fragment>
-
-  <span slot="footer" class="meta">
-    <span class="meta-item">{category.projectCount} projects</span>
-    {#if category.description}
-      <span class="meta-item">{category.description}</span>
-    {/if}
-  </span>
-</PoodleListCard>
-
-<PoodleAlertDialog
-  bind:open={confirmDeleteOpen}
-  title="Delete Category"
-  description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
-  confirmLabel="Delete"
-  onConfirm={handleDelete}
-  tone="danger"
+  notLive={!category.isActive}
+  leadingIcon="folder-open"
+  footerText={footerText}
+  contextMenuItems={selectionMode || reorderMode ? [] : menuItems}
+  contextMenuAriaLabel="Category actions"
+  onSelectionChange={(nextSelected) => onSelectionChange?.(category.id, nextSelected)}
+  onContextAction={handleContextAction}
+  onClick={selectionMode || reorderMode ? undefined : handleOpen}
 />
 
-<style>
-  .meta {
-    font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
-  }
-
-  .meta-item + .meta-item::before {
-    content: "·";
-    margin: 0 0.5rem;
-  }
-</style>
+{#if confirmDeleteOpen}
+  <PoodleAlertDialog
+    open={confirmDeleteOpen}
+    title="Delete Category"
+    description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}
+    confirmLabel="Delete"
+    onConfirm={handleDelete}
+    onCancel={() => {
+      confirmDeleteOpen = false;
+    }}
+    tone="danger"
+  />
+{/if}

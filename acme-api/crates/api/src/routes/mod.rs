@@ -221,6 +221,10 @@ pub fn build_router() -> Router<AppState> {
             put(admin::categories::reorder_categories),
         )
         .route(
+            "/v1/admin/categories:batch-delete",
+            post(admin::categories::batch_delete_categories),
+        )
+        .route(
             "/v1/admin/categories/{category_id}",
             get(admin::categories::get_category)
                 .patch(admin::categories::update_category)

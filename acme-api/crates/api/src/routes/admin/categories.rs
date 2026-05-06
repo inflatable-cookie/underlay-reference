@@ -117,6 +117,21 @@ pub struct ReorderRequest {
     pub ids: Vec<Uuid>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct BatchDeleteRequest {
+    pub ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ListCategoriesQuery {
+    #[serde(flatten)]
+    pub query: QueryParams,
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+}
+
 // ============================================================================
 // Handlers
 // ============================================================================
@@ -129,15 +144,30 @@ pub struct ReorderRequest {
 pub async fn list_categories(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
-    Query(query): Query<QueryParams>,
+    Query(params): Query<ListCategoriesQuery>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match categories::list_categories_with_counts(pool, &query).await {
+    match categories::list_categories_with_counts(
+        pool,
+        &params.query,
+        limit as i64,
+        offset,
+    )
+    .await
+    {
         Ok(cats) => {
             let response: Vec<CategoryWithCountsResponse> =
-                cats.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+                cats.data.into_iter().map(Into::into).collect();
+            Ok(Json(serde_json::json!({
+                "data": response,
+                "total": cats.total,
+                "has_more": cats.has_more
+            }))
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list categories: {}", e);
@@ -434,6 +464,60 @@ pub async fn soft_delete_category(
             .with_context(serde_json::json!({
                 "operation": "categories.soft_delete",
                 "category_id": cid,
+                "batch_id": batch_id
+            })))
+        }
+    }
+}
+
+/// Batch delete categories.
+///
+/// POST /v1/admin/categories:batch-delete
+pub async fn batch_delete_categories(
+    AdminUser(user): AdminUser,
+    State(state): State<AppState>,
+    ctx: RequestContext,
+    Json(req): Json<BatchDeleteRequest>,
+) -> Result<Response, ApiError> {
+    if req.ids.is_empty() {
+        return Err(ApiError::bad_request(
+            "validation.empty_ids",
+            "At least one ID is required",
+        ));
+    }
+
+    let pool = state.local_auth.pool();
+    let batch_id = Uuid::new_v7().into_inner();
+    let ids: Vec<_> = req.ids.iter().map(|id| id.into_inner()).collect();
+
+    match categories::batch_soft_delete_categories(pool, &ids, batch_id).await {
+        Ok(count) => {
+            let _ = activity::log_activity(
+                pool,
+                activity::LogActivityParams {
+                    user_id: Some(user.user_id.0.into_inner()),
+                    action: "batch_delete",
+                    resource_type: "category",
+                    resource_id: batch_id,
+                    details: Some(serde_json::json!({ "count": count, "ids": req.ids })),
+                    correlation_id: Some(ctx.request_id()),
+                    ip_address: None,
+                },
+            )
+            .await;
+
+            Ok(Json(serde_json::json!({ "ok": true, "deleted": count })).into_response())
+        }
+        Err(e) => {
+            tracing::error!("Failed to batch delete categories: {}", e);
+            Err(crate::db_errors::internal_with_diagnostics(
+                "categories.batch_delete_failed",
+                "Failed to batch delete categories",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "categories.batch_delete",
+                "count": ids.len(),
                 "batch_id": batch_id
             })))
         }

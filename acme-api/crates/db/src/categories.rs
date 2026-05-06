@@ -11,6 +11,13 @@ use uuid::Uuid;
 
 use crate::DbPool;
 
+#[derive(Debug)]
+pub struct CategoryListResponse {
+    pub data: Vec<CategoryWithCountsRow>,
+    pub total: i64,
+    pub has_more: bool,
+}
+
 // ============================================================================
 // Row Types
 // ============================================================================
@@ -109,7 +116,9 @@ pub async fn list_categories(
 pub async fn list_categories_with_counts(
     pool: &DbPool,
     query: &QueryParams,
-) -> Result<Vec<CategoryWithCountsRow>, sqlx::Error> {
+    limit: i64,
+    offset: i64,
+) -> Result<CategoryListResponse, sqlx::Error> {
     let mapping = FieldMapping::new()
         .map("name", "c.name")
         .map("slug", "c.slug")
@@ -129,6 +138,21 @@ pub async fn list_categories_with_counts(
     let (where_clause, filter_values) = where_builder.build();
     let order_by = query.sql_order_by_or(&mapping.sort_map(), "c.weight, c.name");
 
+    let count_sql = format!(
+        r#"
+        SELECT COUNT(*)
+        FROM acme.categories c
+        WHERE {}
+        "#,
+        where_clause
+    );
+
+    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    for value in &filter_values {
+        count_query = count_query.bind(value);
+    }
+    let total = count_query.fetch_one(pool).await?;
+
     let sql = format!(
         r#"
         SELECT
@@ -140,16 +164,29 @@ pub async fn list_categories_with_counts(
         WHERE {}
         GROUP BY c.id
         ORDER BY {}
+        LIMIT ${}
+        OFFSET ${}
         "#,
-        where_clause, order_by
+        where_clause,
+        order_by,
+        filter_values.len() + 1,
+        filter_values.len() + 2
     );
 
     let mut query_builder = sqlx::query_as::<_, CategoryWithCountsRow>(&sql);
     for value in filter_values {
         query_builder = query_builder.bind(value);
     }
+    query_builder = query_builder.bind(limit).bind(offset);
 
-    query_builder.fetch_all(pool).await
+    let data = query_builder.fetch_all(pool).await?;
+    let has_more = offset + (data.len() as i64) < total;
+
+    Ok(CategoryListResponse {
+        data,
+        total,
+        has_more,
+    })
 }
 
 /// Get a category by ID.
@@ -262,6 +299,31 @@ pub async fn soft_delete_category(
     .execute(pool)
     .await?;
     Ok(result.rows_affected() > 0)
+}
+
+/// Batch soft delete categories.
+pub async fn batch_soft_delete_categories(
+    pool: &DbPool,
+    ids: &[Uuid],
+    batch_id: Uuid,
+) -> Result<u64, sqlx::Error> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    let result = sqlx::query(
+        r#"
+        UPDATE acme.categories
+        SET deleted_at = NOW(), delete_batch_id = $1, updated_at = NOW()
+        WHERE id = ANY($2) AND deleted_at IS NULL
+        "#,
+    )
+    .bind(batch_id)
+    .bind(ids)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected())
 }
 
 /// Restore a soft-deleted category.

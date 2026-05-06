@@ -4,7 +4,6 @@
 
 use crate::DbPool;
 use sqlx::FromRow;
-use underlay_db::pagination::{Cursor, PaginatedResponse, PaginationBuilder, PaginationParams};
 use underlay_http::query::{FieldMapping, QueryParams, WhereBuilder};
 use uuid::Uuid;
 
@@ -80,6 +79,13 @@ pub struct MediaUsageRow {
     pub used_by_id: Uuid,
     pub field: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug)]
+pub struct MediaListResponse {
+    pub data: Vec<MediaWithVersionRow>,
+    pub total: i64,
+    pub has_more: bool,
 }
 
 /// Media with current version info for list views.

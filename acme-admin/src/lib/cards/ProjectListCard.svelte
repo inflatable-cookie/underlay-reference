@@ -1,28 +1,19 @@
 <script lang="ts">
-  import {
-    AlertDialog as PoodleAlertDialog,
-    IconButton as PoodleIconButton,
-    ListCard as PoodleListCard,
-    Menu as PoodleMenu,
-    Pill as PoodlePill
-  } from "@poodle/svelte";
-  import type { MenuItem } from "@poodle/svelte";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+  import { AlertDialog as PoodleAlertDialog } from "@poodle/svelte";
+  import { EntityListCard, type EntityListCardBadge, type EntityListCardCounter } from "@decodelabs/underlay/templates";
   import type { ProjectWithCounts } from "@api-client";
-  import Briefcase from "lucide-svelte/icons/briefcase";
+  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
 
   interface Props {
     project: ProjectWithCounts;
     onDelete?: (projectId: string) => void;
-    /** Whether selection mode is active */
+    reorderMode?: boolean;
     selectionMode?: boolean;
-    /** Whether this item is selected */
     selected?: boolean;
-    /** Callback when selection changes */
     onSelectionChange?: (projectId: string, selected: boolean) => void;
   }
 
-  let { project, onDelete, selectionMode = false, selected = false, onSelectionChange }: Props = $props();
+  let { project, onDelete, reorderMode = false, selectionMode = false, selected = false, onSelectionChange }: Props = $props();
 
   let confirmDeleteOpen = $state(false);
 
@@ -32,17 +23,42 @@
       : 0
   );
 
-  const statusLabel = $derived(
-    ({ active: "Active", archived: "Archived", on_hold: "On Hold" } as Record<string, string>)[
-      project.status
-    ] ?? project.status
-  );
+  const badges = $derived<EntityListCardBadge[]>([
+    ...(project.categoryName ? [{ label: project.categoryName }] : [])
+  ]);
 
-  const statusTone = $derived(
-    project.status === "active" ? "success" : "neutral"
-  );
+  const counters = $derived<EntityListCardCounter[]>([
+    {
+      icon: "list-todo",
+      count: project.taskCount,
+      tooltip: `${project.taskCount} total task${project.taskCount === 1 ? "" : "s"}`
+    },
+    {
+      icon: "check-check",
+      count: project.completedTaskCount,
+      tooltip: `${project.completedTaskCount} completed task${project.completedTaskCount === 1 ? "" : "s"}`
+    }
+  ]);
 
-  function handleEdit() {
+  const menuItems = $derived([
+    { value: "edit", label: "Edit" },
+    ...(onDelete
+      ? [
+          { value: "separator", label: "", kind: "separator" as const },
+          { value: "delete", label: "Delete", kind: "action" as const }
+        ]
+      : [])
+  ]);
+
+  function handleOpen(): void {
+    void gotoWithContext(`/projects/${project.id}`, {
+      label: "Projects",
+      href: "/projects",
+      type: "list"
+    });
+  }
+
+  function handleEdit(): void {
     void gotoWithContext(`/projects/${project.id}/edit`, {
       label: "Projects",
       href: "/projects",
@@ -50,26 +66,12 @@
     });
   }
 
-  function handleDelete() {
+  function handleDelete(): void {
     onDelete?.(project.id);
     confirmDeleteOpen = false;
   }
 
-  const menuItems = $derived<MenuItem[]>([
-    { value: "edit", label: "Edit" },
-    ...(onDelete
-      ? [
-          { value: "separator", label: "", kind: "separator" as const },
-          {
-            value: "delete",
-            label: "Delete",
-            kind: "action" as const
-          }
-        ]
-      : [])
-  ]);
-
-  function handleMenuAction(value: string) {
+  function handleContextAction(value: string): void {
     if (value === "edit") {
       handleEdit();
       return;
@@ -81,74 +83,73 @@
   }
 </script>
 
-<PoodleListCard
+{#snippet progressFooter()}
+  <span class="project-list-card__progress-label">
+    {project.completedTaskCount}/{project.taskCount} tasks
+  </span>
+  {#if project.taskCount > 0}
+    <div class="project-list-card__progress-bar">
+      <div class="project-list-card__progress-fill" style:width="{progress}%"></div>
+    </div>
+  {/if}
+{/snippet}
+
+<EntityListCard
   title={project.name}
-  href={selectionMode ? undefined : `/projects/${project.id}`}
-  selectable={selectionMode}
+  leadingIcon="briefcase-business"
+  notLive={project.status === "archived"}
+  {reorderMode}
+  reorderDisplay={{
+    layout: "compact",
+    showBadges: true,
+    showFooter: false,
+    showCounters: false,
+    showSubtitle: false
+  }}
+  selectionMode={selectionMode}
   {selected}
-  on:selectedChange={(event) => onSelectionChange?.(project.id, event.detail.selected)}
->
-  <svelte:fragment slot="leading">
-    <Briefcase size={20} />
-  </svelte:fragment>
-
-  <svelte:fragment slot="trailing">
-    <PoodlePill tone={statusTone} appearance="badge" size="lg">{statusLabel}</PoodlePill>
-    {#if project.categoryName}
-      <PoodlePill tone="neutral" appearance="badge" size="lg">{project.categoryName}</PoodlePill>
-    {/if}
-  </svelte:fragment>
-
-  <svelte:fragment slot="actions">
-    {#if !selectionMode}
-      <PoodleMenu items={menuItems} placement="bottom-end" ariaLabel="Project actions" on:action={(event) => handleMenuAction(event.detail.value)}>
-        <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Project actions" variant="ghost" />
-      </PoodleMenu>
-    {/if}
-  </svelte:fragment>
-
-  <div slot="footer" class="task-progress">
-    <span class="progress-label">{project.completedTaskCount}/{project.taskCount} tasks</span>
-    {#if project.taskCount > 0}
-      <div class="progress-bar">
-        <div class="progress-bar__fill" style:width="{progress}%"></div>
-      </div>
-    {/if}
-  </div>
-</PoodleListCard>
-
-<PoodleAlertDialog
-  bind:open={confirmDeleteOpen}
-  title="Delete Project"
-  description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
-  confirmLabel="Delete"
-  onConfirm={handleDelete}
-  tone="danger"
+  badges={badges}
+  counters={counters}
+  footer={progressFooter}
+  contextMenuItems={selectionMode || reorderMode ? [] : menuItems}
+  contextMenuAriaLabel="Project actions"
+  onSelectionChange={(nextSelected) => onSelectionChange?.(project.id, nextSelected)}
+  onContextAction={handleContextAction}
+  onClick={selectionMode || reorderMode ? undefined : handleOpen}
 />
 
+{#if confirmDeleteOpen}
+  <PoodleAlertDialog
+    open={confirmDeleteOpen}
+    title="Delete Project"
+    description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}
+    confirmLabel="Delete"
+    onConfirm={handleDelete}
+    onCancel={() => {
+      confirmDeleteOpen = false;
+    }}
+    tone="danger"
+  />
+{/if}
+
 <style>
-  .task-progress {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .progress-label {
+  .project-list-card__progress-label {
     font-size: 0.75rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--poodle-color-text-secondary);
   }
 
-  .progress-bar {
+  .project-list-card__progress-bar {
+    width: 3.5rem;
     height: 0.375rem;
-    background: var(--underlay-color-surface-hover, #e5e7eb);
-    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--poodle-color-border-subtle) 72%, transparent);
+    border-radius: 999px;
     overflow: hidden;
   }
 
-  .progress-bar__fill {
+  .project-list-card__progress-fill {
     height: 100%;
-    background: var(--underlay-color-accent, #6366f1);
-    border-radius: 0.25rem;
+    background: var(--poodle-color-accent-base);
+    border-radius: 999px;
     transition: width 0.2s ease;
   }
 </style>

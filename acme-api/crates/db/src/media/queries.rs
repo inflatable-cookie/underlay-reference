@@ -101,102 +101,76 @@ pub async fn list_media_admin(
 }
 
 /// List media items with pagination (admin, excluding deleted and incomplete uploads).
-pub async fn list_media_admin_paginated(
+pub async fn list_media_admin_paged(
     pool: &DbPool,
-    params: PaginationParams,
-) -> Result<PaginatedResponse<MediaWithVersionRow>, sqlx::Error> {
-    let builder = PaginationBuilder::new(params.clone());
-    let cursor = builder.decode_timestamp_cursor().ok().flatten();
+    query: &QueryParams,
+    limit: i64,
+    offset: i64,
+) -> Result<MediaListResponse, sqlx::Error> {
+    let mapping = media_field_mapping();
+    let filters = query.filter_fields();
 
-    let items = if let Some(cursor) = cursor {
-        match params.direction {
-            underlay_db::pagination::PaginationDirection::Forward => {
-                sqlx::query_as::<_, MediaWithVersionRow>(
-                    r#"
-                    SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
-                           m.created_at, m.updated_at, m.deleted_at,
-                           v.byte_size, v.mime_type,
-                           r.object_key AS thumbnail_object_key
-                    FROM media.media m
-                    LEFT JOIN media.media_version v ON m.current_version_id = v.id
-                    LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
-                    WHERE m.deleted_at IS NULL
-                      AND m.current_version_id IS NOT NULL
-                      AND (m.updated_at, m.id) < ($1, $2)
-                    ORDER BY m.updated_at DESC, m.id DESC
-                    LIMIT $3
-                    "#,
-                )
-                .bind(cursor.timestamp)
-                .bind(cursor.id)
-                .bind(builder.query_limit())
-                .fetch_all(pool)
-                .await?
-            }
-            underlay_db::pagination::PaginationDirection::Backward => {
-                let mut items = sqlx::query_as::<_, MediaWithVersionRow>(
-                    r#"
-                    SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
-                           m.created_at, m.updated_at, m.deleted_at,
-                           v.byte_size, v.mime_type,
-                           r.object_key AS thumbnail_object_key
-                    FROM media.media m
-                    LEFT JOIN media.media_version v ON m.current_version_id = v.id
-                    LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
-                    WHERE m.deleted_at IS NULL
-                      AND m.current_version_id IS NOT NULL
-                      AND (m.updated_at, m.id) > ($1, $2)
-                    ORDER BY m.updated_at ASC, m.id ASC
-                    LIMIT $3
-                    "#,
-                )
-                .bind(cursor.timestamp)
-                .bind(cursor.id)
-                .bind(builder.query_limit())
-                .fetch_all(pool)
-                .await?;
-                items.reverse();
-                items
-            }
-        }
-    } else {
-        sqlx::query_as::<_, MediaWithVersionRow>(
-            r#"
-            SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
-                   m.created_at, m.updated_at, m.deleted_at,
-                   v.byte_size, v.mime_type,
-                   r.object_key AS thumbnail_object_key
-            FROM media.media m
-            LEFT JOIN media.media_version v ON m.current_version_id = v.id
-            LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
-            WHERE m.deleted_at IS NULL
-              AND m.current_version_id IS NOT NULL
-            ORDER BY m.updated_at DESC, m.id DESC
-            LIMIT $1
-            "#,
-        )
-        .bind(builder.query_limit())
+    let mut where_builder = WhereBuilder::new(1);
+    where_builder.add_condition("m.deleted_at IS NULL");
+    where_builder.add_condition("m.current_version_id IS NOT NULL");
+
+    for filter in &filters {
+        where_builder.add_filter(filter, &mapping.filter_map());
+    }
+
+    let (where_clause, filter_values) = where_builder.build();
+    let order_by = query.sql_order_by_or(&mapping.sort_map(), "m.updated_at DESC, m.id DESC");
+
+    let count_sql = format!(
+        r#"
+        SELECT COUNT(*)
+        FROM media.media m
+        WHERE {}
+        "#,
+        where_clause
+    );
+
+    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    for value in &filter_values {
+        count_query = count_query.bind(value);
+    }
+    let total = count_query.fetch_one(pool).await?;
+
+    let sql = format!(
+        r#"
+        SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
+               m.created_at, m.updated_at, m.deleted_at,
+               v.byte_size, v.mime_type,
+               r.object_key AS thumbnail_object_key
+        FROM media.media m
+        LEFT JOIN media.media_version v ON m.current_version_id = v.id
+        LEFT JOIN media.media_rendition r ON v.id = r.media_version_id AND r.kind = 'thumbnail'
+        WHERE {}
+        ORDER BY {}
+        LIMIT ${} OFFSET ${}
+        "#,
+        where_clause,
+        order_by,
+        filter_values.len() + 1,
+        filter_values.len() + 2
+    );
+
+    let mut items_query = sqlx::query_as::<_, MediaWithVersionRow>(&sql);
+    for value in &filter_values {
+        items_query = items_query.bind(value);
+    }
+
+    let items = items_query
+        .bind(limit)
+        .bind(offset)
         .fetch_all(pool)
-        .await?
-    };
+        .await?;
 
-    let total = if params.include_total {
-        Some(
-            sqlx::query_scalar::<_, i64>(
-                "SELECT COUNT(*) FROM media.media WHERE deleted_at IS NULL AND current_version_id IS NOT NULL",
-            )
-            .fetch_one(pool)
-            .await?,
-        )
-    } else {
-        None
-    };
-
-    Ok(builder.build_response(items, total, |row| {
-        Cursor::new()
-            .with_timestamp("t", row.updated_at)
-            .with_id(row.id)
-    }))
+    Ok(MediaListResponse {
+        has_more: offset + limit < total,
+        data: items,
+        total,
+    })
 }
 
 /// List soft-deleted media items (trash).

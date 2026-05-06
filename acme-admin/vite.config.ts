@@ -9,6 +9,9 @@ import devtoolsJson from "vite-plugin-devtools-json";
 const apiClientSrc = fileURLToPath(
   new URL("../acme-client/src", import.meta.url),
 );
+const underlaySrc = fileURLToPath(
+  new URL("../../underlay/ts/src", import.meta.url),
+);
 
 export default defineConfig({
   plugins: [devtoolsJson(), sveltekit() as PluginOption],
@@ -22,6 +25,7 @@ export default defineConfig({
     alias: {
       "@api-client": apiClientSrc,
       "acme-client": apiClientSrc,
+      "@decodelabs/underlay": underlaySrc,
     },
     dedupe: ["@decodelabs/underlay"],
   },
@@ -52,6 +56,9 @@ export default defineConfig({
       "api.acme.test",
     ],
     watch: {
+      // Always use polling: this codebase runs exclusively inside Docker containers
+      // where inotify/fs.events don't propagate from the host filesystem.
+      usePolling: true,
       // Watch changes in symlinked local dependencies
       ignored: [
         "!**/node_modules/@decodelabs/underlay/**",

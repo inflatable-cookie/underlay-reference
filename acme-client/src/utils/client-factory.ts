@@ -74,6 +74,10 @@ function getConfig(): AcmeClientConfig {
   return storedConfig;
 }
 
+export function getAcmeClientConfig(): AcmeClientConfig {
+  return getConfig();
+}
+
 export function getHttpClient(options?: HttpClientOptions): HttpClient {
   const config = getConfig();
 

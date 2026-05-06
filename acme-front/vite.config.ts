@@ -64,6 +64,9 @@ export default defineConfig({
       "api.acme.test",
     ],
     watch: {
+      // Always use polling: this codebase runs exclusively inside Docker containers
+      // where inotify/fs.events don't propagate from the host filesystem.
+      usePolling: true,
       ignored: [
         "!**/node_modules/@decodelabs/underlay/**",
         "!**/node_modules/@acme/api-client/**",

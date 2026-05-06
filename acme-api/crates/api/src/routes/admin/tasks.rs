@@ -142,6 +142,15 @@ pub struct CreateTaskRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
+pub struct ListTasksQuery {
+    #[serde(flatten)]
+    pub query: QueryParams,
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct UpdateTaskRequest {
     pub title: Option<String>,
     pub description: Option<Option<String>>,
@@ -197,16 +206,32 @@ pub async fn list_tasks(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
-    Query(query): Query<QueryParams>,
+    Query(params): Query<ListTasksQuery>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let project_id = project_id.into_inner();
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match tasks::list_tasks_admin(pool, project_id, &query).await {
+    match tasks::list_tasks_admin(
+        pool,
+        project_id,
+        &params.query,
+        limit as i64,
+        offset,
+    )
+    .await
+    {
         Ok(task_list) => {
             let response: Vec<TaskWithLabelsResponse> =
-                task_list.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+                task_list.data.into_iter().map(Into::into).collect();
+            Ok(Json(serde_json::json!({
+                "data": response,
+                "total": task_list.total,
+                "has_more": task_list.has_more
+            }))
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list tasks: {}", e);

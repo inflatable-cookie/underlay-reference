@@ -255,12 +255,10 @@ export interface UpdateUserPayload {
 }
 
 export interface ListUsersQuery {
-  role?: UserRole;
-  status?: UserStatus;
-  search?: string;
-  displayName?: string;
+  sort?: Array<{ field: string; direction: "asc" | "desc" }>;
+  filters?: Array<{ field: string; operator?: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like"; value: string }>;
+  page?: number;
   limit?: number;
-  offset?: number;
 }
 
 export interface UpdateUserRolePayload {

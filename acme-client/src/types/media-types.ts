@@ -39,9 +39,3 @@ export {
   isMediaDeleted,
   getMediaDisplayName,
 } from "@decodelabs/underlay/client/media";
-
-// Re-export pagination types that may be used with media
-export type {
-  PaginatedResponse,
-  PaginationParams,
-} from "@decodelabs/underlay/client/pagination";

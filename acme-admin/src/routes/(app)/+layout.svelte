@@ -51,6 +51,10 @@ import {
 		contextPanelOpen = false;
 	};
 
+	const setContextPanelOpen = (nextOpen: boolean) => {
+		contextPanelOpen = nextOpen;
+	};
+
 	const currentSection = $derived.by(() => {
 		const path = $page.url.pathname;
 		if (path.startsWith("/categories") || path.startsWith("/projects")) return "acme";
@@ -83,18 +87,6 @@ import {
 		}
 	});
 
-	const handleContextPanelOpenChange = (nextOpen: boolean) => {
-		if (nextOpen === contextPanelOpen) {
-			return;
-		}
-
-		if (nextOpen) {
-			toggleContextPanel();
-			return;
-		}
-
-		closeContextPanel();
-	};
 </script>
 
 {#if $authLoading}
@@ -192,7 +184,7 @@ import {
 		ariaLabel="Context panel"
 		on:requestClose={closeContextPanel}
 		on:openChange={(event) => {
-			handleContextPanelOpenChange(event.detail.open);
+			setContextPanelOpen(event.detail.open);
 		}}
 	>
 		<div class="admin-context-panel__content">

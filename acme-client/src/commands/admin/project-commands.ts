@@ -1,4 +1,4 @@
-import type { ListResponse, SingleResponse } from "../../types/common-types.js";
+import type { PagedListResponse, SingleResponse } from "../../types/common-types.js";
 import type {
   Project,
   ProjectWithCounts,
@@ -33,11 +33,10 @@ export async function listProjects(
   fetchFn: typeof fetch,
   accessToken: string,
   query?: QueryParams
-): Promise<ProjectWithCounts[]> {
+): Promise<PagedListResponse<ProjectWithCounts>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const path = appendQueryParams("/v1/admin/projects", toSnakeQueryParams(query));
-  const response = await http.get<ListResponse<ProjectWithCounts>>(path);
-  return response.data;
+  return await http.get<PagedListResponse<ProjectWithCounts>>(path);
 }
 
 /**

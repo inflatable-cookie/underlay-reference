@@ -46,10 +46,7 @@ async fn main() {
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
         let local_config = LocalConfig::new(
             "./dev-uploads",
-            format!(
-                "http://{}:{}/v1/dev-uploads",
-                app_config.http.public_host, app_config.http.port
-            ),
+            format!("{}/v1/dev-uploads", app_config.http.public_origin()),
         );
 
         match LocalAdapter::new(local_config).await {

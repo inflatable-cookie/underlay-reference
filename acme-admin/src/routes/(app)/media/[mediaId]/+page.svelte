@@ -339,7 +339,10 @@ import {
 
   function getPreviewUrl(version: MediaVersion): string | null {
     if (version.url) return version.url;
-    const imageRendition = version.renditions?.find((rendition) => rendition.url && rendition.mimeType?.startsWith("image/"));
+    const imageRendition = version.renditions?.find(
+      (rendition: MediaVersion["renditions"][number]) =>
+        rendition.url && rendition.mimeType?.startsWith("image/")
+    );
     return imageRendition?.url ?? null;
   }
 

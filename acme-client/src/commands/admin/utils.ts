@@ -30,11 +30,11 @@ export function toSnakeQueryParams(query?: QueryParams): QueryParams {
 
   return {
     ...query,
-    sort: query.sort?.map((item) => ({
+    sort: query.sort?.map((item: NonNullable<QueryParams["sort"]>[number]) => ({
       ...item,
       field: camelToSnake(item.field),
     })),
-    filters: query.filters?.map((item) => ({
+    filters: query.filters?.map((item: NonNullable<QueryParams["filters"]>[number]) => ({
       ...item,
       field: camelToSnake(item.field),
     })),

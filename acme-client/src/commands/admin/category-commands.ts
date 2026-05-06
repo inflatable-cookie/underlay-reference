@@ -7,8 +7,10 @@ import {
   appendQueryParams,
   type QueryParams,
 } from "@decodelabs/underlay/client/query";
-import type { ListResponse, SingleResponse } from "../../types/common-types.js";
+import type { ListResponse, PagedListResponse, SingleResponse } from "../../types/common-types.js";
 import type {
+  BatchDeletePayload,
+  BatchDeleteResult,
   Category,
   CategoryWithCounts,
   CreateCategoryPayload,
@@ -33,14 +35,13 @@ export async function listCategories(
   fetchFn: typeof fetch,
   accessToken: string,
   query?: QueryParams,
-): Promise<CategoryWithCounts[]> {
+): Promise<PagedListResponse<CategoryWithCounts>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const path = appendQueryParams(
     "/v1/admin/categories",
     toSnakeQueryParams(query),
   );
-  const response = await http.get<ListResponse<CategoryWithCounts>>(path);
-  return response.data;
+  return await http.get<PagedListResponse<CategoryWithCounts>>(path);
 }
 
 /**
@@ -162,4 +163,16 @@ export async function reorderCategories(
 ): Promise<ReorderResult> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   return await http.put<ReorderResult>("/v1/admin/categories/reorder", payload);
+}
+
+/**
+ * Batch soft delete categories.
+ */
+export async function batchDeleteCategories(
+  payload: BatchDeletePayload,
+  fetchFn: typeof fetch,
+  accessToken: string,
+): Promise<BatchDeleteResult> {
+  const http = getAdminHttpClient({ fetchFn, accessToken });
+  return await http.post<BatchDeleteResult>("/v1/admin/categories:batch-delete", payload);
 }

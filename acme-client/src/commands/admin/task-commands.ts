@@ -1,4 +1,4 @@
-import type { ListResponse, SingleResponse } from "../../types/common-types.js";
+import type { PagedListResponse, SingleResponse } from "../../types/common-types.js";
 import type {
   Task,
   TaskWithLabels,
@@ -35,14 +35,13 @@ export async function listTasks(
   fetchFn: typeof fetch,
   accessToken: string,
   query?: QueryParams
-): Promise<TaskWithLabels[]> {
+): Promise<PagedListResponse<TaskWithLabels>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   const path = appendQueryParams(
     `/v1/admin/projects/${encodeURIComponent(projectId)}/tasks`,
     toSnakeQueryParams(query)
   );
-  const response = await http.get<ListResponse<TaskWithLabels>>(path);
-  return response.data;
+  return await http.get<PagedListResponse<TaskWithLabels>>(path);
 }
 
 /**

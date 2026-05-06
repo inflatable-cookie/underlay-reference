@@ -127,6 +127,15 @@ pub struct BatchDeleteRequest {
     pub ids: Vec<Uuid>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ListProjectsQuery {
+    #[serde(flatten)]
+    pub query: QueryParams,
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+}
+
 // ============================================================================
 // Handlers
 // ============================================================================
@@ -141,15 +150,30 @@ pub struct BatchDeleteRequest {
 pub async fn list_projects(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
-    Query(query): Query<QueryParams>,
+    Query(params): Query<ListProjectsQuery>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match tasks::list_projects_admin(pool, &query).await {
+    match tasks::list_projects_admin(
+        pool,
+        &params.query,
+        limit as i64,
+        offset,
+    )
+    .await
+    {
         Ok(projects) => {
             let response: Vec<ProjectWithCountsResponse> =
-                projects.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+                projects.data.into_iter().map(Into::into).collect();
+            Ok(Json(serde_json::json!({
+                "data": response,
+                "total": projects.total,
+                "has_more": projects.has_more
+            }))
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list projects: {}", e);

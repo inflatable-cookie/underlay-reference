@@ -13,9 +13,27 @@ pub struct HttpConfig {
     pub bind_addr: String,
     /// Port to listen on.
     pub port: u16,
+    /// Public URL scheme for constructing externally reachable URLs.
+    pub public_scheme: String,
     /// Public hostname for constructing URLs (e.g., "localhost", "api.example.com").
     /// Used for things like blob storage URLs that need to be accessible from clients.
     pub public_host: String,
+    /// Optional externally visible port for public URLs. When omitted, standard scheme ports are assumed.
+    pub public_port: Option<u16>,
+}
+
+impl HttpConfig {
+    pub fn public_origin(&self) -> String {
+        match self.public_port {
+            Some(port)
+                if !(self.public_scheme == "https" && port == 443)
+                    && !(self.public_scheme == "http" && port == 80) =>
+            {
+                format!("{}://{}:{}", self.public_scheme, self.public_host, port)
+            }
+            _ => format!("{}://{}", self.public_scheme, self.public_host),
+        }
+    }
 }
 
 /// Database configuration.
@@ -580,6 +598,19 @@ impl AppConfig {
                 bind_addr.clone()
             }
         });
+        let public_scheme = env::var("PUBLIC_SCHEME").unwrap_or_else(|_| {
+            if public_host == "localhost"
+                || public_host == "127.0.0.1"
+                || public_host == "0.0.0.0"
+            {
+                "http".to_string()
+            } else {
+                "https".to_string()
+            }
+        });
+        let public_port = env::var("PUBLIC_PORT")
+            .ok()
+            .and_then(|raw| raw.parse::<u16>().ok());
 
         // Log level (RUST_LOG is also commonly used but handled by tracing directly)
         let logging_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
@@ -678,7 +709,9 @@ impl AppConfig {
             http: HttpConfig {
                 bind_addr,
                 port,
+                public_scheme,
                 public_host,
+                public_port,
             },
             database: DatabaseConfig { url: database_url },
             logging: LoggingConfig {

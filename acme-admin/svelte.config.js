@@ -19,7 +19,8 @@ const config = {
 		alias: {
 			"@app": "src",
 			"@api-client": "../acme-client/src",
-			"acme-client": "../acme-client/src"
+			"acme-client": "../acme-client/src",
+			"@decodelabs/underlay": "../../underlay/ts/src"
 		},
 		prerender: {
 			// Ignore dynamic routes during prerendering - they're handled client-side

@@ -4,6 +4,7 @@
 
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
+use underlay_http::query::{FieldMapping, QueryParams, WhereBuilder};
 use uuid::Uuid;
 
 use crate::DbPool;
@@ -115,17 +116,48 @@ pub async fn get_user_with_session_count(
 /// Uses offset-based pagination for admin user management.
 pub async fn list_users_admin(
     pool: &DbPool,
+    query: &QueryParams,
     limit: i64,
     offset: i64,
-    role_filter: Option<&str>,
-    status_filter: Option<&str>,
-    search: Option<&str>,
-    display_name: Option<&str>,
 ) -> Result<UserListResponse, sqlx::Error> {
-    // For dynamic WHERE clauses, we use a simpler approach with conditional SQL
-    // This avoids complex parameter numbering
+    let mapping = FieldMapping::new()
+        .map("email", "email")
+        .map("display_name", "display_name")
+        .map("role", "role")
+        .map("status", "status")
+        .sort_only("created_at", "created_at")
+        .sort_only("updated_at", "updated_at");
+    let filters = query.filter_fields();
 
-    let data = sqlx::query_as::<_, UserRow>(
+    let mut where_builder = WhereBuilder::new(1);
+    for filter in &filters {
+        where_builder.add_filter(filter, &mapping.filter_map());
+    }
+
+    let (where_clause, filter_values) = where_builder.build();
+    let where_sql = if where_clause.is_empty() {
+        String::new()
+    } else {
+        format!("WHERE {}", where_clause)
+    };
+    let order_by = query.sql_order_by_or(&mapping.sort_map(), "created_at DESC");
+
+    let count_sql = format!(
+        r#"
+        SELECT COUNT(*)
+        FROM auth.users
+        {}
+        "#,
+        where_sql
+    );
+
+    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    for value in &filter_values {
+        count_query = count_query.bind(value);
+    }
+    let total = count_query.fetch_one(pool).await?;
+
+    let sql = format!(
         r#"
         SELECT
             id,
@@ -138,39 +170,22 @@ pub async fn list_users_admin(
             created_at,
             updated_at
         FROM auth.users
-        WHERE ($1::text IS NULL OR role = $1)
-          AND ($2::text IS NULL OR status = $2)
-          AND ($3::text IS NULL OR email ILIKE '%' || $3 || '%')
-          AND ($4::text IS NULL OR display_name ILIKE '%' || $4 || '%')
-        ORDER BY created_at DESC
-        LIMIT $5 OFFSET $6
+        {}
+        ORDER BY {}
+        LIMIT ${}
+        OFFSET ${}
         "#,
-    )
-    .bind(role_filter)
-    .bind(status_filter)
-    .bind(search)
-    .bind(display_name)
-    .bind(limit)
-    .bind(offset)
-    .fetch_all(pool)
-    .await?;
+        where_sql,
+        order_by,
+        filter_values.len() + 1,
+        filter_values.len() + 2
+    );
 
-    let total = sqlx::query_scalar::<_, i64>(
-        r#"
-        SELECT COUNT(*)
-        FROM auth.users
-        WHERE ($1::text IS NULL OR role = $1)
-          AND ($2::text IS NULL OR status = $2)
-          AND ($3::text IS NULL OR email ILIKE '%' || $3 || '%')
-          AND ($4::text IS NULL OR display_name ILIKE '%' || $4 || '%')
-        "#,
-    )
-    .bind(role_filter)
-    .bind(status_filter)
-    .bind(search)
-    .bind(display_name)
-    .fetch_one(pool)
-    .await?;
+    let mut data_query = sqlx::query_as::<_, UserRow>(&sql);
+    for value in filter_values {
+        data_query = data_query.bind(value);
+    }
+    let data = data_query.bind(limit).bind(offset).fetch_all(pool).await?;
 
     let has_more = (offset + data.len() as i64) < total;
 
