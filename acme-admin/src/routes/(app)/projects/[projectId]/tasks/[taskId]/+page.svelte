@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "@acme/ui/render";
   import {
     EntityAttributeList,
     EntityDetail,
@@ -6,6 +7,7 @@
     EntityDetailPage
   } from "@decodelabs/underlay/templates";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+  import { NightfireRenderer } from "@decodelabs/underlay/nightfire/renderer";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Label, type Project, type Task } from "@api-client";
@@ -281,6 +283,16 @@
           {/snippet}
         </EntityDetailModule>
       {/if}
+
+      {#if task?.notes}
+        <EntityDetailModule>
+          {#snippet children()}
+            <div class="task-detail__notes">
+              <NightfireRenderer value={_loadedTask.notes} />
+            </div>
+          {/snippet}
+        </EntityDetailModule>
+      {/if}
     {/snippet}
   </EntityDetail>
 {/snippet}
@@ -298,6 +310,10 @@
     font-size: var(--poodle-typography-body-size);
     line-height: 1.7;
     white-space: pre-wrap;
+  }
+
+  .task-detail__notes {
+    max-width: 42rem;
   }
 
   .task-detail__project-link {

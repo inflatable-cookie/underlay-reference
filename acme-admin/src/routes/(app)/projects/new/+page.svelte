@@ -3,6 +3,7 @@ import {
   type SpaFormResult,
   SpaFormShell
 } from "@decodelabs/underlay/patterns";
+import type { NightfireValue } from "@decodelabs/underlay/nightfire/validation";
 import {
   consumeNavigationContext
 } from "@decodelabs/underlay/runtime/navigation";
@@ -49,6 +50,21 @@ import {
   let formValues = $state<Record<string, unknown> | undefined>(undefined);
   let intent = $state<"save" | "save-close">("save-close");
 
+  function parseNightfireField(formData: FormData, name: string): NightfireValue | null {
+    const raw = String(formData.get(name) ?? "").trim();
+    if (!raw) return null;
+
+    try {
+      return JSON.parse(raw) as NightfireValue;
+    } catch {
+      throw new Error(`Invalid ${name} payload`);
+    }
+  }
+
+  function isNightfireValue(value: unknown): value is NightfireValue {
+    return !!value && typeof value === "object" && "schema" in value;
+  }
+
   /**
    * Handle form submission.
    */
@@ -59,7 +75,7 @@ import {
     }
 
     const name = String(formData.get("name") ?? "").trim();
-    const description = String(formData.get("description") ?? "").trim() || null;
+    const description = parseNightfireField(formData, "description");
     const categoryId = String(formData.get("categoryId") ?? "").trim() || null;
     const formIntent = String(formData.get("intent") ?? "save-close");
     const formReturnTo = String(formData.get("returnTo") ?? "").trim() || null;
@@ -142,7 +158,7 @@ import {
     createCategory={createCategoryInline}
     values={{
       name: typeof formValues?.name === "string" ? formValues.name : "",
-      description: typeof formValues?.description === "string" ? formValues.description : "",
+      description: isNightfireValue(formValues?.description) ? formValues.description : null,
       categoryId: typeof formValues?.categoryId === "string" ? formValues.categoryId : null,
       status: "active"
     }}

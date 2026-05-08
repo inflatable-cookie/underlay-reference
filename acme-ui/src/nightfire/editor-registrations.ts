@@ -5,5 +5,6 @@
 // `@decodelabs/underlay/nightfire/editor-registry`.
 
 import "./notes/editor";
+import "./project-description/editor";
 
 export {};

@@ -247,7 +247,13 @@ pub async fn list_media_trash(
                     })
                 })
                 .collect();
-            Ok(Json(json!({ "data": items })).into_response())
+            let total = items.len();
+            Ok(Json(json!({
+                "data": items,
+                "total": total,
+                "has_more": false
+            }))
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list media trash: {}", e);

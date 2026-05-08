@@ -1,4 +1,6 @@
 <script lang="ts">
+import "@acme/ui/editor";
+import "@acme/ui/validation";
 import {
   useToasts
 } from "@decodelabs/underlay/runtime/feedback";
@@ -11,6 +13,11 @@ import {
   authLoading,
   currentUser } from "$lib/stores/auth";
   import * as userCommands from "@api-client/commands/user-commands.js";
+  import { NightfireEditor } from "@decodelabs/underlay/nightfire/editor";
+  import {
+    prepareNightfireForSave,
+    type NightfireDraftValue
+  } from "@decodelabs/underlay/nightfire/validation";
   import type { UserProject } from "@api-client/commands/user-commands.js";
     import {
     Button,
@@ -47,13 +54,56 @@ import {
   // Create project dialog state
   let showCreateDialog = $state(false);
   let newProjectName = $state("");
-  let newProjectDescription = $state("");
+  let newProjectDescription = $state<NightfireDraftValue>({ schema: "acme:project/description@1" });
   let creating = $state(false);
 
   function openCreateDialog() {
     newProjectName = "";
-    newProjectDescription = "";
+    newProjectDescription = { schema: "acme:project/description@1" };
     showCreateDialog = true;
+  }
+
+  function summariseProjectDescription(project: UserProject): string {
+    const value = project.description;
+    if (!value) return "No description";
+
+    type SummaryBlock = {
+      type?: string;
+      data?: {
+        content?: unknown;
+        items?: unknown[];
+        pages?: unknown[];
+      };
+    };
+
+    const root = value as {
+      block?: SummaryBlock;
+      blocks?: SummaryBlock[];
+    };
+    const blocks: SummaryBlock[] = Array.isArray(root.blocks)
+      ? root.blocks
+      : root.block
+        ? [root.block]
+        : [];
+
+    for (const block of blocks) {
+      if (block?.type === "notes.markdown") {
+        const content = typeof block.data?.content === "string"
+          ? block.data.content.replace(/[#*_`>\-\n]+/g, " ").replace(/\s+/g, " ").trim()
+          : "";
+        if (content) return content.slice(0, 120);
+      }
+
+      if (block?.type === "notes.checklist" && Array.isArray(block.data?.items) && block.data.items.length > 0) {
+        return `${block.data.items.length} checklist item${block.data.items.length === 1 ? "" : "s"}`;
+      }
+
+      if (block?.type === "notes.gallery" && Array.isArray(block.data?.pages) && block.data.pages.length > 0) {
+        return `${block.data.pages.length} gallery page${block.data.pages.length === 1 ? "" : "s"}`;
+      }
+    }
+
+    return "Rich description";
   }
 
   async function handleCreateProject() {
@@ -71,7 +121,7 @@ import {
       const project = await userCommands.createProject(
         {
           name: newProjectName.trim(),
-          description: newProjectDescription.trim() || null
+          description: prepareNightfireForSave(newProjectDescription) ?? null
         },
         fetch,
         token
@@ -115,7 +165,7 @@ import {
     {#each pageData.data?.projects ?? [] as project}
       <ListCard
         title={project.name}
-        subtitle={project.description || "No description"}
+        subtitle={summariseProjectDescription(project)}
         interactive
         on:click={() => goto(`/projects/${project.id}`)}
       >
@@ -154,14 +204,13 @@ import {
           />
         </Field>
         <Field id="front-project-description" label="Description" let:describedBy>
-          <TextInput
-            id="front-project-description"
-            value={newProjectDescription}
-            describedBy={describedBy}
-            placeholder="Optional description"
-            disabled={creating}
-            on:valueChange={(event) => { newProjectDescription = event.detail.value; }}
-          />
+          <div aria-describedby={describedBy}>
+            <NightfireEditor
+              name="description"
+              schema="acme:project/description@1"
+              bind:value={newProjectDescription}
+            />
+          </div>
         </Field>
       </div>
 

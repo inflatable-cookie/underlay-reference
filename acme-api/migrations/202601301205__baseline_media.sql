@@ -177,10 +177,17 @@ CREATE TABLE IF NOT EXISTS media.media_usage (
 
     -- What entity references this media
     used_by_type text NOT NULL CHECK (char_length(used_by_type) <= 64),
-    used_by_id uuid NOT NULL,
+    used_by_id uuid NULL,
 
-    -- Which field/slot in the entity (e.g., 'cover_image', 'attachment', 'body_block')
-    field text NOT NULL CHECK (char_length(field) <= 64),
+    -- Which record field owns this usage edge (e.g. cover_image, notes, description)
+    owner_field text NOT NULL CHECK (char_length(owner_field) <= 64),
+
+    -- Shape/locator vocabulary for structured-content references
+    content_kind text NOT NULL CHECK (char_length(content_kind) <= 64),
+    locator_kind text NOT NULL CHECK (char_length(locator_kind) <= 64),
+    locator_key text NOT NULL CHECK (char_length(locator_key) <= 512),
+    usage_role text NOT NULL CHECK (char_length(usage_role) <= 64),
+    provenance_kind text NOT NULL CHECK (char_length(provenance_kind) <= 64),
 
     -- Audit
     created_at timestamptz NOT NULL DEFAULT now()
@@ -194,6 +201,20 @@ CREATE INDEX IF NOT EXISTS media_usage_media_id_idx
 CREATE INDEX IF NOT EXISTS media_usage_used_by_idx
     ON media.media_usage (used_by_type, used_by_id);
 
+CREATE INDEX IF NOT EXISTS media_usage_used_by_scope_idx
+    ON media.media_usage (used_by_type, used_by_id, provenance_kind);
+
+CREATE INDEX IF NOT EXISTS media_usage_owner_field_idx
+    ON media.media_usage (used_by_type, used_by_id, owner_field, provenance_kind);
+
 -- Prevent duplicate usage records
-CREATE UNIQUE INDEX IF NOT EXISTS media_usage_unique
-    ON media.media_usage (media_id, used_by_type, used_by_id, field);
+CREATE UNIQUE INDEX IF NOT EXISTS media_usage_edge_unique
+    ON media.media_usage (
+        media_id,
+        used_by_type,
+        used_by_id,
+        owner_field,
+        locator_kind,
+        locator_key,
+        provenance_kind
+    );

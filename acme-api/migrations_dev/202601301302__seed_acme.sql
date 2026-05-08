@@ -62,14 +62,36 @@ VALUES
    '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
    '018f2a3b-0001-7e8f-8a9b-000000000001'::uuid,
    'API v2',
-   'Next generation API with improved performance',
+   '{
+      "schema": "acme:project/description@1",
+      "blocks": [
+        {
+          "id": "nf_018f2a3b00027e8f8a9b000000000001_description",
+          "type": "notes.markdown",
+          "version": "initial",
+          "hash": "",
+          "data": { "content": "Next generation API with improved performance" }
+        }
+      ]
+    }'::jsonb,
    'active',
    0),
   ('018f2a3b-0002-7e8f-8a9b-000000000002'::uuid,
    '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
    '018f2a3b-0001-7e8f-8a9b-000000000001'::uuid,
    'Mobile App',
-   'React Native mobile application',
+   '{
+      "schema": "acme:project/description@1",
+      "blocks": [
+        {
+          "id": "nf_018f2a3b00027e8f8a9b000000000002_description",
+          "type": "notes.markdown",
+          "version": "initial",
+          "hash": "",
+          "data": { "content": "React Native mobile application" }
+        }
+      ]
+    }'::jsonb,
    'active',
    1),
   -- Design projects
@@ -77,7 +99,18 @@ VALUES
    '018f2a3b-3c4d-7e8f-8a9b-00000000a002'::uuid,
    '018f2a3b-0001-7e8f-8a9b-000000000002'::uuid,
    'Brand Refresh',
-   'Update brand guidelines and assets',
+   '{
+      "schema": "acme:project/description@1",
+      "blocks": [
+        {
+          "id": "nf_018f2a3b00027e8f8a9b000000000003_description",
+          "type": "notes.markdown",
+          "version": "initial",
+          "hash": "",
+          "data": { "content": "Update brand guidelines and assets" }
+        }
+      ]
+    }'::jsonb,
    'active',
    0),
   -- Marketing projects
@@ -85,7 +118,18 @@ VALUES
    '018f2a3b-3c4d-7e8f-8a9b-00000000a002'::uuid,
    '018f2a3b-0001-7e8f-8a9b-000000000003'::uuid,
    'Q1 Campaign',
-   'First quarter marketing campaign',
+   '{
+      "schema": "acme:project/description@1",
+      "blocks": [
+        {
+          "id": "nf_018f2a3b00027e8f8a9b000000000004_description",
+          "type": "notes.markdown",
+          "version": "initial",
+          "hash": "",
+          "data": { "content": "First quarter marketing campaign" }
+        }
+      ]
+    }'::jsonb,
    'active',
    0),
   -- Archived project
@@ -93,7 +137,18 @@ VALUES
    '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
    '018f2a3b-0001-7e8f-8a9b-000000000001'::uuid,
    'Legacy Migration',
-   'Completed legacy system migration',
+   '{
+      "schema": "acme:project/description@1",
+      "blocks": [
+        {
+          "id": "nf_018f2a3b00027e8f8a9b000000000005_description",
+          "type": "notes.markdown",
+          "version": "initial",
+          "hash": "",
+          "data": { "content": "Completed legacy system migration" }
+        }
+      ]
+    }'::jsonb,
    'archived',
    99)
 ON CONFLICT (id) DO UPDATE

@@ -1,4 +1,4 @@
-import type { ListResponse, SingleResponse, Session } from "../../types/common-types.js";
+import type { PagedListResponse, SingleResponse, Session } from "../../types/common-types.js";
 import type {
   User,
   UserDetail,
@@ -173,12 +173,11 @@ export async function listUserSessions(
   userId: string,
   fetchFn: typeof fetch,
   accessToken: string
-): Promise<Session[]> {
+): Promise<PagedListResponse<Session>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ListResponse<Session>>(
+  return await http.get<PagedListResponse<Session>>(
     `/v1/admin/users/${encodeURIComponent(userId)}/sessions`
   );
-  return response.data;
 }
 
 /**

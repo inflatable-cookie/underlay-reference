@@ -1,10 +1,17 @@
 <script lang="ts">
+import "@acme/ui/editor";
+import "@acme/ui/validation";
 import {
   useToasts
 } from "@decodelabs/underlay/runtime/feedback";
 import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
+import { NightfireEditor } from "@decodelabs/underlay/nightfire/editor";
+import {
+  prepareNightfireForSave,
+  type NightfireDraftValue
+} from "@decodelabs/underlay/nightfire/validation";
 import {
   Callout as PoodleCallout,
   Card as PoodleCard } from "@poodle/svelte";
@@ -39,6 +46,7 @@ import {
   // Form state
   let title = $state("");
   let description = $state("");
+  let notes = $state<NightfireDraftValue>({ schema: "acme:task/notes@1" });
   let status = $state<string>(TaskStatus.Pending);
   let priority = $state<string>(TaskPriority.Medium);
   let dueDate = $state("");
@@ -80,6 +88,7 @@ import {
     if (task && !initialized) {
       title = task.title;
       description = task.description ?? "";
+      notes = task.notes ?? { schema: "acme:task/notes@1" };
       status = task.status;
       priority = task.priority;
       dueDate = task.dueDate?.split("T")[0] ?? "";
@@ -144,6 +153,7 @@ import {
         {
           title: title.trim(),
           description: description.trim() || null,
+          notes: prepareNightfireForSave(notes) ?? null,
           status,
           priority,
           dueDate: dueDate || null,
@@ -163,6 +173,7 @@ import {
         currentEtag = latest.etag;
         title = latest.data.title;
         description = latest.data.description ?? "";
+        notes = latest.data.notes ?? { schema: "acme:task/notes@1" };
         status = latest.data.status;
         priority = latest.data.priority;
         dueDate = latest.data.dueDate?.split("T")[0] ?? "";
@@ -248,6 +259,17 @@ import {
           rows={4}
           disabled={submitting}
           on:valueChange={(event) => { description = event.detail.value; }}
+        />
+      </PoodleField>
+
+      <PoodleField
+        id="task-edit-notes"
+        label="Rich Notes"
+      >
+        <NightfireEditor
+          name="notes"
+          schema="acme:task/notes@1"
+          bind:value={notes}
         />
       </PoodleField>
 

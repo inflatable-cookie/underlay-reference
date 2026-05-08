@@ -777,6 +777,7 @@ mod database_tests {
             None,
             None,
             None,
+            None,
         )
         .await
         .expect("update query should succeed");
@@ -832,6 +833,353 @@ mod database_tests {
         assert_eq!(exists.0, 1);
 
         cleanup::delete_user(db.pool(), user.id)
+            .await
+            .expect("cleanup should succeed");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn nightfire_media_usage_sync_stores_nested_block_id_locators() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        use acme_db::media;
+        use acme_test_utils::{cleanup, setup_test_db};
+        use underlay_media::{
+            MediaUsageProvenanceKind, NightfireFieldNameMatcher, NightfireMediaUsageExtractor,
+        };
+        use underlay_nightfire::NightfireValue;
+        use uuid::Uuid;
+
+        let db = setup_test_db().await;
+
+        let user_id = Uuid::now_v7();
+        let project_id = Uuid::now_v7();
+        let task_id = Uuid::now_v7();
+
+        sqlx::query(
+            r#"
+            INSERT INTO auth.users (id, email, role, status, display_name)
+            VALUES ($1, $2, 'user', 'active', 'Nightfire Test User')
+            "#,
+        )
+        .bind(user_id)
+        .bind(format!("nightfire-{}@example.com", user_id.simple()))
+        .execute(db.pool())
+        .await
+        .expect("user insert should succeed");
+
+        sqlx::query(
+            r#"
+            INSERT INTO acme.projects (id, owner_id, name, status)
+            VALUES ($1, $2, 'Nightfire Test Project', 'active')
+            "#,
+        )
+        .bind(project_id)
+        .bind(user_id)
+        .execute(db.pool())
+        .await
+        .expect("project insert should succeed");
+
+        sqlx::query(
+            r#"
+            INSERT INTO acme.tasks (id, project_id, title, status, priority, position)
+            VALUES ($1, $2, 'Nightfire Test Task', 'pending', 'medium', 0)
+            "#,
+        )
+        .bind(task_id)
+        .bind(project_id)
+        .execute(db.pool())
+        .await
+        .expect("task insert should succeed");
+
+        let media_id = Uuid::now_v7();
+        sqlx::query(
+            r#"
+            INSERT INTO media.media (id, kind, visibility, title, created_by, updated_by)
+            VALUES ($1, 'image', 'restricted', 'Nightfire Test Media', $2, $2)
+            "#,
+        )
+        .bind(media_id)
+        .bind(user_id)
+        .execute(db.pool())
+        .await
+        .expect("media insert should succeed");
+
+        let notes: NightfireValue = serde_json::from_value(serde_json::json!({
+            "schema": "acme:task/notes@1",
+            "block": {
+                "id": "gallery_01",
+                "type": "notes.gallery",
+                "version": "initial",
+                "hash": "",
+                "data": {
+                    "pages": [
+                        {
+                            "title": "Cover",
+                            "imageId": media_id.to_string(),
+                            "caption": "Nested media reference"
+                        }
+                    ]
+                }
+            }
+        }))
+        .expect("nightfire value should deserialize");
+
+        let extractor = NightfireMediaUsageExtractor::new(
+            "task",
+            Some(task_id),
+            "notes",
+            MediaUsageProvenanceKind::ContentSync,
+            NightfireFieldNameMatcher::with_common_media_fields(),
+        );
+        let repo = media::AcmeMediaUsageSyncRepo::new(db.pool());
+
+        let report = extractor
+            .extract_and_sync(&repo, &notes)
+            .await
+            .expect("media usage sync should succeed");
+
+        assert_eq!(report.inserted, 1);
+        assert_eq!(report.retained, 0);
+        assert_eq!(report.removed, 0);
+
+        let usages = media::list_usages_by_entity(db.pool(), "task", task_id, "notes")
+            .await
+            .expect("usage rows should load");
+
+        assert_eq!(usages.len(), 1);
+        let usage = &usages[0];
+        assert_eq!(usage.media_id, media_id);
+        assert_eq!(usage.used_by_type, "task");
+        assert_eq!(usage.used_by_id, Some(task_id));
+        assert_eq!(usage.owner_field.as_deref(), Some("notes"));
+        assert_eq!(usage.content_kind, "structured_content");
+        assert_eq!(usage.locator_kind, "block_id");
+        assert_eq!(usage.locator_key, "gallery_01#/pages/0/imageId");
+        assert_eq!(usage.usage_role, "embedded");
+        assert_eq!(usage.provenance_kind, "content_sync");
+
+        sqlx::query("DELETE FROM media.media WHERE id = $1")
+            .bind(media_id)
+            .execute(db.pool())
+            .await
+            .expect("media cleanup should succeed");
+
+        cleanup::delete_user(db.pool(), user_id)
+            .await
+            .expect("cleanup should succeed");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn task_notes_locator_resolver_reads_current_nested_media_value() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        use acme_db::tasks;
+        use acme_test_utils::{cleanup, setup_test_db};
+        use uuid::Uuid;
+
+        let db = setup_test_db().await;
+
+        let user_id = Uuid::now_v7();
+        let project_id = Uuid::now_v7();
+        let task_id = Uuid::now_v7();
+        let media_id = Uuid::now_v7();
+
+        sqlx::query(
+            r#"
+            INSERT INTO auth.users (id, email, role, status, display_name)
+            VALUES ($1, $2, 'user', 'active', 'Locator Test User')
+            "#,
+        )
+        .bind(user_id)
+        .bind(format!("locator-{}@example.com", user_id.simple()))
+        .execute(db.pool())
+        .await
+        .expect("user insert should succeed");
+
+        sqlx::query(
+            r#"
+            INSERT INTO acme.projects (id, owner_id, name, status)
+            VALUES ($1, $2, 'Locator Test Project', 'active')
+            "#,
+        )
+        .bind(project_id)
+        .bind(user_id)
+        .execute(db.pool())
+        .await
+        .expect("project insert should succeed");
+
+        sqlx::query(
+            r#"
+            INSERT INTO acme.tasks (id, project_id, title, status, priority, position, notes)
+            VALUES ($1, $2, 'Locator Test Task', 'pending', 'medium', 0, $3::jsonb)
+            "#,
+        )
+        .bind(task_id)
+        .bind(project_id)
+        .bind(serde_json::json!({
+            "schema": "acme:task/notes@1",
+            "block": {
+                "id": "nf_locator_demo",
+                "type": "notes.gallery",
+                "version": "initial",
+                "hash": "",
+                "data": {
+                    "pages": [
+                        {
+                            "title": "Lookup test",
+                            "imageId": media_id.to_string(),
+                            "caption": "Current nested reference"
+                        }
+                    ]
+                }
+            }
+        }))
+        .execute(db.pool())
+        .await
+        .expect("task insert should succeed");
+
+        let resolved = tasks::resolve_task_notes_locator(
+            db.pool(),
+            task_id,
+            "block_id",
+            "nf_locator_demo#/pages/0/imageId",
+        )
+        .await
+        .expect("locator resolve should succeed");
+
+        assert_eq!(resolved, Some(serde_json::json!(media_id.to_string())));
+
+        cleanup::delete_user(db.pool(), user_id)
+            .await
+            .expect("cleanup should succeed");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn project_description_media_usage_sync_stores_nested_block_id_locators() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        use acme_db::media;
+        use acme_test_utils::{cleanup, setup_test_db};
+        use underlay_media::{
+            MediaUsageProvenanceKind, NightfireFieldNameMatcher, NightfireMediaUsageExtractor,
+        };
+        use underlay_nightfire::NightfireValue;
+        use uuid::Uuid;
+
+        let db = setup_test_db().await;
+
+        let user_id = Uuid::now_v7();
+        let project_id = Uuid::now_v7();
+        let media_id = Uuid::now_v7();
+
+        sqlx::query(
+            r#"
+            INSERT INTO auth.users (id, email, role, status, display_name)
+            VALUES ($1, $2, 'user', 'active', 'Project Description Test User')
+            "#,
+        )
+        .bind(user_id)
+        .bind(format!("project-description-{}@example.com", user_id.simple()))
+        .execute(db.pool())
+        .await
+        .expect("user insert should succeed");
+
+        sqlx::query(
+            r#"
+            INSERT INTO acme.projects (id, owner_id, name, status)
+            VALUES ($1, $2, 'Project Description Test', 'active')
+            "#,
+        )
+        .bind(project_id)
+        .bind(user_id)
+        .execute(db.pool())
+        .await
+        .expect("project insert should succeed");
+
+        sqlx::query(
+            r#"
+            INSERT INTO media.media (id, kind, visibility, title, created_by, updated_by)
+            VALUES ($1, 'image', 'restricted', 'Project Description Media', $2, $2)
+            "#,
+        )
+        .bind(media_id)
+        .bind(user_id)
+        .execute(db.pool())
+        .await
+        .expect("media insert should succeed");
+
+        let description: NightfireValue = serde_json::from_value(serde_json::json!({
+            "schema": "acme:project/description@1",
+            "blocks": [
+                {
+                    "id": "project_gallery_01",
+                    "type": "notes.gallery",
+                    "version": "initial",
+                    "hash": "",
+                    "data": {
+                        "pages": [
+                            {
+                                "title": "Overview",
+                                "imageId": media_id.to_string(),
+                                "caption": "Nested project description media reference"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }))
+        .expect("nightfire value should deserialize");
+
+        let extractor = NightfireMediaUsageExtractor::new(
+            "project",
+            Some(project_id),
+            "description",
+            MediaUsageProvenanceKind::ContentSync,
+            NightfireFieldNameMatcher::with_common_media_fields(),
+        );
+        let repo = media::AcmeMediaUsageSyncRepo::new(db.pool());
+
+        let report = extractor
+            .extract_and_sync(&repo, &description)
+            .await
+            .expect("media usage sync should succeed");
+
+        assert_eq!(report.inserted, 1);
+        assert_eq!(report.retained, 0);
+        assert_eq!(report.removed, 0);
+
+        let usages = media::list_usages_by_entity(db.pool(), "project", project_id, "description")
+            .await
+            .expect("usage rows should load");
+
+        assert_eq!(usages.len(), 1);
+        let usage = &usages[0];
+        assert_eq!(usage.media_id, media_id);
+        assert_eq!(usage.used_by_type, "project");
+        assert_eq!(usage.used_by_id, Some(project_id));
+        assert_eq!(usage.owner_field.as_deref(), Some("description"));
+        assert_eq!(usage.content_kind, "structured_content");
+        assert_eq!(usage.locator_kind, "block_id");
+        assert_eq!(usage.locator_key, "project_gallery_01#/pages/0/imageId");
+        assert_eq!(usage.usage_role, "embedded");
+        assert_eq!(usage.provenance_kind, "content_sync");
+
+        sqlx::query("DELETE FROM media.media WHERE id = $1")
+            .bind(media_id)
+            .execute(db.pool())
+            .await
+            .expect("media cleanup should succeed");
+
+        cleanup::delete_user(db.pool(), user_id)
             .await
             .expect("cleanup should succeed");
     }

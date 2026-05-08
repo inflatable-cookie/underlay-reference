@@ -1,9 +1,17 @@
 <script lang="ts">
+import "@acme/ui/editor";
+import "@acme/ui/validation";
 import {
   createLocalSearchFns,
   type SearchResult,
   type SuggestionOptions
 } from "@decodelabs/underlay/runtime/relations";
+import { NightfireEditor } from "@decodelabs/underlay/nightfire/editor";
+import {
+  prepareNightfireForSave,
+  type NightfireDraftValue,
+  type NightfireValue
+} from "@decodelabs/underlay/nightfire/validation";
 import {
   Button,
   Field,
@@ -23,10 +31,12 @@ import {
 
   interface ProjectFormValues {
     name?: string;
-    description?: string | null;
+    description?: NightfireValue | null;
     categoryId?: string | null;
     status?: string;
   }
+
+  const PROJECT_DESCRIPTION_SCHEMA = "acme:project/description@1";
 
   /** Converts a Category to local category-selector item */
   function categoryToSelectable(category: Category | CategoryWithCounts) {
@@ -79,9 +89,17 @@ import {
 
   // Local state for form fields
   let nameValue = $state(untrack(() => values.name ?? ""));
-  let descriptionValue = $state(untrack(() => values.description ?? ""));
+  let descriptionValue = $state<NightfireDraftValue>(untrack(() => (
+    isNightfireValue(values.description)
+      ? values.description
+      : { schema: PROJECT_DESCRIPTION_SCHEMA }
+  )));
   let categoryId = $state<string | null>(untrack(() => values.categoryId ?? null));
   let statusValue = $state(untrack(() => values.status ?? "active"));
+  const serialisedDescription = $derived.by(() => {
+    const prepared = prepareNightfireForSave(descriptionValue);
+    return prepared ? JSON.stringify(prepared) : "";
+  });
 
   const editIntentItems = [
     { value: "save", label: "Save changes" },
@@ -141,6 +159,10 @@ import {
   function submitWithIntent(nextIntent: "save" | "save-close") {
     intent = nextIntent;
     actionBarElement?.closest("form")?.requestSubmit();
+  }
+
+  function isNightfireValue(value: unknown): value is NightfireValue {
+    return !!value && typeof value === "object" && "schema" in value;
   }
 </script>
 
@@ -218,18 +240,12 @@ import {
       label="Description"
       error={errors?.description ?? null}
       validationState={validationState(errors?.description)}
-      let:describedBy
-      let:validationState={descriptionValidationState}
     >
-      <TextInput
-        id="project-description"
+      <input type="hidden" name="description" value={serialisedDescription} />
+      <NightfireEditor
         name="description"
-        value={descriptionValue}
-        describedBy={describedBy}
-        validationState={descriptionValidationState}
-        placeholder="Optional description for this project"
-        rows={4}
-        on:valueChange={(event) => { descriptionValue = event.detail.value; }}
+        schema={PROJECT_DESCRIPTION_SCHEMA}
+        bind:value={descriptionValue}
       />
     </Field>
 </FieldSet>

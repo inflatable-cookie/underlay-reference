@@ -20,6 +20,7 @@ use crate::openapi::ApiDoc;
 use crate::state::AppState;
 
 mod admin;
+mod project_description;
 pub mod shared;
 mod tasks;
 

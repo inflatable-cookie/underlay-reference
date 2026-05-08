@@ -1,4 +1,5 @@
 use chrono::{DateTime, NaiveDate, Utc};
+use serde_json::Value;
 use sqlx::FromRow;
 use std::collections::HashSet;
 use underlay_http::query::{FieldMapping, QueryParams, WhereBuilder};
@@ -20,6 +21,7 @@ pub struct TaskRow {
     pub project_id: Uuid,
     pub title: String,
     pub description: Option<String>,
+    pub notes: Option<Value>,
     pub status: String,
     pub priority: String,
     pub due_date: Option<NaiveDate>,
@@ -38,6 +40,7 @@ pub struct TaskWithLabelsRow {
     pub project_id: Uuid,
     pub title: String,
     pub description: Option<String>,
+    pub notes: Option<Value>,
     pub status: String,
     pub priority: String,
     pub due_date: Option<NaiveDate>,
@@ -69,6 +72,7 @@ pub async fn create_task(
     project_id: Uuid,
     title: &str,
     description: Option<&str>,
+    notes: Option<&Value>,
     priority: &str,
     due_date: Option<NaiveDate>,
 ) -> Result<TaskRow, sqlx::Error> {
@@ -86,15 +90,16 @@ pub async fn create_task(
 
     sqlx::query_as::<_, TaskRow>(
         r#"
-        INSERT INTO acme.tasks (id, project_id, title, description, priority, due_date, position)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id, project_id, title, description, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
+        INSERT INTO acme.tasks (id, project_id, title, description, notes, priority, due_date, position)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id, project_id, title, description, notes, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
         "#,
     )
     .bind(id)
     .bind(project_id)
     .bind(title)
     .bind(description)
+    .bind(notes)
     .bind(priority)
     .bind(due_date)
     .bind(next_position)
@@ -106,7 +111,7 @@ pub async fn create_task(
 pub async fn get_task(pool: &DbPool, id: Uuid) -> Result<Option<TaskRow>, sqlx::Error> {
     sqlx::query_as::<_, TaskRow>(
         r#"
-        SELECT id, project_id, title, description, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
+        SELECT id, project_id, title, description, notes, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
         FROM acme.tasks
         WHERE id = $1 AND deleted_at IS NULL
         "#,
@@ -125,7 +130,7 @@ pub async fn list_tasks_for_project(
     if include_completed {
         sqlx::query_as::<_, TaskRow>(
             r#"
-            SELECT id, project_id, title, description, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
+            SELECT id, project_id, title, description, notes, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
             FROM acme.tasks
             WHERE project_id = $1 AND deleted_at IS NULL
             ORDER BY position
@@ -137,7 +142,7 @@ pub async fn list_tasks_for_project(
     } else {
         sqlx::query_as::<_, TaskRow>(
             r#"
-            SELECT id, project_id, title, description, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
+            SELECT id, project_id, title, description, notes, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
             FROM acme.tasks
             WHERE project_id = $1 AND status NOT IN ('completed', 'cancelled') AND deleted_at IS NULL
             ORDER BY position
@@ -190,6 +195,7 @@ pub async fn list_tasks_admin(
         r#"
         SELECT
             t.id, t.project_id, t.title, t.description, t.status, t.priority,
+            t.notes,
             t.due_date, t.completed_at, t.position, t.weight,
             t.created_at, t.updated_at, t.deleted_at,
             COALESCE(COUNT(tl.label_id), 0) as label_count
@@ -231,6 +237,7 @@ pub async fn update_task(
     project_id: Uuid,
     title: Option<&str>,
     description: Option<Option<&str>>,
+    notes: Option<Option<&Value>>,
     status: Option<&str>,
     priority: Option<&str>,
     due_date: Option<Option<NaiveDate>>,
@@ -248,13 +255,14 @@ pub async fn update_task(
         SET
             title = COALESCE($3, title),
             description = CASE WHEN $4 THEN $5 ELSE description END,
-            status = COALESCE($6, status),
-            priority = COALESCE($7, priority),
-            due_date = CASE WHEN $8 THEN $9 ELSE due_date END,
+            notes = CASE WHEN $6 THEN $7 ELSE notes END,
+            status = COALESCE($8, status),
+            priority = COALESCE($9, priority),
+            due_date = CASE WHEN $10 THEN $11 ELSE due_date END,
             completed_at = {},
             updated_at = NOW()
         WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL
-        RETURNING id, project_id, title, description, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
+        RETURNING id, project_id, title, description, notes, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
         "#,
         completed_at_expr
     );
@@ -265,6 +273,8 @@ pub async fn update_task(
         .bind(title)
         .bind(description.is_some())
         .bind(description.flatten())
+        .bind(notes.is_some())
+        .bind(notes.flatten())
         .bind(status)
         .bind(priority)
         .bind(due_date.is_some())

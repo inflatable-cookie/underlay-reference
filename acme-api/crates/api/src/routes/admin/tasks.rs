@@ -15,12 +15,19 @@ use axum::{
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
+use underlay_media::MediaUsageProvenanceKind;
+use underlay_nightfire::NightfireValue;
 use uuid::Uuid as RawUuid;
 
 use acme_core::Uuid;
-use acme_db::{activity, tasks};
+use acme_db::{activity, media, tasks};
 
+use crate::nightfire::{
+    notes::build_notes_media_registry, prepare_nightfire_value,
+    sync_nightfire_block_media_usage, PreparedNightfireValue,
+};
 use crate::routes::admin::freshness::{
     build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
     precondition_failed_error,
@@ -39,6 +46,7 @@ pub struct TaskResponse {
     pub project_id: String,
     pub title: String,
     pub description: Option<String>,
+    pub notes: Option<Value>,
     pub status: String,
     pub priority: String,
     pub due_date: Option<String>,
@@ -56,6 +64,7 @@ impl From<tasks::TaskRow> for TaskResponse {
             project_id: row.project_id.to_string(),
             title: row.title,
             description: row.description,
+            notes: row.notes,
             status: row.status,
             priority: row.priority,
             due_date: row.due_date.map(|d| d.to_string()),
@@ -75,6 +84,7 @@ pub struct TaskWithLabelsResponse {
     pub project_id: String,
     pub title: String,
     pub description: Option<String>,
+    pub notes: Option<Value>,
     pub status: String,
     pub priority: String,
     pub due_date: Option<String>,
@@ -93,6 +103,7 @@ impl From<tasks::TaskWithLabelsRow> for TaskWithLabelsResponse {
             project_id: row.project_id.to_string(),
             title: row.title,
             description: row.description,
+            notes: row.notes,
             status: row.status,
             priority: row.priority,
             due_date: row.due_date.map(|d| d.to_string()),
@@ -135,6 +146,7 @@ impl From<tasks::LabelRow> for LabelResponse {
 pub struct CreateTaskRequest {
     pub title: String,
     pub description: Option<String>,
+    pub notes: Option<NightfireValue>,
     pub priority: Option<String>,
     pub due_date: Option<NaiveDate>,
     pub label_ids: Option<Vec<Uuid>>,
@@ -154,6 +166,7 @@ pub struct ListTasksQuery {
 pub struct UpdateTaskRequest {
     pub title: Option<String>,
     pub description: Option<Option<String>>,
+    pub notes: Option<Option<NightfireValue>>,
     pub status: Option<String>,
     pub priority: Option<String>,
     pub due_date: Option<Option<NaiveDate>>,
@@ -196,6 +209,39 @@ pub struct BatchUpdateTaskStatusRequest {
 // Task Handlers
 // ============================================================================
 
+fn prepare_task_notes(
+    notes: Option<NightfireValue>,
+) -> Result<Option<PreparedNightfireValue>, ApiError> {
+    prepare_nightfire_value(
+        notes,
+        "tasks.notes.serialize",
+        "tasks.notes_serialize_failed",
+        "Failed to serialize task notes",
+    )
+}
+
+async fn sync_task_notes_media_usage(
+    pool: &acme_db::DbPool,
+    task_id: RawUuid,
+    notes: Option<&NightfireValue>,
+) -> Result<(), ApiError> {
+    let repo = media::AcmeMediaUsageSyncRepo::new(pool);
+    sync_nightfire_block_media_usage(
+        &repo,
+        "task",
+        task_id,
+        "notes",
+        notes,
+        MediaUsageProvenanceKind::ContentSync,
+        build_notes_media_registry(),
+        "tasks.notes_media_sync_failed",
+        "Failed to sync task note media usage",
+        "tasks.notes_media_sync_failed",
+        "Failed to sync task note media usage",
+    )
+    .await
+}
+
 /// List tasks for a project (admin).
 ///
 /// Supports filtering and sorting:
@@ -214,15 +260,7 @@ pub async fn list_tasks(
     let limit = params.limit.unwrap_or(20).clamp(1, 100);
     let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match tasks::list_tasks_admin(
-        pool,
-        project_id,
-        &params.query,
-        limit as i64,
-        offset,
-    )
-    .await
-    {
+    match tasks::list_tasks_admin(pool, project_id, &params.query, limit as i64, offset).await {
         Ok(task_list) => {
             let response: Vec<TaskWithLabelsResponse> =
                 task_list.data.into_iter().map(Into::into).collect();
@@ -306,28 +344,41 @@ pub async fn create_task(
     let pool = state.local_auth.pool();
     let task_id = Uuid::new_v7().into_inner();
     let project_id = project_id.into_inner();
-    let priority = req.priority.as_deref().unwrap_or("medium");
+    let CreateTaskRequest {
+        title,
+        description,
+        notes: request_notes,
+        priority,
+        due_date,
+        label_ids,
+    } = req;
+    let priority = priority.as_deref().unwrap_or("medium");
+    let notes = prepare_task_notes(request_notes)?;
 
     // Create the task
     match tasks::create_task(
         pool,
         task_id,
         project_id,
-        &req.title,
-        req.description.as_deref(),
+        &title,
+        description.as_deref(),
+        notes.as_ref().map(|value| value.json()),
         priority,
-        req.due_date,
+        due_date,
     )
     .await
     {
         Ok(task) => {
             // Set labels if provided
-            if let Some(label_ids) = req.label_ids {
+            if let Some(label_ids) = label_ids {
                 let ids: Vec<_> = label_ids.iter().map(|id| id.into_inner()).collect();
                 if let Err(e) = tasks::set_task_labels(pool, task_id, &ids).await {
                     tracing::warn!("Failed to set task labels: {}", e);
                 }
             }
+
+            sync_task_notes_media_usage(pool, task_id, notes.as_ref().map(|value| value.value()))
+                .await?;
 
             // Log activity
             let _ = activity::log_activity(
@@ -337,7 +388,9 @@ pub async fn create_task(
                     action: "create",
                     resource_type: "task",
                     resource_id: task_id,
-                    details: Some(serde_json::json!({ "title": req.title, "project_id": project_id.to_string() })),
+                    details: Some(
+                        serde_json::json!({ "title": title, "project_id": project_id.to_string() }),
+                    ),
                     correlation_id: Some(ctx.request_id()),
                     ip_address: None,
                 },
@@ -362,7 +415,7 @@ pub async fn create_task(
                 "operation": "tasks.create",
                 "task_id": task_id,
                 "project_id": project_id,
-                "title": &req.title
+                "title": &title
             })))
         }
     }
@@ -380,6 +433,16 @@ pub async fn update_task(
     let pool = state.local_auth.pool();
     let project_id = project_id.into_inner();
     let task_id_inner = task_id.into_inner();
+    let UpdateTaskRequest {
+        title,
+        description,
+        notes: request_notes,
+        status,
+        priority,
+        due_date,
+        label_ids,
+    } = req;
+    let notes = prepare_task_notes(request_notes.clone().flatten())?;
 
     let current = match tasks::get_task(pool, task_id_inner).await {
         Ok(Some(task)) => task,
@@ -423,21 +486,33 @@ pub async fn update_task(
         pool,
         task_id_inner,
         project_id,
-        req.title.as_deref(),
-        req.description.as_ref().map(|d| d.as_deref()),
-        req.status.as_deref(),
-        req.priority.as_deref(),
-        req.due_date,
+        title.as_deref(),
+        description.as_ref().map(|d| d.as_deref()),
+        request_notes
+            .as_ref()
+            .map(|_| notes.as_ref().map(|value| value.json())),
+        status.as_deref(),
+        priority.as_deref(),
+        due_date,
     )
     .await
     {
         Ok(Some(task)) => {
             // Update labels if provided
-            if let Some(label_ids) = req.label_ids {
+            if let Some(label_ids) = label_ids {
                 let ids: Vec<_> = label_ids.iter().map(|id| id.into_inner()).collect();
                 if let Err(e) = tasks::set_task_labels(pool, task_id_inner, &ids).await {
                     tracing::warn!("Failed to update task labels: {}", e);
                 }
+            }
+
+            if request_notes.is_some() {
+                sync_task_notes_media_usage(
+                    pool,
+                    task_id_inner,
+                    notes.as_ref().map(|value| value.value()),
+                )
+                .await?;
             }
 
             // Log activity
@@ -500,6 +575,8 @@ pub async fn soft_delete_task(
 
     match tasks::soft_delete_task(pool, tid, batch_id).await {
         Ok(true) => {
+            sync_task_notes_media_usage(pool, tid, None).await?;
+
             // Log activity
             let _ = activity::log_activity(
                 pool,

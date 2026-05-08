@@ -1,10 +1,17 @@
 <script lang="ts">
+import "@acme/ui/editor";
+import "@acme/ui/validation";
 import {
   useToasts
 } from "@decodelabs/underlay/runtime/feedback";
 import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
+import { NightfireEditor } from "@decodelabs/underlay/nightfire/editor";
+import {
+  prepareNightfireForSave,
+  type NightfireDraftValue
+} from "@decodelabs/underlay/nightfire/validation";
 import {
   Callout as PoodleCallout,
   Card as PoodleCard } from "@poodle/svelte";
@@ -36,6 +43,7 @@ import {
   // Form state
   let title = $state("");
   let description = $state("");
+  let notes = $state<NightfireDraftValue>({ schema: "acme:task/notes@1" });
   let priority = $state<string>(TaskPriority.Medium);
   let dueDate = $state("");
   let selectedLabelIds = $state<string[]>([]);
@@ -97,6 +105,7 @@ import {
         {
           title: title.trim(),
           description: description.trim() || null,
+          notes: prepareNightfireForSave(notes) ?? null,
           priority,
           dueDate: dueDate || null,
           labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined
@@ -184,6 +193,17 @@ import {
           rows={4}
           disabled={submitting}
           on:valueChange={(event) => { description = event.detail.value; }}
+        />
+      </PoodleField>
+
+      <PoodleField
+        id="task-create-notes"
+        label="Rich Notes"
+      >
+        <NightfireEditor
+          name="notes"
+          schema="acme:task/notes@1"
+          bind:value={notes}
         />
       </PoodleField>
 

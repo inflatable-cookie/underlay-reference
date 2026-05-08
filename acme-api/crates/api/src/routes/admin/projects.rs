@@ -14,12 +14,17 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
+use underlay_nightfire::NightfireValue;
 
 use acme_core::Uuid;
 use acme_db::{activity, categories, tasks};
 use serde_json::json;
 
+use crate::routes::project_description::{
+    prepare_project_description, sync_project_description_media_usage,
+};
 use crate::routes::admin::freshness::{
     build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
     precondition_failed_error,
@@ -33,21 +38,33 @@ use crate::state::{AdminUser, AppState};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
+pub struct ProjectTaskSummaryResponse {
+    pub total: i64,
+    pub completed: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub struct ProjectResponse {
     pub id: String,
     pub owner_id: String,
     pub category_id: Option<String>,
     pub category_name: Option<String>,
     pub name: String,
-    pub description: Option<String>,
+    pub description: Option<Value>,
     pub status: String,
     pub weight: i32,
+    pub task_summary: ProjectTaskSummaryResponse,
     pub created_at: String,
     pub updated_at: String,
 }
 
 impl ProjectResponse {
-    fn from_row(row: tasks::ProjectRow, category_name: Option<String>) -> Self {
+    fn from_row(
+        row: tasks::ProjectRow,
+        category_name: Option<String>,
+        task_summary: tasks::ProjectTaskSummary,
+    ) -> Self {
         Self {
             id: row.id.to_string(),
             owner_id: row.owner_id.to_string(),
@@ -57,6 +74,10 @@ impl ProjectResponse {
             description: row.description,
             status: row.status,
             weight: row.weight,
+            task_summary: ProjectTaskSummaryResponse {
+                total: task_summary.total,
+                completed: task_summary.completed,
+            },
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
         }
@@ -71,7 +92,7 @@ pub struct ProjectWithCountsResponse {
     pub category_id: Option<String>,
     pub category_name: Option<String>,
     pub name: String,
-    pub description: Option<String>,
+    pub description: Option<Value>,
     pub status: String,
     pub weight: i32,
     pub created_at: String,
@@ -103,7 +124,7 @@ impl From<tasks::ProjectWithCountsRow> for ProjectWithCountsResponse {
 #[serde(rename_all = "snake_case")]
 pub struct CreateProjectRequest {
     pub name: String,
-    pub description: Option<String>,
+    pub description: Option<NightfireValue>,
     pub category_id: Option<Uuid>,
     pub owner_id: Option<Uuid>, // Admin can create for other users
 }
@@ -112,7 +133,7 @@ pub struct CreateProjectRequest {
 #[serde(rename_all = "snake_case")]
 pub struct UpdateProjectRequest {
     pub name: Option<String>,
-    pub description: Option<Option<String>>,
+    pub description: Option<Option<NightfireValue>>,
     pub status: Option<String>,
     pub category_id: Option<Option<Uuid>>,
 }
@@ -211,6 +232,19 @@ pub async fn get_project(
                     .map(|category| category.name),
                 None => None,
             };
+            let task_summary = tasks::get_project_task_summary(pool, project_id)
+                .await
+                .map_err(|e| {
+                    crate::db_errors::internal_with_diagnostics(
+                        "projects.get_failed",
+                        "Failed to get project",
+                        &e,
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "projects.get_task_summary",
+                        "project_id": project_id
+                    }))
+                })?;
             let etag = detail_etag(
                 "project",
                 &project.id.to_string(),
@@ -219,7 +253,7 @@ pub async fn get_project(
             if let Some(not_modified) = maybe_not_modified(&headers, &etag) {
                 return Ok(not_modified);
             }
-            let response = ProjectResponse::from_row(project, category_name);
+            let response = ProjectResponse::from_row(project, category_name, task_summary);
             let response_headers = build_etag_cache_headers(&etag);
             Ok((
                 response_headers,
@@ -266,18 +300,40 @@ pub async fn create_project(
         .owner_id
         .map(|id| id.into_inner())
         .unwrap_or_else(|| user.user_id.0.into_inner());
+    let prepared_description = prepare_project_description(req.description)?;
+    let description = prepared_description.as_ref().map(|value| value.json());
 
     match tasks::create_project(
         pool,
         project_id,
         owner_id,
         &req.name,
-        req.description.as_deref(),
+        description,
         req.category_id.map(|id| id.into_inner()),
     )
     .await
     {
         Ok(project) => {
+            let task_summary = tasks::get_project_task_summary(pool, project_id)
+                .await
+                .map_err(|e| {
+                    crate::db_errors::internal_with_diagnostics(
+                        "projects.create_failed",
+                        "Failed to create project",
+                        &e,
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "projects.create_task_summary",
+                        "project_id": project_id
+                    }))
+                })?;
+            sync_project_description_media_usage(
+                pool,
+                project_id,
+                prepared_description.as_ref().map(|value| value.value()),
+            )
+            .await?;
+
             // Log activity
             let _ = activity::log_activity(
                 pool,
@@ -293,7 +349,7 @@ pub async fn create_project(
             )
             .await;
 
-            let response = ProjectResponse::from_row(project, None);
+            let response = ProjectResponse::from_row(project, None, task_summary);
             Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
@@ -328,6 +384,13 @@ pub async fn update_project(
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let pid = project_id.into_inner();
+    let prepared_description = match req.description {
+        Some(description) => Some(prepare_project_description(description)?),
+        None => None,
+    };
+    let description = prepared_description
+        .as_ref()
+        .map(|entry| entry.as_ref().map(|value| value.json()));
 
     let current = match tasks::get_project_admin(pool, pid).await {
         Ok(Some(project)) => project,
@@ -371,7 +434,7 @@ pub async fn update_project(
         pool,
         pid,
         req.name.as_deref(),
-        req.description.as_ref().map(|d| d.as_deref()),
+        description,
         req.status.as_deref(),
         req.category_id
             .as_ref()
@@ -380,6 +443,28 @@ pub async fn update_project(
     .await
     {
         Ok(Some(project)) => {
+            let task_summary = tasks::get_project_task_summary(pool, pid)
+                .await
+                .map_err(|e| {
+                    crate::db_errors::internal_with_diagnostics(
+                        "projects.update_failed",
+                        "Failed to update project",
+                        &e,
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "projects.update_task_summary",
+                        "project_id": pid
+                    }))
+                })?;
+            if let Some(prepared_description) = prepared_description.as_ref() {
+                sync_project_description_media_usage(
+                    pool,
+                    pid,
+                    prepared_description.as_ref().map(|value| value.value()),
+                )
+                .await?;
+            }
+
             // Log activity
             let _ = activity::log_activity(
                 pool,
@@ -395,7 +480,7 @@ pub async fn update_project(
             )
             .await;
 
-            let response = ProjectResponse::from_row(project, None);
+            let response = ProjectResponse::from_row(project, None, task_summary);
             let etag = detail_etag("project", &response.id, &response.updated_at);
             let response_headers = build_etag_cache_headers(&etag);
             Ok((
@@ -440,6 +525,8 @@ pub async fn soft_delete_project(
 
     match tasks::soft_delete_project(pool, pid, batch_id).await {
         Ok(true) => {
+            sync_project_description_media_usage(pool, pid, None).await?;
+
             // Log activity
             let _ = activity::log_activity(
                 pool,
@@ -493,6 +580,25 @@ pub async fn restore_project(
 
     match tasks::restore_project(pool, pid).await {
         Ok(Some(project)) => {
+            let task_summary = tasks::get_project_task_summary(pool, pid)
+                .await
+                .map_err(|e| {
+                    crate::db_errors::internal_with_diagnostics(
+                        "projects.restore_failed",
+                        "Failed to restore project",
+                        &e,
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "projects.restore_task_summary",
+                        "project_id": pid
+                    }))
+                })?;
+            let description = project
+                .description
+                .clone()
+                .and_then(|value| serde_json::from_value(value).ok());
+            sync_project_description_media_usage(pool, pid, description.as_ref()).await?;
+
             // Log activity
             let _ = activity::log_activity(
                 pool,
@@ -508,7 +614,7 @@ pub async fn restore_project(
             )
             .await;
 
-            let response = ProjectResponse::from_row(project, None);
+            let response = ProjectResponse::from_row(project, None, task_summary);
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Ok(None) => Err(
@@ -614,6 +720,10 @@ pub async fn batch_delete_projects(
 
     match tasks::batch_soft_delete_projects(pool, &ids, batch_id).await {
         Ok(count) => {
+            for id in &ids {
+                sync_project_description_media_usage(pool, *id, None).await?;
+            }
+
             // Log activity for batch operation
             let _ = activity::log_activity(
                 pool,

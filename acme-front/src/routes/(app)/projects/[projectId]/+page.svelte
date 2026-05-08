@@ -1,10 +1,13 @@
 <script lang="ts">
+import "@acme/ui/render";
 import {
   useToasts
 } from "@decodelabs/underlay/runtime/feedback";
 import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
+import { NightfireRenderer } from "@decodelabs/underlay/nightfire/renderer";
+import type { NightfireValue as RenderableNightfireValue } from "@decodelabs/underlay/nightfire/validation";
 import {
   goto } from "$app/navigation";
   import { auth,
@@ -194,7 +197,9 @@ import {
   />
 
   {#if project.description}
-    <p class="description">{project.description}</p>
+    <div class="description">
+      <NightfireRenderer value={project.description as RenderableNightfireValue} />
+    </div>
   {/if}
 
   <div class="tasks-section">

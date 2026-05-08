@@ -15,6 +15,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@acme/ui": "file:../acme-ui",
     "@decodelabs/underlay": "file:../../underlay",
     "@poodle/svelte": "file:../../poodle/packages/svelte/components",
     "@poodle/svelte-tokens": "file:../../poodle/packages/svelte/tokens",

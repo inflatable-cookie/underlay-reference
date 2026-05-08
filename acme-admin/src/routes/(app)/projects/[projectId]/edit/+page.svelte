@@ -1,5 +1,6 @@
 <script lang="ts">
 import { type SpaFormResult, SpaFormShell } from "@decodelabs/underlay/patterns";
+import type { NightfireValue } from "@decodelabs/underlay/nightfire/validation";
 import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
@@ -96,6 +97,21 @@ import {
   let formValues = $state<Record<string, unknown> | undefined>(undefined);
   let intent = $state<"save" | "save-close">("save-close");
 
+  function parseNightfireField(formData: FormData, name: string): NightfireValue | null {
+    const raw = String(formData.get(name) ?? "").trim();
+    if (!raw) return null;
+
+    try {
+      return JSON.parse(raw) as NightfireValue;
+    } catch {
+      throw new Error(`Invalid ${name} payload`);
+    }
+  }
+
+  function isNightfireValue(value: unknown): value is NightfireValue {
+    return !!value && typeof value === "object" && "schema" in value;
+  }
+
   /**
    * Handle form submission.
    */
@@ -106,7 +122,7 @@ import {
     }
 
     const name = String(formData.get("name") ?? "").trim();
-    const description = String(formData.get("description") ?? "").trim() || null;
+    const description = parseNightfireField(formData, "description");
     const categoryId = String(formData.get("categoryId") ?? "").trim() || null;
     const status = String(formData.get("status") ?? "active").trim();
     const formIntent = String(formData.get("intent") ?? "save-close");
@@ -157,7 +173,7 @@ import {
         currentEtag = latest.etag;
         formValues = {
           name: latest.data.name,
-          description: latest.data.description ?? "",
+          description: latest.data.description ?? null,
           categoryId: latest.data.categoryId ?? "",
           status: latest.data.status,
           intent: formIntent
@@ -226,7 +242,7 @@ import {
       createCategory={createCategoryInline}
       values={{
         name: typeof formValues?.name === "string" ? formValues.name : project.name,
-        description: typeof formValues?.description === "string" ? formValues.description : project.description ?? "",
+        description: isNightfireValue(formValues?.description) ? formValues.description : project.description ?? null,
         categoryId: typeof formValues?.categoryId === "string" ? formValues.categoryId : project.categoryId,
         status: typeof formValues?.status === "string" ? formValues.status : project.status
       }}

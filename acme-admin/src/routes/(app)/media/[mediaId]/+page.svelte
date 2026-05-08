@@ -49,6 +49,7 @@ import {
 import {
   mediaCommands,
   type MediaDetail,
+  type PagedListResponse,
   type MediaVersion,
   type MediaUsage,
   MediaKind,
@@ -90,7 +91,11 @@ import { browser } from "$app/environment";
     async (fetchFn, token) => mediaCommands.listVersions(mediaId, fetchFn, token),
     {
       getAuthLoading: () => true,
-      defaultValue: [] as MediaVersion[]
+      defaultValue: {
+        data: [],
+        total: 0,
+        hasMore: false
+      } as PagedListResponse<MediaVersion>
     }
   );
 
@@ -98,7 +103,11 @@ import { browser } from "$app/environment";
     async (fetchFn, token) => mediaCommands.listUsages(mediaId, fetchFn, token),
     {
       getAuthLoading: () => true,
-      defaultValue: [] as MediaUsage[]
+      defaultValue: {
+        data: [],
+        total: 0,
+        hasMore: false
+      } as PagedListResponse<MediaUsage>
     }
   );
 
@@ -116,8 +125,8 @@ import { browser } from "$app/environment";
     }
   });
 
-  const versions = $derived(versionsData.data ?? []);
-  const usages = $derived(usagesData.data ?? []);
+  const versions = $derived(versionsData.data?.data ?? []);
+  const usages = $derived(usagesData.data?.data ?? []);
   const usageCount = $derived(media?.usageCount ?? 0);
 
   const backInfo = getBackButtonInfo("Back to media", "/media");
@@ -580,15 +589,18 @@ import { browser } from "$app/environment";
 {#snippet usageItemSnippet(usage: MediaUsage)}
   <div class="inline-list-card__item-content inline-list-card__item-content--usage">
     <span class="inline-list-card__dot" style:--inline-list-accent={getMediaMetaAccent("usage")}></span>
-    <span class="inline-list-card__label-group">
-      <span class="inline-list-card__label">{usage.usedByType}</span>
-      <span class="inline-list-card__sublabel">
-        <Code inline source={usage.usedById} />
-        {#if usage.field}
-          <span class="usage-field"> · {usage.field}</span>
-        {/if}
+      <span class="inline-list-card__label-group">
+        <span class="inline-list-card__label">{usage.usedByType}</span>
+        <span class="inline-list-card__sublabel">
+          <Code inline source={usage.usedById ?? "manual"} />
+          {#if usage.ownerField}
+            <span class="usage-field"> · {usage.ownerField}</span>
+          {/if}
+          {#if usage.locatorKind !== "field"}
+            <span class="usage-field"> · {usage.locatorKind}: {usage.locatorKey}</span>
+          {/if}
+        </span>
       </span>
-    </span>
   </div>
 {/snippet}
 

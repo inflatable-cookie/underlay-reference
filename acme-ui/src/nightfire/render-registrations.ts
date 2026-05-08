@@ -5,5 +5,6 @@
 // `@decodelabs/underlay/nightfire/render-registry`.
 
 import "./notes/render";
+import "./project-description/render";
 
 export {};

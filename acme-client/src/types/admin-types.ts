@@ -4,6 +4,8 @@
  * These types match the admin route responses from acme-api.
  */
 
+import type { NightfireValue } from "@decodelabs/underlay/nightfire/validation";
+
 // ============================================================================
 // Categories
 // ============================================================================
@@ -49,9 +51,14 @@ export interface Project {
   categoryId?: string | null;
   categoryName?: string | null;
   name: string;
-  description?: string | null;
+  description?: NightfireValue | null;
   status: string;
   weight: number;
+  /** Omitted by some admin project responses until task aggregates exist. */
+  taskSummary?: {
+    total: number;
+    completed: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -64,14 +71,14 @@ export interface ProjectWithCounts extends Project {
 
 export interface CreateProjectPayload {
   name: string;
-  description?: string | null;
+  description?: NightfireValue | null;
   categoryId?: string | null;
   ownerId?: string | null; // Admin can create for other users
 }
 
 export interface UpdateProjectPayload {
   name?: string;
-  description?: string | null;
+  description?: NightfireValue | null;
   status?: string;
   categoryId?: string | null;
 }
@@ -85,6 +92,7 @@ export interface Task {
   projectId: string;
   title: string;
   description?: string | null;
+  notes?: NightfireValue | null;
   status: string;
   priority: string;
   dueDate?: string | null;
@@ -102,6 +110,7 @@ export interface TaskWithLabels extends Task {
 export interface CreateTaskPayload {
   title: string;
   description?: string | null;
+  notes?: NightfireValue | null;
   priority?: string;
   dueDate?: string | null;
   labelIds?: string[];
@@ -110,6 +119,7 @@ export interface CreateTaskPayload {
 export interface UpdateTaskPayload {
   title?: string;
   description?: string | null;
+  notes?: NightfireValue | null;
   status?: string;
   priority?: string;
   dueDate?: string | null;

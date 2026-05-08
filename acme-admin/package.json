@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "dependencies": {
+    "@acme/ui": "file:../acme-ui",
     "@poodle/icons-lucide": "file:../../poodle/packages/svelte/icons-lucide",
     "@poodle/svelte": "file:../../poodle/packages/svelte/components",
     "@poodle/svelte-tokens": "file:../../poodle/packages/svelte/tokens",

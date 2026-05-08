@@ -37,6 +37,18 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && value.constructor === Object;
 }
 
+function isNightfireBlockLike(value: unknown): value is Record<string, unknown> {
+  return isPlainObject(value) && typeof value.type === "string" && "data" in value;
+}
+
+function isNightfireValueLike(value: unknown): value is Record<string, unknown> {
+  return (
+    isPlainObject(value) &&
+    typeof value.schema === "string" &&
+    ("block" in value || "blocks" in value)
+  );
+}
+
 function camelToSnake(key: string): string {
   return key.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 }
@@ -50,6 +62,9 @@ function toSnakeCaseValue<T>(value: T): T {
     return value.map((item) => toSnakeCaseValue(item)) as T;
   }
   if (!isPlainObject(value)) {
+    return value;
+  }
+  if (isNightfireValueLike(value) || isNightfireBlockLike(value)) {
     return value;
   }
 

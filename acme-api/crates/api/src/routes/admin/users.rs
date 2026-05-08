@@ -934,7 +934,13 @@ pub async fn list_user_sessions(
     match users::list_sessions_for_user(pool, user_id).await {
         Ok(sessions) => {
             let items: Vec<SessionResponse> = sessions.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({ "data": items })).into_response())
+            let total = items.len();
+            Ok(Json(serde_json::json!({
+                "data": items,
+                "total": total,
+                "has_more": false
+            }))
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list sessions for user: {}", e);

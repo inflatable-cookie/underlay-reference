@@ -10,12 +10,17 @@ use axum::{
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use underlay_http::context::RequestContext;
 use underlay_http::ApiError;
+use underlay_nightfire::NightfireValue;
 
 use acme_core::Uuid;
 use acme_db::{activity, tasks};
 
+use crate::routes::project_description::{
+    prepare_project_description, sync_project_description_media_usage,
+};
 use crate::state::{AppState, AuthenticatedUser};
 use validator::Validate;
 
@@ -25,22 +30,34 @@ use validator::Validate;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
+pub struct ProjectTaskSummaryResponse {
+    pub total: i64,
+    pub completed: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub struct ProjectResponse {
     pub id: String,
     pub name: String,
-    pub description: Option<String>,
+    pub description: Option<Value>,
     pub status: String,
+    pub task_summary: ProjectTaskSummaryResponse,
     pub created_at: String,
     pub updated_at: String,
 }
 
-impl From<tasks::ProjectRow> for ProjectResponse {
-    fn from(row: tasks::ProjectRow) -> Self {
+impl ProjectResponse {
+    fn from_row(row: tasks::ProjectRow, task_summary: tasks::ProjectTaskSummary) -> Self {
         Self {
             id: row.id.to_string(),
             name: row.name,
             description: row.description,
             status: row.status,
+            task_summary: ProjectTaskSummaryResponse {
+                total: task_summary.total,
+                completed: task_summary.completed,
+            },
             created_at: row.created_at.to_rfc3339(),
             updated_at: row.updated_at.to_rfc3339(),
         }
@@ -56,8 +73,7 @@ pub struct CreateProjectRequest {
         message = "Name must be between 1 and 255 characters"
     ))]
     pub name: String,
-    #[validate(length(max = 2000, message = "Description must not exceed 2000 characters"))]
-    pub description: Option<String>,
+    pub description: Option<NightfireValue>,
 }
 
 #[derive(Debug, Deserialize, Validate)]
@@ -69,8 +85,7 @@ pub struct UpdateProjectRequest {
         message = "Name must be between 1 and 255 characters"
     ))]
     pub name: Option<String>,
-    #[validate(length(max = 2000, message = "Description must not exceed 2000 characters"))]
-    pub description: Option<Option<String>>,
+    pub description: Option<Option<NightfireValue>>,
     pub status: Option<String>,
 }
 
@@ -250,8 +265,19 @@ pub async fn list_projects(
 
     match tasks::list_projects_for_user(pool, user_id, false).await {
         Ok(projects) => {
-            let response: Vec<ProjectResponse> = projects.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({ "items": response })).into_response())
+            let response: Vec<ProjectResponse> = projects
+                .into_iter()
+                .map(|project| {
+                    ProjectResponse::from_row(
+                        project,
+                        tasks::ProjectTaskSummary {
+                            total: 0,
+                            completed: 0,
+                        },
+                    )
+                })
+                .collect();
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list projects: {}", e);
@@ -283,18 +309,40 @@ pub async fn create_project(
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = Uuid::new_v7().into_inner();
+    let prepared_description = prepare_project_description(req.description)?;
+    let description = prepared_description.as_ref().map(|value| value.json());
 
     match tasks::create_project(
         pool,
         project_id,
         user_id,
         &req.name,
-        req.description.as_deref(),
+        description,
         None,
     )
     .await
     {
         Ok(project) => {
+            let task_summary = tasks::get_project_task_summary(pool, project_id)
+                .await
+                .map_err(|e| {
+                    crate::db_errors::internal_with_diagnostics(
+                        "projects.create_failed",
+                        "Failed to create project",
+                        &e,
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "projects.create_task_summary",
+                        "project_id": project_id
+                    }))
+                })?;
+            sync_project_description_media_usage(
+                pool,
+                project_id,
+                prepared_description.as_ref().map(|value| value.value()),
+            )
+            .await?;
+
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
@@ -313,7 +361,7 @@ pub async fn create_project(
             )
             .await;
 
-            let response: ProjectResponse = project.into();
+            let response = ProjectResponse::from_row(project, task_summary);
             Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
@@ -348,7 +396,20 @@ pub async fn get_project(
 
     match tasks::get_project(pool, project_id).await {
         Ok(Some(project)) if project.owner_id == user_id => {
-            let response: ProjectResponse = project.into();
+            let task_summary = tasks::get_project_task_summary(pool, project_id)
+                .await
+                .map_err(|e| {
+                    crate::db_errors::internal_with_diagnostics(
+                        "projects.get_failed",
+                        "Failed to get project",
+                        &e,
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "projects.get_task_summary",
+                        "project_id": project_id
+                    }))
+                })?;
+            let response = ProjectResponse::from_row(project, task_summary);
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Ok(Some(_)) => Err(
@@ -400,6 +461,13 @@ pub async fn update_project(
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
+    let prepared_description = match req.description {
+        Some(description) => Some(prepare_project_description(description)?),
+        None => None,
+    };
+    let description = prepared_description
+        .as_ref()
+        .map(|entry| entry.as_ref().map(|value| value.json()));
 
     ensure_project_owned(pool, user_id, project_id, "projects.update").await?;
 
@@ -407,13 +475,35 @@ pub async fn update_project(
         pool,
         project_id,
         req.name.as_deref(),
-        req.description.as_ref().map(|d| d.as_deref()),
+        description,
         req.status.as_deref(),
         None, // category_id - not editable from user routes
     )
     .await
     {
         Ok(Some(project)) => {
+            let task_summary = tasks::get_project_task_summary(pool, project_id)
+                .await
+                .map_err(|e| {
+                    crate::db_errors::internal_with_diagnostics(
+                        "projects.update_failed",
+                        "Failed to update project",
+                        &e,
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "projects.update_task_summary",
+                        "project_id": project_id
+                    }))
+                })?;
+            if let Some(prepared_description) = prepared_description.as_ref() {
+                sync_project_description_media_usage(
+                    pool,
+                    project_id,
+                    prepared_description.as_ref().map(|value| value.value()),
+                )
+                .await?;
+            }
+
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
@@ -432,7 +522,7 @@ pub async fn update_project(
             )
             .await;
 
-            let response: ProjectResponse = project.into();
+            let response = ProjectResponse::from_row(project, task_summary);
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Ok(None) => Err(
@@ -473,6 +563,8 @@ pub async fn delete_project(
 
     match tasks::delete_project(pool, project_id).await {
         Ok(true) => {
+            sync_project_description_media_usage(pool, project_id, None).await?;
+
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
             let _ = activity::log_activity(
                 pool,
@@ -532,7 +624,7 @@ pub async fn list_tasks(
     match tasks::list_tasks_for_project(pool, project_id, false).await {
         Ok(task_list) => {
             let response: Vec<TaskResponse> = task_list.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({ "items": response })).into_response())
+            Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list tasks: {}", e);
@@ -578,6 +670,7 @@ pub async fn create_task(
         project_id,
         &req.title,
         req.description.as_deref(),
+        None,
         priority,
         req.due_date,
     )
@@ -654,6 +747,7 @@ pub async fn update_task(
         project_id,
         req.title.as_deref(),
         req.description.as_ref().map(|d| d.as_deref()),
+        None,
         req.status.as_deref(),
         req.priority.as_deref(),
         req.due_date,

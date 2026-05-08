@@ -5,5 +5,6 @@
 // `@decodelabs/underlay/nightfire/validator-registry`.
 
 import "./notes/validation";
+import "./project-description/validation";
 
 export {};

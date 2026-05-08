@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use serde_json::Value;
 use sqlx::FromRow;
 use std::collections::HashSet;
 use underlay_http::query::{FieldMapping, QueryParams, WhereBuilder};
@@ -13,6 +14,12 @@ pub struct ProjectListResponse {
     pub has_more: bool,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ProjectTaskSummary {
+    pub total: i64,
+    pub completed: i64,
+}
+
 /// Row type for acme.projects table.
 #[derive(Debug, Clone, FromRow)]
 pub struct ProjectRow {
@@ -20,7 +27,7 @@ pub struct ProjectRow {
     pub owner_id: Uuid,
     pub category_id: Option<Uuid>,
     pub name: String,
-    pub description: Option<String>,
+    pub description: Option<Value>,
     pub status: String,
     pub weight: i32,
     pub created_at: DateTime<Utc>,
@@ -36,7 +43,7 @@ pub struct ProjectWithCountsRow {
     pub category_id: Option<Uuid>,
     pub category_name: Option<String>,
     pub name: String,
-    pub description: Option<String>,
+    pub description: Option<Value>,
     pub status: String,
     pub weight: i32,
     pub created_at: DateTime<Utc>,
@@ -65,7 +72,7 @@ pub async fn create_project(
     id: Uuid,
     owner_id: Uuid,
     name: &str,
-    description: Option<&str>,
+    description: Option<&Value>,
     category_id: Option<Uuid>,
 ) -> Result<ProjectRow, sqlx::Error> {
     sqlx::query_as::<_, ProjectRow>(
@@ -110,6 +117,29 @@ pub async fn get_project_admin(pool: &DbPool, id: Uuid) -> Result<Option<Project
     .bind(id)
     .fetch_optional(pool)
     .await
+}
+
+pub async fn get_project_task_summary(
+    pool: &DbPool,
+    project_id: Uuid,
+) -> Result<ProjectTaskSummary, sqlx::Error> {
+    let counts = sqlx::query_as::<_, (i64, i64)>(
+        r#"
+        SELECT
+            COALESCE(COUNT(id) FILTER (WHERE deleted_at IS NULL), 0) AS total,
+            COALESCE(COUNT(id) FILTER (WHERE deleted_at IS NULL AND status = 'completed'), 0) AS completed
+        FROM acme.tasks
+        WHERE project_id = $1
+        "#,
+    )
+    .bind(project_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(ProjectTaskSummary {
+        total: counts.0,
+        completed: counts.1,
+    })
 }
 
 /// List projects for a user (non-admin, active only).
@@ -224,7 +254,7 @@ pub async fn update_project(
     pool: &DbPool,
     id: Uuid,
     name: Option<&str>,
-    description: Option<Option<&str>>,
+    description: Option<Option<&Value>>,
     status: Option<&str>,
     category_id: Option<Option<Uuid>>,
 ) -> Result<Option<ProjectRow>, sqlx::Error> {

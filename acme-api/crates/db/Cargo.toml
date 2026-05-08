@@ -16,6 +16,8 @@ underlay-db = { workspace = true }
 underlay-devtools = { workspace = true }
 underlay-email = { workspace = true }
 underlay-http = { workspace = true }
+underlay-media = { workspace = true, features = ["nightfire"] }
+underlay-nightfire = { workspace = true }
 uuid = { workspace = true }
 
 [[bin]]

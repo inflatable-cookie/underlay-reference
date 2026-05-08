@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "@acme/ui/render";
   import { goto } from "$app/navigation";
   import {
     EntityDetailPage,
@@ -6,6 +7,7 @@
     EntityAttributeList,
     EntityDetailModule
   } from "@decodelabs/underlay/templates";
+  import { NightfireRenderer } from "@decodelabs/underlay/nightfire/renderer";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import TasksListPage from "$lib/lists/TasksListPage.svelte";
   import {
@@ -17,7 +19,6 @@
   import type { PageData } from "./$types";
   import {
     adminCommands,
-    TaskStatus,
     type Project
   } from "@api-client";
   import { auth } from "$lib/stores/auth";
@@ -29,30 +30,12 @@
 
   // Reactive project state — updated by dataLoader side effect
   let project = $state<Project | null>(null);
-  let taskSummary = $state({ total: 0, completed: 0 });
 
   // Project data loader
   async function projectLoader(fetch: typeof window.fetch, token: string | null) {
     if (!token) throw new Error("Not authenticated");
-    const [projectResult, totalTasksResult, completedTasksResult] = await Promise.all([
-      adminCommands.getProject(data.projectId, fetch, token),
-      adminCommands.listTasks(data.projectId, fetch, token, { page: 1, limit: 1 }),
-      adminCommands.listTasks(data.projectId, fetch, token, {
-        page: 1,
-        limit: 1,
-        filters: [
-          {
-            field: "status",
-            value: TaskStatus.Completed
-          }
-        ]
-      })
-    ]);
+    const projectResult = await adminCommands.getProject(data.projectId, fetch, token);
     project = projectResult;
-    taskSummary = {
-      total: totalTasksResult.total,
-      completed: completedTasksResult.total
-    };
     return projectResult;
   }
 
@@ -96,6 +79,11 @@
 
   const bannerTone = $derived<"warning" | "info" | undefined>(
     project?.status === "archived" ? "warning" : project?.status === "on_hold" ? "info" : undefined
+  );
+
+  /** Admin GET project may omit taskSummary; keep UI safe. */
+  const taskSummary = $derived(
+    project?.taskSummary ?? { completed: 0, total: 0 }
   );
 
   // Linked local packages currently expose nominally different Snippet types.
@@ -262,7 +250,7 @@
         <EntityDetailModule>
           {#snippet children()}
             <div class="project-detail-copy">
-              {loadedProject.description}
+              <NightfireRenderer value={loadedProject.description} />
             </div>
           {/snippet}
         </EntityDetailModule>

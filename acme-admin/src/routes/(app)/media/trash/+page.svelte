@@ -20,7 +20,7 @@ import {
   ListGrid,
   formatFileSize } from "@poodle/svelte";
     import { Button as PoodleButton, Pill as PoodlePill } from "@poodle/svelte";
-  import { mediaCommands, type MediaSummary } from "@api-client";
+  import { mediaCommands, type MediaSummary, type PagedListResponse } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import RotateCcw from "lucide-svelte/icons/rotate-ccw";
   import Trash2 from "lucide-svelte/icons/trash-2";
@@ -34,7 +34,13 @@ import {
       return { media };
     },
     {
-      defaultValue: { media: [] as MediaSummary[] }
+      defaultValue: {
+        media: {
+          data: [],
+          total: 0,
+          hasMore: false
+        } as PagedListResponse<MediaSummary>
+      }
     }
   );
 
@@ -89,7 +95,7 @@ import {
   <PageLoading presentation="inline" message="Loading trash..." />
 {:else if pageData.error}
   <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
-{:else if (pageData.data?.media ?? []).length === 0}
+{:else if (pageData.data?.media.data ?? []).length === 0}
   <PoodleEmptyState title="Trash is empty" message="Deleted media items will appear here.">
     <svelte:fragment slot="visual">
       <Trash2 size={18} />
@@ -102,7 +108,7 @@ import {
   </p>
 
   <ListGrid minItemWidth={26}>
-    {#each pageData.data?.media ?? [] as item}
+    {#each pageData.data?.media.data ?? [] as item}
       <PoodleListCard
         title={item.title ?? item.originalFilename ?? "Untitled"}
         href={`/media/${item.id}`}

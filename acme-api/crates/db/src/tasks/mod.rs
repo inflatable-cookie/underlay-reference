@@ -9,9 +9,11 @@
 mod comments;
 mod crud;
 mod labels;
+mod notes;
 mod projects;
 
 pub use comments::*;
 pub use crud::*;
 pub use labels::*;
+pub use notes::*;
 pub use projects::*;

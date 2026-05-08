@@ -43,6 +43,8 @@ import {
   import {
     adminCommands,
     type ActivityEntry,
+    type ActivityListResponse,
+    type PagedListResponse,
     type Session,
     type UserDetail,
     type UserRole,
@@ -78,18 +80,24 @@ import {
     async (fetch, token) => adminCommands.listUserSessions(data.userId, fetch, token),
     {
       getAuthLoading: () => true,
-      defaultValue: [] as Session[]
+      defaultValue: {
+        data: [],
+        total: 0,
+        hasMore: false
+      } as PagedListResponse<Session>
     }
   );
 
   const activityData = useAuthenticatedData(
-    async (fetch, token) => {
-      const activity = await adminCommands.listActivityForUser(data.userId, fetch, token, { limit: 10 });
-      return activity.data;
-    },
+    async (fetch, token) =>
+      adminCommands.listActivityForUser(data.userId, fetch, token, { limit: 10 }),
     {
       getAuthLoading: () => true,
-      defaultValue: [] as ActivityEntry[]
+      defaultValue: {
+        data: [],
+        total: 0,
+        hasMore: false
+      } as ActivityListResponse
     }
   );
 
@@ -122,8 +130,8 @@ import {
   }
 
   const user = $derived(userData.data ?? null);
-  const sessions = $derived(sessionsData.data ?? []);
-  const activity = $derived(activityData.data ?? []);
+  const sessions = $derived(sessionsData.data?.data ?? []);
+  const activity = $derived(activityData.data?.data ?? []);
   const sessionRows = $derived<TableRow<Session>[]>(
     sessions.map((session) => ({
       id: session.id,

@@ -13,7 +13,13 @@ pub async fn list_usage(
     match media::list_media_usages(pool, media_id).await {
         Ok(rows) => {
             let items: Vec<MediaUsageDto> = rows.into_iter().map(Into::into).collect();
-            Ok(Json(json!({ "data": items })).into_response())
+            let total = items.len();
+            Ok(Json(json!({
+                "data": items,
+                "total": total,
+                "has_more": false
+            }))
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list usage: {}", e);

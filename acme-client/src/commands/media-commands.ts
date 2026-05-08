@@ -155,12 +155,15 @@ export async function listMediaAdmin(
 export async function listMediaTrash(
   fetchFn: typeof fetch,
   accessToken: string,
-): Promise<MediaSummary[]> {
+): Promise<PagedListResponse<MediaSummary>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ListResponse<MediaSummary>>(
+  const response = await http.get<PagedListResponse<MediaSummary>>(
     "/v1/admin/media/trash",
   );
-  return response.data.map(normalizeMediaSummary);
+  return {
+    ...response,
+    data: response.data.map(normalizeMediaSummary),
+  };
 }
 
 /**
@@ -353,12 +356,15 @@ export async function listVersions(
   mediaId: string,
   fetchFn: typeof fetch,
   accessToken: string,
-): Promise<MediaVersion[]> {
+): Promise<PagedListResponse<MediaVersion>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ListResponse<MediaVersion>>(
+  const response = await http.get<PagedListResponse<MediaVersion>>(
     `/v1/admin/media/${encodeURIComponent(mediaId)}/versions`,
   );
-  return response.data.map(normalizeMediaVersion);
+  return {
+    ...response,
+    data: response.data.map(normalizeMediaVersion),
+  };
 }
 
 /**
@@ -401,12 +407,11 @@ export async function listUsages(
   mediaId: string,
   fetchFn: typeof fetch,
   accessToken: string,
-): Promise<MediaUsage[]> {
+): Promise<PagedListResponse<MediaUsage>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ListResponse<MediaUsage>>(
+  return await http.get<PagedListResponse<MediaUsage>>(
     `/v1/admin/media/${encodeURIComponent(mediaId)}/usage`,
   );
-  return response.data;
 }
 
 // ============================================================================

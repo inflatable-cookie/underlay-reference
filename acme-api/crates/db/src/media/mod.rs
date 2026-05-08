@@ -76,8 +76,13 @@ pub struct MediaUsageRow {
     pub id: Uuid,
     pub media_id: Uuid,
     pub used_by_type: String,
-    pub used_by_id: Uuid,
-    pub field: String,
+    pub used_by_id: Option<Uuid>,
+    pub owner_field: Option<String>,
+    pub content_kind: String,
+    pub locator_kind: String,
+    pub locator_key: String,
+    pub usage_role: String,
+    pub provenance_kind: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 

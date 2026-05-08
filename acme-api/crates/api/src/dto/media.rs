@@ -259,8 +259,13 @@ pub struct MediaUsageDto {
     pub id: Uuid,
     pub media_id: Uuid,
     pub used_by_type: String,
-    pub used_by_id: Uuid,
-    pub field: String,
+    pub used_by_id: Option<Uuid>,
+    pub owner_field: Option<String>,
+    pub content_kind: String,
+    pub locator_kind: String,
+    pub locator_key: String,
+    pub usage_role: String,
+    pub provenance_kind: String,
     pub created_at: DateTime<Utc>,
 }
 
@@ -271,7 +276,12 @@ impl From<MediaUsageRow> for MediaUsageDto {
             media_id: u.media_id,
             used_by_type: u.used_by_type,
             used_by_id: u.used_by_id,
-            field: u.field,
+            owner_field: u.owner_field,
+            content_kind: u.content_kind,
+            locator_kind: u.locator_kind,
+            locator_key: u.locator_key,
+            usage_role: u.usage_role,
+            provenance_kind: u.provenance_kind,
             created_at: u.created_at,
         }
     }

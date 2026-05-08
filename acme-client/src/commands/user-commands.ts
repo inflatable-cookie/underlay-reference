@@ -5,6 +5,13 @@
  * own projects and tasks.
  */
 import { getHttpClient } from "../utils/client-factory.js";
+import type { ListResponse } from "../types/common-types.js";
+
+type NightfireValue = {
+  schema: string;
+  block?: unknown;
+  blocks?: unknown[];
+};
 
 // ============================================================================
 // Types
@@ -13,8 +20,12 @@ import { getHttpClient } from "../utils/client-factory.js";
 export interface UserProject {
   id: string;
   name: string;
-  description?: string | null;
+  description?: NightfireValue | null;
   status: string;
+  taskSummary: {
+    total: number;
+    completed: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -35,12 +46,12 @@ export interface UserTask {
 
 export interface CreateUserProjectPayload {
   name: string;
-  description?: string | null;
+  description?: NightfireValue | null;
 }
 
 export interface UpdateUserProjectPayload {
   name?: string;
-  description?: string | null;
+  description?: NightfireValue | null;
   status?: string;
 }
 
@@ -59,10 +70,6 @@ export interface UpdateUserTaskPayload {
   dueDate?: string | null;
 }
 
-interface ItemsResponse<T> {
-  items: T[];
-}
-
 interface SingleResponse<T> {
   data: T;
 }
@@ -76,8 +83,8 @@ export async function listProjects(
   accessToken: string,
 ): Promise<UserProject[]> {
   const http = getHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ItemsResponse<UserProject>>("/v1/projects");
-  return response.items;
+  const response = await http.get<ListResponse<UserProject>>("/v1/projects");
+  return response.data;
 }
 
 export async function createProject(
@@ -130,8 +137,8 @@ export async function listTasks(
   accessToken: string,
 ): Promise<UserTask[]> {
   const http = getHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ItemsResponse<UserTask>>(`/v1/projects/${projectId}/tasks`);
-  return response.items;
+  const response = await http.get<ListResponse<UserTask>>(`/v1/projects/${projectId}/tasks`);
+  return response.data;
 }
 
 export async function createTask(

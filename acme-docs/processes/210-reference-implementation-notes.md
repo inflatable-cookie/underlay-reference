@@ -92,6 +92,33 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 - Avoid app-specific UI concerns in the shared client package.
 - For admin edit entities, provide `get*WithEtag` and `update*WithEtag(..., { ifMatch })` helpers while keeping legacy wrappers that return `.data`.
 
+## acme-ui details
+
+### Nightfire block-module reference pattern
+
+Use the task notes / project description block family as the canonical reference:
+
+- TS block-family source:
+  - `acme-ui/src/nightfire/notes/registrations.ts`
+- TS thin registration entrypoints:
+  - `acme-ui/src/nightfire/notes/editor.ts`
+  - `acme-ui/src/nightfire/notes/render.ts`
+  - `acme-ui/src/nightfire/notes/validation.ts`
+  - `acme-ui/src/nightfire/project-description/editor.ts`
+  - `acme-ui/src/nightfire/project-description/render.ts`
+  - `acme-ui/src/nightfire/project-description/validation.ts`
+
+What this pattern demonstrates:
+
+- one block-family source owns schema ids, block labels, validators, editors, and renderers
+- package entrypoints stay stable:
+  - `@acme/ui/editor`
+  - `@acme/ui/render`
+  - `@acme/ui/validation`
+- multiple Nightfire fields can assemble from the same block-family source with different schema ids and labels
+
+For new block families, copy this shape instead of creating separate editor/render/validation lists by hand.
+
 ## acme-admin details
 
 ### Main areas
@@ -118,6 +145,36 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 
 - Keep public routes lightweight and SEO-aware.
 - Use protected route groups only where needed.
+
+## Structured content reference pattern
+
+### Nightfire + media usage integration
+
+Use these files as the canonical Rust-side reference:
+
+- app-level Nightfire glue:
+  - `acme-api/crates/api/src/nightfire/mod.rs`
+- block/media module set:
+  - `acme-api/crates/api/src/nightfire/notes.rs`
+- structured field route helpers:
+  - `acme-api/crates/api/src/routes/project_description.rs`
+  - `acme-api/crates/api/src/routes/admin/tasks.rs`
+
+What this pattern demonstrates:
+
+- prepare once:
+  - ensure block ids
+  - serialize exact Nightfire JSON
+- persist the JSON field unchanged
+- sync locator-aware media usage through the registry-backed extractor
+- keep block/media registrations together in the app-level Nightfire module set
+
+Reference fields already using this pattern:
+
+- `project.description`
+- `task.notes`
+
+For future structured fields, extend the Nightfire module set first. Do not re-implement `ensure ids -> serialize -> sync/clear` inside each route.
 
 ## Common implementation tasks
 
