@@ -66,6 +66,12 @@ impl From<activity::ActivityWithActorRow> for ActivityResponse {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ListActivityQuery {
+    /// Filter by action
+    pub action: Option<String>,
+    /// Filter by resource type
+    pub resource_type: Option<String>,
+    /// Page number (1-indexed)
+    pub page: Option<u32>,
     /// Limit (default 50)
     pub limit: Option<i64>,
     /// Offset for pagination
@@ -87,9 +93,20 @@ pub async fn list_activity(
     let pool = state.local_auth.pool();
 
     let limit = query.limit.unwrap_or(50);
-    let offset = query.offset.unwrap_or(0);
+    let offset = query
+        .page
+        .map(|page| ((page.max(1) - 1) as i64) * limit)
+        .unwrap_or_else(|| query.offset.unwrap_or(0));
 
-    match activity::list_activity(pool, limit, offset).await {
+    match activity::list_activity(
+        pool,
+        query.action.as_deref(),
+        query.resource_type.as_deref(),
+        limit,
+        offset,
+    )
+    .await
+    {
         Ok(response) => {
             let items: Vec<ActivityResponse> = response.data.into_iter().map(Into::into).collect();
             Ok(Json(serde_json::json!({
@@ -108,6 +125,9 @@ pub async fn list_activity(
             )
             .with_context(serde_json::json!({
                 "operation": "activity.list",
+                "action": query.action,
+                "resource_type": query.resource_type,
+                "page": query.page,
                 "limit": limit,
                 "offset": offset
             })))

@@ -15,6 +15,9 @@ export async function listActivity(
   const http = getAdminHttpClient({ fetchFn, accessToken });
 
   const params = new URLSearchParams();
+  if (query?.action) params.set("action", query.action);
+  if (query?.resourceType) params.set("resource_type", query.resourceType);
+  if (query?.page !== undefined) params.set("page", String(query.page));
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
   if (query?.offset !== undefined) params.set("offset", String(query.offset));
 

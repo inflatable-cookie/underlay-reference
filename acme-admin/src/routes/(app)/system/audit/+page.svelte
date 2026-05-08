@@ -1,33 +1,24 @@
 <script lang="ts">
-import {
-  useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
-import {
-  LogList,
-  PageHeader as PoodlePageHeader,
-  type LogActor,
-  type LogEntry,
-  type LogFilter
-  } from "@poodle/svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-    import { adminCommands } from "@api-client";
-  import { auth } from "$lib/stores/auth";
+  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import {
+    buildQueryString,
+    parseQueryParams,
+    type QueryParams
+  } from "@decodelabs/underlay/client/query";
+  import type { AuditLogEntry, LogActor } from "@poodle/svelte";
+  import { adminCommands, type ActivityEntry } from "@api-client";
 
-  // Derive filters from URL
-  const filterValues = $derived({
-    action: $page.url.searchParams.get("action") ?? "",
-    resource_type: $page.url.searchParams.get("resource_type") ?? ""
-  });
+  const currentQuery = $derived(parseQueryParams($page.url.searchParams));
 
-  // Filter configuration
-  const filters: LogFilter[] = [
+  const filters = [
     {
-      field: "action",
+      id: "action",
+      type: "select" as const,
       label: "Action",
-      type: "select",
-      placeholder: "All actions",
       options: [
+        { value: "All", label: "All actions" },
         { value: "create", label: "Create" },
         { value: "update", label: "Update" },
         { value: "delete", label: "Delete" },
@@ -35,11 +26,11 @@ import {
       ]
     },
     {
-      field: "resource_type",
+      id: "resourceType",
+      type: "select" as const,
       label: "Resource",
-      type: "select",
-      placeholder: "All resources",
       options: [
+        { value: "All", label: "All resources" },
         { value: "category", label: "Category" },
         { value: "project", label: "Project" },
         { value: "task", label: "Task" },
@@ -49,73 +40,55 @@ import {
     }
   ];
 
-  // Fetch audit log using authenticated data pattern
-  const pageData = useAuthenticatedData(
-    async (fetch, token) => {
-      const response = await adminCommands.listActivity(fetch, token, {
-        limit: 100
-      });
-      return { entries: response.data };
-    },
-    {
-      defaultValue: { entries: [] }
-    }
-  );
-
-  // Transform activity entries to LogEntry format
-  const logEntries = $derived<LogEntry[]>(
-    (pageData.data?.entries ?? [])
-      .filter((entry) => {
-        // Client-side filtering since API doesn't support action/resource_type filters
-        const actionFilter = filterValues.action;
-        const resourceTypeFilter = filterValues.resource_type;
-
-        if (actionFilter && entry.action !== actionFilter) return false;
-        if (resourceTypeFilter && entry.resourceType !== resourceTypeFilter) return false;
-        return true;
-      })
-      .map((entry) => ({
-        id: entry.id,
-        occurredAt: entry.occurredAt,
-        actor: entry.actor
-          ? {
-              id: entry.actor.id,
-              name: entry.actor.displayName ?? undefined,
-              email: entry.actor.email
-            }
-          : null,
-        action: entry.action,
-        resourceType: entry.resourceType,
-        resourceId: entry.resourceId
-      }))
-  );
-
-  // Handle filter changes - update URL
-  function handleFilterChange(field: string, value: string) {
+  function updateUrl(nextQuery: QueryParams) {
     const url = new URL($page.url);
-
-    if (value && value.trim()) {
-      url.searchParams.set(field, value);
-    } else {
-      url.searchParams.delete(field);
-    }
-
+    url.search = buildQueryString(nextQuery);
     goto(url.toString(), { replaceState: true, keepFocus: true });
   }
 
-  // Clear all filters
-  function handleClearFilters() {
-    goto("/system/audit", { replaceState: true, keepFocus: true });
+  function getFilterValue(query: QueryParams, field: string): string | undefined {
+    const filter = query.filters?.find((entry) => entry.field === field);
+    if (!filter || filter.value === "" || filter.value === "All") {
+      return undefined;
+    }
+    return filter.value;
   }
 
-  // Get link to user detail page
+  async function dataLoader(fetch: typeof window.fetch, token: string | null, query: QueryParams) {
+    if (!token) throw new Error("Not authenticated");
+
+    return await adminCommands.listActivity(fetch, token, {
+      action: getFilterValue(query, "action"),
+      resourceType: getFilterValue(query, "resourceType"),
+      page: query.page ?? 1,
+      limit: query.limit ?? 30
+    });
+  }
+
+  function toLogEntries(entries: ActivityEntry[]): AuditLogEntry[] {
+    return entries.map((entry) => ({
+      id: entry.id,
+      occurredAt: entry.occurredAt,
+      actor: entry.actor
+        ? {
+            id: entry.actor.id,
+            email: entry.actor.email,
+            name: entry.actor.displayName ?? undefined
+          }
+        : null,
+      action: entry.action,
+      resourceType: entry.resourceType,
+      resourceId: entry.resourceId,
+      resourceLabel: (entry.details?.resourceLabel as string | undefined) ?? undefined,
+      details: entry.details
+    }));
+  }
+
   function getActorHref(actor: LogActor): string {
     return `/users/${actor.id}`;
   }
 
-  // Get link to resource detail page (don't link if deleted)
   function getResourceHref(resourceType: string, resourceId: string, action: string): string | null {
-    // Don't link to deleted resources
     if (action === "delete" || action === "soft_delete") {
       return null;
     }
@@ -125,47 +98,34 @@ import {
         return `/categories/${resourceId}`;
       case "project":
         return `/projects/${resourceId}`;
-      case "task":
-        // Tasks are nested under projects, so we can't easily link to them
-        return null;
-      case "label":
-        // Labels are nested under projects
-        return null;
       case "user":
         return `/users/${resourceId}`;
       default:
         return null;
     }
   }
+
+  function formatAction(action: string): string {
+    return action.charAt(0).toUpperCase() + action.slice(1);
+  }
+
+  function formatResourceType(resourceType: string): string {
+    return resourceType.charAt(0).toUpperCase() + resourceType.slice(1);
+  }
 </script>
 
-<section class="audit-page">
-  <PoodlePageHeader
-    title="Audit Log"
-    subtitle="Track changes made to content and configuration across the platform."
-    backHref="/system"
-    backLabel="Back to system"
-  />
-
-  <LogList
-    entries={logEntries}
-    loading={pageData.loading}
-    error={pageData.error}
-    emptyMessage="No audit log entries found for the current filters."
-    {filters}
-    {filterValues}
-    onFilterChange={handleFilterChange}
-    onClearFilters={handleClearFilters}
-    onRefresh={() => pageData.refetch()}
-    {getActorHref}
-    {getResourceHref}
-  />
-</section>
-
-<style>
-  .audit-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-</style>
+<EntityListPage
+  title="Audit Log"
+  backHref="/system"
+  backLabel="Back to system"
+  {dataLoader}
+  presentation="log"
+  {filters}
+  query={currentQuery}
+  onQueryChange={updateUrl}
+  {toLogEntries}
+  {getActorHref}
+  {getResourceHref}
+  {formatAction}
+  {formatResourceType}
+/>

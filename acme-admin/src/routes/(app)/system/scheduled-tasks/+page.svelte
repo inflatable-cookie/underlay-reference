@@ -1,87 +1,58 @@
 <script lang="ts">
-import {
-  useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
-import {
-  useToasts
-} from "@decodelabs/underlay/runtime/feedback";
-import {
-  Callout as PoodleCallout,
-  Grid as PoodleGrid,
-  ListCard as PoodleListCard } from "@poodle/svelte";
-  import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-    import {
-    FilterToolbar,
-    ListContainer
-  } from "@poodle/svelte";
-  import {
-    Field as PoodleField,
-    IconButton as PoodleIconButton,
-    Menu as PoodleMenu,
-    Select as PoodleSelect,
-    TimeAgo,
-    type MenuItem
-  } from "@poodle/svelte";
-  import Calendar from "lucide-svelte/icons/calendar";
-  import { adminCommands } from "@api-client";
+  import { page } from "$app/stores";
   import { auth } from "$lib/stores/auth";
-  import type { ScheduledTaskSummary } from "@api-client";
+  import { ScheduledTaskListCard } from "$lib/cards";
+  import {
+    buildQueryString,
+    parseQueryParams,
+    type QueryParams
+  } from "@decodelabs/underlay/client/query";
+  import { useToasts } from "@decodelabs/underlay/runtime/feedback";
+  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { adminCommands, type ScheduledTaskSummary } from "@api-client";
+  import type { MenuItem } from "@poodle/svelte";
 
   const toastStore = useToasts();
+  const currentQuery = $derived(parseQueryParams($page.url.searchParams));
+  let refreshRevision = $state(0);
 
-  // Track URL for refetching when filters change
-  let previousUrl = $state<string | null>(null);
-
-  // Derive filters from URL
-  const filters = $derived({
-    enabled: $page.url.searchParams.get("enabled") ?? ""
-  });
-
-  // Fetch scheduled tasks using authenticated data pattern
-  const pageData = useAuthenticatedData(
-    async (fetch, token) => {
-      const enabledParam = $page.url.searchParams.get("enabled");
-      const enabled = enabledParam === "true" ? true : enabledParam === "false" ? false : undefined;
-
-      const tasks = await adminCommands.listScheduledTasks(fetch, token, {
-        enabled,
-        limit: 100
-      });
-      return { tasks };
-    },
+  const filters = [
     {
-      defaultValue: { tasks: [] as ScheduledTaskSummary[] },
-      onSuccess: () => {
-        previousUrl = $page.url.search;
-      }
+      id: "enabled",
+      type: "select" as const,
+      label: "Status",
+      options: [
+        { value: "All", label: "All tasks" },
+        { value: "true", label: "Enabled only" },
+        { value: "false", label: "Disabled only" }
+      ]
     }
-  );
+  ];
 
-  // Refetch when URL changes (for filtering)
-  $effect(() => {
-    const currentUrl = $page.url.search;
-    if (previousUrl !== null && previousUrl !== currentUrl) {
-      previousUrl = currentUrl;
-      pageData.refetch();
+  function updateUrl(nextQuery: QueryParams) {
+    const url = new URL($page.url);
+    url.search = buildQueryString(nextQuery);
+    goto(url.toString(), { replaceState: true, keepFocus: true });
+  }
+
+  function getEnabledFilter(query: QueryParams): boolean | undefined {
+    const filter = query.filters?.find((entry) => entry.field === "enabled");
+    if (!filter || filter.value === "" || filter.value === "All") {
+      return undefined;
     }
-  });
+    return filter.value === "true" ? true : filter.value === "false" ? false : undefined;
+  }
 
-  const tasks = $derived(pageData.data?.tasks ?? []);
-  let filtersCollapsed = $state(true);
-  const listState = $derived(
-    pageData.loading ? "loading" : pageData.error ? "error" : tasks.length === 0 ? "empty" : "ready"
-  );
-  const filterSummaryText = $derived(
-    tasks.length > 0 ? `Showing ${tasks.length} scheduled task${tasks.length === 1 ? "" : "s"}` : "No scheduled tasks"
-  );
+  async function dataLoader(fetch: typeof window.fetch, token: string | null, query: QueryParams) {
+    if (!token) throw new Error("Not authenticated");
+    void refreshRevision;
 
-  /** Convert snake_case task name to human-readable title */
-  function formatTaskName(name: string): string {
-    return name
-      .split("_")
-      .map((word, i) => i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word)
-      .join(" ");
+    return await adminCommands.listScheduledTasks(fetch, token, {
+      enabled: getEnabledFilter(query),
+      page: query.page ?? 1,
+      limit: query.limit ?? 30
+    });
   }
 
   async function handleToggle(task: ScheduledTaskSummary) {
@@ -90,9 +61,12 @@ import {
 
     try {
       await adminCommands.toggleScheduledTask(task.id, !task.enabled, fetch, token);
-      toastStore.push({ variant: "success", message: task.enabled ? "Task disabled" : "Task enabled" });
-      pageData.refetch();
-    } catch (err) {
+      toastStore.push({
+        variant: "success",
+        message: task.enabled ? "Task disabled" : "Task enabled"
+      });
+      refreshRevision += 1;
+    } catch {
       toastStore.push({ variant: "error", message: "Failed to toggle task" });
     }
   }
@@ -104,18 +78,11 @@ import {
     try {
       const result = await adminCommands.triggerScheduledTask(task.id, fetch, token);
       toastStore.push({ variant: "success", message: "Job created" });
-      // Navigate to the new job
       goto(`/system/jobs/${result.jobId}`);
-    } catch (err) {
+    } catch {
       toastStore.push({ variant: "error", message: "Failed to trigger task" });
     }
   }
-
-  const enabledOptions = [
-    { value: "", label: "All tasks" },
-    { value: "true", label: "Enabled only" },
-    { value: "false", label: "Disabled only" }
-  ];
 
   function getMenuItems(task: ScheduledTaskSummary): MenuItem[] {
     return [
@@ -136,99 +103,24 @@ import {
   }
 </script>
 
-<section class="scheduled-tasks-page">
-  <ListContainer
+{#snippet renderItem(task: ScheduledTaskSummary)}
+  <ScheduledTaskListCard
+    {task}
+    contextMenuItems={getMenuItems(task)}
+    onContextAction={(value) => handleMenuAction(task, value)}
+  />
+{/snippet}
+
+{#key refreshRevision}
+  <EntityListPage
     title="Scheduled Tasks"
-    subtitle="Manage cron-scheduled maintenance tasks. Tasks run automatically based on their schedule."
-    eyebrow="System"
-    state={listState}
-    loadingMessage="Loading scheduled tasks..."
-    emptyTitle="No scheduled tasks"
-    emptyMessage="No scheduled tasks found for the current filters."
-    showPagination={false}
-  >
-    <svelte:fragment slot="filters">
-      <FilterToolbar
-        ariaLabel="Scheduled task filters"
-        columns={1}
-        collapsible
-        bind:collapsed={filtersCollapsed}
-        summaryText={filterSummaryText}
-      >
-        <svelte:fragment slot="actions">
-          <PoodleIconButton
-            icon="refresh-cw"
-            variant="secondary"
-            size="sm"
-            ariaLabel="Refresh tasks"
-            tooltip="Refresh tasks"
-            on:click={() => pageData.refetch()}
-          />
-        </svelte:fragment>
-
-        <PoodleField id="scheduled-task-status-filter" label="Status" let:describedBy>
-          <PoodleSelect
-            id="scheduled-task-status-filter"
-            name="enabled"
-            value={filters.enabled}
-            describedBy={describedBy}
-            options={enabledOptions}
-            on:valueChange={(event) => {
-              const value = event.detail.value;
-              const url = new URL($page.url);
-              if (value) {
-                url.searchParams.set("enabled", value);
-              } else {
-                url.searchParams.delete("enabled");
-              }
-              void goto(url.toString());
-            }}
-          />
-        </PoodleField>
-      </FilterToolbar>
-    </svelte:fragment>
-
-    <svelte:fragment slot="error">
-      <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
-    </svelte:fragment>
-
-    <PoodleGrid columns="repeat(auto-fit, minmax(min(26em, 100%), 1fr))" gap="lg">
-      {#each tasks as task}
-        {@const href = `/system/scheduled-tasks/${encodeURIComponent(task.id)}`}
-        <PoodleListCard
-          href={href}
-          title={formatTaskName(task.name)}
-          subtitle={task.schedule}
-          notLive={!task.enabled}
-        >
-          <svelte:fragment slot="leading">
-            <Calendar size={30} />
-          </svelte:fragment>
-
-          <svelte:fragment slot="actions">
-            <PoodleMenu items={getMenuItems(task)} placement="bottom-end" ariaLabel="Scheduled task actions" on:action={(event) => handleMenuAction(task, event.detail.value)}>
-              <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Scheduled task actions" variant="ghost" />
-            </PoodleMenu>
-          </svelte:fragment>
-
-          <span slot="trailing">
-            {#if task.lastCompletedAt}
-              <TimeAgo datetime={task.lastCompletedAt} />
-            {:else}
-              Never run
-            {/if}
-          </span>
-        </PoodleListCard>
-      {/each}
-    </PoodleGrid>
-  </ListContainer>
-</section>
-
-<style>
-  .scheduled-tasks-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-</style>
+    backHref="/system"
+    backLabel="Back to system"
+    {dataLoader}
+    presentation="cards"
+    {renderItem}
+    {filters}
+    query={currentQuery}
+    onQueryChange={updateUrl}
+  />
+{/key}

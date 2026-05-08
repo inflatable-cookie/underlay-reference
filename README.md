@@ -83,7 +83,7 @@ Full-featured API server with:
 - **Session Management**: Token refresh, fingerprint validation, session listing/revocation
 - **Database**: SQLx with migrations, connection pooling
 - **Background Jobs**: Underlay jobs system integration
-- **Email**: Template-based emails with dev capture mode
+- **Email**: Template-based emails routed through SMTP and Mailpit in local dev
 - **Media Library**: File uploads with versioning, deduplication, and blob storage
 - **API Structure**: Health checks, auth routes, account management
 
@@ -291,7 +291,7 @@ RUST_LOG=debug
 CORS_ORIGINS=https://acme.test,https://admin.acme.test
 COOKIE_DOMAIN=.acme.test
 COOKIE_SECURE=true
-EMAIL_ADAPTER=noop|dev_capture|smtp|ses
+EMAIL_ADAPTER=noop|smtp|ses
 SMTP_HOST=smtp.acme.test
 SMTP_PORT=1025
 SMTP_TLS=none

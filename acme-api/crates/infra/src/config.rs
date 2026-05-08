@@ -75,8 +75,6 @@ pub enum EmailAdapterType {
     /// No-op adapter (for testing, emails are discarded).
     #[default]
     Noop,
-    /// Development capture adapter (saves to database, optionally forwards whitelisted).
-    DevCapture,
     /// SMTP adapter using lettre.
     Smtp,
     /// AWS SES adapter.
@@ -86,7 +84,8 @@ pub enum EmailAdapterType {
 impl EmailAdapterType {
     pub fn parse(value: &str) -> Self {
         match value.to_ascii_lowercase().as_str() {
-            "dev_capture" | "devcapture" | "capture" => EmailAdapterType::DevCapture,
+            // Legacy local-dev alias. Mailpit now replaces DB-backed email capture.
+            "dev_capture" | "devcapture" | "capture" => EmailAdapterType::Smtp,
             "smtp" => EmailAdapterType::Smtp,
             "ses" | "aws_ses" => EmailAdapterType::Ses,
             "noop" | "none" | "" => EmailAdapterType::Noop,
@@ -121,15 +120,6 @@ pub struct SesEmailConfig {
     pub configuration_set: Option<String>,
 }
 
-/// Development capture configuration.
-#[derive(Debug, Clone)]
-pub struct DevCaptureEmailConfig {
-    /// Whitelist of email addresses that should also be delivered via fallback adapter.
-    pub whitelist: Vec<String>,
-    /// Fallback adapter type for whitelisted addresses.
-    pub fallback_adapter: Option<EmailAdapterType>,
-}
-
 /// Email system configuration.
 #[derive(Debug, Clone)]
 pub struct EmailConfig {
@@ -149,8 +139,6 @@ pub struct EmailConfig {
     pub smtp: Option<SmtpEmailConfig>,
     /// AWS SES configuration (when adapter = ses).
     pub ses: Option<SesEmailConfig>,
-    /// Dev capture configuration (when adapter = dev_capture).
-    pub dev_capture: Option<DevCaptureEmailConfig>,
 }
 
 #[derive(Debug, Clone)]
@@ -649,7 +637,13 @@ impl AppConfig {
         // SMTP config (when adapter=smtp)
         let smtp_config = if email_adapter == EmailAdapterType::Smtp {
             Some(SmtpEmailConfig {
-                host: env::var("SMTP_HOST").unwrap_or_else(|_| "localhost".to_string()),
+                host: env::var("SMTP_HOST").unwrap_or_else(|_| {
+                    if matches!(env, Environment::Local | Environment::Dev | Environment::Test) {
+                        "smtp.acme.test".to_string()
+                    } else {
+                        "localhost".to_string()
+                    }
+                }),
                 port: env::var("SMTP_PORT")
                     .ok()
                     .and_then(|p| p.parse().ok())
@@ -672,26 +666,6 @@ impl AppConfig {
             None
         };
 
-        // Dev capture config (when adapter=dev_capture)
-        let dev_capture_config = if email_adapter == EmailAdapterType::DevCapture {
-            let whitelist: Vec<String> = env::var("EMAIL_WHITELIST")
-                .ok()
-                .map(|s| s.split(',').map(|e| e.trim().to_string()).collect())
-                .unwrap_or_default();
-
-            let fallback_adapter = env::var("EMAIL_FALLBACK_ADAPTER")
-                .ok()
-                .map(|s| EmailAdapterType::parse(&s))
-                .filter(|a| *a != EmailAdapterType::Noop && *a != EmailAdapterType::DevCapture);
-
-            Some(DevCaptureEmailConfig {
-                whitelist,
-                fallback_adapter,
-            })
-        } else {
-            None
-        };
-
         let email = EmailConfig {
             adapter: email_adapter,
             default_from,
@@ -701,7 +675,6 @@ impl AppConfig {
             templates_dir,
             smtp: smtp_config,
             ses: ses_config,
-            dev_capture: dev_capture_config,
         };
 
         AppConfig {

@@ -55,7 +55,7 @@ import {
         jobType: task.jobType,
         limit: 50
       });
-      return { jobs };
+      return { jobs: jobs.data };
     },
     {
       getAuthLoading: () => true,

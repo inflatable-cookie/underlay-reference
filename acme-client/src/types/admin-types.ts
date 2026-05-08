@@ -47,6 +47,7 @@ export interface Project {
   id: string;
   ownerId: string;
   categoryId?: string | null;
+  categoryName?: string | null;
   name: string;
   description?: string | null;
   status: string;
@@ -316,6 +317,9 @@ export interface ActivityListResponse {
 }
 
 export interface ListActivityQuery {
+  action?: string;
+  resourceType?: string;
+  page?: number;
   limit?: number;
   offset?: number;
 }
@@ -384,7 +388,14 @@ export interface JobStats {
 export interface ListJobsQuery {
   status?: JobStatus;
   jobType?: string;
+  page?: number;
   limit?: number;
+}
+
+export interface JobListResponse {
+  data: JobSummary[];
+  hasMore: boolean;
+  total: number;
 }
 
 // ============================================================================
@@ -421,52 +432,18 @@ export interface ScheduledTaskDetail {
 
 export interface ListScheduledTasksQuery {
   enabled?: boolean;
+  page?: number;
   limit?: number;
-  offset?: number;
+}
+
+export interface ScheduledTaskListResponse {
+  data: ScheduledTaskSummary[];
+  hasMore: boolean;
+  total: number;
 }
 
 export interface TriggerScheduledTaskResult {
   jobId: string;
-}
-
-// ============================================================================
-// Captured Emails
-// ============================================================================
-
-export interface CapturedEmailSummary {
-  id: string;
-  emailId: string;
-  toAddresses: string[];
-  fromAddress: string;
-  subject: string;
-  capturedAt: string;
-  wasDelivered: boolean;
-}
-
-export interface CapturedEmailDetail {
-  id: string;
-  emailId: string;
-  toAddresses: string[];
-  fromAddress: string;
-  replyTo?: string | null;
-  ccAddresses: string[];
-  bccAddresses: string[];
-  subject: string;
-  textBody?: string | null;
-  htmlBody?: string | null;
-  headersJson?: unknown;
-  capturedAt: string;
-  wasDelivered: boolean;
-  deliveryError?: string | null;
-}
-
-export interface ListCapturedEmailsQuery {
-  since?: string;
-  until?: string;
-  to_address?: string;
-  from_address?: string;
-  limit?: number;
-  offset?: number;
 }
 
 // ============================================================================

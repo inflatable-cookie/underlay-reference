@@ -8,7 +8,6 @@
 //! - Field validation endpoints
 
 pub mod activity;
-pub mod captured_emails;
 pub mod categories;
 pub mod dashboard;
 pub mod error_logs;

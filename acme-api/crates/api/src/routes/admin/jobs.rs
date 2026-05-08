@@ -11,11 +11,11 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
-use underlay_core::{ListResponse, SingleResponse, Uuid};
+use underlay_core::{SingleResponse, Uuid};
 use underlay_http::ApiError;
 use underlay_jobs::{Job, JobFilters, JobStatus};
 
-use crate::state::{AdminUser, AppState};
+use crate::state::{AdminUser, AppState, DB_POOL};
 
 // ============================================================================
 // DTOs
@@ -146,8 +146,18 @@ pub struct ListJobsQuery {
     pub status: Option<String>,
     /// Filter by job type
     pub job_type: Option<String>,
+    /// Page number (1-indexed)
+    pub page: Option<u32>,
     /// Maximum number of jobs to return
     pub limit: Option<usize>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct PaginatedJobsResponse {
+    pub data: Vec<JobSummaryDto>,
+    pub total: i64,
+    pub has_more: bool,
 }
 
 // ============================================================================
@@ -169,27 +179,81 @@ pub async fn list_jobs(
             "Job system not available",
         ));
     };
+    let Some(pool) = DB_POOL.get() else {
+        return Err(ApiError::new(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "service_unavailable",
+            "Database not available",
+        ));
+    };
 
     let status = query.status.as_ref().and_then(|s| match s.as_str() {
         "pending" => Some(JobStatus::Pending),
+        "claimed" => Some(JobStatus::Claimed),
         "running" => Some(JobStatus::Running),
         "succeeded" => Some(JobStatus::Succeeded),
         "failed" => Some(JobStatus::Failed),
         "cancelled" => Some(JobStatus::Cancelled),
         _ => None,
     });
+    let page = query.page.unwrap_or(1).max(1) as usize;
+    let limit = query.limit.unwrap_or(50).max(1);
+    let offset = (page - 1) * limit;
 
     let filters = JobFilters {
         status,
         job_type: query.job_type.clone(),
-        limit: query.limit.unwrap_or(50),
+        limit,
+        offset,
         ..Default::default()
     };
+
+    let mut count_query = sqlx::QueryBuilder::<sqlx::Postgres>::new(
+        r#"
+        SELECT COUNT(*)
+        FROM platform.job
+        WHERE 1=1
+        "#,
+    );
+    if let Some(status) = query.status.as_ref() {
+        count_query
+            .push(" AND status = ")
+            .push_bind(status);
+    }
+    if let Some(job_type) = query.job_type.as_ref() {
+        count_query
+            .push(" AND job_type ILIKE ")
+            .push_bind(format!("%{}%", job_type));
+    }
+    let total = count_query
+        .build_query_scalar::<i64>()
+        .fetch_one(pool)
+        .await
+        .map_err(|e| {
+            crate::db_errors::internal_with_diagnostics(
+                "job_count_failed",
+                "Failed to count jobs",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "jobs.count",
+                "status": query.status,
+                "job_type": query.job_type,
+                "page": page,
+                "limit": limit
+            }))
+        })?;
 
     match job_repo.list(filters).await {
         Ok(jobs) => {
             let items: Vec<JobSummaryDto> = jobs.iter().map(JobSummaryDto::from_job).collect();
-            Ok(Json(ListResponse { data: items }).into_response())
+            let has_more = (offset + items.len()) < total as usize;
+            Ok(Json(PaginatedJobsResponse {
+                data: items,
+                total,
+                has_more,
+            })
+            .into_response())
         }
         Err(e) => Err(crate::db_errors::internal_with_diagnostics(
             "job_list_failed",
@@ -199,7 +263,9 @@ pub async fn list_jobs(
         .with_context(serde_json::json!({
             "operation": "jobs.list",
             "status": query.status,
-            "job_type": query.job_type
+            "job_type": query.job_type,
+            "page": page,
+            "limit": limit
         }))),
     }
 }

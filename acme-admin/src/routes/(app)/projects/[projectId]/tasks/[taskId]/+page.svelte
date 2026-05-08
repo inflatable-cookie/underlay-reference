@@ -1,34 +1,17 @@
 <script lang="ts">
-import {
-  useToasts
-} from "@decodelabs/underlay/runtime/feedback";
-import {
-  useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
-import {
-  AlertDialog as PoodleAlertDialog,
-  Callout as PoodleCallout,
-  Card as PoodleCard,
-  Code as PoodleCode,
-  DetailItem as PoodleDetailItem
-  } from "@poodle/svelte";
-  import { DetailSection as PoodleDetailSection,
-  PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte";
+  import {
+    EntityAttributeList,
+    EntityDetail,
+    EntityDetailModule,
+    EntityDetailPage
+  } from "@decodelabs/underlay/templates";
+  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
-  import { adminCommands,
-  type Task,
-  type Label,
-  type Project } from "@api-client";
+  import { adminCommands, type Label, type Project, type Task } from "@api-client";
   import { auth } from "$lib/stores/auth";
-    import { TimeAgo } from "@poodle/svelte";
-  import { Button as PoodleButton, MetaBar as PoodleMetaBar, MetaItem as PoodleMetaItem, Pill as PoodlePill } from "@poodle/svelte";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import { getTaskStatusTone, getTaskPriorityTone } from "$lib/utils/accents";
-  import Pencil from "lucide-svelte/icons/pencil";
-  import ArrowLeft from "lucide-svelte/icons/arrow-left";
-  import Calendar from "lucide-svelte/icons/calendar";
+  import { Code, Pill, TimeAgo } from "@poodle/svelte";
+  import { getTaskPriorityTone, getTaskStatusTone } from "$lib/utils/accents";
 
   interface Props {
     data: PageData;
@@ -36,41 +19,58 @@ import {
 
   let { data }: Props = $props();
 
-  const toastStore = useToasts();
-  let showDeleteConfirm = $state(false);
+  let task = $state<Task | null>(null);
+  let project = $state<Project | null>(null);
+  let labels = $state<Label[]>([]);
 
-  // Fetch task, project, and labels data
-  const pageData = useAuthenticatedData(
-    async (fetch, token) => {
-      const [task, project, labels] = await Promise.all([
-        adminCommands.getTask(data.projectId, data.taskId, fetch, token),
-        adminCommands.getProject(data.projectId, fetch, token),
-        adminCommands.getTaskLabels(data.projectId, data.taskId, fetch, token)
-      ]);
-      return { task, project, labels };
-    },
-    {
-      defaultValue: { task: null as Task | null, project: null as Project | null, labels: [] as Label[] }
-    }
+  async function taskLoader(fetch: typeof window.fetch, token: string | null) {
+    if (!token) throw new Error("Not authenticated");
+
+    const [nextTask, nextProject, nextLabels] = await Promise.all([
+      adminCommands.getTask(data.projectId, data.taskId, fetch, token),
+      adminCommands.getProject(data.projectId, fetch, token),
+      adminCommands.getTaskLabels(data.projectId, data.taskId, fetch, token)
+    ]);
+
+    task = nextTask;
+    project = nextProject;
+    labels = nextLabels;
+    return nextTask;
+  }
+
+  const statusLabel = $derived(
+    task
+      ? {
+          pending: "Pending",
+          in_progress: "In Progress",
+          completed: "Completed",
+          cancelled: "Cancelled"
+        }[task.status] ?? task.status
+      : ""
   );
 
-  const task = $derived(pageData.data?.task);
-  const project = $derived(pageData.data?.project);
-  const labels = $derived(pageData.data?.labels ?? []);
+  const priorityLabel = $derived(
+    task
+      ? {
+          low: "Low",
+          medium: "Medium",
+          high: "High",
+          urgent: "Urgent"
+        }[task.priority] ?? task.priority
+      : ""
+  );
 
-  const statusLabel = $derived(task ? {
-    pending: "Pending",
-    in_progress: "In Progress",
-    completed: "Completed",
-    cancelled: "Cancelled"
-  }[task.status] ?? task.status : "");
+  const bannerMessage = $derived(
+    task?.status === "completed"
+      ? `This task was completed on ${formatDate(task.completedAt)}.`
+      : task?.status === "cancelled"
+        ? "This task has been cancelled."
+        : undefined
+  );
 
-  const priorityLabel = $derived(task ? {
-    low: "Low",
-    medium: "Medium",
-    high: "High",
-    urgent: "Urgent"
-  }[task.priority] ?? task.priority : "");
+  const bannerTone = $derived<"success" | "warning">(
+    task?.status === "completed" ? "success" : "warning"
+  );
 
   function handleEdit() {
     if (!task || !project) return;
@@ -83,21 +83,10 @@ import {
 
   async function handleDelete() {
     if (!task) return;
-
     const token = auth.getToken();
-    if (!token) {
-      toastStore.push({ variant: "error", message: "Not authenticated" });
-      return;
-    }
-
-    try {
-      await adminCommands.softDeleteTask(data.projectId, task.id, fetch, token);
-      toastStore.push({ variant: "success", message: "Task deleted" });
-      await goto(`/projects/${data.projectId}`);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to delete task";
-      toastStore.push({ variant: "error", message });
-    }
+    if (!token) throw new Error("Not authenticated");
+    await adminCommands.softDeleteTask(data.projectId, task.id, fetch, token);
+    await goto(`/projects/${data.projectId}`);
   }
 
   function formatDate(dateString: string | null | undefined) {
@@ -109,167 +98,221 @@ import {
       day: "numeric"
     });
   }
+
+  const headerMeta = $derived.by(() => [
+    { label: "ID", value: idSnippet as never },
+    { label: "", value: statusSnippet as never, separator: false },
+    { label: "", value: prioritySnippet as never, separator: false }
+  ]);
+
+  const breadcrumbs = $derived.by(() => {
+    if (!project) return [];
+
+    const items: Array<{ label: string; href?: string }> = [];
+
+    if (project.categoryId && project.categoryName?.trim()) {
+      items.push({
+        label: project.categoryName.trim(),
+        href: `/categories/${project.categoryId}`
+      });
+    }
+
+    items.push({
+      label: project.name,
+      href: `/projects/${project.id}`
+    });
+
+    return items;
+  });
+
+  const detailTabs = $derived.by(() => [
+    {
+      id: "details",
+      label: "Details",
+      content: detailsTabSnippet as never
+    }
+  ]);
 </script>
 
-{#if pageData.loading}
-  <PageLoading presentation="inline" message="Loading task..." />
-{:else if pageData.error}
-  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
-{:else if task && project}
-  <div class="task-detail__header">
-  <PoodlePageHeader
-    section="Task"
-    title={task.title}
-    backHref={`/projects/${data.projectId}`}
-    backLabel={`Back to ${project.name}`}
-    bannerMessage={task.status === "completed"
-      ? `This task was completed on ${formatDate(task.completedAt)}.`
-      : task.status === "cancelled"
-        ? "This task has been cancelled."
-        : undefined}
-    bannerTone={task.status === "completed" ? "success" : "warning"}
-  >
-    {#snippet actions()}
-      <PoodleButton type="button" variant="secondary" on:click={handleEdit}>
-        <Pencil size={16} />
-        Edit
-      </PoodleButton>
-      <PoodleButton type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
-        Delete
-      </PoodleButton>
-    {/snippet}
-  </PoodlePageHeader>
-  <PoodleMetaBar ariaLabel="Task metadata">
-    <PoodleMetaItem label="ID">
-      <PoodleCode inline source={task.id} showCopyButton />
-    </PoodleMetaItem>
-    <PoodlePill tone={getTaskStatusTone(task.status)} appearance="badge" size="lg">
+<EntityDetailPage
+  title={task?.title ?? "Task"}
+  section="Task"
+  showSubtitleWithBreadcrumbs
+  breadcrumbsMarkLastCurrent={false}
+  backHref={`/projects/${data.projectId}`}
+  backLabel={project ? `Back to ${project.name}` : "Back to project"}
+  bannerMessage={bannerMessage}
+  bannerTone={bannerMessage ? bannerTone : undefined}
+  dataLoader={taskLoader}
+  breadcrumbs={breadcrumbs}
+  meta={headerMeta as never}
+  tabs={detailTabs as never}
+  actions={[
+    { label: "Edit", handler: handleEdit },
+    {
+      label: "Delete",
+      tone: "danger",
+      confirm: {
+        title: "Delete task",
+        description: task ? `Are you sure you want to delete "${task.title}"?` : "Are you sure you want to delete this task?",
+        confirmLabel: "Delete task",
+        cancelLabel: "Keep task"
+      },
+      handler: handleDelete
+    }
+  ]}
+/>
+
+{#snippet idSnippet()}
+  {#if task}
+    <Code
+      inline
+      inlineVariant="plain"
+      typography="inline"
+      source={task.id}
+      showCopyButton
+    />
+  {/if}
+{/snippet}
+
+{#snippet statusSnippet()}
+  {#if task}
+    <Pill tone={getTaskStatusTone(task.status)} appearance="badge" size="sm" typography="inherit">
       {statusLabel}
-    </PoodlePill>
-    <PoodlePill tone={getTaskPriorityTone(task.priority)} appearance="badge" size="lg">
+    </Pill>
+  {/if}
+{/snippet}
+
+{#snippet prioritySnippet()}
+  {#if task}
+    <Pill tone={getTaskPriorityTone(task.priority)} appearance="badge" size="sm" typography="inherit">
       {priorityLabel}
-    </PoodlePill>
-  </PoodleMetaBar>
-  </div>
+    </Pill>
+  {/if}
+{/snippet}
 
-  <PoodleAlertDialog
-    open={showDeleteConfirm}
-    title="Delete Task"
-    description={`Are you sure you want to delete "${task.title}"?`}
-    confirmLabel="Delete"
-    tone="danger"
-    onConfirm={handleDelete}
-    onCancel={() => {
-      showDeleteConfirm = false;
-    }}
-  />
+{#snippet dueDateSnippet()}
+  {#if task?.dueDate}
+    <TimeAgo datetime={task.dueDate} tooltipFormat="date" />
+  {:else}
+    Not set
+  {/if}
+{/snippet}
 
-  <PoodleCard>
-    <div class="detail-card-grid">
-      <PoodleDetailSection title="Details" columns={2} separated={false}>
-        <PoodleDetailItem presentation="surface" label="Priority">
-          <svelte:fragment slot="value">
-            <PoodlePill
-              tone={getTaskPriorityTone(task.priority)}
-              appearance="badge"
-              size="sm"
-            >
-              {priorityLabel}
-            </PoodlePill>
-          </svelte:fragment>
-        </PoodleDetailItem>
-        <PoodleDetailItem presentation="surface" label="Due Date">
-          <svelte:fragment slot="value">
-            <span class="due-date">
-              <Calendar size={14} />
-              {formatDate(task.dueDate)}
-            </span>
-          </svelte:fragment>
-        </PoodleDetailItem>
-        {#if labels.length > 0}
-          <div class="detail-span-full">
-            <PoodleDetailItem presentation="surface" label="Labels">
-              <svelte:fragment slot="value">
-                <div class="labels">
-                  {#each labels as label}
-                    <PoodlePill
-                      tone="neutral"
-                      appearance="badge"
-                      size="sm"
-                    >
-                      {label.name}
-                    </PoodlePill>
-                  {/each}
-                </div>
-              </svelte:fragment>
-            </PoodleDetailItem>
-          </div>
-        {/if}
-        {#if task.description}
-          <div class="detail-span-full">
-            <PoodleDetailItem presentation="surface" label="Description" value={task.description} />
-          </div>
-        {/if}
-      </PoodleDetailSection>
+{#snippet projectSnippet()}
+  {#if project}
+    <a href={`/projects/${project.id}`} class="task-detail__project-link">{project.name}</a>
+  {/if}
+{/snippet}
 
-      <PoodleDetailSection title="Metadata" columns={2} separated={false}>
-        <PoodleDetailItem presentation="surface" label="Project">
-          <svelte:fragment slot="value">
-            <a href={`/projects/${project.id}`}>{project.name}</a>
-          </svelte:fragment>
-        </PoodleDetailItem>
-        <PoodleDetailItem presentation="surface" label="Position" value={String(task.position)} />
-        <PoodleDetailItem presentation="surface" label="Created">
-          <svelte:fragment slot="value">
-            <TimeAgo datetime={task.createdAt} tooltipFormat="datetime" />
-          </svelte:fragment>
-        </PoodleDetailItem>
-        <PoodleDetailItem presentation="surface" label="Updated">
-          <svelte:fragment slot="value">
-            <TimeAgo datetime={task.updatedAt} tooltipFormat="datetime" />
-          </svelte:fragment>
-        </PoodleDetailItem>
-      </PoodleDetailSection>
+{#snippet createdSnippet()}
+  {#if task}
+    <TimeAgo datetime={task.createdAt} tooltipFormat="datetime" />
+  {/if}
+{/snippet}
+
+{#snippet updatedSnippet()}
+  {#if task}
+    <TimeAgo datetime={task.updatedAt} tooltipFormat="datetime" />
+  {/if}
+{/snippet}
+
+{#snippet labelsSnippet()}
+  {#if labels.length > 0}
+    <div class="task-detail__labels">
+      {#each labels as label}
+        <Pill tone="neutral" appearance="badge" size="sm">
+          {label.name}
+        </Pill>
+      {/each}
     </div>
-  </PoodleCard>
-{:else}
-  <PoodleCallout tone="danger" message="Task not found" announceMode="polite" />
-{/if}
+  {:else}
+    None
+  {/if}
+{/snippet}
+
+{#snippet detailsTabSnippet(_loadedTask: Task)}
+  <EntityDetail>
+    {#snippet children()}
+      <EntityAttributeList
+        title={null}
+        columns={2}
+        items={[
+          {
+            label: "Due Date",
+            value: dueDateSnippet as never,
+            layout: "stacked",
+            presentation: "surface"
+          },
+          {
+            label: "Project",
+            value: projectSnippet as never,
+            layout: "stacked",
+            presentation: "surface"
+          },
+          {
+            label: "Created",
+            value: createdSnippet as never,
+            layout: "stacked",
+            presentation: "surface"
+          },
+          {
+            label: "Updated",
+            value: updatedSnippet as never,
+            layout: "stacked",
+            presentation: "surface"
+          },
+          {
+            label: "Labels",
+            value: labelsSnippet as never,
+            layout: "stacked",
+            presentation: "surface",
+            span: "full"
+          }
+        ]}
+      />
+
+      {#if task?.description}
+        <EntityDetailModule>
+          {#snippet children()}
+            <div class="task-detail__copy">
+              {_loadedTask.description}
+            </div>
+          {/snippet}
+        </EntityDetailModule>
+      {/if}
+    {/snippet}
+  </EntityDetail>
+{/snippet}
 
 <style>
-  .task-detail__header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .detail-card-grid {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .detail-span-full {
-    grid-column: 1 / -1;
-  }
-
-  .due-date {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .labels {
+  .task-detail__labels {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
 
-  a {
-    color: var(--link-color, #3b82f6);
+  .task-detail__copy {
+    max-width: 42rem;
+    color: var(--poodle-color-text-primary);
+    font-size: var(--poodle-typography-body-size);
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+
+  .task-detail__project-link {
+    color: var(--poodle-color-accent-base);
     text-decoration: none;
   }
 
-  a:hover {
+  .task-detail__project-link:hover {
+    color: color-mix(in srgb, white 12%, var(--poodle-color-accent-base));
     text-decoration: underline;
+  }
+
+  .task-detail__project-link:focus-visible {
+    outline: var(--poodle-border-width-focus) solid var(--poodle-color-accent-focusRing);
+    outline-offset: 0.125rem;
+    border-radius: var(--poodle-radius-control);
   }
 </style>

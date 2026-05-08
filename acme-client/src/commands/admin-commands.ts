@@ -13,5 +13,4 @@ export { createUser, listUsers, getUser, getUserWithEtag, updateUser, updateUser
 export { listActivity, listActivityForUser } from "./admin/activity-commands.js";
 export { listJobs, getJob, getJobStats, cancelJob, retryJob } from "./admin/job-commands.js";
 export { listScheduledTasks, getScheduledTask, toggleScheduledTask, triggerScheduledTask } from "./admin/scheduled-task-commands.js";
-export { listCapturedEmails, getCapturedEmail, deleteCapturedEmail } from "./admin/email-commands.js";
 export { listErrorLogs, getErrorLog, getErrorLogStats } from "./admin/error-log-commands.js";

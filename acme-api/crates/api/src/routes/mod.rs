@@ -201,16 +201,6 @@ pub fn build_router() -> Router<AppState> {
             "/v1/admin/validate-field",
             post(admin::validation::validate_field),
         )
-        // Captured email admin routes (dev-only)
-        .route(
-            "/v1/admin/captured-emails",
-            get(admin::captured_emails::list_captured_emails),
-        )
-        .route(
-            "/v1/admin/captured-emails/{id}",
-            get(admin::captured_emails::get_captured_email)
-                .delete(admin::captured_emails::delete_captured_email),
-        )
         // Category admin routes
         .route(
             "/v1/admin/categories",

@@ -1,8 +1,9 @@
-import type { ListResponse, SingleResponse } from "../../types/common-types.js";
+import type { PagedListResponse, SingleResponse } from "../../types/common-types.js";
 import type {
   JobSummary,
   JobDetail,
   JobStats,
+  JobListResponse,
   ListJobsQuery,
 } from "../../types/admin-types.js";
 import { getAdminHttpClient } from "../../utils/client-factory.js";
@@ -16,19 +17,24 @@ export async function listJobs(
   fetchFn: typeof fetch,
   accessToken: string,
   query?: ListJobsQuery
-): Promise<JobSummary[]> {
+): Promise<JobListResponse> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
 
   const params = new URLSearchParams();
   if (query?.status) params.set("status", query.status);
   if (query?.jobType) params.set("job_type", query.jobType);
+  if (query?.page !== undefined) params.set("page", String(query.page));
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
 
   const queryString = params.toString();
   const path = queryString ? `/v1/admin/jobs?${queryString}` : "/v1/admin/jobs";
 
-  const response = await http.get<ListResponse<JobSummary>>(path);
-  return response.data;
+  const response = await http.get<PagedListResponse<JobSummary>>(path);
+  return {
+    data: response.data,
+    total: response.total,
+    hasMore: response.hasMore ?? false
+  };
 }
 
 /**

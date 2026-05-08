@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
 
 use acme_core::Uuid;
-use acme_db::{activity, tasks};
+use acme_db::{activity, categories, tasks};
 use serde_json::json;
 
 use crate::routes::admin::freshness::{
@@ -37,6 +37,7 @@ pub struct ProjectResponse {
     pub id: String,
     pub owner_id: String,
     pub category_id: Option<String>,
+    pub category_name: Option<String>,
     pub name: String,
     pub description: Option<String>,
     pub status: String,
@@ -45,12 +46,13 @@ pub struct ProjectResponse {
     pub updated_at: String,
 }
 
-impl From<tasks::ProjectRow> for ProjectResponse {
-    fn from(row: tasks::ProjectRow) -> Self {
+impl ProjectResponse {
+    fn from_row(row: tasks::ProjectRow, category_name: Option<String>) -> Self {
         Self {
             id: row.id.to_string(),
             owner_id: row.owner_id.to_string(),
             category_id: row.category_id.map(|id| id.to_string()),
+            category_name,
             name: row.name,
             description: row.description,
             status: row.status,
@@ -201,6 +203,14 @@ pub async fn get_project(
 
     match tasks::get_project_admin(pool, project_id).await {
         Ok(Some(project)) => {
+            let category_name = match project.category_id {
+                Some(category_id) => categories::get_category(pool, category_id)
+                    .await
+                    .ok()
+                    .flatten()
+                    .map(|category| category.name),
+                None => None,
+            };
             let etag = detail_etag(
                 "project",
                 &project.id.to_string(),
@@ -209,7 +219,7 @@ pub async fn get_project(
             if let Some(not_modified) = maybe_not_modified(&headers, &etag) {
                 return Ok(not_modified);
             }
-            let response: ProjectResponse = project.into();
+            let response = ProjectResponse::from_row(project, category_name);
             let response_headers = build_etag_cache_headers(&etag);
             Ok((
                 response_headers,
@@ -283,7 +293,7 @@ pub async fn create_project(
             )
             .await;
 
-            let response: ProjectResponse = project.into();
+            let response = ProjectResponse::from_row(project, None);
             Ok((
                 StatusCode::CREATED,
                 Json(serde_json::json!({ "data": response })),
@@ -385,7 +395,7 @@ pub async fn update_project(
             )
             .await;
 
-            let response: ProjectResponse = project.into();
+            let response = ProjectResponse::from_row(project, None);
             let etag = detail_etag("project", &response.id, &response.updated_at);
             let response_headers = build_etag_cache_headers(&etag);
             Ok((
@@ -498,7 +508,7 @@ pub async fn restore_project(
             )
             .await;
 
-            let response: ProjectResponse = project.into();
+            let response = ProjectResponse::from_row(project, None);
             Ok(Json(serde_json::json!({ "data": response })).into_response())
         }
         Ok(None) => Err(

@@ -10,7 +10,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use underlay_core::{ListResponse, SingleResponse, Uuid};
+use underlay_core::{SingleResponse, Uuid};
 use underlay_http::ApiError;
 use underlay_jobs::JobConfig;
 
@@ -114,8 +114,16 @@ impl ScheduledTaskDetailDto {
 #[serde(rename_all = "snake_case")]
 pub struct ListScheduledTasksQuery {
     pub enabled: Option<bool>,
+    pub page: Option<u32>,
     pub limit: Option<i64>,
-    pub offset: Option<i64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct PaginatedScheduledTasksResponse {
+    pub data: Vec<ScheduledTaskSummaryDto>,
+    pub total: i64,
+    pub has_more: bool,
 }
 
 // ============================================================================
@@ -141,7 +149,19 @@ pub async fn list_scheduled_tasks(
     };
 
     let limit = query.limit.unwrap_or(50).clamp(1, 200);
-    let offset = query.offset.unwrap_or(0).max(0);
+    let page = query.page.unwrap_or(1).max(1);
+    let offset = ((page - 1) as i64) * limit;
+
+    let total: Result<i64, sqlx::Error> = sqlx::query_scalar(
+        r#"
+        SELECT COUNT(*)
+        FROM platform.scheduled_task
+        WHERE ($1::bool IS NULL OR enabled = $1)
+        "#,
+    )
+    .bind(query.enabled)
+    .fetch_one(pool)
+    .await;
 
     let rows: Result<Vec<ScheduledTaskRow>, sqlx::Error> = sqlx::query_as(
         r#"
@@ -160,11 +180,33 @@ pub async fn list_scheduled_tasks(
 
     match rows {
         Ok(rows) => {
+            let total = total.map_err(|e| {
+                crate::db_errors::internal_with_diagnostics(
+                    "scheduled_tasks_count_failed",
+                    "Failed to count tasks",
+                    &e,
+                )
+                .with_context(serde_json::json!({
+                    "operation": "scheduled_tasks.count",
+                    "enabled": query.enabled,
+                    "page": page,
+                    "limit": limit
+                }))
+            })?;
             let data: Vec<ScheduledTaskSummaryDto> = rows
                 .into_iter()
                 .map(ScheduledTaskSummaryDto::from_row)
                 .collect();
-            Ok((StatusCode::OK, Json(ListResponse { data })).into_response())
+            let has_more = offset + (data.len() as i64) < total;
+            Ok((
+                StatusCode::OK,
+                Json(PaginatedScheduledTasksResponse {
+                    data,
+                    total,
+                    has_more,
+                }),
+            )
+                .into_response())
         }
         Err(e) => Err(crate::db_errors::internal_with_diagnostics(
             "scheduled_tasks_list_failed",
@@ -174,6 +216,7 @@ pub async fn list_scheduled_tasks(
         .with_context(serde_json::json!({
             "operation": "scheduled_tasks.list",
             "enabled": query.enabled,
+            "page": page,
             "limit": limit,
             "offset": offset
         }))),

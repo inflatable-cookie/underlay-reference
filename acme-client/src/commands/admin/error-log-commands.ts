@@ -60,5 +60,32 @@ export async function getErrorLogStats(
   const response = await http.get<SingleResponse<ErrorLogStats>>(
     "/v1/admin/error-logs/stats"
   );
-  return response.data;
+  const data = response.data as ErrorLogStats & {
+    totalCount?: number;
+    serverErrorCount?: number;
+    clientErrorCount?: number;
+    total_count?: number;
+    server_error_count?: number;
+    client_error_count?: number;
+    total_last_24h?: number;
+    server_errors_last_24h?: number;
+    client_errors_last_24h?: number;
+  };
+
+  return {
+    totalLast24h:
+      data.totalLast24h ?? data.totalCount ?? data.total_count ?? data.total_last_24h ?? 0,
+    serverErrorsLast24h:
+      data.serverErrorsLast24h
+      ?? data.serverErrorCount
+      ?? data.server_error_count
+      ?? data.server_errors_last_24h
+      ?? 0,
+    clientErrorsLast24h:
+      data.clientErrorsLast24h
+      ?? data.clientErrorCount
+      ?? data.client_error_count
+      ?? data.client_errors_last_24h
+      ?? 0
+  };
 }

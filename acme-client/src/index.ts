@@ -93,9 +93,6 @@ export type {
   ScheduledTaskDetail,
   ListScheduledTasksQuery,
   TriggerScheduledTaskResult,
-  CapturedEmailSummary,
-  CapturedEmailDetail,
-  ListCapturedEmailsQuery,
   // Error log types
   ErrorLogSummary,
   ErrorLogDetail,

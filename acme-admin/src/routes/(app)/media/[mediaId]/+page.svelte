@@ -1,7 +1,13 @@
 <script lang="ts">
 import {
+  EntityAttributeList,
+  EntityDetail,
+  EntityDetailModule,
+  EntityDetailPage,
+  EntityInlineListModule
+} from "@decodelabs/underlay/templates";
+import {
   getMediaKindLabel,
-  getMediaKindAccent,
   getMediaVisibilityLabel,
   getMediaVersionStateLabel,
   getMediaVersionStateAccent
@@ -17,56 +23,47 @@ import {
 } from "@decodelabs/underlay/runtime/auth";
 import {
   EmptyState as PoodleEmptyState,
-  DetailSection as PoodleDetailSection,
   FormDialog,
-  InlineListSection,
-  PageHeader as PoodlePageHeader,
   PageLoading
-  } from "@poodle/svelte";
-  import {
-    AlertDialog as PoodleAlertDialog,
+} from "@poodle/svelte";
+import {
+  AlertDialog as PoodleAlertDialog,
   Callout as PoodleCallout,
   Code,
   Dialog as PoodleDialog,
-  MetaBar as PoodleMetaBar,
-  MetaItem as PoodleMetaItem,
-  Tabs,
   formatFileSize
-  } from "@poodle/svelte";
-  import type { PageData } from "./$types";
-  import { goto } from "$app/navigation";
-  import { env } from "$env/dynamic/public";
-    import {
-    Button as PoodleButton,
-    Card as PoodleCard,
-    DetailItem as PoodleDetailItem,
-    Field as PoodleField,
-    FormActions as PoodleFormActions,
-    IconButton as PoodleIconButton,
-    Pill as PoodlePill,
-    Select as PoodleSelect,
-    TextInput as PoodleTextInput,
-    TimeAgo
-  } from "@poodle/svelte";
-  import {
-    mediaCommands,
-    type MediaDetail,
-    type MediaVersion,
-    type MediaUsage,
-    MediaKind,
-    MediaVisibility,
-    MediaVersionState
-  } from "@api-client";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import { isPreconditionFailed } from "$lib/utils/api-errors";
-  import { getMediaMetaAccent, getMediaMetaTone } from "$lib/utils/accents";
-  import { uploadIcon } from "$lib/ui/poodle-icon-nodes";
-  import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";
-  import Check from "lucide-svelte/icons/check";
-  import Plus from "lucide-svelte/icons/plus";
-  import Trash2 from "lucide-svelte/icons/trash-2";
-  import { browser } from "$app/environment";
+} from "@poodle/svelte";
+import type { PageData } from "./$types";
+import { goto } from "$app/navigation";
+import { env } from "$env/dynamic/public";
+import {
+  Button as PoodleButton,
+  Field as PoodleField,
+  FormActions as PoodleFormActions,
+  IconButton as PoodleIconButton,
+  Pill as PoodlePill,
+  Select as PoodleSelect,
+  TextInput as PoodleTextInput,
+  TimeAgo
+} from "@poodle/svelte";
+import {
+  mediaCommands,
+  type MediaDetail,
+  type MediaVersion,
+  type MediaUsage,
+  MediaKind,
+  MediaVisibility,
+  MediaVersionState
+} from "@api-client";
+import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+import { auth, authLoading, currentUser } from "$lib/stores/auth";
+import { isPreconditionFailed } from "$lib/utils/api-errors";
+import { getMediaMetaAccent, getMediaMetaTone } from "$lib/utils/accents";
+import { uploadIcon } from "$lib/ui/poodle-icon-nodes";
+import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";
+import Check from "lucide-svelte/icons/check";
+import Trash2 from "lucide-svelte/icons/trash-2";
+import { browser } from "$app/environment";
 
   interface Props {
     data: PageData;
@@ -77,14 +74,17 @@ import {
   const toastStore = useToasts();
   const mediaId = $derived(data.mediaId);
 
-  // Load media detail first; load heavy tab data lazily.
-  const mediaData = useAuthenticatedData(
-    async (fetchFn, token) => {
-      const result = await mediaCommands.getMediaWithEtag(mediaId, fetchFn, token);
-      return { media: result.data, etag: result.etag };
-    },
-    {}
-  );
+  let media = $state<MediaDetail | null>(null);
+  let currentEtag = $state<string | null>(null);
+  let reloadKey = $state(0);
+
+  async function mediaLoader(fetchFn: typeof window.fetch, token: string | null) {
+    if (!token) throw new Error("Not authenticated");
+    const result = await mediaCommands.getMediaWithEtag(mediaId, fetchFn, token);
+    media = result.data;
+    currentEtag = result.etag;
+    return result.data;
+  }
 
   const versionsData = useAuthenticatedData(
     async (fetchFn, token) => mediaCommands.listVersions(mediaId, fetchFn, token),
@@ -116,14 +116,6 @@ import {
     }
   });
 
-  const media = $derived(mediaData.data?.media);
-  let currentEtag = $state<string | null>(null);
-
-  $effect(() => {
-    if (mediaData.data?.etag) {
-      currentEtag = mediaData.data.etag;
-    }
-  });
   const versions = $derived(versionsData.data ?? []);
   const usages = $derived(usagesData.data ?? []);
   const usageCount = $derived(media?.usageCount ?? 0);
@@ -189,9 +181,10 @@ import {
         { ifMatch: currentEtag ?? undefined }
       );
       currentEtag = result.etag;
+      media = result.data;
       toastStore.push({ variant: "success", message: "Media updated" });
       closeEditDialog();
-      await mediaData.refetch();
+      reloadKey++;
     } catch (e) {
       if (isPreconditionFailed(e)) {
         const latest = await mediaCommands.getMediaWithEtag(
@@ -200,10 +193,11 @@ import {
           token
         );
         currentEtag = latest.etag;
+        media = latest.data;
         editTitle = latest.data.title || "";
         editFilename = latest.data.originalFilename || "";
         editVisibility = latest.data.visibility;
-        await mediaData.refetch();
+        reloadKey++;
         editDialogError = "This media item was changed in another session. Review the latest values, reapply your edits, and save again.";
         return;
       }
@@ -256,7 +250,8 @@ import {
       toastStore.push({ variant: "success", message: "Version activated" });
       activateDialogOpen = false;
       selectedVersion = null;
-      await Promise.all([mediaData.refetch(), versionsData.refetch()]);
+      reloadKey++;
+      await Promise.all([versionsData.refetch(), usagesData.refetch()]);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to activate version";
       toastStore.push({ variant: "error", message });
@@ -282,7 +277,8 @@ import {
       toastStore.push({ variant: "success", message: "Version deleted" });
       deleteDialogOpen = false;
       selectedVersion = null;
-      await Promise.all([mediaData.refetch(), versionsData.refetch()]);
+      reloadKey++;
+      await Promise.all([versionsData.refetch(), usagesData.refetch()]);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to delete version";
       toastStore.push({ variant: "error", message });
@@ -374,210 +370,316 @@ import {
   );
 
   const mediaTabs = $derived([
-    { value: "details", label: "Details" },
-    ...(showPreviewTab ? [{ value: "preview", label: "Preview" }] : []),
-    { value: "usage", label: "Usage", count: usageCount }
+    {
+      id: "details",
+      label: "Details",
+      content: detailsTabSnippet as never
+    },
+    ...(showPreviewTab
+      ? [{
+          id: "preview",
+          label: "Preview",
+          content: previewTabSnippet as never
+        }]
+      : []),
+    {
+      id: "usage",
+      label: "Usage",
+      count: usageCount,
+      content: usageTabSnippet as never
+    }
   ]);
 
-  const mountedTabsSet = new Set<string>();
-  let mountedTabsVersion = $state(0);
+  const headerMeta = $derived.by(() => {
+    const items = [
+      { label: "ID", value: idSnippet as never },
+      { label: "", value: kindSnippet as never, separator: false },
+      { label: "", value: visibilitySnippet as never, separator: false }
+    ];
 
-  $effect(() => {
-    if (activeTab && !mountedTabsSet.has(activeTab)) {
-      mountedTabsSet.add(activeTab);
-      mountedTabsVersion++;
+    if (media?.deletedAt) {
+      items.push({ label: "", value: deletedSnippet as never, separator: false });
     }
-  });
 
-  function isTabMounted(value: string): boolean {
-    void mountedTabsVersion;
-    return mountedTabsSet.has(value);
-  }
+    return items;
+  });
 </script>
 
-{#if mediaData.loading}
-  <PageLoading presentation="inline" message="Loading media..." />
-{:else if mediaData.error}
-  <PoodleCallout tone="danger" title="Unable to load media" message={mediaData.error} announceMode="polite">
-    <svelte:fragment slot="actions">
-      <PoodleButton type="button" variant="ghost" size="sm" onclick={() => mediaData.refetch()}>
-        Retry
-      </PoodleButton>
-    </svelte:fragment>
-  </PoodleCallout>
-{:else if media}
-  <div class="underlay-detail-page">
-    <div class="underlay-detail-page__header">
-      <PoodlePageHeader
-        section="Media"
-        title={media.title || media.originalFilename || "Untitled"}
-        backHref={backInfo.href}
-        backLabel={backInfo.label}
-        backIsContextual={backInfo.isContextual ?? false}
-        bannerMessage={media.deletedAt ? "This media has been soft-deleted." : undefined}
-      >
-        {#snippet actions()}
-          <MediaActionsMenu
-            {media}
-            onEditRequest={openEditDialog}
-            onSoftDeleteSuccess={() => goto("/media")}
-            onRestoreSuccess={() => mediaData.refetch()}
-          />
-        {/snippet}
-      </PoodlePageHeader>
+<EntityDetailPage
+  title={media?.title || media?.originalFilename || "Untitled"}
+  section="Media"
+  backHref={backInfo.href}
+  backLabel={backInfo.label}
+  bannerMessage={media?.deletedAt ? "This media has been soft-deleted." : undefined}
+  dataLoader={mediaLoader}
+  reloadKey={reloadKey}
+  onTabChange={(tabId) => { activeTab = tabId; }}
+  meta={headerMeta as never}
+  headerActions={headerActionsSnippet as never}
+  tabs={mediaTabs as never}
+/>
 
-      <div class="underlay-detail-page__meta">
-      <PoodleMetaBar ariaLabel="Media metadata">
-        <PoodleMetaItem label="ID">
-          <Code inline source={media.id} showCopyButton />
-        </PoodleMetaItem>
-        <PoodlePill tone="neutral" appearance="badge" size="lg">{getMediaKindLabel(media.kind)}</PoodlePill>
-        <PoodlePill tone="neutral" appearance="badge" size="lg">
-          {getMediaVisibilityLabel(media.visibility)}
-        </PoodlePill>
-        {#if media.deletedAt}
-          <PoodlePill tone={getMediaMetaTone("deleted")} appearance="badge" size="lg">Deleted</PoodlePill>
-        {/if}
-      </PoodleMetaBar>
-      </div>
+{#snippet headerActionsSnippet(_loadedMedia: MediaDetail)}
+  {#if media}
+    <MediaActionsMenu
+      {media}
+      trigger={mediaActionsTriggerSnippet as never}
+      onEditRequest={openEditDialog}
+      onSoftDeleteSuccess={() => goto("/media")}
+      onRestoreSuccess={() => { reloadKey++; }}
+    />
+  {/if}
+{/snippet}
+
+{#snippet mediaActionsTriggerSnippet()}
+  <PoodleIconButton
+    type="button"
+    icon="ellipsis"
+    variant="secondary"
+    ariaLabel="Media actions"
+    tooltip="Actions"
+  />
+{/snippet}
+
+{#snippet idSnippet()}
+  {#if media}
+    <Code inline inlineVariant="plain" typography="inline" source={media.id} showCopyButton />
+  {/if}
+{/snippet}
+
+{#snippet kindSnippet()}
+  {#if media}
+    <PoodlePill tone="neutral" appearance="badge" size="sm" typography="inherit">
+      {getMediaKindLabel(media.kind)}
+    </PoodlePill>
+  {/if}
+{/snippet}
+
+{#snippet visibilitySnippet()}
+  {#if media}
+    <PoodlePill tone="neutral" appearance="badge" size="sm" typography="inherit">
+      {getMediaVisibilityLabel(media.visibility)}
+    </PoodlePill>
+  {/if}
+{/snippet}
+
+{#snippet deletedSnippet()}
+  <PoodlePill tone={getMediaMetaTone("deleted")} appearance="badge" size="sm" typography="inherit">
+    Deleted
+  </PoodlePill>
+{/snippet}
+
+{#snippet createdSnippet()}
+  {#if media}
+    <TimeAgo datetime={media.createdAt} tooltipFormat="datetime" />
+  {/if}
+{/snippet}
+
+{#snippet updatedSnippet()}
+  {#if media}
+    <TimeAgo datetime={media.updatedAt} tooltipFormat="datetime" />
+  {/if}
+{/snippet}
+
+{#snippet deletedAtSnippet()}
+  {#if media?.deletedAt}
+    <TimeAgo datetime={media.deletedAt} tooltipFormat="datetime" />
+  {/if}
+{/snippet}
+
+{#snippet mimeTypeSnippet()}
+  {#if media?.currentVersion}
+    <Code inline source={media.currentVersion.mimeType ?? "—"} />
+  {/if}
+{/snippet}
+
+{#snippet originalFilenameSnippet()}
+  {media?.originalFilename?.trim() || "—"}
+{/snippet}
+
+{#snippet fileSizeSnippet()}
+  {#if media?.currentVersion?.byteSize != null}
+    {formatFileSize(media.currentVersion.byteSize)}
+  {:else}
+    —
+  {/if}
+{/snippet}
+
+{#snippet versionsActionsSnippet()}
+  {#if media}
+    {@const replaceHref = `/media/upload?replace=${media.id}`}
+    <PoodleIconButton
+      type="button"
+      variant="primary"
+      size="sm"
+      icon={uploadIcon}
+      ariaLabel="Upload new version"
+      on:click={() => goto(replaceHref)}
+    />
+  {/if}
+{/snippet}
+
+{#snippet versionItemSnippet(version: MediaVersion)}
+  {#if canPreviewVersion(version)}
+    <button
+      type="button"
+      class="inline-list-card__item-content inline-list-card__item-content--button"
+      onclick={() => openVersionPreview(version)}
+    >
+      <span class="inline-list-card__dot" style:--inline-list-accent={getMediaVersionStateAccent(version.state)}></span>
+      <span class="inline-list-card__label-group">
+        <span class="inline-list-card__label">{version.sha256 ?? "No hash"}</span>
+        <span class="inline-list-card__sublabel">
+          {formatFileSize(version.byteSize)} · <Code inline source={version.mimeType ?? "Unknown type"} /> · <TimeAgo datetime={version.createdAt} short />
+        </span>
+      </span>
+    </button>
+  {:else}
+    <div class="inline-list-card__item-content">
+      <span class="inline-list-card__dot" style:--inline-list-accent={getMediaVersionStateAccent(version.state)}></span>
+      <span class="inline-list-card__label-group">
+        <span class="inline-list-card__label">{version.sha256 ?? "No hash"}</span>
+        <span class="inline-list-card__sublabel">
+          {formatFileSize(version.byteSize)} · <Code inline source={version.mimeType ?? "Unknown type"} /> · <TimeAgo datetime={version.createdAt} short />
+        </span>
+      </span>
     </div>
+  {/if}
 
-    <Tabs bind:value={activeTab} items={mediaTabs} variant="card" size="sm" historyKey="tab" ariaLabel="Detail sections" let:activeValue>
-      {#if isTabMounted(activeValue)}
-      {#if activeValue === "details"}
-        <div class="underlay-details-content">
-          <PoodleCard>
-            <div class="detail-card-grid">
-              <PoodleDetailSection title="File Details" columns={2} separated={false}>
-                <PoodleDetailItem presentation="surface" label="Original Filename" value={media.originalFilename ?? "—"} />
-                {#if media.currentVersion}
-                  <PoodleDetailItem presentation="surface" label="File Size" value={formatFileSize(media.currentVersion.byteSize)} />
-                  <PoodleDetailItem presentation="surface" label="MIME Type">
-                    <svelte:fragment slot="value">
-                      <Code inline source={media.currentVersion.mimeType ?? "—"} />
-                    </svelte:fragment>
-                  </PoodleDetailItem>
-                {/if}
-              </PoodleDetailSection>
+  <div class="inline-list-card__trailing">
+    <PoodlePill tone={getVersionStateTone(version.state)} appearance="badge" size="sm">
+      {getMediaVersionStateLabel(version.state)}
+    </PoodlePill>
+    {#if isCurrentVersion(version)}
+      <PoodlePill tone={getMediaMetaTone("current")} appearance="badge" size="sm">
+        Current
+      </PoodlePill>
+    {/if}
+  </div>
 
-              <PoodleDetailSection title="Timestamps" columns={2} separated={false}>
-                <PoodleDetailItem presentation="surface" label="Created">
-                  <svelte:fragment slot="value">
-                    <TimeAgo datetime={media.createdAt} short />
-                  </svelte:fragment>
-                </PoodleDetailItem>
-                <PoodleDetailItem presentation="surface" label="Last Updated">
-                  <svelte:fragment slot="value">
-                    <TimeAgo datetime={media.updatedAt} short />
-                  </svelte:fragment>
-                </PoodleDetailItem>
-                {#if media.deletedAt}
-                  <PoodleDetailItem presentation="surface" label="Deleted">
-                    <svelte:fragment slot="value">
-                      <span class="deleted-date"><TimeAgo datetime={media.deletedAt} short /></span>
-                    </svelte:fragment>
-                  </PoodleDetailItem>
-                {/if}
-              </PoodleDetailSection>
-            </div>
-          </PoodleCard>
+  <div class="inline-list-card__actions">
+    <button
+      type="button"
+      onclick={() => requestActivate(version)}
+      disabled={!canActivateVersion(version)}
+      aria-label="Activate version"
+    >
+      <Check size={14} />
+    </button>
+    <button
+      type="button"
+      onclick={() => requestDelete(version)}
+      disabled={!canDeleteVersion(version)}
+      aria-label="Delete version"
+    >
+      <Trash2 size={14} />
+    </button>
+  </div>
+{/snippet}
 
-          <!-- Versions -->
-          {#if activeTab === "details" && versionsData.loading}
-            <PoodleCard>
-              <PageLoading presentation="inline" message="Loading versions..." />
-            </PoodleCard>
-          {:else if versionsData.error}
-            <PoodleCard>
-              <PoodleCallout tone="danger" title="Unable to load versions" message={versionsData.error} announceMode="polite">
-                <svelte:fragment slot="actions">
-                  <PoodleButton type="button" variant="ghost" size="sm" onclick={() => versionsData.refetch()}>
-                    Retry
-                  </PoodleButton>
-                </svelte:fragment>
-              </PoodleCallout>
-            </PoodleCard>
-          {:else}
-            <InlineListSection
-              title="Versions"
-              items={versions}
-              emptyMessage="No versions uploaded yet."
-            >
-              {#snippet actions()}
-                <PoodleIconButton
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  icon={uploadIcon}
-                  ariaLabel="Upload new version"
-                  on:click={() => goto(`/media/upload?replace=${media.id}`)}
-                />
-              {/snippet}
+{#snippet usageItemSnippet(usage: MediaUsage)}
+  <div class="inline-list-card__item-content inline-list-card__item-content--usage">
+    <span class="inline-list-card__dot" style:--inline-list-accent={getMediaMetaAccent("usage")}></span>
+    <span class="inline-list-card__label-group">
+      <span class="inline-list-card__label">{usage.usedByType}</span>
+      <span class="inline-list-card__sublabel">
+        <Code inline source={usage.usedById} />
+        {#if usage.field}
+          <span class="usage-field"> · {usage.field}</span>
+        {/if}
+      </span>
+    </span>
+  </div>
+{/snippet}
 
-              {#snippet item(version: MediaVersion)}
-                      {#if canPreviewVersion(version)}
-                        <button
-                          type="button"
-                          class="inline-list-card__item-content inline-list-card__item-content--button"
-                          onclick={() => openVersionPreview(version)}
-                        >
-                          <span class="inline-list-card__dot" style:--inline-list-accent={getMediaVersionStateAccent(version.state)}></span>
-                          <span class="inline-list-card__label-group">
-                            <span class="inline-list-card__label">{version.sha256 ?? "No hash"}</span>
-                            <span class="inline-list-card__sublabel">
-                              {formatFileSize(version.byteSize)} · <Code inline source={version.mimeType ?? "Unknown type"} /> · <TimeAgo datetime={version.createdAt} short />
-                            </span>
-                          </span>
-                        </button>
-                      {:else}
-                        <div class="inline-list-card__item-content">
-                          <span class="inline-list-card__dot" style:--inline-list-accent={getMediaVersionStateAccent(version.state)}></span>
-                          <span class="inline-list-card__label-group">
-                            <span class="inline-list-card__label">{version.sha256 ?? "No hash"}</span>
-                            <span class="inline-list-card__sublabel">
-                              {formatFileSize(version.byteSize)} · <Code inline source={version.mimeType ?? "Unknown type"} /> · <TimeAgo datetime={version.createdAt} short />
-                            </span>
-                          </span>
-                        </div>
-                      {/if}
+{#snippet detailsTabSnippet(_loadedMedia: MediaDetail)}
+  <EntityDetail>
+    {#snippet children()}
+      <EntityAttributeList
+        title={null}
+        columns={2}
+        items={[
+          {
+            label: "Original Filename",
+            value: originalFilenameSnippet as never,
+            layout: "stacked",
+            presentation: "surface"
+          },
+          ...(media?.currentVersion
+            ? [
+                {
+                  label: "File Size",
+                  value: fileSizeSnippet as never,
+                  layout: "stacked" as const,
+                  presentation: "surface" as const
+                },
+                {
+                  label: "MIME Type",
+                  value: mimeTypeSnippet as never,
+                  layout: "stacked" as const,
+                  presentation: "surface" as const
+                }
+              ]
+            : []),
+          {
+            label: "Created",
+            value: createdSnippet as never,
+            layout: "stacked",
+            presentation: "surface"
+          },
+          {
+            label: "Last Updated",
+            value: updatedSnippet as never,
+            layout: "stacked",
+            presentation: "surface"
+          },
+          ...(media?.deletedAt
+            ? [{
+                label: "Deleted",
+                value: deletedAtSnippet as never,
+                layout: "stacked" as const,
+                presentation: "surface" as const
+              }]
+            : [])
+        ]}
+      />
 
-                      <div class="inline-list-card__trailing">
-                        <PoodlePill tone={getVersionStateTone(version.state)} appearance="badge" size="lg">
-                          {getMediaVersionStateLabel(version.state)}
-                        </PoodlePill>
-                        {#if isCurrentVersion(version)}
-                          <PoodlePill tone={getMediaMetaTone("current")} appearance="badge" size="lg">Current</PoodlePill>
-                        {/if}
-                      </div>
+      {#if activeTab === "details" && versionsData.loading}
+        <EntityDetailModule>
+          {#snippet children()}
+            <PageLoading presentation="inline" message="Loading versions..." />
+          {/snippet}
+        </EntityDetailModule>
+      {:else if versionsData.error}
+        <EntityDetailModule>
+          {#snippet children()}
+            <PoodleCallout tone="danger" title="Unable to load versions" message={versionsData.error} announceMode="polite">
+              <svelte:fragment slot="actions">
+                <PoodleButton type="button" variant="ghost" size="sm" onclick={() => versionsData.refetch()}>
+                  Retry
+                </PoodleButton>
+              </svelte:fragment>
+            </PoodleCallout>
+          {/snippet}
+        </EntityDetailModule>
+      {:else}
+        <EntityInlineListModule
+          title="Versions"
+          items={versions}
+          item={versionItemSnippet as never}
+          actions={versionsActionsSnippet as never}
+          emptyMessage="No versions uploaded yet."
+        />
+      {/if}
 
-                      <div class="inline-list-card__actions">
-                        <button
-                          type="button"
-                          onclick={() => requestActivate(version)}
-                          disabled={!canActivateVersion(version)}
-                          aria-label="Activate version"
-                        >
-                          <Check size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          onclick={() => requestDelete(version)}
-                          disabled={!canDeleteVersion(version)}
-                          aria-label="Delete version"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-              {/snippet}
-            </InlineListSection>
-          {/if}
-
-          <!-- Renditions -->
-          {#if media.currentVersion?.renditions && media.currentVersion.renditions.length > 0}
-            <section class="renditions-section span-full">
+      {#if _loadedMedia.currentVersion?.renditions && _loadedMedia.currentVersion.renditions.length > 0}
+        <EntityDetailModule span="full">
+          {#snippet children()}
+            {@const renditions = _loadedMedia.currentVersion?.renditions ?? []}
+            <div class="renditions-section">
               <h3>Renditions</h3>
               <div class="renditions-grid">
-                {#each media.currentVersion.renditions as rendition}
+                {#each renditions as rendition}
                   <div class="rendition-card">
                     {#if rendition.url && rendition.mimeType?.startsWith("image/")}
                       <img src={rendition.url} alt={rendition.kind} class="rendition-preview" />
@@ -597,34 +699,56 @@ import {
                   </div>
                 {/each}
               </div>
-            </section>
-          {/if}
-        </div>
-      {:else if activeValue === "preview"}
-        <div class="media-preview-container">
-          {#if mediaPreviewUrl}
-            {#if isImage(media.kind)}
-              <img
-                src={mediaPreviewUrl}
-                alt={media.title || media.originalFilename || "Media preview"}
-                class="media-preview-image"
-              />
-            {:else if isPdf(media.kind)}
-              <iframe
-                src={mediaPreviewUrl}
-                title={media.title || media.originalFilename || "PDF preview"}
-                class="media-preview-pdf"
-              ></iframe>
+            </div>
+          {/snippet}
+        </EntityDetailModule>
+      {/if}
+    {/snippet}
+  </EntityDetail>
+{/snippet}
+
+{#snippet previewTabSnippet(_loadedMedia: MediaDetail)}
+  <EntityDetail>
+    {#snippet children()}
+      <EntityDetailModule span="full">
+        {#snippet children()}
+          <div class="media-preview-container">
+            {#if mediaPreviewUrl && media}
+              {#if isImage(media.kind)}
+                <img
+                  src={mediaPreviewUrl}
+                  alt={media.title || media.originalFilename || "Media preview"}
+                  class="media-preview-image"
+                />
+              {:else if isPdf(media.kind)}
+                <iframe
+                  src={mediaPreviewUrl}
+                  title={media.title || media.originalFilename || "PDF preview"}
+                  class="media-preview-pdf"
+                ></iframe>
+              {/if}
+            {:else}
+              <PoodleEmptyState title="Preview not available" message="Preview is not available for this version." size="compact" />
             {/if}
-          {:else}
-            <PoodleEmptyState title="Preview not available" message="Preview is not available for this version." size="compact" />
-          {/if}
-        </div>
-      {:else if activeValue === "usage"}
-        <div class="underlay-details-content">
-          {#if activeTab === "usage" && usagesData.loading}
+          </div>
+        {/snippet}
+      </EntityDetailModule>
+    {/snippet}
+  </EntityDetail>
+{/snippet}
+
+{#snippet usageTabSnippet(_loadedMedia: MediaDetail)}
+  <EntityDetail>
+    {#snippet children()}
+      {#if activeTab === "usage" && usagesData.loading}
+        <EntityDetailModule span="full">
+          {#snippet children()}
             <PageLoading presentation="inline" message="Loading usage..." />
-          {:else if usagesData.error}
+          {/snippet}
+        </EntityDetailModule>
+      {:else if usagesData.error}
+        <EntityDetailModule span="full">
+          {#snippet children()}
             <PoodleCallout tone="danger" title="Unable to load usage" message={usagesData.error} announceMode="polite">
               <svelte:fragment slot="actions">
                 <PoodleButton type="button" variant="ghost" size="sm" onclick={() => usagesData.refetch()}>
@@ -632,31 +756,27 @@ import {
                 </PoodleButton>
               </svelte:fragment>
             </PoodleCallout>
-          {:else if usages.length === 0}
+          {/snippet}
+        </EntityDetailModule>
+      {:else if usages.length === 0}
+        <EntityDetailModule span="full">
+          {#snippet children()}
             <PoodleEmptyState title="No usage found" message="This media is not used anywhere yet." size="compact" />
-          {:else}
-            <InlineListSection title="Usages" items={usages}>
-              {#snippet item(usage: MediaUsage)}
-                <div class="inline-list-card__item-content inline-list-card__item-content--usage">
-                  <span class="inline-list-card__dot" style:--inline-list-accent={getMediaMetaAccent("usage")}></span>
-                  <span class="inline-list-card__label-group">
-                    <span class="inline-list-card__label">{usage.usedByType}</span>
-                    <span class="inline-list-card__sublabel">
-                      <Code inline source={usage.usedById} />
-                      {#if usage.field}
-                        <span class="usage-field"> · {usage.field}</span>
-                      {/if}
-                    </span>
-                  </span>
-                </div>
-              {/snippet}
-            </InlineListSection>
-          {/if}
-        </div>
+          {/snippet}
+        </EntityDetailModule>
+      {:else}
+        <EntityInlineListModule
+          title="Usages"
+          items={usages}
+          item={usageItemSnippet as never}
+          span="full"
+        />
       {/if}
-      {/if}
-    </Tabs>
-  </div>
+    {/snippet}
+  </EntityDetail>
+{/snippet}
+
+{#if media}
 
   <!-- Edit Dialog -->
   <FormDialog
@@ -772,35 +892,8 @@ import {
 {/if}
 
 <style>
-  .underlay-detail-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .underlay-detail-page__header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .underlay-detail-page__meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .detail-card-grid {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .deleted-date {
-    color: var(--color-danger, #ef4444);
-  }
-
   .usage-field {
-    color: var(--admin-color-text-muted);
+    color: var(--poodle-color-text-secondary);
   }
 
   :global(.version-preview-dialog) {
@@ -820,7 +913,7 @@ import {
     height: 70vh;
     border: 0;
     border-radius: 0.5rem;
-    background: var(--admin-color-surface-subtle);
+    background: var(--poodle-color-background-surface);
   }
 
   .form-fields {
@@ -852,6 +945,7 @@ import {
   }
 
   .inline-list-card__item-content--button {
+    width: 100%;
     padding: 0;
     border: none;
     background: transparent;
@@ -877,16 +971,49 @@ import {
   .inline-list-card__label {
     display: block;
     min-width: 0;
-    font-size: 0.9rem;
-    font-weight: 500;
+    color: var(--poodle-color-text-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .inline-list-card__sublabel {
-    font-size: 0.8rem;
-    color: var(--underlay-color-text-muted, #9ca3af);
+    font-size: 0.75rem;
+    color: var(--poodle-color-text-secondary);
+  }
+
+  .inline-list-card__actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--poodle-radius-control);
+    background: transparent;
+    color: var(--poodle-color-text-secondary);
+    cursor: pointer;
+    transition:
+      background 120ms ease,
+      color 120ms ease;
+  }
+
+  .inline-list-card__actions button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--poodle-color-accent-base) 14%, transparent);
+    color: var(--poodle-color-text-primary);
+  }
+
+  .inline-list-card__actions button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .inline-list-card__actions button:focus-visible {
+    outline: var(--poodle-border-width-focus) solid var(--poodle-color-accent-focusRing);
+    outline-offset: 0.125rem;
   }
 
   /* Full preview tab */
@@ -894,9 +1021,7 @@ import {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 1.5rem;
-    background: var(--admin-color-surface-muted, rgba(255, 255, 255, 0.02));
-    border-radius: 0.5rem;
+    padding: 1rem;
     min-height: 400px;
   }
 
@@ -918,17 +1043,18 @@ import {
 
   /* Renditions section */
   .renditions-section {
-    background: var(--admin-color-surface-muted, rgba(255, 255, 255, 0.02));
-    border: 1px solid var(--admin-color-border-subtle, rgba(148, 163, 184, 0.25));
-    border-radius: var(--underlay-radius-lg, 1rem);
-    padding: 1rem;
+    display: grid;
+    gap: 1rem;
   }
 
   .renditions-section h3 {
-    margin: 0 0 1rem;
-    font-size: 0.875rem;
+    margin: 0;
+    color: var(--poodle-color-text-secondary);
+    font-family: var(--poodle-typography-label-family);
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--admin-color-text, #e5e7eb);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   .renditions-grid {
@@ -938,8 +1064,9 @@ import {
   }
 
   .rendition-card {
-    background: var(--admin-color-surface-inset, #1e293b);
-    border-radius: var(--underlay-radius-md, 0.5rem);
+    background: color-mix(in srgb, var(--poodle-surface) 93%, var(--poodle-color-text-primary));
+    border: 0.0625rem solid color-mix(in srgb, var(--poodle-color-border-subtle) 74%, transparent);
+    border-radius: calc(var(--poodle-radius-surface) - 0.1875rem);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -957,7 +1084,7 @@ import {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--admin-color-text-muted, #9ca3af);
+    color: var(--poodle-color-text-secondary);
     font-size: 0.75rem;
   }
 
@@ -971,11 +1098,11 @@ import {
   .rendition-kind {
     font-size: 0.75rem;
     font-weight: 500;
-    color: var(--admin-color-text, #e5e7eb);
+    color: var(--poodle-color-text-primary);
   }
 
   .rendition-size {
     font-size: 0.7rem;
-    color: var(--admin-color-text-muted, #9ca3af);
+    color: var(--poodle-color-text-secondary);
   }
 </style>

@@ -10,6 +10,7 @@ use axum::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 use underlay_core::{SingleResponse, Uuid};
 use underlay_http::{
     count_error_logs, get_error_log_by_id, list_error_logs, ApiError, ErrorLogFilters,
@@ -250,57 +251,46 @@ pub async fn get_error_log_stats(
         ));
     };
 
-    // Get counts for the last 24 hours
-    let since_24h = Utc::now() - chrono::Duration::hours(24);
-
-    // Total errors in last 24h
-    let total_24h = count_error_logs(
-        pool,
-        &ErrorLogFilters {
-            since: Some(since_24h),
-            ..Default::default()
-        },
+    let stats_row = sqlx::query(
+        r#"
+        SELECT
+            COUNT(*)::bigint AS total_count,
+            COUNT(*) FILTER (WHERE status_code >= 500 AND status_code < 600)::bigint AS server_error_count,
+            COUNT(*) FILTER (WHERE status_code >= 400 AND status_code < 500)::bigint AS client_error_count
+        FROM platform.error_log
+        "#,
     )
+    .fetch_one(pool)
     .await
-    .unwrap_or(0);
+    .map_err(|e| {
+        tracing::error!("Failed to load error log stats: {}", e);
+        crate::db_errors::internal_with_diagnostics(
+            "error_log_stats_failed",
+            "Failed to load error log stats",
+            &e,
+        )
+        .with_context(serde_json::json!({
+            "operation": "error_logs.stats"
+        }))
+    })?;
 
-    // 5xx errors in last 24h
-    let server_errors_24h = count_error_logs(
-        pool,
-        &ErrorLogFilters {
-            since: Some(since_24h),
-            status_code: Some(500),
-            ..Default::default()
-        },
-    )
-    .await
-    .unwrap_or(0);
-
-    // 4xx errors in last 24h (using 400 as representative)
-    let client_errors_24h = count_error_logs(
-        pool,
-        &ErrorLogFilters {
-            since: Some(since_24h),
-            status_code: Some(400),
-            ..Default::default()
-        },
-    )
-    .await
-    .unwrap_or(0);
+    let total_count = stats_row.get::<i64, _>("total_count");
+    let server_error_count = stats_row.get::<i64, _>("server_error_count");
+    let client_error_count = stats_row.get::<i64, _>("client_error_count");
 
     #[derive(Serialize)]
     #[serde(rename_all = "snake_case")]
     struct ErrorLogStats {
-        total_last_24h: i64,
-        server_errors_last_24h: i64,
-        client_errors_last_24h: i64,
+        total_count: i64,
+        server_error_count: i64,
+        client_error_count: i64,
     }
 
     Ok(Json(SingleResponse {
         data: ErrorLogStats {
-            total_last_24h: total_24h,
-            server_errors_last_24h: server_errors_24h,
-            client_errors_last_24h: client_errors_24h,
+            total_count,
+            server_error_count,
+            client_error_count,
         },
     })
     .into_response())

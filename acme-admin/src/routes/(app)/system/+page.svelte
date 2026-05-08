@@ -7,7 +7,6 @@
   import ClipboardList from "lucide-svelte/icons/clipboard-list";
   import Layers from "lucide-svelte/icons/layers";
   import LayoutPanelTop from "lucide-svelte/icons/layout-panel-top";
-  import Mail from "lucide-svelte/icons/mail";
 </script>
 
 <PoodlePageHeader title="System" />
@@ -54,17 +53,6 @@
     <svelte:fragment slot="icon">
       <span class="system-nav-icon" style={`background:${getSystemCardAccent("audit")};`}>
         <ClipboardList />
-      </span>
-    </svelte:fragment>
-  </PoodleNavCard>
-  <PoodleNavCard
-    href="/system/emails"
-    title="Captured emails"
-    description="View emails captured during development instead of being sent."
-  >
-    <svelte:fragment slot="icon">
-      <span class="system-nav-icon" style={`background:${getSystemCardAccent("emails")};`}>
-        <Mail />
       </span>
     </svelte:fragment>
   </PoodleNavCard>

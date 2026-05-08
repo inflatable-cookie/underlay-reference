@@ -68,10 +68,12 @@ pub struct ActivityListResponse {
 /// List all activity (global feed) with pagination.
 pub async fn list_activity(
     pool: &DbPool,
+    action: Option<&str>,
+    resource_type: Option<&str>,
     limit: i64,
     offset: i64,
 ) -> Result<ActivityListResponse, sqlx::Error> {
-    let data = sqlx::query_as::<_, ActivityWithActorRow>(
+    let mut data_query = sqlx::QueryBuilder::<sqlx::Postgres>::new(
         r#"
         SELECT
             a.id,
@@ -87,23 +89,47 @@ pub async fn list_activity(
             a.ip_address
         FROM platform.audit_log a
         LEFT JOIN auth.users u ON a.user_id = u.id
-        ORDER BY a.occurred_at DESC
-        LIMIT $1 OFFSET $2
+        WHERE 1=1
         "#,
-    )
-    .bind(limit)
-    .bind(offset)
-    .fetch_all(pool)
-    .await?;
+    );
 
-    let total = sqlx::query_scalar::<_, i64>(
+    let mut count_query = sqlx::QueryBuilder::<sqlx::Postgres>::new(
         r#"
         SELECT COUNT(*)
-        FROM platform.audit_log
+        FROM platform.audit_log a
+        WHERE 1=1
         "#,
-    )
-    .fetch_one(pool)
-    .await?;
+    );
+
+    if let Some(action) = action {
+        data_query.push(" AND a.action = ").push_bind(action);
+        count_query.push(" AND a.action = ").push_bind(action);
+    }
+
+    if let Some(resource_type) = resource_type {
+        data_query
+            .push(" AND a.resource_type = ")
+            .push_bind(resource_type);
+        count_query
+            .push(" AND a.resource_type = ")
+            .push_bind(resource_type);
+    }
+
+    data_query
+        .push(" ORDER BY a.occurred_at DESC LIMIT ")
+        .push_bind(limit)
+        .push(" OFFSET ")
+        .push_bind(offset);
+
+    let data = data_query
+        .build_query_as::<ActivityWithActorRow>()
+        .fetch_all(pool)
+        .await?;
+
+    let total = count_query
+        .build_query_scalar::<i64>()
+        .fetch_one(pool)
+        .await?;
 
     let has_more = (offset + data.len() as i64) < total;
 

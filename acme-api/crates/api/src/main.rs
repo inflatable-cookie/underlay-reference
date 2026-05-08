@@ -1,6 +1,5 @@
 //! Acme HTTP API entrypoint.
 
-use acme_db::infra::DbEmailStore;
 use acme_db::{create_pool, run_dev_seeds, run_migrations};
 use acme_infra::{create_email_manager, create_template_engine, log_effective_config, AppConfig};
 use std::sync::Arc;
@@ -94,10 +93,8 @@ async fn main() -> anyhow::Result<()> {
 
     let email_config = app_config.email.clone();
 
-    // Create email manager with database-backed store for DevCapture
-    let db_email_store = Arc::new(DbEmailStore::new(pool.clone()));
     let email_manager = Arc::new(
-        create_email_manager(&email_config, Some(db_email_store))
+        create_email_manager(&email_config)
             .map_err(|e| anyhow::anyhow!("failed to create email manager: {}", e))?,
     );
 

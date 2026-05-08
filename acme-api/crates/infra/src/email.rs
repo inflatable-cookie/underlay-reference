@@ -6,8 +6,8 @@ use std::path::Path;
 use std::sync::Arc;
 
 use underlay_email::{
-    DevCaptureAdapter, DevCaptureConfig, EmailAdapter, EmailAddress, EmailContext, EmailManager,
-    EmailStore, EmailTemplateEngine, NoopAdapter, SmtpAdapter, SmtpConfig, TlsMode,
+    EmailAdapter, EmailAddress, EmailContext, EmailManager, EmailTemplateEngine, NoopAdapter,
+    SmtpAdapter, SmtpConfig, TlsMode,
 };
 
 use crate::config::{EmailAdapterType, EmailConfig};
@@ -29,44 +29,15 @@ impl std::error::Error for EmailInitError {}
 /// # Arguments
 ///
 /// * `config` - Email configuration from AppConfig
-/// * `email_store` - For dev_capture adapter, the store to save captured emails
-///
 /// # Returns
 ///
 /// Returns an EmailManager configured with the appropriate adapter.
-pub fn create_email_manager<S>(
-    config: &EmailConfig,
-    email_store: Option<Arc<S>>,
-) -> Result<EmailManager, EmailInitError>
-where
-    S: EmailStore + 'static,
-{
+pub fn create_email_manager(config: &EmailConfig) -> Result<EmailManager, EmailInitError> {
     let default_from = EmailAddress::new(&config.default_from)
         .map_err(|e| EmailInitError(format!("invalid default_from address: {e}")))?;
 
     let adapter: Arc<dyn EmailAdapter> = match config.adapter {
         EmailAdapterType::Noop => Arc::new(NoopAdapter::new()),
-
-        EmailAdapterType::DevCapture => {
-            let store = email_store.ok_or_else(|| {
-                EmailInitError("dev_capture adapter requires an email store".to_string())
-            })?;
-
-            let dev_config = config.dev_capture.as_ref().ok_or_else(|| {
-                EmailInitError("dev_capture adapter requires dev_capture config".to_string())
-            })?;
-
-            // Build the underlay DevCaptureConfig
-            let capture_config = DevCaptureConfig {
-                whitelist: dev_config.whitelist.clone(),
-                use_fallback: dev_config.fallback_adapter.is_some(),
-            };
-
-            // For now, we don't support fallback adapters in the factory
-            let fallback: Option<Arc<dyn EmailAdapter>> = None;
-
-            Arc::new(DevCaptureAdapter::new(store, capture_config, fallback))
-        }
 
         EmailAdapterType::Smtp => {
             let smtp_config = config.smtp.as_ref().ok_or_else(|| {

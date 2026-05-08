@@ -15,7 +15,6 @@
 	import Calendar from "lucide-svelte/icons/calendar";
 	import ClipboardList from "lucide-svelte/icons/clipboard-list";
 	import AlertTriangle from "lucide-svelte/icons/alert-triangle";
-	import Mail from "lucide-svelte/icons/mail";
 
 	interface Props {
 		currentSection?: string | null;
@@ -184,12 +183,6 @@
 					<a href="/system/audit" class:admin-nav__link--active={isActive("/system/audit")} onclick={handleChildClick}>
 						<ClipboardList class="admin-nav__child-icon" />
 						Audit Log
-					</a>
-				</li>
-				<li>
-					<a href="/system/emails" class:admin-nav__link--active={isActive("/system/emails")} onclick={handleChildClick}>
-						<Mail class="admin-nav__child-icon" />
-						Emails
 					</a>
 				</li>
 			</ul>

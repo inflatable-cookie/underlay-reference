@@ -5,7 +5,6 @@
         AcmeLocalAuthProvider, AcmeLocalAuthService, EmailTotpService, UserId, UserPrincipal,
         UserRole,
     };
-    use acme_db::infra::DbEmailStore;
     use acme_test_utils::setup_test_db;
     use chrono::{Duration, Utc};
     use serde_json::json;
@@ -53,8 +52,7 @@
 
         let app_cfg = acme_infra::AppConfig::from_env();
         let email_manager = Arc::new(
-            acme_infra::create_email_manager::<DbEmailStore>(&app_cfg.email, None)
-                .expect("should create email manager"),
+            acme_infra::create_email_manager(&app_cfg.email).expect("should create email manager"),
         );
         let email_templates = Arc::new(
             acme_infra::create_template_engine(&app_cfg.email)

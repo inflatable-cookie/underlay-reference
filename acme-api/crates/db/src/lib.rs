@@ -6,7 +6,6 @@ pub mod account;
 pub mod activity;
 pub mod auth;
 pub mod categories;
-pub mod infra;
 pub mod media;
 pub mod stats;
 pub mod tasks;

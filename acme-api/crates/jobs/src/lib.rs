@@ -17,7 +17,6 @@
 //! - `purge_job_history` - Remove old job history
 //! - `recover_abandoned_jobs` - Reset stalled jobs
 //! - `purge_error_logs` - Remove old error logs
-//! - `purge_captured_emails` - Remove old captured emails (dev/test)
 //!
 //! ### Acme-specific Handlers
 //!
@@ -62,8 +61,6 @@ pub use underlay_jobs::tasks::{
     ArchiveCompletedJobsJob,
     // Auth cleanup
     PurgeAuthStatesJob,
-    // Log cleanup
-    PurgeCapturedEmailsJob,
     PurgeEmailTotpCodesJob,
     PurgeErrorLogsJob,
     PurgeExpiredSessionsJob,
@@ -124,8 +121,6 @@ pub fn create_registry_with_media(
 
     // Log cleanup
     registry.register(PurgeErrorLogsJob::new((*pool).clone()));
-    registry.register(PurgeCapturedEmailsJob::new((*pool).clone()));
-
     // ========================================================================
     // Acme-specific handlers
     // ========================================================================
@@ -259,14 +254,6 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
             name: "purge_error_logs",
             job_type: "purge_error_logs",
             schedule: "0 0 4 * * *", // 4:00 AM daily
-            payload: serde_json::json!({}),
-            config: JobConfig::maintenance(),
-        },
-        // Purge old captured emails - daily at 4:30 AM
-        ScheduledTaskDefinition {
-            name: "purge_captured_emails",
-            job_type: "purge_captured_emails",
-            schedule: "0 30 4 * * *", // 4:30 AM daily
             payload: serde_json::json!({}),
             config: JobConfig::maintenance(),
         },

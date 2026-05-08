@@ -66,7 +66,7 @@
 </script>
 
 <div class={variant === "mobile" ? "admin-mobile-overlay__user" : "admin-nav__user-section"}>
-	<PoodlePopover bind:open={userMenuOpen} placement="top-start" ariaLabel="User menu">
+	<PoodlePopover bind:open={userMenuOpen} placement="top-start" ariaLabel="User menu" block>
 		<div slot="trigger" class="admin-nav__user-trigger">
 			<div class="admin-nav__user-avatar" aria-hidden="true">
 				{initialsFromName(currentUser?.displayName ?? "Admin")}
@@ -115,6 +115,8 @@
 	}
 
 	:global(.admin-nav__user-trigger) {
+		display: flex;
+		align-items: center;
 		width: 100%;
 		padding: 0.5rem;
 		border-radius: 0.5rem;
@@ -172,7 +174,20 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
-		min-width: 10rem;
+		width: 100%;
+		min-width: 0;
+	}
+
+	:global(.admin-nav__user-section .poodle-popover),
+	:global(.admin-mobile-overlay__user .poodle-popover) {
+		width: 100%;
+	}
+
+	:global(.admin-nav__user-section .poodle-popover__surface),
+	:global(.admin-mobile-overlay__user .poodle-popover__surface) {
+		width: 100%;
+		min-width: 100%;
+		box-sizing: border-box;
 	}
 
 	:global(.admin-nav__user-menu-item) {
