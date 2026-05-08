@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { buildQueryString, parseQueryParams } from "@decodelabs/underlay/client/query";
   import type { QueryParams } from "@decodelabs/underlay/client/query";
@@ -115,7 +115,8 @@
 
   async function dataLoader(fetch: typeof window.fetch, token: string | null, query: QueryParams) {
     if (!token) throw new Error("Not authenticated");
-    return await adminCommands.listUsers(fetch, token, query);
+    const response = await adminCommands.listUsers(fetch, token, query);
+    return toPagedListResult(response);
   }
 
   function getRowActions(_row: TableRow<User>): TableRowAction[] {

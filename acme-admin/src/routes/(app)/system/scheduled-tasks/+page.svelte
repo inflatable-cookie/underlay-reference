@@ -9,7 +9,7 @@
     type QueryParams
   } from "@decodelabs/underlay/client/query";
   import { useToasts } from "@decodelabs/underlay/runtime/feedback";
-  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import { adminCommands, type ScheduledTaskSummary } from "@api-client";
   import type { MenuItem } from "@poodle/svelte";
 
@@ -48,11 +48,12 @@
     if (!token) throw new Error("Not authenticated");
     void refreshRevision;
 
-    return await adminCommands.listScheduledTasks(fetch, token, {
+    const response = await adminCommands.listScheduledTasks(fetch, token, {
       enabled: getEnabledFilter(query),
       page: query.page ?? 1,
       limit: query.limit ?? 30
     });
+    return toPagedListResult(response);
   }
 
   async function handleToggle(task: ScheduledTaskSummary) {

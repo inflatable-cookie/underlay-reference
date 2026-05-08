@@ -1,6 +1,6 @@
 <script lang="ts">
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import type { QueryParams } from "@decodelabs/underlay/client/query";
   import {
     Button,
@@ -57,7 +57,8 @@
 
   async function dataLoader(fetch: typeof window.fetch, token: string | null, taskQuery: QueryParams) {
     if (!token) throw new Error("Not authenticated");
-    return await adminCommands.listTasks(projectId, fetch, token, taskQuery);
+    const response = await adminCommands.listTasks(projectId, fetch, token, taskQuery);
+    return toPagedListResult(response);
   }
 
   function handleAddTask() {

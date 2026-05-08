@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
   import { auth } from "$lib/stores/auth";
-  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import { buildQueryString, parseQueryParams } from "@decodelabs/underlay/client/query";
   import type { QueryParams } from "@decodelabs/underlay/client/query";
   import { useAuthenticatedData } from "@decodelabs/underlay/runtime/auth";
@@ -92,11 +92,12 @@
     const pageNumber = Math.max(1, query.page ?? 1);
     const offset = (pageNumber - 1) * limit;
 
-    return await adminCommands.listErrorLogs(fetch, token, {
+    const response = await adminCommands.listErrorLogs(fetch, token, {
       status_code: getStatusCodeFilter(query),
       limit,
       offset
     });
+    return toPagedListResult(response);
   }
 
   function getStatusTone(statusCode: number): "neutral" | "danger" {

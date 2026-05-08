@@ -9,7 +9,7 @@
   } from "@decodelabs/underlay/client/query";
   import { useAuthenticatedData } from "@decodelabs/underlay/runtime/auth";
   import { useToasts } from "@decodelabs/underlay/runtime/feedback";
-  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import {
     Card as PoodleCard,
     Icon,
@@ -88,11 +88,12 @@
   async function dataLoader(fetch: typeof window.fetch, token: string | null, query: QueryParams) {
     if (!token) throw new Error("Not authenticated");
 
-    return await adminCommands.listJobs(fetch, token, {
+    const response = await adminCommands.listJobs(fetch, token, {
       status: getStatusFilter(query),
       page: query.page ?? 1,
       limit: query.limit ?? 30
     });
+    return toPagedListResult(response);
   }
 
   function formatJobType(jobType: string): string {

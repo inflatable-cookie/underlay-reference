@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import {
     buildQueryString,
     parseQueryParams,
@@ -57,12 +57,13 @@
   async function dataLoader(fetch: typeof window.fetch, token: string | null, query: QueryParams) {
     if (!token) throw new Error("Not authenticated");
 
-    return await adminCommands.listActivity(fetch, token, {
+    const response = await adminCommands.listActivity(fetch, token, {
       action: getFilterValue(query, "action"),
       resourceType: getFilterValue(query, "resourceType"),
       page: query.page ?? 1,
       limit: query.limit ?? 30
     });
+    return toPagedListResult(response);
   }
 
   function toLogEntries(entries: ActivityEntry[]): AuditLogEntry[] {

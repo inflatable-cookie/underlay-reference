@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import type { QueryParams } from "@decodelabs/underlay/client/query";
   import { ProjectListCard } from "$lib/cards";
@@ -66,7 +66,8 @@
 
   async function dataLoader(fetch: typeof window.fetch, token: string | null, nextQuery: QueryParams) {
     if (!token) throw new Error("Not authenticated");
-    return await adminCommands.listProjects(fetch, token, withFixedFilters(nextQuery));
+    const response = await adminCommands.listProjects(fetch, token, withFixedFilters(nextQuery));
+    return toPagedListResult(response);
   }
 
   async function handleBatchDelete(ids: string[]) {

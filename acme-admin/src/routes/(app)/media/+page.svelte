@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { EntityListPage } from "@decodelabs/underlay/templates";
+  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import {
     buildQueryString,
@@ -27,10 +27,11 @@
 
   async function dataLoader(fetch: typeof window.fetch, token: string | null, query: QueryParams) {
     if (!token) throw new Error("Not authenticated");
-    return await mediaCommands.listMedia(fetch, token, {
+    const response = await mediaCommands.listMedia(fetch, token, {
       profile: "list",
       query
     });
+    return toPagedListResult(response);
   }
 
   async function handleDeleteMedia(mediaId: string) {
