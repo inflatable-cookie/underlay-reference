@@ -216,9 +216,7 @@ pub async fn list_jobs(
         "#,
     );
     if let Some(status) = query.status.as_ref() {
-        count_query
-            .push(" AND status = ")
-            .push_bind(status);
+        count_query.push(" AND status = ").push_bind(status);
     }
     if let Some(job_type) = query.job_type.as_ref() {
         count_query

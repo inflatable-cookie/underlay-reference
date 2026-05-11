@@ -25,8 +25,8 @@ use acme_core::Uuid;
 use acme_db::{activity, media, tasks};
 
 use crate::nightfire::{
-    notes::build_notes_media_registry, prepare_nightfire_value,
-    sync_nightfire_block_media_usage, PreparedNightfireValue,
+    notes::build_notes_media_registry, prepare_nightfire_value, sync_nightfire_block_media_usage,
+    PreparedNightfireValue,
 };
 use crate::routes::admin::freshness::{
     build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,

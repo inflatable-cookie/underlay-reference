@@ -1,5 +1,6 @@
 <script lang="ts">
-import { type SpaFormResult, SpaFormShell } from "@decodelabs/underlay/patterns";
+import { type SpaFormResult } from "@decodelabs/underlay/patterns";
+import { EntityFormPage } from "@decodelabs/underlay/templates";
 import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
@@ -8,7 +9,6 @@ import {
   consumeNavigationContext
 } from "@decodelabs/underlay/runtime/navigation";
 import {
-  Callout as PoodleCallout,
   Code,
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem } from "@poodle/svelte";
@@ -23,7 +23,6 @@ import {
   import { extractApiError,
   isPreconditionFailed } from "$lib/utils/api-errors";
   import UserForm from "$lib/forms/UserForm.svelte";
-    import { PageLoading } from "@poodle/svelte";
 
   interface Props {
     data: PageData;
@@ -165,12 +164,8 @@ import {
   }
 </script>
 
-{#if pageData.loading}
-  <PageLoading presentation="inline" message="Loading user..." />
-{:else if pageData.error}
-  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
-{:else if user}
-  {#snippet headerMeta()}
+{#snippet headerMeta()}
+  {#if user}
     <PoodleMetaBar ariaLabel="User metadata">
       <PoodleMetaItem label="ID">
         <Code inline source={user.id} showCopyButton />
@@ -179,24 +174,28 @@ import {
         <Code inline source={user.email} showCopyButton />
       </PoodleMetaItem>
     </PoodleMetaBar>
-  {/snippet}
+  {/if}
+{/snippet}
 
-  <SpaFormShell
-    section="Edit User"
-    subtitle={user.email}
-    backHref={computedBackInfo.href}
-    backLabel={computedBackInfo.label}
-    backIsContextual={computedBackInfo.isContextual ?? false}
-    bannerMessage={user.status !== "active" ? `User status: ${user.status}` : undefined}
-    success={success === true}
-    successMessage="User updated successfully."
-    error={success === false && !fieldErrors ? error : null}
-    {fieldErrors}
-    {headerMeta}
-    onSubmit={handleSubmit}
-    onResult={handleResult}
-    navigate={goto}
-  >
+<EntityFormPage
+  section="Edit User"
+  subtitle={user?.email}
+  backHref={computedBackInfo.href}
+  backLabel={computedBackInfo.label}
+  backIsContextual={computedBackInfo.isContextual ?? false}
+  loading={pageData.loading}
+  loadingMessage="Loading user..."
+  error={pageData.error ?? (success === false && !fieldErrors ? error : null)}
+  bannerMessage={user && user.status !== "active" ? `User status: ${user.status}` : undefined}
+  success={success === true}
+  successMessage="User updated successfully."
+  {fieldErrors}
+  {headerMeta}
+  onSubmit={handleSubmit}
+  onResult={handleResult}
+  navigate={goto}
+>
+  {#if user}
     <UserForm
       mode="edit"
       values={{
@@ -210,5 +209,5 @@ import {
       {returnTo}
       bind:intent
     />
-  </SpaFormShell>
-{/if}
+  {/if}
+</EntityFormPage>

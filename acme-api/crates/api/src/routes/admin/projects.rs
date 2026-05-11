@@ -22,14 +22,14 @@ use acme_core::Uuid;
 use acme_db::{activity, categories, tasks};
 use serde_json::json;
 
-use crate::routes::project_description::{
-    prepare_project_description, sync_project_description_media_usage,
-};
 use crate::routes::admin::freshness::{
     build_etag_cache_headers, detail_etag, if_match_mismatch, maybe_not_modified,
     precondition_failed_error,
 };
 use crate::routes::admin::reorder_conflict::reorder_conflict_error;
+use crate::routes::project_description::{
+    prepare_project_description, sync_project_description_media_usage,
+};
 use crate::state::{AdminUser, AppState};
 
 // ============================================================================
@@ -180,14 +180,7 @@ pub async fn list_projects(
     let limit = params.limit.unwrap_or(20).clamp(1, 100);
     let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match tasks::list_projects_admin(
-        pool,
-        &params.query,
-        limit as i64,
-        offset,
-    )
-    .await
-    {
+    match tasks::list_projects_admin(pool, &params.query, limit as i64, offset).await {
         Ok(projects) => {
             let response: Vec<ProjectWithCountsResponse> =
                 projects.data.into_iter().map(Into::into).collect();

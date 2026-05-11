@@ -1,6 +1,7 @@
 <script lang="ts">
-import { type SpaFormResult, SpaFormShell } from "@decodelabs/underlay/patterns";
+import { type SpaFormResult } from "@decodelabs/underlay/patterns";
 import type { NightfireValue } from "@decodelabs/underlay/nightfire/validation";
+import { EntityFormPage } from "@decodelabs/underlay/templates";
 import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
@@ -219,7 +220,7 @@ import {
     </PoodleMetaBar>
   {/snippet}
 
-  <SpaFormShell
+  <EntityFormPage
     section="Edit Project"
     subtitle={project.name}
     backHref={computedBackInfo.href}
@@ -251,5 +252,5 @@ import {
       {returnTo}
       bind:intent
     />
-  </SpaFormShell>
+  </EntityFormPage>
 {/if}

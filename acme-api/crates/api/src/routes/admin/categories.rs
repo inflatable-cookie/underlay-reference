@@ -151,14 +151,7 @@ pub async fn list_categories(
     let limit = params.limit.unwrap_or(20).clamp(1, 100);
     let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match categories::list_categories_with_counts(
-        pool,
-        &params.query,
-        limit as i64,
-        offset,
-    )
-    .await
-    {
+    match categories::list_categories_with_counts(pool, &params.query, limit as i64, offset).await {
         Ok(cats) => {
             let response: Vec<CategoryWithCountsResponse> =
                 cats.data.into_iter().map(Into::into).collect();

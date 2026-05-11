@@ -40,9 +40,10 @@ pub fn create_email_manager(config: &EmailConfig) -> Result<EmailManager, EmailI
         EmailAdapterType::Noop => Arc::new(NoopAdapter::new()),
 
         EmailAdapterType::Smtp => {
-            let smtp_config = config.smtp.as_ref().ok_or_else(|| {
-                EmailInitError("smtp adapter requires smtp config".to_string())
-            })?;
+            let smtp_config = config
+                .smtp
+                .as_ref()
+                .ok_or_else(|| EmailInitError("smtp adapter requires smtp config".to_string()))?;
 
             let tls_mode = match smtp_config.tls_mode.to_ascii_lowercase().as_str() {
                 "required" => TlsMode::Required,

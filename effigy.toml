@@ -2,7 +2,7 @@
 alias = "underlay-reference"
 
 [bundle]
-base = "underlay"
+base = { type = "git", url = "git@github.com:inflatable-cookie/underlay-effigy-bundle.git" }
 host = "acme.test"
 project_name = "underlay-reference-dev"
 workspace_subdir = "underlay-reference"

@@ -312,16 +312,7 @@ pub async fn create_project(
     let prepared_description = prepare_project_description(req.description)?;
     let description = prepared_description.as_ref().map(|value| value.json());
 
-    match tasks::create_project(
-        pool,
-        project_id,
-        user_id,
-        &req.name,
-        description,
-        None,
-    )
-    .await
-    {
+    match tasks::create_project(pool, project_id, user_id, &req.name, description, None).await {
         Ok(project) => {
             let task_summary = tasks::get_project_task_summary(pool, project_id)
                 .await

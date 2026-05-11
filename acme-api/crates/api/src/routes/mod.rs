@@ -344,7 +344,10 @@ pub fn build_router() -> Router<AppState> {
             "/v1/admin/jobs/{job_id}/cancel",
             post(admin::jobs::cancel_job),
         )
-        .route("/v1/admin/jobs/{job_id}/retry", post(admin::jobs::retry_job))
+        .route(
+            "/v1/admin/jobs/{job_id}/retry",
+            post(admin::jobs::retry_job),
+        )
         // ====================================================================
         // Scheduled Tasks admin routes
         // ====================================================================

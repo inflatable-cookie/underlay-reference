@@ -1088,7 +1088,10 @@ mod database_tests {
             "#,
         )
         .bind(user_id)
-        .bind(format!("project-description-{}@example.com", user_id.simple()))
+        .bind(format!(
+            "project-description-{}@example.com",
+            user_id.simple()
+        ))
         .execute(db.pool())
         .await
         .expect("user insert should succeed");

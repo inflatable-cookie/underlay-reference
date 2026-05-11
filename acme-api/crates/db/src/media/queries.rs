@@ -160,11 +160,7 @@ pub async fn list_media_admin_paged(
         items_query = items_query.bind(value);
     }
 
-    let items = items_query
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(pool)
-        .await?;
+    let items = items_query.bind(limit).bind(offset).fetch_all(pool).await?;
 
     Ok(MediaListResponse {
         has_more: offset + limit < total,

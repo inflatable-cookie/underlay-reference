@@ -1,36 +1,16 @@
 <script lang="ts">
-import "@acme/ui/editor";
-import "@acme/ui/validation";
-import {
-  useToasts
-} from "@decodelabs/underlay/runtime/feedback";
-import {
-  useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
-import { NightfireEditor } from "@decodelabs/underlay/nightfire/editor";
-import {
-  prepareNightfireForSave,
-  type NightfireDraftValue
-} from "@decodelabs/underlay/nightfire/validation";
-import {
-  Callout as PoodleCallout,
-  Card as PoodleCard } from "@poodle/svelte";
-  import { PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte";
-  import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
-  import { adminCommands,
-  type Project,
-  type Label,
-  TaskPriority } from "@api-client";
+  import { untrack } from "svelte";
+  import type { PageData } from "./$types";
+  import { EntityFormPage } from "@decodelabs/underlay/templates";
+  import type { SpaFormResult } from "@decodelabs/underlay/patterns";
+  import { useAuthenticatedData } from "@decodelabs/underlay/runtime/auth";
+  import { computeBackInfo, consumeNavigationContext } from "@decodelabs/underlay/runtime/navigation";
+  import type { NightfireDraftValue } from "@decodelabs/underlay/nightfire/validation";
+  import { prepareNightfireForSave } from "@decodelabs/underlay/nightfire/validation";
+  import { adminCommands, type Label, type Project, TaskPriority } from "@api-client";
   import { auth } from "$lib/stores/auth";
-    import {
-    Button as PoodleButton,
-    Field as PoodleField,
-    FormActions as PoodleFormActions,
-    Select as PoodleSelect,
-    TextInput as PoodleTextInput
-  } from "@poodle/svelte";
+  import TaskForm from "$lib/forms/TaskForm.svelte";
 
   interface Props {
     data: PageData;
@@ -38,9 +18,6 @@ import {
 
   let { data }: Props = $props();
 
-  const toastStore = useToasts();
-
-  // Form state
   let title = $state("");
   let description = $state("");
   let notes = $state<NightfireDraftValue>({ schema: "acme:task/notes@1" });
@@ -48,9 +25,8 @@ import {
   let dueDate = $state("");
   let selectedLabelIds = $state<string[]>([]);
   let submitting = $state(false);
-  let error = $state<string | null>(null);
+  let fieldErrors = $state<Record<string, string> | null>(null);
 
-  // Fetch project data
   const pageData = useAuthenticatedData(
     async (fetch, token) => {
       const project = await adminCommands.getProject(data.projectId, fetch, token);
@@ -63,7 +39,20 @@ import {
 
   const project = $derived(pageData.data?.project);
 
-  // Lazy-load labels (non-blocking, fetched after page renders)
+  const defaultBackHref = untrack(() => `/projects/${data.projectId}`);
+  const { backInfo } = consumeNavigationContext("Back to project", defaultBackHref);
+  const computedBackInfo = $derived(
+    computeBackInfo(
+      backInfo,
+      project
+        ? {
+            href: `/projects/${project.id}`,
+            label: `Back to ${project.name}`
+          }
+        : undefined
+    )
+  );
+
   let labels = $state<Label[]>([]);
 
   $effect(() => {
@@ -82,22 +71,24 @@ import {
     { value: TaskPriority.Urgent, label: "Urgent" }
   ];
 
-  async function handleSubmit(e: Event) {
-    e.preventDefault();
-
-    if (!title.trim()) {
-      error = "Title is required";
-      return;
-    }
-
+  async function handleSubmit(): Promise<SpaFormResult> {
     const token = auth.getToken();
     if (!token) {
-      toastStore.push({ variant: "error", message: "Not authenticated" });
-      return;
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const errors: Record<string, string> = {};
+    if (!title.trim()) errors.title = "Title is required";
+
+    if (Object.keys(errors).length > 0) {
+      return {
+        success: false,
+        error: "Please fill in all required fields",
+        fieldErrors: errors
+      };
     }
 
     submitting = true;
-    error = null;
 
     try {
       const task = await adminCommands.createTask(
@@ -114,220 +105,54 @@ import {
         token
       );
 
-      toastStore.push({ variant: "success", message: "Task created" });
-      await goto(`/projects/${data.projectId}/tasks/${task.id}`);
+      return {
+        success: true,
+        redirectTo: `/projects/${data.projectId}/tasks/${task.id}`
+      };
     } catch (e) {
-      error = e instanceof Error ? e.message : "Failed to create task";
-      toastStore.push({ variant: "error", message: error });
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : "Failed to create task"
+      };
     } finally {
       submitting = false;
     }
   }
 
-  function toggleLabel(labelId: string) {
-    if (selectedLabelIds.includes(labelId)) {
-      selectedLabelIds = selectedLabelIds.filter(id => id !== labelId);
-    } else {
-      selectedLabelIds = [...selectedLabelIds, labelId];
-    }
-  }
-
-  function validationState(error?: string | null) {
-    return error ? "invalid" : "none";
-  }
-
-  function titleError(): string | null {
-    return error === "Title is required" ? error : null;
+  function handleResult(result: SpaFormResult) {
+    fieldErrors = result.fieldErrors ?? null;
   }
 </script>
 
-{#if pageData.loading}
-  <PageLoading presentation="inline" message="Loading..." />
-{:else if pageData.error}
-  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
-{:else if project}
-  <PoodlePageHeader
-    title="New Task"
-    backHref={`/projects/${data.projectId}`}
-    backLabel={`Back to ${project.name}`}
-    subtitle={`For project: ${project.name}`}
-  />
-
-  <div class="form-container">
-    <PoodleCard>
-      <form onsubmit={handleSubmit}>
-      {#if error}
-        <PoodleCallout tone="danger" message={error} announceMode="polite" />
-      {/if}
-
-      <PoodleField
-        id="task-create-title"
-        label="Title"
-        error={titleError()}
-        validationState={validationState(titleError())}
-        required
-        let:describedBy
-        let:validationState={titleValidationState}
-      >
-        <PoodleTextInput
-          id="task-create-title"
-          value={title}
-          describedBy={describedBy}
-          validationState={titleValidationState}
-          placeholder="Enter task title"
-          disabled={submitting}
-          on:valueChange={(event) => { title = event.detail.value; }}
-        />
-      </PoodleField>
-
-      <PoodleField
-        id="task-create-description"
-        label="Description"
-        let:describedBy
-      >
-        <PoodleTextInput
-          id="task-create-description"
-          value={description}
-          describedBy={describedBy}
-          placeholder="Enter task description (optional)"
-          rows={4}
-          disabled={submitting}
-          on:valueChange={(event) => { description = event.detail.value; }}
-        />
-      </PoodleField>
-
-      <PoodleField
-        id="task-create-notes"
-        label="Rich Notes"
-      >
-        <NightfireEditor
-          name="notes"
-          schema="acme:task/notes@1"
-          bind:value={notes}
-        />
-      </PoodleField>
-
-      <div class="form-row">
-        <PoodleField
-          id="task-create-priority"
-          label="Priority"
-          let:describedBy
-        >
-          <PoodleSelect
-            id="task-create-priority"
-            value={priority}
-            describedBy={describedBy}
-            options={priorityItems}
-            disabled={submitting}
-            on:valueChange={(event) => { priority = event.detail.value; }}
-          />
-        </PoodleField>
-
-        <PoodleField
-          id="task-create-due-date"
-          label="Due Date"
-          let:describedBy
-        >
-          <PoodleTextInput
-            id="task-create-due-date"
-            type="date"
-            value={dueDate}
-            describedBy={describedBy}
-            disabled={submitting}
-            on:valueChange={(event) => { dueDate = event.detail.value; }}
-          />
-        </PoodleField>
-      </div>
-
-      {#if labels.length > 0}
-        <PoodleField id="task-create-labels" label="Labels">
-          <div class="labels-grid">
-            {#each labels as label}
-              <button
-                type="button"
-                class="label-chip"
-                class:selected={selectedLabelIds.includes(label.id)}
-                style="--label-color: {label.color}"
-                onclick={() => toggleLabel(label.id)}
-                disabled={submitting}
-              >
-                <span class="label-dot"></span>
-                {label.name}
-              </button>
-            {/each}
-          </div>
-        </PoodleField>
-      {/if}
-
-      <PoodleFormActions align="end">
-        <PoodleButton type="button" variant="secondary" disabled={submitting} on:click={() => goto(`/projects/${data.projectId}`)}>
-          Cancel
-        </PoodleButton>
-        <PoodleButton type="submit" variant="primary" disabled={submitting}>
-          {submitting ? "Creating..." : "Create Task"}
-        </PoodleButton>
-      </PoodleFormActions>
-      </form>
-    </PoodleCard>
-  </div>
-{:else}
-  <PoodleCallout tone="danger" message="Project not found" announceMode="polite" />
-{/if}
-
-<style>
-  .form-container {
-    max-width: 40rem;
-    margin-top: 1.5rem;
-    background: var(--underlay-color-surface, #fff);
-    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-  }
-
-  form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-
-  .labels-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .label-chip {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    background: var(--bg-muted, #f3f4f6);
-    border: 1px solid var(--underlay-color-border-subtle, #e5e7eb);
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-
-  .label-chip:hover {
-    background: var(--bg-hover, #e5e7eb);
-  }
-
-  .label-chip.selected {
-    background: color-mix(in srgb, var(--label-color) 15%, white);
-    border-color: var(--label-color);
-  }
-
-  .label-dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    background: var(--label-color);
-  }
-</style>
+<EntityFormPage
+  section="New Task"
+  subtitle={project ? `For project: ${project.name}` : undefined}
+  backHref={computedBackInfo.href}
+  backLabel={computedBackInfo.label}
+  backIsContextual={computedBackInfo.isContextual ?? false}
+  loading={pageData.loading}
+  loadingMessage="Loading project..."
+  error={pageData.error}
+  {fieldErrors}
+  onSubmit={handleSubmit}
+  onResult={handleResult}
+  navigate={goto}
+>
+  {#if project}
+    <TaskForm
+      mode="create"
+      bind:title
+      bind:description
+      bind:notes
+      bind:priority
+      bind:dueDate
+      bind:selectedLabelIds
+      {labels}
+      {priorityItems}
+      errors={fieldErrors}
+      {submitting}
+      cancelHref={computedBackInfo.href}
+      onCancel={() => goto(computedBackInfo.href)}
+    />
+  {/if}
+</EntityFormPage>

@@ -1,5 +1,6 @@
 <script lang="ts">
-import { type SpaFormResult, SpaFormShell } from "@decodelabs/underlay/patterns";
+import { type SpaFormResult } from "@decodelabs/underlay/patterns";
+import { EntityFormPage } from "@decodelabs/underlay/templates";
 import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
@@ -8,7 +9,6 @@ import {
   consumeNavigationContext
 } from "@decodelabs/underlay/runtime/navigation";
 import {
-  Callout as PoodleCallout,
   Code as PoodleCode,
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem } from "@poodle/svelte";
@@ -21,7 +21,6 @@ import {
   isPreconditionFailed } from "$lib/utils/api-errors";
   import CategoryForm from "$lib/forms/CategoryForm.svelte";
   import { goto } from "$app/navigation";
-    import { PageLoading } from "@poodle/svelte";
 
   interface Props {
     data: PageData;
@@ -187,35 +186,35 @@ import {
   }
 </script>
 
-{#if pageData.loading}
-  <PageLoading presentation="inline" message="Loading category..." />
-{:else if pageData.error}
-  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
-{:else if category}
-  {#snippet headerMeta()}
+{#snippet headerMeta()}
+  {#if category}
     <PoodleMetaBar ariaLabel="Category metadata">
       <PoodleMetaItem label="ID">
         <PoodleCode inline source={category.id} showCopyButton />
       </PoodleMetaItem>
     </PoodleMetaBar>
-  {/snippet}
+  {/if}
+{/snippet}
 
-  <SpaFormShell
-    section="Edit Category"
-    subtitle={category.name}
-    backHref={computedBackInfo.href}
-    backLabel={computedBackInfo.label}
-    backIsContextual={computedBackInfo.isContextual ?? false}
-    bannerMessage={!category.isActive ? "This category is inactive." : undefined}
-    success={success === true}
-    successMessage="Category updated successfully."
-    error={success === false && !fieldErrors ? error : null}
-    {fieldErrors}
-    {headerMeta}
-    onSubmit={handleSubmit}
-    onResult={handleResult}
-    navigate={goto}
-  >
+<EntityFormPage
+  section="Edit Category"
+  subtitle={category?.name}
+  backHref={computedBackInfo.href}
+  backLabel={computedBackInfo.label}
+  backIsContextual={computedBackInfo.isContextual ?? false}
+  loading={pageData.loading}
+  loadingMessage="Loading category..."
+  error={pageData.error ?? (success === false && !fieldErrors ? error : null)}
+  bannerMessage={category && !category.isActive ? "This category is inactive." : undefined}
+  success={success === true}
+  successMessage="Category updated successfully."
+  {fieldErrors}
+  {headerMeta}
+  onSubmit={handleSubmit}
+  onResult={handleResult}
+  navigate={goto}
+>
+  {#if category}
     <CategoryForm
       mode="edit"
       categoryId={category.id}
@@ -232,5 +231,5 @@ import {
       {returnTo}
       bind:intent
     />
-  </SpaFormShell>
-{/if}
+  {/if}
+</EntityFormPage>

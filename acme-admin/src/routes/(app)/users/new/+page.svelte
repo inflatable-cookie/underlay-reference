@@ -1,8 +1,8 @@
 <script lang="ts">
 import {
-  type SpaFormResult,
-  SpaFormShell
+  type SpaFormResult
 } from "@decodelabs/underlay/patterns";
+import { EntityFormPage } from "@decodelabs/underlay/templates";
 import {
   consumeNavigationContext
 } from "@decodelabs/underlay/runtime/navigation";
@@ -98,7 +98,7 @@ import {
   }
 </script>
 
-<SpaFormShell
+<EntityFormPage
   section="New User"
   subtitle="Create a new user account"
   backHref={backInfo.href}
@@ -126,4 +126,4 @@ import {
     {returnTo}
     bind:intent
   />
-</SpaFormShell>
+</EntityFormPage>

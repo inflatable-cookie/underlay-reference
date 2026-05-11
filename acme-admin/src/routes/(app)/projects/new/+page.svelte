@@ -1,9 +1,9 @@
 <script lang="ts">
 import {
-  type SpaFormResult,
-  SpaFormShell
+  type SpaFormResult
 } from "@decodelabs/underlay/patterns";
 import type { NightfireValue } from "@decodelabs/underlay/nightfire/validation";
+import { EntityFormPage } from "@decodelabs/underlay/templates";
 import {
   consumeNavigationContext
 } from "@decodelabs/underlay/runtime/navigation";
@@ -138,7 +138,7 @@ import {
   }
 </script>
 
-<SpaFormShell
+<EntityFormPage
   section="New Project"
   subtitle="Create a new project to organize your tasks"
   backHref={backInfo.href}
@@ -167,4 +167,4 @@ import {
     {returnTo}
     bind:intent
   />
-</SpaFormShell>
+</EntityFormPage>

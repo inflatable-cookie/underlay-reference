@@ -512,7 +512,10 @@ const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 16] = [
     ),
     ("AUTH_JWT_ISSUER", "behavior.auth.jwt_issuer"),
     ("AUTH_JWT_AUDIENCE", "behavior.auth.jwt_audience"),
-    ("AUTH_JWT_LEEWAY_SECONDS", "behavior.auth.jwt_leeway_seconds"),
+    (
+        "AUTH_JWT_LEEWAY_SECONDS",
+        "behavior.auth.jwt_leeway_seconds",
+    ),
     ("WEBAUTHN_RP_ID", "behavior.auth.webauthn_rp_id"),
     ("WEBAUTHN_RP_ORIGIN", "behavior.auth.webauthn_rp_origin"),
     ("WEBAUTHN_RP_NAME", "behavior.auth.webauthn_rp_name"),
@@ -587,9 +590,7 @@ impl AppConfig {
             }
         });
         let public_scheme = env::var("PUBLIC_SCHEME").unwrap_or_else(|_| {
-            if public_host == "localhost"
-                || public_host == "127.0.0.1"
-                || public_host == "0.0.0.0"
+            if public_host == "localhost" || public_host == "127.0.0.1" || public_host == "0.0.0.0"
             {
                 "http".to_string()
             } else {
@@ -638,7 +639,10 @@ impl AppConfig {
         let smtp_config = if email_adapter == EmailAdapterType::Smtp {
             Some(SmtpEmailConfig {
                 host: env::var("SMTP_HOST").unwrap_or_else(|_| {
-                    if matches!(env, Environment::Local | Environment::Dev | Environment::Test) {
+                    if matches!(
+                        env,
+                        Environment::Local | Environment::Dev | Environment::Test
+                    ) {
                         "smtp.acme.test".to_string()
                     } else {
                         "localhost".to_string()

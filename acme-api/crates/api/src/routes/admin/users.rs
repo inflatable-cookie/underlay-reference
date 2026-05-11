@@ -192,14 +192,7 @@ pub async fn list_users(
     let page = query.page.unwrap_or(1).max(1) as i64;
     let offset = (page - 1) * limit;
 
-    match users::list_users_admin(
-        pool,
-        &query.query,
-        limit,
-        offset,
-    )
-    .await
-    {
+    match users::list_users_admin(pool, &query.query, limit, offset).await {
         Ok(response) => {
             let items: Vec<UserResponse> = response.data.into_iter().map(Into::into).collect();
             Ok(Json(serde_json::json!({

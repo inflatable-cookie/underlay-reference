@@ -1,8 +1,8 @@
 <script lang="ts">
 import {
-  type SpaFormResult,
-  SpaFormShell
+  type SpaFormResult
 } from "@decodelabs/underlay/patterns";
+import { EntityFormPage } from "@decodelabs/underlay/templates";
 import {
   consumeNavigationContext
 } from "@decodelabs/underlay/runtime/navigation";
@@ -118,7 +118,7 @@ import {
   }
 </script>
 
-<SpaFormShell
+<EntityFormPage
   section="New Category"
   subtitle="Create a new category to organize your projects"
   backHref={backInfo.href}
@@ -147,4 +147,4 @@ import {
     {returnTo}
     bind:intent
   />
-</SpaFormShell>
+</EntityFormPage>
