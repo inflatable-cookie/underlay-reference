@@ -217,7 +217,7 @@ Features can be enabled/disabled via environment:
 
 | Variable | Description |
 |----------|-------------|
-| `BLOB_ADAPTER` | `local` or `s3` for blob storage |
+| `BLOB_ADAPTER` | `s3` or `noop` for blob storage |
 | `EMAIL_ADAPTER` | `noop`, `smtp`, or `ses` |
 | `ENVIRONMENT` | `local`, `dev`, `staging`, `prod` |
 

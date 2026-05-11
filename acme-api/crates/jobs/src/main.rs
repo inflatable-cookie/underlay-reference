@@ -10,7 +10,7 @@ use acme_jobs::{
     ScheduledTaskRepository, Scheduler,
 };
 use tracing::{error, info};
-use underlay_blob::{BlobAdapter, LocalAdapter, LocalConfig, MediaConfig, NoopAdapter};
+use underlay_blob::{BlobAdapter, MediaConfig, NoopAdapter, S3Adapter, S3Config};
 
 #[tokio::main]
 async fn main() {
@@ -42,17 +42,14 @@ async fn main() {
 
     info!("starting acme job worker");
 
-    // Initialize blob adapter for media processing
+    // Initialize blob adapter for media processing.
+    // Local/dev uses the shared MinIO-backed S3 shape; production is still TODO.
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
-        let local_config = LocalConfig::new(
-            "./dev-uploads",
-            format!("{}/v1/dev-uploads", app_config.http.public_origin()),
-        );
-
-        match LocalAdapter::new(local_config).await {
+        let s3_config = S3Config::from_env_or_minio_dev("acme-media", "http://s3.acme.test:9000");
+        match S3Adapter::new(s3_config).await {
             Ok(adapter) => Arc::new(adapter),
             Err(err) => {
-                error!(%err, "failed to create local blob adapter; using noop");
+                error!(%err, "failed to create MinIO blob adapter; using noop");
                 Arc::new(NoopAdapter::new())
             }
         }

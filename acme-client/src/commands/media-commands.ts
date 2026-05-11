@@ -1,4 +1,4 @@
-import { getAcmeClientConfig, getAdminHttpClient } from "../utils/client-factory.js";
+import { getAdminHttpClient } from "../utils/client-factory.js";
 import {
   appendQueryParams,
   type QueryParams,
@@ -33,42 +33,20 @@ export interface ListMediaOptions {
   query?: QueryParams;
 }
 
-function normalizeLocalUploadPlanUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (
-      !parsed.pathname.startsWith("/v1/dev-uploads/")
-      && !parsed.pathname.startsWith("/v1/dev-blobs/")
-    ) {
-      return url;
-    }
-
-    const apiBase = new URL(getAcmeClientConfig().baseUrl);
-    parsed.protocol = apiBase.protocol;
-    parsed.hostname = apiBase.hostname;
-    parsed.port = apiBase.port;
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-}
-
 function normalizeMediaSummary(media: MediaSummary): MediaSummary {
   return {
     ...media,
-    thumbnailUrl: media.thumbnailUrl
-      ? normalizeLocalUploadPlanUrl(media.thumbnailUrl)
-      : media.thumbnailUrl,
+    thumbnailUrl: media.thumbnailUrl,
   };
 }
 
 function normalizeMediaVersion(version: MediaVersion): MediaVersion {
   return {
     ...version,
-    url: version.url ? normalizeLocalUploadPlanUrl(version.url) : version.url,
+    url: version.url,
     renditions: (version.renditions ?? []).map((rendition) => ({
       ...rendition,
-      url: rendition.url ? normalizeLocalUploadPlanUrl(rendition.url) : rendition.url,
+      url: rendition.url,
     })),
   };
 }

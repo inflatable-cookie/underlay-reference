@@ -4,7 +4,7 @@ use acme_db::{create_pool, run_dev_seeds, run_migrations};
 use acme_infra::{create_email_manager, create_template_engine, log_effective_config, AppConfig};
 use std::sync::Arc;
 use tracing::info;
-use underlay_blob::{BlobAdapter, LocalAdapter, LocalConfig, NoopAdapter};
+use underlay_blob::{BlobAdapter, NoopAdapter, S3Adapter, S3Config};
 
 // Routes and state from the library crate
 use acme_api::config::AcmeConfig;
@@ -112,27 +112,22 @@ async fn main() -> anyhow::Result<()> {
         email_config.clone(),
     ));
 
-    // Initialize blob storage adapter
-    // In local/dev, use LocalAdapter with filesystem storage
-    // In production, this should be configured to use S3Adapter
-    let (blob_adapter, local_adapter): (Arc<dyn BlobAdapter>, Option<Arc<LocalAdapter>>) =
-        if app_config.env.is_development() {
-            let local_config = LocalConfig::new(
-                "./dev-uploads",
-                format!("{}/v1/dev-uploads", app_config.http.public_origin()),
-            );
-
-            let local = LocalAdapter::new(local_config)
-                .await
-                .map_err(|e| anyhow::anyhow!("Failed to create local blob adapter: {}", e))?;
-
-            let local = Arc::new(local);
-            (local.clone(), Some(local))
-        } else {
-            // Production: use NoopAdapter as placeholder (configure S3 in production)
-            tracing::warn!("Using NoopAdapter for blob storage - configure S3 for production");
-            (Arc::new(NoopAdapter::new()), None)
-        };
+    // Initialize blob storage adapter.
+    // Local/dev uses the shared MinIO-backed S3 shape; production is still TODO.
+    let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
+        let s3_config = S3Config::from_env_or_minio_dev("acme-media", "http://s3.acme.test:9000");
+        match S3Adapter::new(s3_config).await {
+            Ok(adapter) => Arc::new(adapter),
+            Err(e) => {
+                tracing::warn!(%e, "Failed to initialize MinIO blob adapter, falling back to noop");
+                Arc::new(NoopAdapter::new())
+            }
+        }
+    } else {
+        // Production: use NoopAdapter as placeholder (configure S3 in production)
+        tracing::warn!("Using NoopAdapter for blob storage - configure S3 for production");
+        Arc::new(NoopAdapter::new())
+    };
 
     // Create job repository for enqueueing jobs
     let job_repository = Some(Arc::new(underlay_jobs::JobRepository::new(pool.clone())));
@@ -189,18 +184,6 @@ async fn main() -> anyhow::Result<()> {
         ))
         .layer(underlay_observability::trace_layer())
         .layer(underlay_observability::request_id_layer());
-
-    // Add dev-uploads routes in development mode (for LocalAdapter uploads)
-    let app = if let Some(local_adapter) = local_adapter {
-        let dev_routes = underlay_blob::dev_server::DevBlobRoutes::new(local_adapter)
-            .route_path("/v1/dev-uploads")
-            .with_cors()
-            .build();
-
-        app.merge(dev_routes)
-    } else {
-        app
-    };
 
     let addr = format!("{}:{}", app_config.http.bind_addr, app_config.http.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;

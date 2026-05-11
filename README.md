@@ -295,7 +295,10 @@ EMAIL_ADAPTER=noop|smtp|ses
 SMTP_HOST=smtp.acme.test
 SMTP_PORT=1025
 SMTP_TLS=none
-BLOB_STORAGE_DIR=./dev-uploads
+BLOB_ADAPTER=s3
+BLOB_S3_BUCKET=acme-media
+BLOB_S3_ENDPOINT_URL=http://s3.acme.test:9000
+BLOB_S3_PUBLIC_URL_BASE=http://s3.acme.test:9000/acme-media
 ```
 
 ## Adding Your Domain

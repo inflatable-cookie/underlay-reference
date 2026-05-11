@@ -1,5 +1,4 @@
 use dotenvy::dotenv;
-use std::io::ErrorKind;
 
 #[tokio::main]
 async fn main() {
@@ -18,17 +17,6 @@ async fn main() {
     {
         eprintln!("Failed to reset schemas: {err}");
         std::process::exit(1);
-    }
-
-    let blob_dir =
-        std::env::var("BLOB_STORAGE_DIR").unwrap_or_else(|_| "./dev-uploads".to_string());
-    if let Err(err) = std::fs::remove_dir_all(&blob_dir) {
-        if err.kind() != ErrorKind::NotFound {
-            eprintln!("Warning: failed to remove dev uploads at {blob_dir}: {err}");
-        }
-    }
-    if let Err(err) = std::fs::create_dir_all(&blob_dir) {
-        eprintln!("Warning: failed to recreate dev uploads at {blob_dir}: {err}");
     }
 
     println!(
