@@ -84,6 +84,7 @@
   footerText={footerText}
   contextMenuItems={selectionMode || reorderMode ? [] : menuItems}
   contextMenuAriaLabel="Category actions"
+  contextMenuTrigger="leading"
   onSelectionChange={(nextSelected) => onSelectionChange?.(category.id, nextSelected)}
   onContextAction={handleContextAction}
   onClick={selectionMode || reorderMode ? undefined : handleOpen}

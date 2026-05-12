@@ -162,14 +162,14 @@ effigy dev
 | Admin | https://admin.acme.test |
 | API | https://api.acme.test |
 | pgweb | https://pgweb.acme.test |
-| Mailpit | http://mailpit.acme.test |
-| MinIO Console | http://minio.acme.test |
+| Mailpit | https://mailpit.acme.test |
+| MinIO Console | https://minio.acme.test |
 
 Notes:
 - `effigy dev` is the only supported workspace dev runner.
 - `effigy dev` starts one canonical `workspace` container and runs shell, API, jobs, front, and admin inside it.
 - The managed shell tab opens at the workspace root inside that running `workspace` container.
-- The local shape is domain-first through the Effigy gateway: HTTPS for front/admin/API/pgweb and HTTP for Mailpit and MinIO Console.
+- The local shape is domain-first through the Effigy gateway: HTTPS for front/admin/API/pgweb/Mailpit/MinIO Console, plus `https://s3.acme.test` for browser-facing S3 uploads.
 - Use the same `.test` aliases inside the workspace container too: `db.acme.test`, `smtp.acme.test`, `s3.acme.test`.
 - Postgres and MinIO persist repo-local state under `.effigy/runtime/data/postgres` and `.effigy/runtime/data/minio`.
 - Existing data in older Docker named volumes is not migrated automatically into those `.effigy/runtime/data/...` paths.
@@ -298,7 +298,8 @@ SMTP_TLS=none
 BLOB_ADAPTER=s3
 BLOB_S3_BUCKET=acme-media
 BLOB_S3_ENDPOINT_URL=http://s3.acme.test:9000
-BLOB_S3_PUBLIC_URL_BASE=http://s3.acme.test:9000/acme-media
+BLOB_S3_PUBLIC_URL_BASE=https://s3.acme.test/acme-media
+BLOB_S3_PRESIGN_URL_BASE=https://s3.acme.test
 ```
 
 ## Adding Your Domain

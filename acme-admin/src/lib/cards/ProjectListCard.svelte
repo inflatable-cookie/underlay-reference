@@ -113,6 +113,7 @@
   footer={progressFooter}
   contextMenuItems={selectionMode || reorderMode ? [] : menuItems}
   contextMenuAriaLabel="Project actions"
+  contextMenuTrigger="leading"
   onSelectionChange={(nextSelected) => onSelectionChange?.(project.id, nextSelected)}
   onContextAction={handleContextAction}
   onClick={selectionMode || reorderMode ? undefined : handleOpen}
@@ -152,4 +153,5 @@
     border-radius: 999px;
     transition: width 0.2s ease;
   }
+
 </style>

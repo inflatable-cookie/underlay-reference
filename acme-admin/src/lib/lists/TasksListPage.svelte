@@ -5,14 +5,13 @@
   import {
     Button,
     Field,
-    ListCard,
     Pill,
     Select
   } from "@poodle/svelte";
   import { adminCommands, TaskStatus, type TaskWithLabels } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import { useToasts } from "@decodelabs/underlay/runtime/feedback";
-  import CheckSquare from "lucide-svelte/icons/check-square";
+  import { TaskListCard } from "$lib/cards";
 
   interface Props {
     projectId: string;
@@ -212,34 +211,14 @@
 {/snippet}
 
 {#snippet taskCard(task: TaskWithLabels, ctx: { selectionMode: boolean; reorderMode: boolean; selected: boolean; onToggle: (selected: boolean) => void; refetch: () => Promise<void> })}
-  <ListCard
-    title={task.title}
-    href={ctx.selectionMode || ctx.reorderMode ? undefined : `/projects/${projectId}/tasks/${task.id}`}
-    layout="compact"
-    selectable={ctx.selectionMode}
+  <TaskListCard
+    task={task}
+    href={`/projects/${projectId}/tasks/${task.id}`}
+    selectionMode={ctx.selectionMode}
+    reorderMode={ctx.reorderMode}
     selected={ctx.selected}
-    on:selectedChange={(event) => ctx.onToggle(event.detail.selected)}
-  >
-    <svelte:fragment slot="leading">
-      <CheckSquare size={16} />
-    </svelte:fragment>
-    <svelte:fragment slot="badges">
-      <Pill
-        tone={task.status === "completed" ? "success" : "neutral"}
-        appearance="badge"
-        size="sm"
-      >
-        {task.status === "completed" ? "Done" : task.status === "in_progress" ? "In Progress" : "Pending"}
-      </Pill>
-      <Pill
-        tone={task.priority === "urgent" ? "danger" : "neutral"}
-        appearance="badge"
-        size="sm"
-      >
-        {task.priority}
-      </Pill>
-    </svelte:fragment>
-  </ListCard>
+    onSelectionChange={ctx.onToggle}
+  />
 {/snippet}
 
 <EntityListPage

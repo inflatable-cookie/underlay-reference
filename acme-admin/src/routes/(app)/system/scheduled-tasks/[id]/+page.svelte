@@ -1,56 +1,45 @@
 <script lang="ts">
-import {
-  useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
-import {
-  useToasts
-} from "@decodelabs/underlay/runtime/feedback";
-import {
-  Callout as PoodleCallout,
-  Tabs } from "@poodle/svelte";
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
-    import { DataTable, PageHeader as PoodlePageHeader, PageLoading, type TableColumn, type TableRow } from "@poodle/svelte";
+  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import { EntityDetailPage } from "@decodelabs/underlay/templates";
+  import { useAuthenticatedData } from "@decodelabs/underlay/runtime/auth";
+  import { useToasts } from "@decodelabs/underlay/runtime/feedback";
   import {
     Card as PoodleCard,
     Code as PoodleCode,
+    DataTable,
     IconButton as PoodleIconButton,
-    MetaBar as PoodleMetaBar,
-    MetaItem as PoodleMetaItem,
     Menu as PoodleMenu,
     Pill as PoodlePill,
     TimeAgo,
-    formatDisplayDateTime
+    formatDisplayDateTime,
+    type MenuItem,
+    type TableColumn,
+    type TableRow
   } from "@poodle/svelte";
-  import type { MenuItem } from "@poodle/svelte";
-  import { adminCommands } from "@api-client";
-  import { auth, authLoading, currentUser } from "$lib/stores/auth";
-  import type { ScheduledTaskDetail, JobSummary } from "@api-client";
+  import { adminCommands, type JobSummary, type ScheduledTaskDetail } from "@api-client";
+
+  interface Props {
+    data: { id: string };
+  }
+
+  let { data }: Props = $props();
 
   const toastStore = useToasts();
-  const taskId = $page.params.id;
-
+  let task = $state<ScheduledTaskDetail | null>(null);
   let activeTab = $state("details");
-  const mountedTabsSet = new Set<string>();
-  let mountedTabsVersion = $state(0);
+  let reloadRevision = $state(0);
 
-  // Fetch task detail
-  const pageData = useAuthenticatedData(
-    async (fetch, token) => {
-      if (!taskId) throw new Error("Task ID is required");
-      const task = await adminCommands.getScheduledTask(taskId, fetch, token);
-      return { task };
-    },
-    {
-      defaultValue: { task: undefined as ScheduledTaskDetail | undefined }
-    }
-  );
+  async function taskLoader(fetch: typeof window.fetch, token: string | null) {
+    if (!token) throw new Error("Not authenticated");
+    const result = await adminCommands.getScheduledTask(data.id, fetch, token);
+    task = result;
+    return result;
+  }
 
-  // Fetch jobs for this task's jobType
   const jobsData = useAuthenticatedData(
     async (fetch, token) => {
-      const task = pageData.data?.task;
-      if (!task) return { jobs: [] };
+      if (!task) return { jobs: [] as JobSummary[] };
       const jobs = await adminCommands.listJobs(fetch, token, {
         jobType: task.jobType,
         limit: 50
@@ -63,26 +52,12 @@ import {
     }
   );
 
-  // Fetch jobs when task is loaded and tab is job-runs
   $effect(() => {
-    if (pageData.data?.task && activeTab === "job-runs") {
+    if (task && activeTab === "job-runs") {
       jobsData.tryFetch($authLoading, $currentUser);
     }
   });
 
-  $effect(() => {
-    if (activeTab && !mountedTabsSet.has(activeTab)) {
-      mountedTabsSet.add(activeTab);
-      mountedTabsVersion++;
-    }
-  });
-
-  function isTabMounted(value: string): boolean {
-    void mountedTabsVersion;
-    return mountedTabsSet.has(value);
-  }
-
-  const task = $derived(pageData.data?.task);
   const jobs = $derived(jobsData.data?.jobs ?? []);
   const jobRows = $derived<TableRow<JobSummary>[]>(
     jobs.map((job) => ({
@@ -98,15 +73,11 @@ import {
   );
 
   function formatTaskName(name: string): string {
-    return name
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   function formatJobType(jobType: string): string {
-    return jobType
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return jobType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   function describeSchedule(schedule: string): string {
@@ -126,37 +97,35 @@ import {
   }
 
   async function handleToggle() {
-    if (!task) return;
     const token = auth.getToken();
-    if (!token) return;
+    if (!token || !task) return;
 
     try {
       await adminCommands.toggleScheduledTask(task.id, !task.enabled, fetch, token);
       toastStore.push({ variant: "success", message: task.enabled ? "Task disabled" : "Task enabled" });
-      pageData.refetch();
-    } catch (err) {
+      reloadRevision += 1;
+    } catch {
       toastStore.push({ variant: "error", message: "Failed to toggle task" });
     }
   }
 
   async function handleTrigger() {
-    if (!task) return;
     const token = auth.getToken();
-    if (!token) return;
+    if (!token || !task) return;
 
     try {
       const result = await adminCommands.triggerScheduledTask(task.id, fetch, token);
       toastStore.push({ variant: "success", message: "Job created" });
       goto(`/system/jobs/${result.jobId}`);
-    } catch (err) {
+    } catch {
       toastStore.push({ variant: "error", message: "Failed to trigger task" });
     }
   }
 
   function handleRefresh() {
-    pageData.refetch();
+    reloadRevision += 1;
     if (activeTab === "job-runs") {
-      jobsData.refetch();
+      void jobsData.refetch();
     }
   }
 
@@ -189,9 +158,12 @@ import {
 
   function getStatusTone(status: string): "neutral" | "success" | "danger" {
     switch (status) {
-      case "succeeded": return "success";
-      case "failed": return "danger";
-      default: return "neutral";
+      case "succeeded":
+        return "success";
+      case "failed":
+        return "danger";
+      default:
+        return "neutral";
     }
   }
 
@@ -209,168 +181,154 @@ import {
     { id: "createdAt", label: "Created", width: "minmax(120px, 1fr)" },
     { id: "finishedAt", label: "Finished", width: "minmax(120px, 1fr)" }
   ];
+
+  const headerMeta = $derived.by(() => [
+    { label: "ID", value: idSnippet as never },
+    { label: "", value: enabledSnippet as never, separator: false }
+  ]);
+
+  const detailTabs = $derived.by(() => [
+    { id: "details", label: "Details", content: detailsTabSnippet as never },
+    { id: "job-runs", label: "Job Runs", content: jobRunsTabSnippet as never }
+  ]);
 </script>
 
-{#if pageData.loading && !task}
-    <PageLoading presentation="inline" message="Loading task details..." />
-{:else if pageData.error}
-  <PoodleCallout tone="danger" message={pageData.error} announceMode="polite" />
-{:else if task}
-  <section class="task-detail-page">
-    <div class="task-detail-page__header">
-      <PoodlePageHeader
-        section="Scheduled Task"
-        title={formatTaskName(task.name)}
-        backHref="/system/scheduled-tasks"
-        backLabel="Back to tasks"
-      >
-        {#snippet actions()}
-          <PoodleMenu items={menuItems} ariaLabel="Task actions" placement="bottom-end" on:action={(event) => handleMenuAction(event.detail.value)}>
-            <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Task actions" />
-          </PoodleMenu>
-        {/snippet}
-      </PoodlePageHeader>
+<EntityDetailPage
+  title={task ? formatTaskName(task.name) : "Scheduled Task"}
+  section="Scheduled Task"
+  backHref="/system/scheduled-tasks"
+  backLabel="Back to tasks"
+  dataLoader={taskLoader}
+  reloadKey={reloadRevision}
+  meta={headerMeta as never}
+  headerActions={headerActionsSnippet as never}
+  tabs={detailTabs as never}
+  tabsVariant="card"
+  tabsSize="sm"
+  keepMountedTabs
+  onTabChange={(tabId) => {
+    activeTab = tabId;
+  }}
+/>
 
-      <div class="task-detail-page__meta">
-      <PoodleMetaBar ariaLabel="Scheduled task metadata">
-        <PoodleMetaItem label="ID">
-          <PoodleCode inline source={task.id} showCopyButton />
-        </PoodleMetaItem>
-        <PoodlePill tone={task.enabled ? "success" : "neutral"} appearance="badge" size="lg">
-          {task.enabled ? "Enabled" : "Disabled"}
-        </PoodlePill>
-      </PoodleMetaBar>
-      </div>
-    </div>
+{#snippet idSnippet()}
+  {#if task}
+    <PoodleCode inline inlineVariant="plain" typography="inline" source={task.id} showCopyButton />
+  {/if}
+{/snippet}
 
-    <Tabs
-      bind:value={activeTab}
-      items={[
-        { value: "details", label: "Details" },
-        { value: "job-runs", label: "Job Runs" }
-      ]}
-      variant="card"
-      size="sm"
-      ariaLabel="Detail sections"
-      let:activeValue
-    >
-      {#if isTabMounted(activeValue)}
-      {#if activeValue === "details"}
-        <div class="details-content">
-        <div class="task-detail-page__grid">
-          <PoodleCard>
-            <div class="task-detail-page__section">
-              <h3>Configuration</h3>
-              <dl class="task-detail-page__dl">
-                <dt>ID</dt>
-                <dd><code>{task.id}</code></dd>
-                <dt>Name</dt>
-                <dd>{formatTaskName(task.name)}</dd>
-                <dt>Job Type</dt>
-                <dd>{formatJobType(task.jobType)}</dd>
-                <dt>Schedule</dt>
-                <dd><code>{task.schedule}</code></dd>
-                <dt>Priority</dt>
-                <dd>{task.priority}</dd>
-                <dt>Max Attempts</dt>
-                <dd>{task.maxAttempts}</dd>
-                <dt>Timeout</dt>
-                <dd>{task.timeoutSeconds ? `${task.timeoutSeconds}s` : "None"}</dd>
-                <dt>Allow Overlap</dt>
-                <dd>{task.allowOverlap ? "Yes" : "No"}</dd>
-              </dl>
-            </div>
-          </PoodleCard>
+{#snippet enabledSnippet()}
+  {#if task}
+    <PoodlePill tone={task.enabled ? "success" : "neutral"} appearance="badge" size="sm" typography="inherit">
+      {task.enabled ? "Enabled" : "Disabled"}
+    </PoodlePill>
+  {/if}
+{/snippet}
 
-          <PoodleCard>
-            <div class="task-detail-page__section">
-              <h3>Execution History</h3>
-              <dl class="task-detail-page__dl">
-                <dt>Last Scheduled</dt>
-                <dd>{formatDisplayDateTime(task.lastScheduledAt) || "Never"}</dd>
-                <dt>Last Completed</dt>
-                <dd>{formatDisplayDateTime(task.lastCompletedAt) || "Never"}</dd>
-                <dt>Created</dt>
-                <dd>{formatDisplayDateTime(task.createdAt) || "Never"}</dd>
-                <dt>Updated</dt>
-                <dd>{formatDisplayDateTime(task.updatedAt) || "Never"}</dd>
-              </dl>
-            </div>
-          </PoodleCard>
-        </div>
+{#snippet headerActionsSnippet()}
+  <PoodleMenu items={menuItems} ariaLabel="Task actions" placement="bottom-end" on:action={(event) => handleMenuAction(event.detail.value)}>
+    <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Task actions" />
+  </PoodleMenu>
+{/snippet}
 
+{#snippet detailsTabSnippet()}
+  {#if task}
+    <div class="details-content">
+      <div class="task-detail-page__grid">
         <PoodleCard>
           <div class="task-detail-page__section">
-            <h3>Schedule</h3>
-            <p class="task-detail-page__schedule-help">
-              {describeSchedule(task.schedule)}
-            </p>
+            <h3>Configuration</h3>
+            <dl class="task-detail-page__dl">
+              <dt>ID</dt>
+              <dd><code>{task.id}</code></dd>
+              <dt>Name</dt>
+              <dd>{formatTaskName(task.name)}</dd>
+              <dt>Job Type</dt>
+              <dd>{formatJobType(task.jobType)}</dd>
+              <dt>Schedule</dt>
+              <dd><code>{task.schedule}</code></dd>
+              <dt>Priority</dt>
+              <dd>{task.priority}</dd>
+              <dt>Max Attempts</dt>
+              <dd>{task.maxAttempts}</dd>
+              <dt>Timeout</dt>
+              <dd>{task.timeoutSeconds ? `${task.timeoutSeconds}s` : "None"}</dd>
+              <dt>Allow Overlap</dt>
+              <dd>{task.allowOverlap ? "Yes" : "No"}</dd>
+            </dl>
           </div>
         </PoodleCard>
 
         <PoodleCard>
           <div class="task-detail-page__section">
-            <h3>Payload</h3>
-            <pre class="task-detail-page__code">{JSON.stringify(task.payload, null, 2)}</pre>
+            <h3>Execution History</h3>
+            <dl class="task-detail-page__dl">
+              <dt>Last Scheduled</dt>
+              <dd>{formatDisplayDateTime(task.lastScheduledAt) || "Never"}</dd>
+              <dt>Last Completed</dt>
+              <dd>{formatDisplayDateTime(task.lastCompletedAt) || "Never"}</dd>
+              <dt>Created</dt>
+              <dd>{formatDisplayDateTime(task.createdAt) || "Never"}</dd>
+              <dt>Updated</dt>
+              <dd>{formatDisplayDateTime(task.updatedAt) || "Never"}</dd>
+            </dl>
           </div>
-          </PoodleCard>
+        </PoodleCard>
+      </div>
+
+      <PoodleCard>
+        <div class="task-detail-page__section">
+          <h3>Schedule</h3>
+          <p class="task-detail-page__schedule-help">
+            {describeSchedule(task.schedule)}
+          </p>
         </div>
-      {:else if activeValue === "job-runs"}
-        <div class="jobs-list">
-          <DataTable
-            rows={jobRows}
-            columns={jobColumns}
-            loading={jobsData.loading}
-            emptyMessage="No job runs found for this task"
-            showLimitSelector={false}
-            showRowActions={false}
-            on:rowClick={(event) => navigateToJob(event.detail.row.data as JobSummary)}
-          >
-            <svelte:fragment slot="cell" let:column let:row>
-              {@const job = row.data as JobSummary | undefined}
-              {#if column.id === "status" && job}
-                <PoodlePill tone={getStatusTone(job.status)} appearance="badge" size="lg">
-                  {getStatusLabel(job.status)}
-                </PoodlePill>
-              {:else if column.id === "createdAt" && job}
-                <TimeAgo datetime={job.createdAt} tooltipFormat="datetime" short />
-              {:else if column.id === "finishedAt" && job}
-                {#if job.finishedAt}
-                  <TimeAgo datetime={job.finishedAt} tooltipFormat="datetime" short />
-                {:else}
-                  —
-                {/if}
-              {:else}
-                {row.cells[column.id] ?? "—"}
-              {/if}
-            </svelte:fragment>
-          </DataTable>
+      </PoodleCard>
+
+      <PoodleCard>
+        <div class="task-detail-page__section">
+          <h3>Payload</h3>
+          <pre class="task-detail-page__code">{JSON.stringify(task.payload, null, 2)}</pre>
         </div>
-      {/if}
-      {/if}
-    </Tabs>
-  </section>
-{/if}
+      </PoodleCard>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet jobRunsTabSnippet()}
+  <div class="jobs-list">
+    <DataTable
+      rows={jobRows}
+      columns={jobColumns}
+      loading={jobsData.loading}
+      emptyMessage="No job runs found for this task"
+      showLimitSelector={false}
+      showRowActions={false}
+      on:rowClick={(event) => navigateToJob(event.detail.row.data as JobSummary)}
+    >
+      <svelte:fragment slot="cell" let:column let:row>
+        {@const job = row.data as JobSummary | undefined}
+        {#if column.id === "status" && job}
+          <PoodlePill tone={getStatusTone(job.status)} appearance="badge" size="lg">
+            {getStatusLabel(job.status)}
+          </PoodlePill>
+        {:else if column.id === "createdAt" && job}
+          <TimeAgo datetime={job.createdAt} tooltipFormat="datetime" short />
+        {:else if column.id === "finishedAt" && job}
+          {#if job.finishedAt}
+            <TimeAgo datetime={job.finishedAt} tooltipFormat="datetime" short />
+          {:else}
+            —
+          {/if}
+        {:else}
+          {row.cells[column.id] ?? "—"}
+        {/if}
+      </svelte:fragment>
+    </DataTable>
+  </div>
+{/snippet}
 
 <style>
-  .task-detail-page {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .task-detail-page__header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .task-detail-page__meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
   .details-content {
     display: flex;
     flex-direction: column;

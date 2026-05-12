@@ -1,4 +1,4 @@
-import { getAdminHttpClient } from "../utils/client-factory.js";
+import { getAcmeClientConfig, getAdminHttpClient } from "../utils/client-factory.js";
 import {
   appendQueryParams,
   type QueryParams,
@@ -31,6 +31,38 @@ export type MediaListProfile = "list" | "filter";
 export interface ListMediaOptions {
   profile?: MediaListProfile;
   query?: QueryParams;
+}
+
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1" ||
+    hostname === "[::1]"
+  );
+}
+
+function normalizeLocalUploadPlanUrl(uploadUrl: string): string {
+  const { baseUrl } = getAcmeClientConfig();
+
+  try {
+    const apiBase = new URL(baseUrl);
+    const resolved = new URL(uploadUrl, apiBase);
+
+    if (
+      isLocalHostname(resolved.hostname) &&
+      resolved.origin !== apiBase.origin
+    ) {
+      resolved.protocol = apiBase.protocol;
+      resolved.hostname = apiBase.hostname;
+      resolved.port = apiBase.port;
+    }
+
+    return resolved.toString();
+  } catch {
+    return uploadUrl;
+  }
 }
 
 function normalizeMediaSummary(media: MediaSummary): MediaSummary {

@@ -112,7 +112,6 @@
 <EntityListCard
   title={title}
   {subtitle}
-  leadingShape="rounded-square"
   {reorderMode}
   selectionMode={selectionMode}
   {selected}
@@ -121,6 +120,7 @@
   leading={mediaLeading}
   contextMenuItems={selectionMode || reorderMode ? [] : menuItems}
   contextMenuAriaLabel="Media actions"
+  contextMenuTrigger="leading"
   onSelectionChange={(nextSelected) => onSelectionChange?.(media.id, nextSelected)}
   onContextAction={handleContextAction}
   onClick={selectionMode || reorderMode ? undefined : handleOpen}

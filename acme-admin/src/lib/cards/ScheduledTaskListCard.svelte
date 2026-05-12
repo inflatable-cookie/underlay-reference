@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { EntityListCard } from "@decodelabs/underlay/templates";
   import type { MenuItem } from "@poodle/svelte";
+  import { EntityListCard } from "@decodelabs/underlay/templates";
   import type { ScheduledTaskSummary } from "@api-client";
 
   interface Props {
@@ -57,6 +57,7 @@
   badges={task.enabled ? [] : [{ label: "Disabled", tone: "neutral", appearance: "subtle", size: "sm", muted: true }]}
   contextMenuItems={contextMenuItems}
   contextMenuAriaLabel="Scheduled task actions"
+  contextMenuTrigger="leading"
   onContextAction={onContextAction}
   onClick={navigate}
 />

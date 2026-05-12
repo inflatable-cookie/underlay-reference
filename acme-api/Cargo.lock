@@ -5465,11 +5465,13 @@ version = "0.0.1"
 dependencies = [
  "async-trait",
  "aws-sdk-s3",
+ "aws-smithy-runtime-api",
  "base64 0.22.1",
  "chrono",
  "serde",
  "thiserror 2.0.18",
  "tokio",
+ "tracing",
  "underlay-aws",
  "url",
 ]
