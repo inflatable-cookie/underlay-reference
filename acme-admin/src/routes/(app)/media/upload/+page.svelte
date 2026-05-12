@@ -8,33 +8,32 @@ import {
 import {
   useToasts,
 } from "@decodelabs/underlay/runtime/feedback";
+import { MediaUploadPage } from "@decodelabs/underlay/templates";
 import {
-  PageHeader as PoodlePageHeader,
-  PageLoading } from "@poodle/svelte";
-  import { Callout as PoodleCallout,
   FileUpload,
   Progress,
   formatFileSize,
-  type FileUploadItem } from "@poodle/svelte";
-  import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
-  import { mediaCommands } from "@api-client";
-  import { auth,
+  type FileUploadItem
+} from "@poodle/svelte";
+import { page } from "$app/stores";
+import { goto } from "$app/navigation";
+import { mediaCommands } from "@api-client";
+import { auth,
   authLoading,
   currentUser } from "$lib/stores/auth";
-    import { Button as PoodleButton } from "@poodle/svelte";
-  import Upload from "lucide-svelte/icons/upload";
-  import AlertCircle from "lucide-svelte/icons/alert-circle";
-  import CheckCircle from "lucide-svelte/icons/check-circle";
-  import XCircle from "lucide-svelte/icons/x-circle";
-  import X from "lucide-svelte/icons/x";
-  import FileIcon from "lucide-svelte/icons/file";
-  import {
-    MAX_FILE_SIZE,
-    checkDuplicate,
-    createAndUpload,
-    replaceUpload,
-  } from "$lib/utils/upload-pipeline";
+import { Button as PoodleButton } from "@poodle/svelte";
+import Upload from "lucide-svelte/icons/upload";
+import AlertCircle from "lucide-svelte/icons/alert-circle";
+import CheckCircle from "lucide-svelte/icons/check-circle";
+import XCircle from "lucide-svelte/icons/x-circle";
+import X from "lucide-svelte/icons/x";
+import FileIcon from "lucide-svelte/icons/file";
+import {
+  MAX_FILE_SIZE,
+  checkDuplicate,
+  createAndUpload,
+  replaceUpload,
+} from "$lib/utils/upload-pipeline";
 
   const toastStore = useToasts();
 
@@ -394,17 +393,15 @@ import {
   }
 </script>
 
-<PoodlePageHeader
+<MediaUploadPage
   title={replaceMediaId ? "Replace File" : "Upload Media"}
   backHref={replaceMediaId ? `/media/${replaceMediaId}` : "/media"}
   backLabel={replaceMediaId ? "Back to media" : "Back to library"}
-/>
+  error={error}
+  errorTitle="Could not upload media"
+>
 
 <div class="upload-container">
-  {#if error}
-    <PoodleCallout tone="danger" message={error} announceMode="polite" />
-  {/if}
-
   {#if replaceMediaId}
     <!-- Single file replace mode -->
     {#if uploading}
@@ -620,6 +617,7 @@ import {
     </div>
   {/if}
 </div>
+</MediaUploadPage>
 
 <style>
   .upload-container {
