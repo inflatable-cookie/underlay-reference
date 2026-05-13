@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
+	import { AdminDashboardPage } from "@decodelabs/underlay/templates";
 	import { LogList, MetricTile, PageHeader, type LogEntry } from "@poodle/svelte";
 	import { Pill } from "@poodle/svelte";
 	import Users from "lucide-svelte/icons/users";
@@ -61,9 +62,16 @@
 	});
 </script>
 
-<div class="dashboard">
-	<PageHeader title="Dashboard" subtitle="Platform overview and key metrics" />
+<AdminDashboardPage
+	title="Dashboard"
+	subtitle="Platform overview and key metrics"
+	sections={[
+		{ id: "metrics", content: metricsSectionSnippet as never },
+		{ id: "activity", title: "Recent Activity", content: activitySectionSnippet as never }
+	]}
+/>
 
+{#snippet metricsSectionSnippet()}
 	<div class="dashboard__metrics">
 		<a class="dashboard__metric-link" href="/users">
 			<div class="dashboard__metric-header">
@@ -147,17 +155,16 @@
 			<p class="dashboard__metric-copy">Operator activity and runtime posture for the current environment.</p>
 		</a>
 	</div>
+{/snippet}
 
-	<section class="dashboard__section">
-		<h2 class="dashboard__section-title">Recent Activity</h2>
-		<LogList
-			entries={logEntries}
-			loading={activityLoading}
-			error={activityError}
-			emptyMessage="No recent activity"
-		/>
-	</section>
-</div>
+{#snippet activitySectionSnippet()}
+	<LogList
+		entries={logEntries}
+		loading={activityLoading}
+		error={activityError}
+		emptyMessage="No recent activity"
+	/>
+{/snippet}
 
 <style>
 	.dashboard__metrics {
@@ -247,16 +254,6 @@
 
 	.dashboard__metric-link :global(.state-tile__value) {
 		font-size: 1.65rem;
-	}
-
-	.dashboard__section {
-		margin-top: 2rem;
-	}
-
-	.dashboard__section-title {
-		margin: 0 0 1rem;
-		font-size: 1.1rem;
-		font-weight: 600;
 	}
 
 </style>

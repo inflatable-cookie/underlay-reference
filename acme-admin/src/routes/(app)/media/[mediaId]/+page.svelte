@@ -3,9 +3,9 @@ import {
   EntityAttributeList,
   EntityDetail,
   EntityDetailModule,
-  EntityDetailPage,
   EntityInlineListModule
 } from "@decodelabs/underlay/templates";
+import { MediaDetailWorkflowPage } from "@decodelabs/underlay/templates";
 import {
   getMediaKindLabel,
   getMediaVisibilityLabel,
@@ -399,31 +399,14 @@ import { browser } from "$app/environment";
     }
   ]);
 
-  const headerMeta = $derived.by(() => {
-    const items = [
-      { label: "ID", value: idSnippet as never },
-      { label: "", value: kindSnippet as never, separator: false },
-      { label: "", value: visibilitySnippet as never, separator: false }
-    ];
-
-    if (media?.deletedAt) {
-      items.push({ label: "", value: deletedSnippet as never, separator: false });
-    }
-
-    return items;
-  });
 </script>
 
-<EntityDetailPage
-  title={media?.title || media?.originalFilename || "Untitled"}
-  section="Media"
+<MediaDetailWorkflowPage
   backHref={backInfo.href}
   backLabel={backInfo.label}
-  bannerMessage={media?.deletedAt ? "This media has been soft-deleted." : undefined}
   dataLoader={mediaLoader}
   reloadKey={reloadKey}
   onTabChange={(tabId) => { activeTab = tabId; }}
-  meta={headerMeta as never}
   headerActions={headerActionsSnippet as never}
   tabs={mediaTabs as never}
 />
@@ -448,34 +431,6 @@ import { browser } from "$app/environment";
     ariaLabel="Media actions"
     tooltip="Actions"
   />
-{/snippet}
-
-{#snippet idSnippet()}
-  {#if media}
-    <Code inline inlineVariant="plain" typography="inline" source={media.id} showCopyButton />
-  {/if}
-{/snippet}
-
-{#snippet kindSnippet()}
-  {#if media}
-    <PoodlePill tone="neutral" appearance="badge" size="sm" typography="inherit">
-      {getMediaKindLabel(media.kind)}
-    </PoodlePill>
-  {/if}
-{/snippet}
-
-{#snippet visibilitySnippet()}
-  {#if media}
-    <PoodlePill tone="neutral" appearance="badge" size="sm" typography="inherit">
-      {getMediaVisibilityLabel(media.visibility)}
-    </PoodlePill>
-  {/if}
-{/snippet}
-
-{#snippet deletedSnippet()}
-  <PoodlePill tone={getMediaMetaTone("deleted")} appearance="badge" size="sm" typography="inherit">
-    Deleted
-  </PoodlePill>
 {/snippet}
 
 {#snippet createdSnippet()}
