@@ -7,16 +7,13 @@ import {
 import { UnderlayHttpError } from "@decodelabs/underlay/client/errors";
 import { dev } from "$app/environment";
 import type { Handle, HandleServerError } from "@sveltejs/kit";
-import { env } from "$env/dynamic/public";
 import { env as privateEnv } from "$env/dynamic/private";
 
 import { configureAcmeClient as configureAliasedAcmeClient } from "@api-client";
 import { configureAcmeClient as configurePackageAcmeClient } from "@api-client";
+import { resolvePublicApiConfig } from "$lib/config/public-api";
 
-const config = {
-  baseUrl: env.PUBLIC_API_URL ?? "http://localhost:40011",
-  apiVersion: env.PUBLIC_API_VERSION ?? "2025-01-01",
-};
+const config = resolvePublicApiConfig();
 
 configureAliasedAcmeClient(config);
 configurePackageAcmeClient(config);
@@ -26,7 +23,7 @@ const cspReportOnly = privateEnv.CSP_REPORT_ONLY
   : dev;
 
 const cspConfig = createCspConfig({
-  connectSrc: [env.PUBLIC_API_URL ?? "http://localhost:40011"],
+  connectSrc: [config.baseUrl],
   reportOnly: cspReportOnly,
 });
 

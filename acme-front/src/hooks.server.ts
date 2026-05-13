@@ -6,14 +6,16 @@ import {
   applyCspHeaders,
   createCspResolveOptions,
 } from "@decodelabs/underlay/server";
-import { env } from "$env/dynamic/public";
 import { env as privateEnv } from "$env/dynamic/private";
+import { resolvePublicApiConfig } from "$lib/config/public-api";
 
 import { configureAcmeClient } from "@api-client/utils/client-factory.js";
 
+const apiConfig = resolvePublicApiConfig();
+
 configureAcmeClient({
-  baseUrl: env.PUBLIC_API_URL ?? "http://localhost:40011",
-  apiVersion: env.PUBLIC_API_VERSION ?? "2025-01-01",
+  baseUrl: apiConfig.baseUrl,
+  apiVersion: apiConfig.apiVersion,
 });
 
 const cspReportOnly = privateEnv.CSP_REPORT_ONLY
@@ -21,7 +23,7 @@ const cspReportOnly = privateEnv.CSP_REPORT_ONLY
   : dev;
 
 const cspConfig = createCspConfig({
-  connectSrc: [env.PUBLIC_API_URL ?? "http://localhost:40011"],
+  connectSrc: [apiConfig.baseUrl],
   reportOnly: cspReportOnly,
 });
 

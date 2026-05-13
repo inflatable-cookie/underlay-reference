@@ -57,6 +57,15 @@ effigy db:migrate
 
 `db:*` stays owned by `acme-api/` and resolves through child-catalog routing from the workspace root. Root tasks should own cross-repo orchestration rather than duplicating uniquely owned child tasks.
 
+## Config And Secrets Policy
+
+- shared non-secret behavior belongs in the workspace-root config stack:
+  `config/default.toml` plus optional `config/local.toml`
+- `acme-admin/` and `acme-front/` generate public runtime config from the root
+  stack rather than reading `.env` files
+- true secrets should move through Effigy-managed runtime injection or the local
+  secrets vault, not committed or ad hoc `.env` files
+
 Bootstrap notes:
 - `effigy bootstrap ...` clones the reference workspace and runs `bootstrap:deps`
 - setup expects sibling `../underlay` and `../poodle` repos, starts the workspace container, and installs dependencies inside it

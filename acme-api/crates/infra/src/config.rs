@@ -1,4 +1,4 @@
-use std::{env, fs, path::Path};
+use std::env;
 
 use serde::Deserialize;
 
@@ -312,27 +312,18 @@ struct FileAuthBehaviorDefaults {
 impl AppBehaviorConfig {
     pub fn load() -> Self {
         let mut behavior = Self::default();
-        Self::merge_file(&mut behavior, Path::new("config/default.toml"));
-        Self::merge_file(&mut behavior, Path::new("config/local.toml"));
-
-        behavior
-    }
-
-    fn merge_file(behavior: &mut Self, config_path: &Path) {
-        let raw = match fs::read_to_string(config_path) {
-            Ok(contents) => contents,
-            Err(_) => return,
-        };
-
-        let parsed: FileBehaviorConfig = match toml::from_str(&raw) {
+        let parsed = underlay_config::ConfigStack::new(underlay_config::discover_config_dir(None))
+            .with_environment_from_env()
+            .with_optional_local_overlay("local")
+            .load_namespaced_or_legacy::<FileBehaviorConfig>("acme_api");
+        let parsed = match parsed {
             Ok(parsed) => parsed,
             Err(err) => {
                 eprintln!(
-                    "warning: failed to parse {}: {}. Skipping this config layer.",
-                    config_path.display(),
+                    "warning: failed to load Acme config stack: {}. Falling back to code defaults.",
                     err
                 );
-                return;
+                return behavior;
             }
         };
 
@@ -470,6 +461,8 @@ impl AppBehaviorConfig {
                 behavior.auth.argon2_parallelism = v;
             }
         }
+
+        behavior
     }
 }
 
@@ -550,8 +543,6 @@ fn warn_legacy_behavior_env_keys() {
 impl AppConfig {
     /// Load configuration from the environment, applying sensible defaults.
     pub fn from_env() -> Self {
-        // Load variables from a local `.env` file if present.
-        let _ = dotenvy::dotenv();
         warn_legacy_behavior_env_keys();
 
         let behavior = AppBehaviorConfig::load();

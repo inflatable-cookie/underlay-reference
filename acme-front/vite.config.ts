@@ -4,6 +4,9 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vitest/config";
 import type { PluginOption } from "vite";
 import { fileURLToPath } from "node:url";
+import { generatePublicApiConfig } from "./scripts/generate-public-config";
+
+generatePublicApiConfig();
 
 const apiClientSrc = fileURLToPath(
   new URL("../acme-client/src", import.meta.url),

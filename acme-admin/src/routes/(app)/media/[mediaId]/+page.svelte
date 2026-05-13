@@ -35,7 +35,6 @@ import {
 } from "@poodle/svelte";
 import type { PageData } from "./$types";
 import { goto } from "$app/navigation";
-import { env } from "$env/dynamic/public";
 import {
   Button as PoodleButton,
   Field as PoodleField,
@@ -62,6 +61,7 @@ import { isPreconditionFailed } from "$lib/utils/api-errors";
 import { getMediaMetaAccent, getMediaMetaTone } from "$lib/utils/accents";
 import { uploadIcon } from "$lib/ui/poodle-icon-nodes";
 import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";
+import { publicApiConfig } from "$lib/config/public-api";
 import Check from "lucide-svelte/icons/check";
 import Trash2 from "lucide-svelte/icons/trash-2";
 import { browser } from "$app/environment";
@@ -318,7 +318,7 @@ import { browser } from "$app/environment";
 
   /** Get the URL for viewing/downloading media */
   function getMediaUrl(mediaId: string, restricted: boolean): string {
-    const base = env.PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+    const base = publicApiConfig.baseUrl.replace(/\/$/, "");
     if (restricted) {
       return `${base}/v1/media/${encodeURIComponent(mediaId)}/download`;
     }

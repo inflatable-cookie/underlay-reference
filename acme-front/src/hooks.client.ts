@@ -1,8 +1,9 @@
-import { env } from "$env/dynamic/public";
-
 import { configureAcmeClient } from "@api-client/utils/client-factory.js";
+import { resolvePublicApiConfig } from "$lib/config/public-api";
+
+const apiConfig = resolvePublicApiConfig();
 
 configureAcmeClient({
-  baseUrl: env.PUBLIC_API_URL ?? "http://localhost:40011",
-  apiVersion: env.PUBLIC_API_VERSION ?? "2025-01-01",
+  baseUrl: apiConfig.baseUrl,
+  apiVersion: apiConfig.apiVersion,
 });

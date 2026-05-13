@@ -1,0 +1,7 @@
+# Optional personal non-secret overrides.
+#
+# [public_api]
+# base_url = "https://api.acme.test"
+#
+# [acme_api.email]
+# app_url = "https://admin.acme.test"

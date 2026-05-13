@@ -1,12 +1,9 @@
-use dotenvy::dotenv;
 use tracing::{error, info};
 
 use acme_db::{run_dev_seeds, run_migrations};
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
-
     // Prefer standard Underlay env vars; accept ACME_* as legacy fallbacks.
     if std::env::var("DATABASE_URL").is_err() {
         if let Ok(v) = std::env::var("ACME_DATABASE_URL") {

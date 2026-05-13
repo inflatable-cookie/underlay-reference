@@ -5,6 +5,9 @@ import { defineConfig } from "vitest/config";
 import type { PluginOption } from "vite";
 import { fileURLToPath } from "node:url";
 import devtoolsJson from "vite-plugin-devtools-json";
+import { generatePublicApiConfig } from "./scripts/generate-public-config";
+
+generatePublicApiConfig();
 
 const apiClientSrc = fileURLToPath(
   new URL("../acme-client/src", import.meta.url),

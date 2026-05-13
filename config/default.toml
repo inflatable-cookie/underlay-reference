@@ -1,11 +1,17 @@
-[email]
+[public_api]
+base_url = "https://api.acme.test"
+api_version = "2025-01-01"
+front_url = "https://acme.test"
+admin_url = "https://admin.acme.test"
+
+[acme_api.email]
 default_from = "noreply@acme.example.com"
 app_name = "Acme"
 app_url = "https://acme.example.com"
 support_email = "support@acme.example.com"
 templates_dir = "templates/emails"
 
-[auth]
+[acme_api.auth]
 jwt_access_token_lifetime_minutes = 15
 jwt_refresh_token_lifetime_days = 30
 jwt_issuer = "acme"

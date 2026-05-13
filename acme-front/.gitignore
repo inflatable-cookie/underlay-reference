@@ -2,6 +2,7 @@ node_modules/
 dist/
 .svelte-kit/
 build/
+src/lib/config/public-api.generated.ts
 .claude/settings.local.json
 .effigy/
 .DS_Store

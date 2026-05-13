@@ -9,16 +9,24 @@ js = "bun"
 
 [tasks]
 dev = [
+  { task = "config:generate" },
   { task = "clean" },
   { task = "sync" },
   "bun x vite dev --host 0.0.0.0 --force"
 ]
-build = "bun x vite build"
+build = [
+  { task = "config:generate" },
+  "bun x vite build"
+]
 preview = "bun x vite preview"
 
 clean = "rm -rf .svelte-kit node_modules/.vite"
 sync = "bun x svelte-kit sync"
-prepare = "bun x svelte-kit sync || echo ''"
+"config:generate" = "bun scripts/generate-public-config.ts"
+prepare = [
+  { task = "config:generate" },
+  "bun x svelte-kit sync || echo ''"
+]
 
 health = [{ task = "check" }]
 validate = [
@@ -28,6 +36,7 @@ validate = [
 qa = [{ task = "validate" }]
 
 check = [
+  { task = "config:generate" },
   { task = "sync" },
   "bun x svelte-check --tsconfig ./tsconfig.json"
 ]
