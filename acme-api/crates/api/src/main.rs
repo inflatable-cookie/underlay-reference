@@ -50,9 +50,7 @@ async fn main() -> anyhow::Result<()> {
         Arc::new(acme_auth::AcmeLocalAuthProvider::new(local_auth.clone()));
 
     // Configure auth cookies
-    let cookie_secure = std::env::var("COOKIE_SECURE")
-        .map(|v| v == "true" || v == "1")
-        .unwrap_or(!app_config.env.is_development());
+    let cookie_secure = app_config.cors.cookie_secure;
 
     if !cookie_secure && !app_config.env.is_development() {
         tracing::warn!(
@@ -75,7 +73,7 @@ async fn main() -> anyhow::Result<()> {
         .with_secure(cookie_secure)
         .with_same_site(same_site);
 
-    if let Ok(domain) = std::env::var("COOKIE_DOMAIN") {
+    if let Some(domain) = app_config.cors.cookie_domain.clone() {
         cookie_config = cookie_config.with_domain(domain);
     }
 
@@ -115,7 +113,7 @@ async fn main() -> anyhow::Result<()> {
     // Initialize blob storage adapter.
     // Local/dev uses the shared MinIO-backed S3 shape; production is still TODO.
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
-        let s3_config = S3Config::from_env_or_minio_dev("acme-media", "http://s3.acme.test:9000");
+        let s3_config = S3Config::minio_dev("acme-media", "https://s3.acme.test");
         match S3Adapter::new(s3_config).await {
             Ok(adapter) => Arc::new(adapter),
             Err(e) => {

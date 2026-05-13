@@ -4,6 +4,16 @@ api_version = "2025-01-01"
 front_url = "https://acme.test"
 admin_url = "https://admin.acme.test"
 
+[acme_api.database]
+
+[acme_api.runtime]
+host = "127.0.0.1"
+port = 3000
+public_host = "localhost"
+
+[acme_api.cors]
+allowed_origins = []
+
 [acme_api.email]
 default_from = "noreply@acme.example.com"
 app_name = "Acme"

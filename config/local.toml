@@ -1,0 +1,20 @@
+[acme_api.runtime]
+host = "0.0.0.0"
+port = 41001
+public_host = "api.acme.test"
+
+[acme_api.database]
+url = "postgres://postgres:secret@postgres.acme.test:5432/acme"
+
+[acme_api.cors]
+allowed_origins = ["https://acme.test", "https://admin.acme.test"]
+cookie_domain = ".acme.test"
+cookie_secure = true
+
+[acme_api.email]
+app_url = "https://admin.acme.test"
+
+[acme_api.auth]
+webauthn_rp_id = "admin.acme.test"
+webauthn_rp_origin = "https://admin.acme.test"
+webauthn_rp_name = "Acme"

@@ -45,7 +45,7 @@ async fn main() {
     // Initialize blob adapter for media processing.
     // Local/dev uses the shared MinIO-backed S3 shape; production is still TODO.
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
-        let s3_config = S3Config::from_env_or_minio_dev("acme-media", "http://s3.acme.test:9000");
+        let s3_config = S3Config::minio_dev("acme-media", "https://s3.acme.test");
         match S3Adapter::new(s3_config).await {
             Ok(adapter) => Arc::new(adapter),
             Err(err) => {

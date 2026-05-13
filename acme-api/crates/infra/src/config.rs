@@ -143,8 +143,25 @@ pub struct EmailConfig {
 
 #[derive(Debug, Clone)]
 pub struct AppBehaviorConfig {
+    pub runtime: RuntimeBehaviorDefaults,
+    pub database_url: Option<String>,
+    pub cors: CorsBehaviorDefaults,
     pub email: EmailBehaviorDefaults,
     pub auth: AuthBehaviorDefaults,
+}
+
+#[derive(Debug, Clone)]
+pub struct RuntimeBehaviorDefaults {
+    pub host: String,
+    pub port: u16,
+    pub public_host: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct CorsBehaviorDefaults {
+    pub allowed_origins: Vec<String>,
+    pub cookie_domain: Option<String>,
+    pub cookie_secure: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -201,6 +218,17 @@ pub struct AuthBehaviorDefaults {
 impl Default for AppBehaviorConfig {
     fn default() -> Self {
         Self {
+            runtime: RuntimeBehaviorDefaults {
+                host: "127.0.0.1".to_string(),
+                port: 3000,
+                public_host: "localhost".to_string(),
+            },
+            database_url: None,
+            cors: CorsBehaviorDefaults {
+                allowed_origins: Vec::new(),
+                cookie_domain: None,
+                cookie_secure: false,
+            },
             email: EmailBehaviorDefaults {
                 default_from: "noreply@acme.example.com".to_string(),
                 app_name: "Acme".to_string(),
@@ -254,8 +282,30 @@ impl Default for AppBehaviorConfig {
 
 #[derive(Debug, Default, Deserialize)]
 struct FileBehaviorConfig {
+    runtime: Option<FileRuntimeBehaviorDefaults>,
+    database: Option<FileDatabaseConfig>,
+    cors: Option<FileCorsBehaviorDefaults>,
     email: Option<FileEmailBehaviorDefaults>,
     auth: Option<FileAuthBehaviorDefaults>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileRuntimeBehaviorDefaults {
+    host: Option<String>,
+    port: Option<u16>,
+    public_host: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileDatabaseConfig {
+    url: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileCorsBehaviorDefaults {
+    allowed_origins: Option<Vec<String>>,
+    cookie_domain: Option<String>,
+    cookie_secure: Option<bool>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -326,6 +376,40 @@ impl AppBehaviorConfig {
                 return behavior;
             }
         };
+
+        if let Some(runtime) = parsed.runtime {
+            if let Some(v) = normalize_optional_string(runtime.host) {
+                behavior.runtime.host = v;
+            }
+            if let Some(v) = runtime.port {
+                behavior.runtime.port = v;
+            }
+            if let Some(v) = normalize_optional_string(runtime.public_host) {
+                behavior.runtime.public_host = v;
+            }
+        }
+
+        if let Some(database) = parsed.database {
+            if let Some(v) = normalize_optional_string(database.url) {
+                behavior.database_url = Some(v);
+            }
+        }
+
+        if let Some(cors) = parsed.cors {
+            if let Some(v) = cors.allowed_origins {
+                behavior.cors.allowed_origins = v
+                    .into_iter()
+                    .map(|origin| origin.trim().to_string())
+                    .filter(|origin| !origin.is_empty())
+                    .collect();
+            }
+            if let Some(v) = cors.cookie_domain {
+                behavior.cors.cookie_domain = normalize_optional_string(Some(v));
+            }
+            if let Some(v) = cors.cookie_secure {
+                behavior.cors.cookie_secure = v;
+            }
+        }
 
         if let Some(email) = parsed.email {
             if let Some(v) = email.default_from {
@@ -555,29 +639,17 @@ impl AppConfig {
         let port = env::var("PORT")
             .ok()
             .and_then(|raw| raw.parse::<u16>().ok())
-            .unwrap_or(3000);
+            .unwrap_or(behavior.runtime.port);
 
         // Bind address (must be a valid IP for socket binding)
-        let bind_addr = env::var("HOST").unwrap_or_else(|_| {
-            let should_bind_publicly =
-                !matches!(env, Environment::Local | Environment::Test) || env::var("PORT").is_ok();
+        let bind_addr = env::var("HOST").unwrap_or_else(|_| behavior.runtime.host.clone());
 
-            if should_bind_publicly {
-                "0.0.0.0".to_string()
-            } else {
-                "127.0.0.1".to_string()
-            }
-        });
-
-        // Public hostname for URLs (defaults to localhost for local/dev/test)
+        // Public hostname for URLs.
         let public_host = env::var("PUBLIC_HOST").unwrap_or_else(|_| {
-            if matches!(
-                env,
-                Environment::Local | Environment::Dev | Environment::Test
-            ) {
-                "localhost".to_string()
-            } else {
+            if behavior.runtime.public_host.trim().is_empty() {
                 bind_addr.clone()
+            } else {
+                behavior.runtime.public_host.clone()
             }
         });
         let public_scheme = env::var("PUBLIC_SCHEME").unwrap_or_else(|_| {
@@ -598,22 +670,25 @@ impl AppConfig {
         // Database
         let database_url = env::var("DATABASE_URL")
             .or_else(|_| env::var("ACME_DATABASE_URL"))
-            .ok();
+            .ok()
+            .or_else(|| behavior.database_url.clone());
 
         // CORS configuration
         let allowed_origins: Vec<String> = env::var("CORS_ORIGINS")
             .ok()
             .map(|s| s.split(',').map(|o| o.trim().to_string()).collect())
-            .unwrap_or_default();
+            .unwrap_or_else(|| behavior.cors.allowed_origins.clone());
 
         // Optional domain for cookies
-        let cookie_domain = env::var("COOKIE_DOMAIN").ok();
+        let cookie_domain = env::var("COOKIE_DOMAIN")
+            .ok()
+            .or_else(|| behavior.cors.cookie_domain.clone());
 
-        // Cookie secure flag: true in production, false in local/dev unless explicitly set
+        // Cookie secure flag: typed config first, explicit env override allowed.
         let cookie_secure = env::var("COOKIE_SECURE")
             .ok()
             .map(|s| s.to_lowercase() == "true" || s == "1")
-            .unwrap_or_else(|| !matches!(env, Environment::Local | Environment::Dev));
+            .unwrap_or(behavior.cors.cookie_secure);
 
         // Email configuration
         let email_adapter_str = env::var("EMAIL_ADAPTER").unwrap_or_else(|_| "noop".to_string());
