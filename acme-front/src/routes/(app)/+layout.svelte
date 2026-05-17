@@ -38,7 +38,7 @@
         <User size={16} />
         {$currentUser.displayName}
       </span>
-      <Button type="button" variant="ghost" on:click={handleLogout}>
+      <Button type="button" variant="ghost" onClick={handleLogout}>
         <LogOut size={16} />
         Sign Out
       </Button>

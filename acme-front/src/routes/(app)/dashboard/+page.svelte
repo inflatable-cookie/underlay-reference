@@ -140,7 +140,7 @@ import {
 
 <div class="header">
   <h1>My Projects</h1>
-  <Button type="button" variant="primary" on:click={openCreateDialog}>
+  <Button type="button" variant="primary" onClick={openCreateDialog}>
     <Plus size={16} />
     New Project
   </Button>
@@ -155,7 +155,7 @@ import {
     <FolderOpen size={48} />
     <h2>No projects yet</h2>
     <p>Create your first project to start tracking tasks.</p>
-    <Button type="button" variant="primary" on:click={openCreateDialog}>
+    <Button type="button" variant="primary" onClick={openCreateDialog}>
       <Plus size={16} />
       Create Project
     </Button>
@@ -167,11 +167,11 @@ import {
         title={project.name}
         subtitle={summariseProjectDescription(project)}
         interactive
-        on:click={() => goto(`/projects/${project.id}`)}
+        onClick={() => goto(`/projects/${project.id}`)}
       >
-        <svelte:fragment slot="leading">
+        {#snippet leading()}
           <FolderOpen size={20} />
-        </svelte:fragment>
+        {/snippet}
       </ListCard>
     {/each}
   </Grid>
@@ -183,7 +183,7 @@ import {
   subtitle="Create a new project to organize your tasks."
   submitting={creating}
   showDefaultActions={false}
-  on:cancel={() => { showCreateDialog = false; }}
+  onCancel={() => { showCreateDialog = false; }}
 >
   <form
       id="create-project-form"
@@ -193,38 +193,42 @@ import {
       }}
     >
       <div class="dialog-fields">
-        <Field id="front-project-name" label="Project Name" required let:describedBy>
-          <TextInput
-            id="front-project-name"
-            value={newProjectName}
-            describedBy={describedBy}
-            placeholder="My Project"
-            disabled={creating}
-            on:valueChange={(event) => { newProjectName = event.detail.value; }}
-          />
-        </Field>
-        <Field id="front-project-description" label="Description" let:describedBy>
-          <div aria-describedby={describedBy}>
-            <NightfireEditor
-              name="description"
-              schema="acme:project/description@1"
-              bind:value={newProjectDescription}
+        <Field id="front-project-name" label="Project Name" required>
+          {#snippet control({ describedBy })}
+            <TextInput
+              id="front-project-name"
+              value={newProjectName}
+              describedBy={describedBy}
+              placeholder="My Project"
+              disabled={creating}
+              onValueChange={(nextValue) => { newProjectName = nextValue; }}
             />
-          </div>
+          {/snippet}
+        </Field>
+        <Field id="front-project-description" label="Description">
+          {#snippet control({ describedBy })}
+            <div aria-describedby={describedBy}>
+              <NightfireEditor
+                name="description"
+                schema="acme:project/description@1"
+                bind:value={newProjectDescription}
+              />
+            </div>
+          {/snippet}
         </Field>
       </div>
 
   </form>
-  <svelte:fragment slot="actions">
+  {#snippet actions(submitting)}
     <FormActions align="end">
-      <Button type="button" variant="ghost" disabled={creating} on:click={() => (showCreateDialog = false)}>
+      <Button type="button" variant="ghost" disabled={creating} onClick={() => (showCreateDialog = false)}>
         Cancel
       </Button>
       <Button type="submit" form="create-project-form" variant="primary" disabled={creating || !newProjectName.trim()}>
         {creating ? "Creating..." : "Create"}
       </Button>
     </FormActions>
-  </svelte:fragment>
+  {/snippet}
 </FormDialog>
 
 <style>

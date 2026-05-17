@@ -33,28 +33,32 @@
     <Callout tone="danger" message={error} announceMode="assertive" />
   {/if}
 
-  <Field id="login-email" label="Email" required let:describedBy>
-    <TextInput
-      id="login-email"
-      type="email"
-      value={email}
-      describedBy={describedBy}
-      placeholder="you@example.com"
-      disabled={submitting}
-      on:valueChange={(event) => { email = event.detail.value; }}
-    />
+  <Field id="login-email" label="Email" required>
+    {#snippet control({ describedBy })}
+      <TextInput
+        id="login-email"
+        type="email"
+        value={email}
+        describedBy={describedBy}
+        placeholder="you@example.com"
+        disabled={submitting}
+        onValueChange={(nextValue) => { email = nextValue; }}
+      />
+    {/snippet}
   </Field>
 
-  <Field id="login-password" label="Password" required let:describedBy>
-    <TextInput
-      id="login-password"
-      type="password"
-      value={password}
-      describedBy={describedBy}
-      placeholder="Your password"
-      disabled={submitting}
-      on:valueChange={(event) => { password = event.detail.value; }}
-    />
+  <Field id="login-password" label="Password" required>
+    {#snippet control({ describedBy })}
+      <TextInput
+        id="login-password"
+        type="password"
+        value={password}
+        describedBy={describedBy}
+        placeholder="Your password"
+        disabled={submitting}
+        onValueChange={(nextValue) => { password = nextValue; }}
+      />
+    {/snippet}
   </Field>
 
   <div class="form-actions">

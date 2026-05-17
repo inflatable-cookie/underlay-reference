@@ -33,10 +33,10 @@
 	<p class="tagline">A simple task management app built with Underlay patterns.</p>
 
 	<div class="cta">
-		<Button type="button" variant="primary" on:click={() => goto("/login")}>
+		<Button type="button" variant="primary" onClick={() => goto("/login")}>
 			Sign In
 		</Button>
-		<Button type="button" variant="secondary" on:click={() => goto("/register")}>
+		<Button type="button" variant="secondary" onClick={() => goto("/register")}>
 			Create Account
 		</Button>
 	</div>

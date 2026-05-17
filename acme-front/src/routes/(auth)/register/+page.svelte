@@ -34,39 +34,45 @@
     <Callout tone="danger" message={error} announceMode="assertive" />
   {/if}
 
-  <Field id="register-name" label="Name" required let:describedBy>
-    <TextInput
-      id="register-name"
-      value={displayName}
-      describedBy={describedBy}
-      placeholder="Your name"
-      disabled={submitting}
-      on:valueChange={(event) => { displayName = event.detail.value; }}
-    />
+  <Field id="register-name" label="Name" required>
+    {#snippet control({ describedBy })}
+      <TextInput
+        id="register-name"
+        value={displayName}
+        describedBy={describedBy}
+        placeholder="Your name"
+        disabled={submitting}
+        onValueChange={(nextValue) => { displayName = nextValue; }}
+      />
+    {/snippet}
   </Field>
 
-  <Field id="register-email" label="Email" required let:describedBy>
-    <TextInput
-      id="register-email"
-      type="email"
-      value={email}
-      describedBy={describedBy}
-      placeholder="you@example.com"
-      disabled={submitting}
-      on:valueChange={(event) => { email = event.detail.value; }}
-    />
+  <Field id="register-email" label="Email" required>
+    {#snippet control({ describedBy })}
+      <TextInput
+        id="register-email"
+        type="email"
+        value={email}
+        describedBy={describedBy}
+        placeholder="you@example.com"
+        disabled={submitting}
+        onValueChange={(nextValue) => { email = nextValue; }}
+      />
+    {/snippet}
   </Field>
 
-  <Field id="register-password" label="Password" required let:describedBy>
-    <TextInput
-      id="register-password"
-      type="password"
-      value={password}
-      describedBy={describedBy}
-      placeholder="Choose a password"
-      disabled={submitting}
-      on:valueChange={(event) => { password = event.detail.value; }}
-    />
+  <Field id="register-password" label="Password" required>
+    {#snippet control({ describedBy })}
+      <TextInput
+        id="register-password"
+        type="password"
+        value={password}
+        describedBy={describedBy}
+        placeholder="Choose a password"
+        disabled={submitting}
+        onValueChange={(nextValue) => { password = nextValue; }}
+      />
+    {/snippet}
   </Field>
 
   <div class="form-actions">

@@ -178,7 +178,7 @@ import {
 {:else if project}
   <PoodlePageHeader title={project.name} backHref="/dashboard" backLabel="Back to projects">
     {#snippet actions()}
-      <Button type="button" variant="ghost" tone="danger" on:click={() => (showDeleteConfirm = true)}>
+      <Button type="button" variant="ghost" tone="danger" onClick={() => (showDeleteConfirm = true)}>
         Delete
       </Button>
     {/snippet}
@@ -208,7 +208,7 @@ import {
         <h2>Tasks</h2>
         <span class="task-count">{completedCount}/{tasks.length} completed</span>
       </div>
-      <Button type="button" variant="primary" size="sm" on:click={openCreateDialog}>
+      <Button type="button" variant="primary" size="sm" onClick={openCreateDialog}>
         <Plus size={14} />
         Add Task
       </Button>
@@ -270,7 +270,7 @@ import {
   subtitle="Add a new task to this project."
   submitting={creating}
   showDefaultActions={false}
-  on:cancel={() => { showCreateDialog = false; }}
+  onCancel={() => { showCreateDialog = false; }}
 >
   <form
       id="create-task-form"
@@ -280,50 +280,56 @@ import {
       }}
     >
       <div class="dialog-fields">
-        <Field id="front-task-title" label="Task Title" required let:describedBy>
-          <TextInput
-            id="front-task-title"
-            value={newTaskTitle}
-            describedBy={describedBy}
-            placeholder="What needs to be done?"
-            disabled={creating}
-            on:valueChange={(event) => { newTaskTitle = event.detail.value; }}
-          />
+        <Field id="front-task-title" label="Task Title" required>
+          {#snippet control({ describedBy })}
+            <TextInput
+              id="front-task-title"
+              value={newTaskTitle}
+              describedBy={describedBy}
+              placeholder="What needs to be done?"
+              disabled={creating}
+              onValueChange={(nextValue) => { newTaskTitle = nextValue; }}
+            />
+          {/snippet}
         </Field>
-        <Field id="front-task-description" label="Description" let:describedBy>
-          <TextInput
-            id="front-task-description"
-            value={newTaskDescription}
-            describedBy={describedBy}
-            placeholder="Optional details"
-            rows={3}
-            disabled={creating}
-            on:valueChange={(event) => { newTaskDescription = event.detail.value; }}
-          />
+        <Field id="front-task-description" label="Description">
+          {#snippet control({ describedBy })}
+            <TextInput
+              id="front-task-description"
+              value={newTaskDescription}
+              describedBy={describedBy}
+              placeholder="Optional details"
+              rows={3}
+              disabled={creating}
+              onValueChange={(nextValue) => { newTaskDescription = nextValue; }}
+            />
+          {/snippet}
         </Field>
-        <Field id="front-task-priority" label="Priority" let:describedBy>
-          <Select
-            id="front-task-priority"
-            value={newTaskPriority}
-            describedBy={describedBy}
-            options={priorityOptions}
-            disabled={creating}
-            on:valueChange={(event) => { newTaskPriority = event.detail.value; }}
-          />
+        <Field id="front-task-priority" label="Priority">
+          {#snippet control({ describedBy })}
+            <Select
+              id="front-task-priority"
+              value={newTaskPriority}
+              describedBy={describedBy}
+              options={priorityOptions}
+              disabled={creating}
+              onValueChange={(value) => { newTaskPriority = value; }}
+            />
+          {/snippet}
         </Field>
       </div>
 
   </form>
-  <svelte:fragment slot="actions">
+  {#snippet actions(submitting)}
     <FormActions align="end">
-      <Button type="button" variant="ghost" disabled={creating} on:click={() => (showCreateDialog = false)}>
+      <Button type="button" variant="ghost" disabled={creating} onClick={() => (showCreateDialog = false)}>
         Cancel
       </Button>
       <Button type="submit" form="create-task-form" variant="primary" disabled={creating || !newTaskTitle.trim()}>
         {creating ? "Adding..." : "Add Task"}
       </Button>
     </FormActions>
-  </svelte:fragment>
+  {/snippet}
 </FormDialog>
 
 <style>
