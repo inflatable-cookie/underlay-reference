@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AlertDialog as PoodleAlertDialog } from "@poodle/svelte";
+  import { AlertDialog } from "@poodle/svelte";
   import { EntityListCard } from "@decodelabs/underlay/templates";
   import type { CategoryWithCounts } from "@api-client";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
@@ -91,7 +91,7 @@
 />
 
 {#if confirmDeleteOpen}
-  <PoodleAlertDialog
+  <AlertDialog
     open={confirmDeleteOpen}
     title="Delete Category"
     description={`Are you sure you want to delete "${category.name}"? Projects will be unassigned from this category.`}

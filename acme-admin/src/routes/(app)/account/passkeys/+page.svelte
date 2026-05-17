@@ -269,26 +269,26 @@ import {
             error={renameFieldError(pk.id)}
             validationState={validationState(renameFieldError(pk.id))}
             required
-            let:describedBy
-            let:validationState={renameValidationState}
           >
-            <PoodleTextInput
-              id={`rename-passkey-${pk.id}`}
-              value={renamePasskeyValue}
-              describedBy={describedBy}
-              validationState={renameValidationState}
-              maxLength={120}
-              on:valueChange={(event) => { renamePasskeyValue = event.detail.value; }}
-              on:submit={() => saveRenamePasskey(pk.id)}
-            />
+            {#snippet control({ describedBy, validationState })}
+              <PoodleTextInput
+                id={`rename-passkey-${pk.id}`}
+                value={renamePasskeyValue}
+                describedBy={describedBy}
+                validationState={validationState}
+                maxLength={120}
+                onValueChange={(nextValue) => { renamePasskeyValue = nextValue; }}
+                onSubmit={() => saveRenamePasskey(pk.id)}
+              />
+            {/snippet}
           </PoodleField>
 
-          <PoodleFormActions align="start">
+          <PoodleFormActions align="end">
             <PoodleButton
               type="button"
               variant="primary"
               disabled={renamePasskeyBusy}
-              on:click={() => saveRenamePasskey(pk.id)}
+              onClick={() => saveRenamePasskey(pk.id)}
             >
               {renamePasskeyBusy ? "Saving..." : "Save"}
             </PoodleButton>
@@ -296,7 +296,7 @@ import {
               type="button"
               variant="secondary"
               disabled={renamePasskeyBusy}
-              on:click={cancelRenamePasskey}
+              onClick={cancelRenamePasskey}
             >
               Cancel
             </PoodleButton>
@@ -311,7 +311,7 @@ import {
                 size="sm"
                 className="button-small"
                 disabled={passkeyBusy || deletePasskeyBusy}
-                on:click={() => startRenamePasskey(pk)}
+                onClick={() => startRenamePasskey(pk)}
               >
                 Rename
               </PoodleButton>
@@ -322,7 +322,7 @@ import {
                 size="sm"
                 className="button-small"
                 disabled={passkeyBusy || deletePasskeyBusy}
-                on:click={() => requestDeletePasskey(pk.id)}
+                onClick={() => requestDeletePasskey(pk.id)}
               >
                 Delete
               </PoodleButton>
@@ -341,8 +341,8 @@ import {
   </ul>
 {/if}
 
-<PoodleFormActions align="start">
-  <PoodleButton type="button" variant="primary" disabled={passkeyBusy} on:click={createPasskey}>
+<PoodleFormActions align="end">
+  <PoodleButton type="button" variant="primary" disabled={passkeyBusy} onClick={createPasskey}>
     {passkeyBusy ? "Working..." : "Add passkey"}
   </PoodleButton>
 </PoodleFormActions>
@@ -357,19 +357,17 @@ import {
   onCancel={skipCreatePasskeyName}
   tone="warning"
 >
-  <PoodleField
-    id="create-passkey-name"
-    label="Passkey name"
-    let:describedBy
-  >
-    <PoodleTextInput
-      id="create-passkey-name"
-      value={createPasskeyNameValue}
-      describedBy={describedBy}
-      maxLength={120}
-      on:valueChange={(event) => { createPasskeyNameValue = event.detail.value; }}
-      on:submit={confirmCreatePasskeyName}
-    />
+  <PoodleField id="create-passkey-name" label="Passkey name">
+    {#snippet control({ describedBy })}
+      <PoodleTextInput
+        id="create-passkey-name"
+        value={createPasskeyNameValue}
+        describedBy={describedBy}
+        maxLength={120}
+        onValueChange={(nextValue) => { createPasskeyNameValue = nextValue; }}
+        onSubmit={confirmCreatePasskeyName}
+      />
+    {/snippet}
   </PoodleField>
 </PoodleAlertDialog>
 

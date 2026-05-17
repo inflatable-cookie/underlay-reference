@@ -194,15 +194,15 @@ import {
   placement="bottom-end"
   ariaLabel="Media actions"
   triggerAriaLabel="Media actions"
-  on:action={(event) => void handleAction(event.detail.value)}
+  onAction={(value) => void handleAction(value)}
 >
-  <svelte:fragment slot="trigger">
+  {#snippet trigger()}
     {#if trigger}
       {@render trigger()}
     {:else}
       <Button variant="secondary">Actions</Button>
     {/if}
-  </svelte:fragment>
+  {/snippet}
 </Menu>
 
 <PoodleAlertDialog

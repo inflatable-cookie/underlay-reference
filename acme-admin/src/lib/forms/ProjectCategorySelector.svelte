@@ -261,9 +261,9 @@ import {
   showCloseButton
   closeLabel={`Close ${label}`}
   contentClassName="project-category-selector__dialog"
-  on:openChange={(event) => {
-    open = event.detail.open;
-    if (!event.detail.open) handleClose();
+  onOpenChange={(nextOpen) => {
+    open = nextOpen;
+    if (!nextOpen) handleClose();
   }}
 >
   {#if createMode}
@@ -281,7 +281,7 @@ import {
       />
 
       <div class="project-category-selector__dialog-actions">
-        <Button type="button" variant="ghost" on:click={() => {
+        <Button type="button" variant="ghost" onClick={() => {
           createMode = false;
           createError = null;
         }}>
@@ -301,11 +301,11 @@ import {
           placeholder="Search categories..."
           ariaLabel="Search categories"
           debounce={300}
-          on:valueChange={(event) => scheduleSearch(event.detail.value)}
+          onValueChange={scheduleSearch}
         />
 
         {#if createCategory}
-          <Button type="button" variant="secondary" on:click={() => {
+          <Button type="button" variant="secondary" onClick={() => {
             createMode = true;
             createError = null;
           }}>

@@ -112,13 +112,13 @@
 {#snippet headerActionsSnippet()}
   {#if job}
     {#if job.status === "pending" || job.status === "running"}
-      <PoodleButton variant="secondary" on:click={handleCancel}>
+      <PoodleButton variant="secondary" onClick={handleCancel}>
         <Ban size={16} />
         Cancel
       </PoodleButton>
     {/if}
     {#if job.status === "failed" || job.status === "cancelled"}
-      <PoodleButton variant="primary" on:click={handleRetry}>
+      <PoodleButton variant="primary" onClick={handleRetry}>
         <RotateCcw size={16} />
         Retry
       </PoodleButton>
@@ -128,7 +128,7 @@
       icon={refreshCwIcon}
       ariaLabel="Refresh job"
       tooltip="Refresh"
-      on:click={handleRefresh}
+      onClick={handleRefresh}
     />
   {/if}
 {/snippet}
@@ -140,7 +140,7 @@
         <div class="detail-card-grid">
           <PoodleDetailSection title="Details" columns={2} separated={false}>
             <PoodleDetailItem presentation="surface" label="Type">
-              <svelte:fragment slot="value"><Code inline source={job.jobType} /></svelte:fragment>
+              {#snippet valueContent()}<Code inline source={job.jobType} />{/snippet}
             </PoodleDetailItem>
             <PoodleDetailItem presentation="surface" label="Attempts" value={`${job.attempts} / ${job.maxAttempts}`} />
           </PoodleDetailSection>

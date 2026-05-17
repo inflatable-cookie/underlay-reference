@@ -21,7 +21,7 @@ import { mediaCommands } from "@api-client";
 import { auth,
   authLoading,
   currentUser } from "$lib/stores/auth";
-import { Button as PoodleButton } from "@poodle/svelte";
+import { Button } from "@poodle/svelte";
 import Upload from "lucide-svelte/icons/upload";
 import AlertCircle from "lucide-svelte/icons/alert-circle";
 import CheckCircle from "lucide-svelte/icons/check-circle";
@@ -444,26 +444,26 @@ import {
     {/if}
 
     <div class="actions">
-      <PoodleButton
+      <Button
         type="button"
         variant="primary"
         disabled={uploading || files.length === 0 || !!error}
-        on:click={handleSingleUpload}
+        onClick={handleSingleUpload}
       >
-        <svelte:fragment slot="leading">
+        {#snippet leading()}
           <Upload size={16} />
-        </svelte:fragment>
+        {/snippet}
         {uploading ? "Uploading..." : "Replace File"}
-      </PoodleButton>
+      </Button>
       <span class="actions-spacer"></span>
-      <PoodleButton
+      <Button
         type="button"
         variant="ghost"
         disabled={uploading}
-        on:click={() => goto(`/media/${replaceMediaId}`)}
+        onClick={() => goto(`/media/${replaceMediaId}`)}
       >
         Cancel
-      </PoodleButton>
+      </Button>
     </div>
   {:else}
     <!-- Bulk upload mode -->
@@ -486,9 +486,9 @@ import {
         <div class="queue-header">
           <h2>Upload Queue ({uploadQueue.length} file{uploadQueue.length > 1 ? "s" : ""})</h2>
           {#if !uploading && !allDone}
-            <PoodleButton type="button" variant="ghost" size="sm" on:click={clearQueue}>
+            <Button type="button" variant="ghost" size="sm" onClick={clearQueue}>
               Clear All
-            </PoodleButton>
+            </Button>
           {/if}
         </div>
 
@@ -530,42 +530,42 @@ import {
 
               <div class="queue-item-actions">
                 {#if item.status === "done" && item.mediaId}
-                  <PoodleButton
+                  <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    on:click={() => goto(`/media/${item.mediaId}`)}
+                    onClick={() => goto(`/media/${item.mediaId}`)}
                   >
                     View
-                  </PoodleButton>
+                  </Button>
                 {:else if item.status === "error"}
-                  <PoodleButton
+                  <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     disabled={uploading}
-                    on:click={() => retryItem(item.id)}
+                    onClick={() => retryItem(item.id)}
                   >
                     Retry
-                  </PoodleButton>
+                  </Button>
                 {:else if item.status === "duplicate"}
-                  <PoodleButton
+                  <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    on:click={() => goto(`/media/${item.duplicateOf?.id}`)}
+                    onClick={() => goto(`/media/${item.duplicateOf?.id}`)}
                   >
                     View Existing
-                  </PoodleButton>
-                  <PoodleButton
+                  </Button>
+                  <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     disabled={uploading}
-                    on:click={() => uploadDuplicateAnyway(item.id)}
+                    onClick={() => uploadDuplicateAnyway(item.id)}
                   >
                     Upload Anyway
-                  </PoodleButton>
+                  </Button>
                 {:else if item.status === "pending"}
                   <button
                     type="button"
@@ -585,35 +585,35 @@ import {
 
     <div class="actions">
       {#if allDone}
-        <PoodleButton
+        <Button
           type="button"
           variant="primary"
-          on:click={() => goto("/media")}
+          onClick={() => goto("/media")}
         >
           Done
-        </PoodleButton>
+        </Button>
       {:else}
-        <PoodleButton
+        <Button
           type="button"
           variant="primary"
           disabled={uploading || uploadQueue.length === 0 || pendingCount === 0}
-          on:click={handleUpload}
+          onClick={handleUpload}
         >
-          <svelte:fragment slot="leading">
+          {#snippet leading()}
             <Upload size={16} />
-          </svelte:fragment>
+          {/snippet}
           {uploading ? "Uploading..." : `Upload ${pendingCount} file${pendingCount > 1 ? "s" : ""}`}
-        </PoodleButton>
+        </Button>
       {/if}
       <span class="actions-spacer"></span>
-      <PoodleButton
+      <Button
         type="button"
         variant="ghost"
         disabled={uploading}
-        on:click={() => goto("/media")}
+        onClick={() => goto("/media")}
       >
         Cancel
-      </PoodleButton>
+      </Button>
     </div>
   {/if}
 </div>

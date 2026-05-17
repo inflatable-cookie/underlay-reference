@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { PageHeader as PoodlePageHeader } from "@poodle/svelte";
+  import { PageHeader } from "@poodle/svelte";
   import { Tabs, type TabItem } from "@poodle/svelte";
 
   let { children } = $props();
@@ -52,14 +52,14 @@
   });
 </script>
 
-<PoodlePageHeader title="Account" />
+<PageHeader title="Account" />
 
 <Tabs
   value={activeTab}
   items={tabItems}
   variant="pill"
   ariaLabel="Account sections"
-  on:valueChange={(event) => { activeTab = event.detail.value; }}
+  onValueChange={(value) => { activeTab = value; }}
 >
   {@render children?.()}
 </Tabs>

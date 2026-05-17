@@ -9,7 +9,6 @@ import { MediaDetailWorkflowPage } from "@decodelabs/underlay/templates";
 import {
   getMediaKindLabel,
   getMediaVisibilityLabel,
-  getMediaVersionStateLabel,
   getMediaVersionStateAccent
 } from "@decodelabs/underlay/runtime/media";
 import {
@@ -31,7 +30,11 @@ import {
   Callout as PoodleCallout,
   Code,
   Dialog as PoodleDialog,
-  formatFileSize
+  formatFileSize,
+  Icon as PoodleIcon,
+  ListCard,
+  Pill as PoodlePill,
+  type MenuItem
 } from "@poodle/svelte";
 import type { PageData } from "./$types";
 import { goto } from "$app/navigation";
@@ -40,7 +43,6 @@ import {
   Field as PoodleField,
   FormActions as PoodleFormActions,
   IconButton as PoodleIconButton,
-  Pill as PoodlePill,
   Select as PoodleSelect,
   TextInput as PoodleTextInput,
   TimeAgo
@@ -61,9 +63,8 @@ import { isPreconditionFailed } from "$lib/utils/api-errors";
 import { getMediaMetaAccent, getMediaMetaTone } from "$lib/utils/accents";
 import { uploadIcon } from "$lib/ui/poodle-icon-nodes";
 import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";
+import MediaReplaceFileForm from "$lib/components/MediaReplaceFileForm.svelte";
 import { publicApiConfig } from "$lib/config/public-api";
-import Check from "lucide-svelte/icons/check";
-import Trash2 from "lucide-svelte/icons/trash-2";
 import { browser } from "$app/environment";
 
   interface Props {
@@ -72,6 +73,7 @@ import { browser } from "$app/environment";
 
   let { data }: Props = $props();
 
+  const PoodleListCard: any = ListCard;
   const toastStore = useToasts();
   const mediaId = $derived(data.mediaId);
 
@@ -158,12 +160,6 @@ import { browser } from "$app/environment";
     editDialogSubmitting = false;
   }
 
-  function getVersionStateTone(state: MediaVersionState): "neutral" | "success" | "danger" {
-    if (state === MediaVersionState.Ready) return "success";
-    if (state === MediaVersionState.Failed) return "danger";
-    return "neutral";
-  }
-
   async function handleEditSubmit(e: SubmitEvent) {
     e.preventDefault();
     if (!browser || !media) return;
@@ -218,6 +214,7 @@ import { browser } from "$app/environment";
   }
 
   // Version actions state
+  let replaceDialogOpen = $state(false);
   let activateDialogOpen = $state(false);
   let deleteDialogOpen = $state(false);
   let previewDialogOpen = $state(false);
@@ -238,6 +235,12 @@ import { browser } from "$app/environment";
   function requestDelete(version: MediaVersion) {
     selectedVersion = version;
     deleteDialogOpen = true;
+  }
+
+  async function handleReplaceSuccess() {
+    replaceDialogOpen = false;
+    reloadKey++;
+    await versionsData.refetch();
   }
 
   async function confirmActivate() {
@@ -314,6 +317,44 @@ import { browser } from "$app/environment";
 
   function canDeleteVersion(version: MediaVersion): boolean {
     return !isCurrentVersion(version);
+  }
+
+  function getVersionSubtitle(version: MediaVersion): string {
+    return `${formatFileSize(version.byteSize)} · ${version.mimeType ?? "Unknown type"}`;
+  }
+
+  function getVersionMenuItems(version: MediaVersion): MenuItem[] {
+    return [
+      ...(canPreviewVersion(version)
+        ? [{ value: "preview", label: "Preview version" }]
+        : []),
+      {
+        value: "activate",
+        label: isCurrentVersion(version) ? "Current version" : "Activate version",
+        disabled: !canActivateVersion(version)
+      },
+      { value: "separator-delete", label: "", kind: "separator" as const },
+      {
+        value: "delete",
+        label: "Delete version",
+        disabled: !canDeleteVersion(version),
+        tone: "danger" as const
+      }
+    ];
+  }
+
+  function handleVersionAction(version: MediaVersion, value: string): void {
+    if (value === "preview") {
+      openVersionPreview(version);
+      return;
+    }
+    if (value === "activate") {
+      requestActivate(version);
+      return;
+    }
+    if (value === "delete") {
+      requestDelete(version);
+    }
   }
 
   /** Get the URL for viewing/downloading media */
@@ -402,13 +443,16 @@ import { browser } from "$app/environment";
 </script>
 
 <MediaDetailWorkflowPage
+  item={media}
   backHref={backInfo.href}
   backLabel={backInfo.label}
+  backIsContextual={backInfo.isContextual ?? false}
   dataLoader={mediaLoader}
   reloadKey={reloadKey}
   onTabChange={(tabId) => { activeTab = tabId; }}
   headerActions={headerActionsSnippet as never}
   tabs={mediaTabs as never}
+  tabsVariant="underline"
 />
 
 {#snippet headerActionsSnippet(_loadedMedia: MediaDetail)}
@@ -471,74 +515,54 @@ import { browser } from "$app/environment";
 
 {#snippet versionsActionsSnippet()}
   {#if media}
-    {@const replaceHref = `/media/upload?replace=${media.id}`}
     <PoodleIconButton
       type="button"
       variant="primary"
       size="sm"
       icon={uploadIcon}
       ariaLabel="Upload new version"
-      on:click={() => goto(replaceHref)}
+      onClick={() => { replaceDialogOpen = true; }}
     />
   {/if}
 {/snippet}
 
 {#snippet versionItemSnippet(version: MediaVersion)}
-  {#if canPreviewVersion(version)}
-    <button
-      type="button"
-      class="inline-list-card__item-content inline-list-card__item-content--button"
-      onclick={() => openVersionPreview(version)}
-    >
-      <span class="inline-list-card__dot" style:--inline-list-accent={getMediaVersionStateAccent(version.state)}></span>
-      <span class="inline-list-card__label-group">
-        <span class="inline-list-card__label">{version.sha256 ?? "No hash"}</span>
-        <span class="inline-list-card__sublabel">
-          {formatFileSize(version.byteSize)} · <Code inline source={version.mimeType ?? "Unknown type"} /> · <TimeAgo datetime={version.createdAt} short />
-        </span>
-      </span>
-    </button>
-  {:else}
-    <div class="inline-list-card__item-content">
-      <span class="inline-list-card__dot" style:--inline-list-accent={getMediaVersionStateAccent(version.state)}></span>
-      <span class="inline-list-card__label-group">
-        <span class="inline-list-card__label">{version.sha256 ?? "No hash"}</span>
-        <span class="inline-list-card__sublabel">
-          {formatFileSize(version.byteSize)} · <Code inline source={version.mimeType ?? "Unknown type"} /> · <TimeAgo datetime={version.createdAt} short />
-        </span>
-      </span>
-    </div>
-  {/if}
+  {@const leadingIcon = media?.kind === MediaKind.Image ? "image" : "file-text"}
+  <PoodleListCard
+    title={version.sha256 ?? "No hash"}
+    subtitle={null}
+    leadingShape="rounded-square"
+    leadingFill="tint"
+    accentColor={getMediaVersionStateAccent(version.state)}
+    size="sm"
+    density="compact"
+    contextMenuItems={getVersionMenuItems(version)}
+    contextMenuAriaLabel="Version actions"
+    contextMenuTrigger="leading"
+    interactive={canPreviewVersion(version)}
+    onContextAction={(value: string) => handleVersionAction(version, value)}
+    onClick={() => {
+      if (canPreviewVersion(version)) {
+        openVersionPreview(version);
+      }
+    }}
+  >
+    {#snippet leading()}
+      <PoodleIcon icon={leadingIcon} size="xl" />
+    {/snippet}
 
-  <div class="inline-list-card__trailing">
-    <PoodlePill tone={getVersionStateTone(version.state)} appearance="badge" size="sm">
-      {getMediaVersionStateLabel(version.state)}
-    </PoodlePill>
-    {#if isCurrentVersion(version)}
-      <PoodlePill tone={getMediaMetaTone("current")} appearance="badge" size="sm">
-        Current
-      </PoodlePill>
-    {/if}
-  </div>
+    {#snippet subtitleContent()}
+      {getVersionSubtitle(version)} · <TimeAgo datetime={version.createdAt} short tooltipFormat="datetime" />
+    {/snippet}
 
-  <div class="inline-list-card__actions">
-    <button
-      type="button"
-      onclick={() => requestActivate(version)}
-      disabled={!canActivateVersion(version)}
-      aria-label="Activate version"
-    >
-      <Check size={14} />
-    </button>
-    <button
-      type="button"
-      onclick={() => requestDelete(version)}
-      disabled={!canDeleteVersion(version)}
-      aria-label="Delete version"
-    >
-      <Trash2 size={14} />
-    </button>
-  </div>
+    {#snippet badges()}
+      {#if isCurrentVersion(version)}
+        <PoodlePill tone={getMediaMetaTone("current")} appearance="badge" size="sm">
+          Current
+        </PoodlePill>
+      {/if}
+    {/snippet}
+  </PoodleListCard>
 {/snippet}
 
 {#snippet usageItemSnippet(usage: MediaUsage)}
@@ -621,11 +645,11 @@ import { browser } from "$app/environment";
         <EntityDetailModule>
           {#snippet children()}
             <PoodleCallout tone="danger" title="Unable to load versions" message={versionsData.error} announceMode="polite">
-              <svelte:fragment slot="actions">
+              {#snippet actions()}
                 <PoodleButton type="button" variant="ghost" size="sm" onclick={() => versionsData.refetch()}>
                   Retry
                 </PoodleButton>
-              </svelte:fragment>
+              {/snippet}
             </PoodleCallout>
           {/snippet}
         </EntityDetailModule>
@@ -717,11 +741,11 @@ import { browser } from "$app/environment";
         <EntityDetailModule span="full">
           {#snippet children()}
             <PoodleCallout tone="danger" title="Unable to load usage" message={usagesData.error} announceMode="polite">
-              <svelte:fragment slot="actions">
+              {#snippet actions()}
                 <PoodleButton type="button" variant="ghost" size="sm" onclick={() => usagesData.refetch()}>
                   Retry
                 </PoodleButton>
-              </svelte:fragment>
+              {/snippet}
             </PoodleCallout>
           {/snippet}
         </EntityDetailModule>
@@ -745,6 +769,20 @@ import { browser } from "$app/environment";
 
 {#if media}
 
+  <PoodleDialog
+    bind:open={replaceDialogOpen}
+    title="Replace file"
+    description={`Upload a new version for ${media.title || media.originalFilename || media.id}.`}
+    width="lg"
+    showCloseButton
+  >
+    <MediaReplaceFileForm
+      mediaId={media.id}
+      onCancel={() => { replaceDialogOpen = false; }}
+      onSuccess={handleReplaceSuccess}
+    />
+  </PoodleDialog>
+
   <!-- Edit Dialog -->
   <FormDialog
     bind:open={editDialogOpen}
@@ -753,58 +791,64 @@ import { browser } from "$app/environment";
     error={editDialogError}
     submitting={editDialogSubmitting}
     showDefaultActions={false}
-    on:cancel={closeEditDialog}
+    onCancel={closeEditDialog}
   >
     <form id="media-edit-form" onsubmit={handleEditSubmit}>
       <div class="form-fields">
-          <PoodleField id="edit-title" label="Title" let:describedBy>
-            <PoodleTextInput
-              id="edit-title"
-              name="title"
-              value={editTitle}
-              describedBy={describedBy}
-              placeholder="Enter a title for this media"
-              disabled={editDialogSubmitting}
-              on:valueChange={(event) => { editTitle = event.detail.value; }}
-            />
+          <PoodleField id="edit-title" label="Title">
+            {#snippet control({ describedBy })}
+              <PoodleTextInput
+                id="edit-title"
+                name="title"
+                value={editTitle}
+                describedBy={describedBy}
+                placeholder="Enter a title for this media"
+                disabled={editDialogSubmitting}
+                onValueChange={(nextValue) => { editTitle = nextValue; }}
+              />
+            {/snippet}
           </PoodleField>
 
-          <PoodleField id="edit-filename" label="Filename" hint="The filename shown when downloading" let:describedBy>
-            <PoodleTextInput
-              id="edit-filename"
-              name="filename"
-              value={editFilename}
-              describedBy={describedBy}
-              placeholder="e.g. document.pdf"
-              disabled={editDialogSubmitting}
-              on:valueChange={(event) => { editFilename = event.detail.value; }}
-            />
+          <PoodleField id="edit-filename" label="Filename" hint="The filename shown when downloading">
+            {#snippet control({ describedBy })}
+              <PoodleTextInput
+                id="edit-filename"
+                name="filename"
+                value={editFilename}
+                describedBy={describedBy}
+                placeholder="e.g. document.pdf"
+                disabled={editDialogSubmitting}
+                onValueChange={(nextValue) => { editFilename = nextValue; }}
+              />
+            {/snippet}
           </PoodleField>
 
-          <PoodleField id="edit-visibility" label="Visibility" let:describedBy>
-            <PoodleSelect
-              id="edit-visibility"
-              name="visibility"
-              value={editVisibility}
-              describedBy={describedBy}
-              options={editVisibilityOptions}
-              disabled={editDialogSubmitting}
-              on:valueChange={(event) => { editVisibility = event.detail.value; }}
-            />
+          <PoodleField id="edit-visibility" label="Visibility">
+            {#snippet control({ describedBy })}
+              <PoodleSelect
+                id="edit-visibility"
+                name="visibility"
+                value={editVisibility}
+                describedBy={describedBy}
+                options={editVisibilityOptions}
+                disabled={editDialogSubmitting}
+                onValueChange={(value) => { editVisibility = value; }}
+              />
+            {/snippet}
           </PoodleField>
       </div>
     </form>
 
-    <svelte:fragment slot="actions">
+    {#snippet actions(submitting)}
       <PoodleFormActions align="between">
-        <PoodleButton type="button" variant="ghost" disabled={editDialogSubmitting} on:click={closeEditDialog}>
+        <PoodleButton type="button" variant="ghost" disabled={editDialogSubmitting} onClick={closeEditDialog}>
             Cancel
         </PoodleButton>
         <PoodleButton type="submit" form="media-edit-form" variant="primary" disabled={editDialogSubmitting}>
           {editDialogSubmitting ? "Saving..." : "Save"}
         </PoodleButton>
       </PoodleFormActions>
-    </svelte:fragment>
+    {/snippet}
   </FormDialog>
 
   <!-- Activate Version Dialog -->
@@ -890,13 +934,6 @@ import { browser } from "$app/environment";
     margin-bottom: 1.5rem;
   }
 
-  .inline-list-card__trailing,
-  .inline-list-card__actions {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-  }
-
   .inline-list-card__item-content {
     flex: 1;
     min-width: 0;
@@ -909,15 +946,6 @@ import { browser } from "$app/environment";
 
   .inline-list-card__item-content--usage {
     align-items: flex-start;
-  }
-
-  .inline-list-card__item-content--button {
-    width: 100%;
-    padding: 0;
-    border: none;
-    background: transparent;
-    text-align: left;
-    cursor: pointer;
   }
 
   .inline-list-card__dot {
@@ -949,38 +977,6 @@ import { browser } from "$app/environment";
   .inline-list-card__sublabel {
     font-size: 0.75rem;
     color: var(--poodle-color-text-secondary);
-  }
-
-  .inline-list-card__actions button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    padding: 0;
-    border: 0;
-    border-radius: var(--poodle-radius-control);
-    background: transparent;
-    color: var(--poodle-color-text-secondary);
-    cursor: pointer;
-    transition:
-      background 120ms ease,
-      color 120ms ease;
-  }
-
-  .inline-list-card__actions button:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--poodle-color-accent-base) 14%, transparent);
-    color: var(--poodle-color-text-primary);
-  }
-
-  .inline-list-card__actions button:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-
-  .inline-list-card__actions button:focus-visible {
-    outline: var(--poodle-border-width-focus) solid var(--poodle-color-accent-focusRing);
-    outline-offset: 0.125rem;
   }
 
   /* Full preview tab */

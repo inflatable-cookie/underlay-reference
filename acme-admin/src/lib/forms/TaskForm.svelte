@@ -71,19 +71,19 @@
   error={errors?.title ?? null}
   validationState={validationState(errors?.title)}
   required
-  let:describedBy
-  let:validationState={titleValidationState}
 >
-  <TextInput
-    id={`task-${mode}-title`}
-    name="title"
-    value={title}
-    describedBy={describedBy}
-    validationState={titleValidationState}
-    placeholder="Enter task title"
-    disabled={submitting}
-    on:valueChange={(event) => { title = event.detail.value; }}
-  />
+  {#snippet control({ describedBy, validationState })}
+    <TextInput
+      id={`task-${mode}-title`}
+      name="title"
+      value={title}
+      describedBy={describedBy}
+      validationState={validationState}
+      placeholder="Enter task title"
+      disabled={submitting}
+      onValueChange={(nextValue) => { title = nextValue; }}
+    />
+  {/snippet}
 </Field>
 
 <Field
@@ -91,18 +91,19 @@
   label="Description"
   error={errors?.description ?? null}
   validationState={validationState(errors?.description)}
-  let:describedBy
 >
-  <TextInput
-    id={`task-${mode}-description`}
-    name="description"
-    value={description}
-    describedBy={describedBy}
-    placeholder="Enter task description (optional)"
-    rows={4}
-    disabled={submitting}
-    on:valueChange={(event) => { description = event.detail.value; }}
-  />
+  {#snippet control({ describedBy })}
+    <TextInput
+      id={`task-${mode}-description`}
+      name="description"
+      value={description}
+      describedBy={describedBy}
+      placeholder="Enter task description (optional)"
+      rows={4}
+      disabled={submitting}
+      onValueChange={(nextValue) => { description = nextValue; }}
+    />
+  {/snippet}
 </Field>
 
 <Field
@@ -125,17 +126,18 @@
       label="Status"
       error={errors?.status ?? null}
       validationState={validationState(errors?.status)}
-      let:describedBy
     >
-      <Select
-        id="task-edit-status"
-        name="status"
-        value={status}
-        describedBy={describedBy}
-        options={statusItems}
-        disabled={submitting}
-        on:valueChange={(event) => { status = event.detail.value; }}
-      />
+      {#snippet control({ describedBy })}
+        <Select
+          id="task-edit-status"
+          name="status"
+          value={status}
+          describedBy={describedBy}
+          options={statusItems}
+          disabled={submitting}
+          onValueChange={(value) => { status = value; }}
+        />
+      {/snippet}
     </Field>
   {/if}
 
@@ -144,17 +146,18 @@
     label="Priority"
     error={errors?.priority ?? null}
     validationState={validationState(errors?.priority)}
-    let:describedBy
   >
-    <Select
-      id={`task-${mode}-priority`}
-      name="priority"
-      value={priority}
-      describedBy={describedBy}
-      options={priorityItems}
-      disabled={submitting}
-      on:valueChange={(event) => { priority = event.detail.value; }}
-    />
+    {#snippet control({ describedBy })}
+      <Select
+        id={`task-${mode}-priority`}
+        name="priority"
+        value={priority}
+        describedBy={describedBy}
+        options={priorityItems}
+        disabled={submitting}
+        onValueChange={(value) => { priority = value; }}
+      />
+    {/snippet}
   </Field>
 </div>
 
@@ -163,17 +166,18 @@
   label="Due Date"
   error={errors?.dueDate ?? null}
   validationState={validationState(errors?.dueDate)}
-  let:describedBy
 >
-  <TextInput
-    id={`task-${mode}-due-date`}
-    name="dueDate"
-    type="date"
-    value={dueDate}
-    describedBy={describedBy}
-    disabled={submitting}
-    on:valueChange={(event) => { dueDate = event.detail.value; }}
-  />
+  {#snippet control({ describedBy })}
+    <TextInput
+      id={`task-${mode}-due-date`}
+      name="dueDate"
+      type="date"
+      value={dueDate}
+      describedBy={describedBy}
+      disabled={submitting}
+      onValueChange={(nextValue) => { dueDate = nextValue; }}
+    />
+  {/snippet}
 </Field>
 
 {#if labels.length > 0}
@@ -206,7 +210,7 @@
 {/if}
 
 <FormActions align="end">
-  <Button type="button" variant="secondary" disabled={submitting} on:click={onCancel}>
+  <Button type="button" variant="secondary" disabled={submitting} onClick={onCancel}>
     Cancel
   </Button>
   <Button type="submit" variant="primary" disabled={submitting}>

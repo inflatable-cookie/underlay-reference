@@ -100,21 +100,21 @@
     error={errors?.email ?? null}
     validationState={validationState(errors?.email)}
     required
-    let:describedBy
-    let:validationState={emailValidationState}
   >
-    <TextInput
-      id="user-email"
-      name="email"
-      type="email"
-      inputMode="email"
-      value={emailValue}
-      describedBy={describedBy}
-      validationState={emailValidationState}
-      placeholder="name@example.com"
-      maxLength={320}
-      on:valueChange={(event) => { emailValue = event.detail.value; }}
-    />
+    {#snippet control({ describedBy, validationState })}
+      <TextInput
+        id="user-email"
+        name="email"
+        type="email"
+        inputMode="email"
+        value={emailValue}
+        describedBy={describedBy}
+        validationState={validationState}
+        placeholder="name@example.com"
+        maxLength={320}
+        onValueChange={(nextValue) => { emailValue = nextValue; }}
+      />
+    {/snippet}
   </Field>
 
   <Field
@@ -122,19 +122,19 @@
     label="Display Name"
     error={errors?.displayName ?? null}
     validationState={validationState(errors?.displayName)}
-    let:describedBy
-    let:validationState={displayNameValidationState}
   >
+    {#snippet control({ describedBy, validationState })}
       <TextInput
         id="user-display-name"
         name="displayName"
         value={displayNameValue}
         describedBy={describedBy}
-        validationState={displayNameValidationState}
+        validationState={validationState}
         placeholder="Optional"
         maxLength={100}
-        on:valueChange={(event) => { displayNameValue = event.detail.value; }}
+        onValueChange={(nextValue) => { displayNameValue = nextValue; }}
       />
+    {/snippet}
   </Field>
 </FieldSet>
 
@@ -145,8 +145,8 @@
     error={errors?.role ?? null}
     validationState={validationState(errors?.role)}
     required
-    let:describedBy
   >
+    {#snippet control({ describedBy })}
       <Select
         id="user-role"
         name="role"
@@ -154,8 +154,9 @@
         describedBy={describedBy}
         options={roleItems}
         placeholder="Select role"
-        on:valueChange={(event) => { roleValue = event.detail.value; }}
+        onValueChange={(value) => { roleValue = value; }}
       />
+    {/snippet}
   </Field>
 
   <Field
@@ -164,8 +165,8 @@
     error={errors?.status ?? null}
     validationState={validationState(errors?.status)}
     required
-    let:describedBy
   >
+    {#snippet control({ describedBy })}
       <Select
         id="user-status"
         name="status"
@@ -173,8 +174,9 @@
         describedBy={describedBy}
         options={statusItems}
         placeholder="Select status"
-        on:valueChange={(event) => { statusValue = event.detail.value; }}
+        onValueChange={(value) => { statusValue = value; }}
       />
+    {/snippet}
   </Field>
 </FieldSet>
 
@@ -186,30 +188,31 @@
       hint="Sends a password reset email so the user can set an initial password."
       error={errors?.sendPasswordReset ?? null}
       validationState={validationState(errors?.sendPasswordReset)}
-      let:describedBy
     >
-      <input
-        type="hidden"
-        name="sendPasswordReset"
-        value={sendPasswordResetValue ? "true" : "false"}
-      />
-      <div class="user-form__switch-row">
-        <span class="user-form__switch-label">No</span>
-        <Switch
-          id="user-send-password-reset"
-          name="sendPasswordReset-switch"
-          checked={sendPasswordResetValue}
-          describedBy={describedBy}
-          ariaLabel="Send password reset email"
-          on:checkedChange={(event) => { sendPasswordResetValue = event.detail.checked; }}
+      {#snippet control({ describedBy })}
+        <input
+          type="hidden"
+          name="sendPasswordReset"
+          value={sendPasswordResetValue ? "true" : "false"}
         />
-        <span class="user-form__switch-label">Yes</span>
-      </div>
+        <div class="user-form__switch-row">
+          <span class="user-form__switch-label">No</span>
+          <Switch
+            id="user-send-password-reset"
+            name="sendPasswordReset-switch"
+            checked={sendPasswordResetValue}
+            describedBy={describedBy}
+            ariaLabel="Send password reset email"
+            onCheckedChange={(checked) => { sendPasswordResetValue = checked; }}
+          />
+          <span class="user-form__switch-label">Yes</span>
+        </div>
+      {/snippet}
     </Field>
   </FieldSet>
 {/if}
 
-<FormActions align="start">
+<FormActions align="end">
   <div class="user-form__actions" bind:this={actionBarElement}>
     <input type="hidden" name="intent" value={intent} />
 
@@ -217,7 +220,7 @@
       <input type="hidden" name="returnTo" value={returnTo} />
     {/if}
 
-    <Button type="button" variant="ghost" on:click={handleCancel}>
+    <Button type="button" variant="ghost" onClick={handleCancel}>
       Cancel
     </Button>
 
@@ -230,8 +233,8 @@
         variant="primary"
         items={editIntentItems}
         disabled={!isFormValid}
-        on:click={() => submitWithIntent(intent)}
-        on:action={(event) => submitWithIntent(event.detail.value as "save" | "save-close")}
+        onClick={() => submitWithIntent(intent)}
+        onAction={(value) => submitWithIntent(value as "save" | "save-close")}
       >
         {intent === "save" ? "Save changes" : "Save & close"}
       </SplitButton>

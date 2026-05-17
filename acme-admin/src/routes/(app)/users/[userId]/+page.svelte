@@ -235,11 +235,11 @@
     return actions;
   }
 
-  function handleSessionRowAction(event: CustomEvent<{ rowId: string; row: TableRow; action: TableRowAction }>) {
-    const session = event.detail.row.data as Session | undefined;
+  function handleSessionRowAction(payload: { rowId: string; row: TableRow; action: TableRowAction }) {
+    const session = payload.row.data as Session | undefined;
     if (!session) return;
 
-    switch (event.detail.action.value) {
+    switch (payload.action.value) {
       case "revoke":
         sessionToRevoke = session;
         break;
@@ -249,11 +249,11 @@
     }
   }
 
-  function handleActivityRowAction(event: CustomEvent<{ rowId: string; row: TableRow; action: TableRowAction }>) {
-    const entry = event.detail.row.data as ActivityEntry | undefined;
+  function handleActivityRowAction(payload: { rowId: string; row: TableRow; action: TableRowAction }) {
+    const entry = payload.row.data as ActivityEntry | undefined;
     if (!entry) return;
 
-    switch (event.detail.action.value) {
+    switch (payload.action.value) {
       case "copy-activity-id":
         void copyToClipboard(entry.id);
         break;
@@ -421,7 +421,6 @@
   meta={headerMeta as never}
   headerActions={headerActionsSnippet as never}
   tabs={detailTabs as never}
-  tabsVariant="card"
   tabsSize="sm"
   keepMountedTabs
   onTabChange={(tabId) => {
@@ -450,8 +449,10 @@
 {#snippet headerActionsSnippet()}
   {#if user}
     {@const currentDetailUser = user}
-    <PoodleMenu items={getUserMenuItems(currentDetailUser)} ariaLabel="User actions" placement="bottom-end" on:action={(event) => handleUserMenuAction(currentDetailUser, event.detail.value)}>
-      <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="User actions" />
+    <PoodleMenu items={getUserMenuItems(currentDetailUser)} ariaLabel="User actions" placement="bottom-end" onAction={(value) => handleUserMenuAction(currentDetailUser, value)}>
+      {#snippet trigger()}
+        <PoodleIconButton icon="ellipsis" ariaLabel="User actions" />
+      {/snippet}
     </PoodleMenu>
   {/if}
 {/snippet}
@@ -485,9 +486,9 @@
       rowActions={sessionActions}
       emptyMessage="No sessions found"
       showLimitSelector={false}
-      on:rowActionSelect={handleSessionRowAction}
+      onRowActionSelect={handleSessionRowAction}
     >
-      <svelte:fragment slot="cell" let:column let:value>
+      {#snippet cell(column, row, value)}
         {#if column.id === "status"}
           <PoodlePill tone={getSessionStatusTone(String(value ?? ""))} appearance="badge" size="lg">{value}</PoodlePill>
         {:else if column.id === "ipAddress"}
@@ -495,7 +496,7 @@
         {:else}
           {value}
         {/if}
-      </svelte:fragment>
+      {/snippet}
     </DataTable>
   {/if}
 {/snippet}
@@ -512,9 +513,9 @@
       rowActions={activityActions}
       emptyMessage="No activity recorded for this user"
       showLimitSelector={false}
-      on:rowActionSelect={handleActivityRowAction}
+      onRowActionSelect={handleActivityRowAction}
     >
-      <svelte:fragment slot="cell" let:column let:value>
+      {#snippet cell(column, row, value)}
         {#if column.id === "action"}
           <PoodlePill tone={getActivityTone(String(value ?? ""))} appearance="badge" size="lg">{value}</PoodlePill>
         {:else if column.id === "resourceId"}
@@ -522,7 +523,7 @@
         {:else}
           {value}
         {/if}
-      </svelte:fragment>
+      {/snippet}
     </DataTable>
   {/if}
 {/snippet}
@@ -533,7 +534,7 @@
   subtitle="Select a new role for this user."
   submitting={updatingRole}
   showDefaultActions={false}
-  on:cancel={() => (showRoleDialog = false)}
+  onCancel={() => (showRoleDialog = false)}
 >
   <form
     id="user-role-form"
@@ -542,30 +543,32 @@
       void handleRoleChange();
     }}
   >
-    <PoodleField id="user-role-dialog" label="Role" let:describedBy>
-      <PoodleSelect
-        id="user-role-dialog"
-        value={selectedRole}
-        describedBy={describedBy}
-        options={roleItems}
-        placeholder="Select role"
-        disabled={updatingRole}
-        on:valueChange={(event) => {
-          selectedRole = event.detail.value as UserRole;
-        }}
-      />
+    <PoodleField id="user-role-dialog" label="Role">
+      {#snippet control({ describedBy })}
+        <PoodleSelect
+          id="user-role-dialog"
+          value={selectedRole}
+          describedBy={describedBy}
+          options={roleItems}
+          placeholder="Select role"
+          disabled={updatingRole}
+          onValueChange={(value) => {
+            selectedRole = value as UserRole;
+          }}
+        />
+      {/snippet}
     </PoodleField>
   </form>
-  <svelte:fragment slot="actions">
+  {#snippet actions(submitting)}
     <PoodleFormActions align="end">
-      <PoodleButton type="button" variant="ghost" disabled={updatingRole} on:click={() => (showRoleDialog = false)}>
+      <PoodleButton type="button" variant="ghost" disabled={updatingRole} onClick={() => (showRoleDialog = false)}>
         Cancel
       </PoodleButton>
       <PoodleButton type="submit" form="user-role-form" variant="primary" disabled={updatingRole}>
         {updatingRole ? "Saving..." : "Save"}
       </PoodleButton>
     </PoodleFormActions>
-  </svelte:fragment>
+  {/snippet}
 </FormDialog>
 
 <PoodleAlertDialog

@@ -191,19 +191,19 @@
       <Select
         id="batch-status"
         value={statusValue}
-        items={[
+        options={[
           { value: TaskStatus.Pending, label: "Pending" },
           { value: TaskStatus.InProgress, label: "In Progress" },
           { value: TaskStatus.Completed, label: "Completed" }
         ]}
-        onchange={(value) => {
+        onValueChange={(value) => {
           statusValue = value as TaskStatus;
         }}
       />
     </Field>
     <div class="tasks-list-page__dialog-actions">
-      <Button type="button" variant="secondary" on:click={onCancel}>Cancel</Button>
-      <Button type="button" variant="primary" on:click={() => onSubmit({ status: statusValue })}>
+      <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+      <Button type="button" variant="primary" onClick={() => onSubmit({ status: statusValue })}>
         Update {ids.length} task{ids.length === 1 ? "" : "s"}
       </Button>
     </div>

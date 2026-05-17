@@ -148,7 +148,7 @@
     ariaLabel="View trash"
     tooltip="View Trash"
     disabled={ctx.selectionMode || ctx.reorderMode}
-    on:click={handleViewTrash}
+    onClick={handleViewTrash}
   />
 {/snippet}
 

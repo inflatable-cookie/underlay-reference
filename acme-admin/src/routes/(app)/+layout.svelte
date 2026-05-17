@@ -182,9 +182,9 @@ import {
 		edge="right"
 		modal={contextPanelIsMobile}
 		ariaLabel="Context panel"
-		on:requestClose={closeContextPanel}
-		on:openChange={(event) => {
-			setContextPanelOpen(event.detail.open);
+		onRequestClose={closeContextPanel}
+		onOpenChange={(open) => {
+			setContextPanelOpen(open);
 		}}
 	>
 		<div class="admin-context-panel__content">

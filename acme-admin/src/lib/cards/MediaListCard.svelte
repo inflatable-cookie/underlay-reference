@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AlertDialog as PoodleAlertDialog, MediaThumbnail as PoodleMediaThumbnail, formatFileSize } from "@poodle/svelte";
+  import { AlertDialog, MediaThumbnail, formatFileSize } from "@poodle/svelte";
   import { EntityListCard, type EntityListCardBadge } from "@decodelabs/underlay/templates";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import {
@@ -32,8 +32,13 @@
   }: Props = $props();
 
   let confirmDeleteOpen = $state(false);
+  let failedThumbnailUrl = $state<string | null>(null);
 
   const title = $derived(media.title ?? media.originalFilename ?? "Untitled");
+  const rawThumbnailUrl = $derived(media.thumbnailUrl?.trim() || null);
+  const previewImageUrl = $derived(
+    rawThumbnailUrl && rawThumbnailUrl !== failedThumbnailUrl ? rawThumbnailUrl : null
+  );
   const subtitle = $derived(
     media.title && media.originalFilename && media.originalFilename !== media.title
       ? media.originalFilename
@@ -66,6 +71,12 @@
     if (media.kind === MediaKind.Video) return "video";
     return "document";
   });
+  const leadingIcon = $derived.by((): string => {
+    if (media.kind === MediaKind.Image) return "image";
+    if (media.kind === MediaKind.Audio) return "music";
+    if (media.kind === MediaKind.Video) return "video";
+    return "file-text";
+  });
 
   function handleOpen(): void {
     void gotoWithContext(`/media/${media.id}`, {
@@ -93,20 +104,21 @@
 </script>
 
 {#snippet mediaLeading()}
-  <PoodleMediaThumbnail
+  <MediaThumbnail
     kind={thumbnailKind}
     presentation="default"
     aspectRatio="square"
     ariaLabel={title}
   >
-    {#if media.thumbnailUrl}
-      <img
-        src={media.thumbnailUrl}
-        alt={media.title ?? ""}
-        class="media-list-card__thumbnail-image"
-      />
-    {/if}
-  </PoodleMediaThumbnail>
+    <img
+      src={previewImageUrl}
+      alt={media.title ?? ""}
+      class="media-list-card__thumbnail-image"
+      onerror={() => {
+        failedThumbnailUrl = rawThumbnailUrl;
+      }}
+    />
+  </MediaThumbnail>
 {/snippet}
 
 <EntityListCard
@@ -117,7 +129,8 @@
   {selected}
   badges={badges}
   footerText={footerText}
-  leading={mediaLeading}
+  leading={previewImageUrl ? mediaLeading : undefined}
+  {leadingIcon}
   contextMenuItems={selectionMode || reorderMode ? [] : menuItems}
   contextMenuAriaLabel="Media actions"
   contextMenuTrigger="leading"
@@ -127,7 +140,7 @@
 />
 
 {#if confirmDeleteOpen}
-  <PoodleAlertDialog
+  <AlertDialog
     open={confirmDeleteOpen}
     title="Move media to trash"
     description={`Are you sure you want to move "${title}" to trash? You can restore it later.`}

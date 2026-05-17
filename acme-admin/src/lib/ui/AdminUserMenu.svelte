@@ -67,15 +67,17 @@
 
 <div class={variant === "mobile" ? "admin-mobile-overlay__user" : "admin-nav__user-section"}>
 	<PoodlePopover bind:open={userMenuOpen} placement="top-start" ariaLabel="User menu" block>
-		<div slot="trigger" class="admin-nav__user-trigger">
-			<div class="admin-nav__user-avatar" aria-hidden="true">
-				{initialsFromName(currentUser?.displayName ?? "Admin")}
+		{#snippet trigger()}
+			<div class="admin-nav__user-trigger">
+				<div class="admin-nav__user-avatar" aria-hidden="true">
+					{initialsFromName(currentUser?.displayName ?? "Admin")}
+				</div>
+				<div class="admin-nav__user-meta">
+					<span class="admin-nav__user-name">{currentUser?.displayName ?? "Admin user"}</span>
+					<span class="admin-nav__user-role">{roleLabel(currentUser?.roles)}</span>
+				</div>
 			</div>
-			<div class="admin-nav__user-meta">
-				<span class="admin-nav__user-name">{currentUser?.displayName ?? "Admin user"}</span>
-				<span class="admin-nav__user-role">{roleLabel(currentUser?.roles)}</span>
-			</div>
-		</div>
+		{/snippet}
 
 		<nav class="admin-nav__user-menu" aria-label="User menu">
 			<a href="/account" class="admin-nav__user-menu-item" onclick={handleNavigate}>

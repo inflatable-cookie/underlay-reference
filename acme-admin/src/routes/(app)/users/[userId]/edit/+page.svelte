@@ -168,10 +168,10 @@ import {
   {#if user}
     <PoodleMetaBar ariaLabel="User metadata">
       <PoodleMetaItem label="ID">
-        <Code inline source={user.id} showCopyButton />
+        <Code inline inlineVariant="plain" typography="inline" source={user.id} showCopyButton />
       </PoodleMetaItem>
       <PoodleMetaItem label="Email">
-        <Code inline source={user.email} showCopyButton />
+        <Code inline inlineVariant="plain" typography="inline" source={user.email} showCopyButton />
       </PoodleMetaItem>
     </PoodleMetaBar>
   {/if}

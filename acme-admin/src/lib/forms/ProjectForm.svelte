@@ -199,17 +199,18 @@ import {
       error={errors?.status ?? null}
       validationState={validationState(errors?.status)}
       required
-      let:describedBy
     >
-      <Select
-        id="project-status"
-        name="status"
-        value={statusValue}
-        describedBy={describedBy}
-        options={statusItems}
-        placeholder="Select status"
-        on:valueChange={(event) => { statusValue = event.detail.value; }}
-      />
+      {#snippet control({ describedBy })}
+        <Select
+          id="project-status"
+          name="status"
+          value={statusValue}
+          describedBy={describedBy}
+          options={statusItems}
+          placeholder="Select status"
+          onValueChange={(value) => { statusValue = value; }}
+        />
+      {/snippet}
     </Field>
 </FieldSet>
 
@@ -220,19 +221,19 @@ import {
       error={errors?.name ?? null}
       validationState={validationState(errors?.name)}
       required
-      let:describedBy
-      let:validationState={nameValidationState}
     >
-      <TextInput
-        id="project-name"
-        name="name"
-        value={nameValue}
-        describedBy={describedBy}
-        validationState={nameValidationState}
-        placeholder="e.g., Website Redesign"
-        maxLength={128}
-        on:valueChange={(event) => { nameValue = event.detail.value; }}
-      />
+      {#snippet control({ describedBy, validationState })}
+        <TextInput
+          id="project-name"
+          name="name"
+          value={nameValue}
+          describedBy={describedBy}
+          validationState={validationState}
+          placeholder="e.g., Website Redesign"
+          maxLength={128}
+          onValueChange={(nextValue) => { nameValue = nextValue; }}
+        />
+      {/snippet}
     </Field>
 
     <Field
@@ -250,7 +251,7 @@ import {
     </Field>
 </FieldSet>
 
-<FormActions align="start">
+<FormActions align="end">
   <div class="project-form__actions" bind:this={actionBarElement}>
     <input type="hidden" name="intent" value={intent} />
 
@@ -258,7 +259,7 @@ import {
       <input type="hidden" name="returnTo" value={returnTo} />
     {/if}
 
-    <Button type="button" variant="ghost" on:click={handleCancel}>
+    <Button type="button" variant="ghost" onClick={handleCancel}>
       Cancel
     </Button>
 
@@ -266,8 +267,8 @@ import {
       variant="primary"
       items={mode === "create" ? createIntentItems : editIntentItems}
       disabled={!isFormValid}
-      on:click={() => submitWithIntent(intent)}
-      on:action={(event) => submitWithIntent(event.detail.value as "save" | "save-close")}
+      onClick={() => submitWithIntent(intent)}
+      onAction={(value) => submitWithIntent(value as "save" | "save-close")}
     >
       {#if mode === "create"}
         {intent === "save" ? "Create & continue" : "Create & close"}

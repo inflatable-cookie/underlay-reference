@@ -253,10 +253,10 @@ import {
             </p>
           </div>
         </div>
-        <PoodleButton variant="secondary" on:click={openSettings}>
-          <svelte:fragment slot="leading">
+        <PoodleButton variant="secondary" onClick={openSettings}>
+          {#snippet leading()}
             <Settings size={16} />
-          </svelte:fragment>
+          {/snippet}
           Edit Profile
         </PoodleButton>
       </div>
@@ -297,7 +297,7 @@ import {
     success={saveSuccess}
     width="40rem"
     showDefaultActions={false}
-    on:cancel={closeSettings}
+    onCancel={closeSettings}
   >
     <form
       id="account-settings-form"
@@ -309,154 +309,174 @@ import {
     >
         <PoodleFieldSet legend="Identity">
           <div class="account-form-grid account-form-grid--two">
-            <PoodleField id="account-full-name" label="Full Name" hint="Your full name as you wish to be known" let:describedBy>
-              <PoodleTextInput
-                id="account-full-name"
-                value={fullName}
-                describedBy={describedBy}
-                placeholder="e.g. Alice Smith"
-                maxLength={256}
-                disabled={saving}
-                on:valueChange={(event) => { fullName = event.detail.value; }}
-              />
+            <PoodleField id="account-full-name" label="Full Name" hint="Your full name as you wish to be known">
+              {#snippet control({ describedBy })}
+                <PoodleTextInput
+                  id="account-full-name"
+                  value={fullName}
+                  describedBy={describedBy}
+                  placeholder="e.g. Alice Smith"
+                  maxLength={256}
+                  disabled={saving}
+                  onValueChange={(nextValue) => { fullName = nextValue; }}
+                />
+              {/snippet}
             </PoodleField>
-            <PoodleField id="account-display-name" label="Display Name" hint="Short name shown in the UI" let:describedBy>
-              <PoodleTextInput
-                id="account-display-name"
-                value={formDisplayName}
-                describedBy={describedBy}
-                placeholder="e.g. Alice"
-                maxLength={64}
-                disabled={saving}
-                on:valueChange={(event) => { formDisplayName = event.detail.value; }}
-              />
+            <PoodleField id="account-display-name" label="Display Name" hint="Short name shown in the UI">
+              {#snippet control({ describedBy })}
+                <PoodleTextInput
+                  id="account-display-name"
+                  value={formDisplayName}
+                  describedBy={describedBy}
+                  placeholder="e.g. Alice"
+                  maxLength={64}
+                  disabled={saving}
+                  onValueChange={(nextValue) => { formDisplayName = nextValue; }}
+                />
+              {/snippet}
             </PoodleField>
           </div>
         </PoodleFieldSet>
 
         <PoodleFieldSet legend="Locale & Region">
           <div class="account-form-grid account-form-grid--two">
-            <PoodleField id="account-time-zone" label="Time Zone" let:describedBy>
-              <div class="timezone-field">
-                <PoodleSelect
-                  id="account-time-zone"
-                  value={timeZone}
-                  describedBy={describedBy}
-                  options={timezoneOptions}
-                  placeholder="Select timezone..."
-                  disabled={saving}
-                  on:valueChange={(event) => { timeZone = event.detail.value; }}
-                />
-                {#if browserTimezone && timeZone !== browserTimezone}
-                  <PoodleButton type="button" variant="secondary" size="sm" disabled={saving} on:click={useBrowserTimezone}>
-                    Use {browserTimezone}
-                  </PoodleButton>
-                {/if}
-              </div>
+            <PoodleField id="account-time-zone" label="Time Zone">
+              {#snippet control({ describedBy })}
+                <div class="timezone-field">
+                  <PoodleSelect
+                    id="account-time-zone"
+                    value={timeZone}
+                    describedBy={describedBy}
+                    options={timezoneOptions}
+                    placeholder="Select timezone..."
+                    disabled={saving}
+                    onValueChange={(value) => { timeZone = value; }}
+                  />
+                  {#if browserTimezone && timeZone !== browserTimezone}
+                    <PoodleButton type="button" variant="secondary" size="sm" disabled={saving} onClick={useBrowserTimezone}>
+                      Use {browserTimezone}
+                    </PoodleButton>
+                  {/if}
+                </div>
+              {/snippet}
             </PoodleField>
-            <PoodleField id="account-language" label="Language" let:describedBy>
-              <PoodleSelect
-                id="account-language"
-                value={language}
-                describedBy={describedBy}
-                options={languageOptions}
-                placeholder="Select language..."
-                disabled={saving}
-                on:valueChange={(event) => { language = event.detail.value; }}
-              />
+            <PoodleField id="account-language" label="Language">
+              {#snippet control({ describedBy })}
+                <PoodleSelect
+                  id="account-language"
+                  value={language}
+                  describedBy={describedBy}
+                  options={languageOptions}
+                  placeholder="Select language..."
+                  disabled={saving}
+                  onValueChange={(value) => { language = value; }}
+                />
+              {/snippet}
             </PoodleField>
           </div>
           <div class="account-form-grid account-form-grid--three">
-            <PoodleField id="account-country" label="Country" hint="ISO 3166-1 alpha-2" let:describedBy>
-              <PoodleTextInput
-                id="account-country"
-                value={countryCode}
-                describedBy={describedBy}
-                placeholder="e.g. GB"
-                maxLength={2}
-                disabled={saving}
-                on:valueChange={(event) => { countryCode = event.detail.value; }}
-              />
+            <PoodleField id="account-country" label="Country" hint="ISO 3166-1 alpha-2">
+              {#snippet control({ describedBy })}
+                <PoodleTextInput
+                  id="account-country"
+                  value={countryCode}
+                  describedBy={describedBy}
+                  placeholder="e.g. GB"
+                  maxLength={2}
+                  disabled={saving}
+                  onValueChange={(nextValue) => { countryCode = nextValue; }}
+                />
+              {/snippet}
             </PoodleField>
-            <PoodleField id="account-region" label="Region" let:describedBy>
-              <PoodleTextInput
-                id="account-region"
-                value={regionCode}
-                describedBy={describedBy}
-                placeholder="e.g. EU"
-                maxLength={8}
-                disabled={saving}
-                on:valueChange={(event) => { regionCode = event.detail.value; }}
-              />
+            <PoodleField id="account-region" label="Region">
+              {#snippet control({ describedBy })}
+                <PoodleTextInput
+                  id="account-region"
+                  value={regionCode}
+                  describedBy={describedBy}
+                  placeholder="e.g. EU"
+                  maxLength={8}
+                  disabled={saving}
+                  onValueChange={(nextValue) => { regionCode = nextValue; }}
+                />
+              {/snippet}
             </PoodleField>
-            <PoodleField id="account-currency" label="Currency" hint="ISO 4217" let:describedBy>
-              <PoodleTextInput
-                id="account-currency"
-                value={currencyPreference}
-                describedBy={describedBy}
-                placeholder="e.g. GBP"
-                maxLength={3}
-                disabled={saving}
-                on:valueChange={(event) => { currencyPreference = event.detail.value; }}
-              />
+            <PoodleField id="account-currency" label="Currency" hint="ISO 4217">
+              {#snippet control({ describedBy })}
+                <PoodleTextInput
+                  id="account-currency"
+                  value={currencyPreference}
+                  describedBy={describedBy}
+                  placeholder="e.g. GBP"
+                  maxLength={3}
+                  disabled={saving}
+                  onValueChange={(nextValue) => { currencyPreference = nextValue; }}
+                />
+              {/snippet}
             </PoodleField>
           </div>
         </PoodleFieldSet>
 
         <PoodleFieldSet legend="Communication Preferences">
           <div class="account-form-grid account-form-grid--three">
-            <PoodleField id="account-email-frequency" label="Email Frequency" let:describedBy>
-              <PoodleSelect
-                id="account-email-frequency"
-                value={emailFrequency}
-                describedBy={describedBy}
-                options={emailFrequencyOptions}
-                disabled={saving}
-                on:valueChange={(event) => { emailFrequency = event.detail.value; }}
-              />
-            </PoodleField>
-            <PoodleField id="account-marketing-emails" label="Marketing Emails" let:describedBy>
-              <div class="account-switch-row">
-                <span class="account-switch-label">No</span>
-                <PoodleSwitch
-                  id="account-marketing-emails"
-                  checked={emailMarketingOptIn}
+            <PoodleField id="account-email-frequency" label="Email Frequency">
+              {#snippet control({ describedBy })}
+                <PoodleSelect
+                  id="account-email-frequency"
+                  value={emailFrequency}
                   describedBy={describedBy}
-                  ariaLabel="Marketing emails"
+                  options={emailFrequencyOptions}
                   disabled={saving}
-                  on:checkedChange={(event) => { emailMarketingOptIn = event.detail.checked; }}
+                  onValueChange={(value) => { emailFrequency = value; }}
                 />
-                <span class="account-switch-label">Yes</span>
-              </div>
+              {/snippet}
             </PoodleField>
-            <PoodleField id="account-transactional-emails" label="Transactional Emails" let:describedBy>
-              <div class="account-switch-row">
-                <span class="account-switch-label">No</span>
-                <PoodleSwitch
-                  id="account-transactional-emails"
-                  checked={emailTransactionalOptIn}
-                  describedBy={describedBy}
-                  ariaLabel="Transactional emails"
-                  disabled={saving}
-                  on:checkedChange={(event) => { emailTransactionalOptIn = event.detail.checked; }}
-                />
-                <span class="account-switch-label">Yes</span>
-              </div>
+            <PoodleField id="account-marketing-emails" label="Marketing Emails">
+              {#snippet control({ describedBy })}
+                <div class="account-switch-row">
+                  <span class="account-switch-label">No</span>
+                  <PoodleSwitch
+                    id="account-marketing-emails"
+                    checked={emailMarketingOptIn}
+                    describedBy={describedBy}
+                    ariaLabel="Marketing emails"
+                    disabled={saving}
+                    onCheckedChange={(checked) => { emailMarketingOptIn = checked; }}
+                  />
+                  <span class="account-switch-label">Yes</span>
+                </div>
+              {/snippet}
+            </PoodleField>
+            <PoodleField id="account-transactional-emails" label="Transactional Emails">
+              {#snippet control({ describedBy })}
+                <div class="account-switch-row">
+                  <span class="account-switch-label">No</span>
+                  <PoodleSwitch
+                    id="account-transactional-emails"
+                    checked={emailTransactionalOptIn}
+                    describedBy={describedBy}
+                    ariaLabel="Transactional emails"
+                    disabled={saving}
+                    onCheckedChange={(checked) => { emailTransactionalOptIn = checked; }}
+                  />
+                  <span class="account-switch-label">Yes</span>
+                </div>
+              {/snippet}
             </PoodleField>
           </div>
         </PoodleFieldSet>
 
     </form>
-    <svelte:fragment slot="actions">
+    {#snippet actions(submitting)}
       <PoodleFormActions align="end">
-        <PoodleButton type="button" variant="ghost" disabled={saving} on:click={closeSettings}>
+        <PoodleButton type="button" variant="ghost" disabled={saving} onClick={closeSettings}>
           Cancel
         </PoodleButton>
         <PoodleButton type="submit" form="account-settings-form" variant="primary" disabled={saving}>
           {saving ? "Saving..." : "Save Changes"}
         </PoodleButton>
       </PoodleFormActions>
-    </svelte:fragment>
+    {/snippet}
   </FormDialog>
 {/if}
 

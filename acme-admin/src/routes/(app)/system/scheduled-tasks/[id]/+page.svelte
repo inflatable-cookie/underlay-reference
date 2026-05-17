@@ -203,7 +203,6 @@
   meta={headerMeta as never}
   headerActions={headerActionsSnippet as never}
   tabs={detailTabs as never}
-  tabsVariant="card"
   tabsSize="sm"
   keepMountedTabs
   onTabChange={(tabId) => {
@@ -226,8 +225,10 @@
 {/snippet}
 
 {#snippet headerActionsSnippet()}
-  <PoodleMenu items={menuItems} ariaLabel="Task actions" placement="bottom-end" on:action={(event) => handleMenuAction(event.detail.value)}>
-    <PoodleIconButton slot="trigger" icon="ellipsis" ariaLabel="Task actions" />
+  <PoodleMenu items={menuItems} ariaLabel="Task actions" placement="bottom-end" onAction={handleMenuAction}>
+    {#snippet trigger()}
+      <PoodleIconButton icon="ellipsis" ariaLabel="Task actions" />
+    {/snippet}
   </PoodleMenu>
 {/snippet}
 
@@ -304,9 +305,9 @@
       emptyMessage="No job runs found for this task"
       showLimitSelector={false}
       showRowActions={false}
-      on:rowClick={(event) => navigateToJob(event.detail.row.data as JobSummary)}
+      onRowClick={({ row }) => navigateToJob(row.data as JobSummary)}
     >
-      <svelte:fragment slot="cell" let:column let:row>
+      {#snippet cell(column, row)}
         {@const job = row.data as JobSummary | undefined}
         {#if column.id === "status" && job}
           <PoodlePill tone={getStatusTone(job.status)} appearance="badge" size="lg">
@@ -323,7 +324,7 @@
         {:else}
           {row.cells[column.id] ?? "—"}
         {/if}
-      </svelte:fragment>
+      {/snippet}
     </DataTable>
   </div>
 {/snippet}

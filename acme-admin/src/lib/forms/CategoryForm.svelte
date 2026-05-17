@@ -168,19 +168,19 @@ import {
       error={errors?.name ?? null}
       validationState={validationState(errors?.name)}
       required
-      let:describedBy
-      let:validationState={nameValidationState}
     >
-      <TextInput
-        id="category-name"
-        name="name"
-        value={nameValue}
-        describedBy={describedBy}
-        validationState={nameValidationState}
-        placeholder="e.g., Development"
-        maxLength={64}
-        on:valueChange={(event) => { nameValue = event.detail.value; }}
-      />
+      {#snippet control({ describedBy, validationState })}
+        <TextInput
+          id="category-name"
+          name="name"
+          value={nameValue}
+          describedBy={describedBy}
+          validationState={validationState}
+          placeholder="e.g., Development"
+          maxLength={64}
+          onValueChange={(nextValue) => { nameValue = nextValue; }}
+        />
+      {/snippet}
     </Field>
 
     <Field
@@ -190,30 +190,30 @@ import {
       validationState={slugFieldValidationState}
       description="Used in URLs, lowercase letters and hyphens only."
       required
-      let:describedBy
-      let:validationState={categorySlugValidationState}
     >
-      <TextInput
-        id="category-slug"
-        name="slug"
-        value={slugValue}
-        describedBy={describedBy}
-        validationState={categorySlugValidationState}
-        placeholder="e.g., development"
-        autocomplete="off"
-        required
-        pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-        maxLength={64}
-        validate={validateCategorySlug}
-        validationContext={{ categoryId }}
-        validationDebounce={300}
-        on:valueChange={(event) => { slugValue = event.detail.value; }}
-        on:validationChange={(event) => {
-          slugStatus = event.detail.status;
-          slugValidationMessage = event.detail.status === "invalid" ? event.detail.message || null : null;
-        }}
-        on:blur={handleSlugBlur}
-      />
+      {#snippet control({ describedBy, validationState })}
+        <TextInput
+          id="category-slug"
+          name="slug"
+          value={slugValue}
+          describedBy={describedBy}
+          validationState={validationState}
+          placeholder="e.g., development"
+          autocomplete="off"
+          required
+          pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+          maxLength={64}
+          validate={validateCategorySlug}
+          validationContext={{ categoryId }}
+          validationDebounce={300}
+          onValueChange={(nextValue) => { slugValue = nextValue; }}
+          onValidationChange={(detail) => {
+            slugStatus = detail.status;
+            slugValidationMessage = detail.status === "invalid" ? detail.message || null : null;
+          }}
+          onblur={handleSlugBlur}
+        />
+      {/snippet}
     </Field>
 
     <Field
@@ -222,19 +222,19 @@ import {
       error={errors?.description ?? null}
       validationState={validationState(errors?.description)}
       span="full"
-      let:describedBy
-      let:validationState={descriptionValidationState}
     >
-      <TextInput
-        id="category-description"
-        name="description"
-        value={descriptionValue}
-        describedBy={describedBy}
-        validationState={descriptionValidationState}
-        placeholder="Optional description for this category"
-        rows={3}
-        on:valueChange={(event) => { descriptionValue = event.detail.value; }}
-      />
+      {#snippet control({ describedBy, validationState })}
+        <TextInput
+          id="category-description"
+          name="description"
+          value={descriptionValue}
+          describedBy={describedBy}
+          validationState={validationState}
+          placeholder="Optional description for this category"
+          rows={3}
+          onValueChange={(nextValue) => { descriptionValue = nextValue; }}
+        />
+      {/snippet}
     </Field>
 </FieldSet>
 
@@ -244,14 +244,15 @@ import {
       label="Color"
       error={errors?.color ?? null}
       validationState={validationState(errors?.color)}
-      let:describedBy
     >
-      <input type="hidden" name="color" value={colorValue} />
-      <ColorPicker
-        value={colorValue}
-        ariaLabel="Category colour"
-        on:change={(event) => { colorValue = event.detail.value; }}
-      />
+      {#snippet control()}
+        <input type="hidden" name="color" value={colorValue} />
+        <ColorPicker
+          value={colorValue}
+          ariaLabel="Category colour"
+          onChange={(nextValue) => { colorValue = nextValue; }}
+        />
+      {/snippet}
     </Field>
 
     <Field
@@ -259,21 +260,22 @@ import {
       label="Status"
       error={errors?.isActive ?? null}
       validationState={validationState(errors?.isActive)}
-      let:describedBy
     >
-      <input type="hidden" name="isActive" value={isActive ? "true" : "false"} />
-      <Switch
-        id="category-status"
-        checked={isActive}
-        describedBy={describedBy}
-        ariaLabel="Category status"
-        label={isActive ? "Active" : "Inactive"}
-        on:checkedChange={(event) => { isActive = event.detail.checked; }}
-      />
+      {#snippet control({ describedBy })}
+        <input type="hidden" name="isActive" value={isActive ? "true" : "false"} />
+        <Switch
+          id="category-status"
+          checked={isActive}
+          describedBy={describedBy}
+          ariaLabel="Category status"
+          label={isActive ? "Active" : "Inactive"}
+          onCheckedChange={(checked) => { isActive = checked; }}
+        />
+      {/snippet}
     </Field>
 </FieldSet>
 
-<FormActions align="start">
+<FormActions align="end">
   <div class="category-form__actions" bind:this={actionBarElement}>
     <input type="hidden" name="intent" value={intent} />
 
@@ -281,7 +283,7 @@ import {
       <input type="hidden" name="returnTo" value={returnTo} />
     {/if}
 
-    <Button type="button" variant="ghost" on:click={handleCancel}>
+    <Button type="button" variant="ghost" onClick={handleCancel}>
       Cancel
     </Button>
 
@@ -289,8 +291,8 @@ import {
       variant="primary"
       items={mode === "create" ? createIntentItems : editIntentItems}
       disabled={!isFormValid}
-      on:click={() => submitWithIntent(intent)}
-      on:action={(event) => submitWithIntent(event.detail.value as "save" | "save-close")}
+      onClick={() => submitWithIntent(intent)}
+      onAction={(value) => submitWithIntent(value as "save" | "save-close")}
     >
       {#if mode === "create"}
         {intent === "save" ? "Create & continue" : "Create & close"}

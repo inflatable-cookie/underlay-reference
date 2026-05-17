@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AlertDialog as PoodleAlertDialog } from "@poodle/svelte";
+  import { AlertDialog } from "@poodle/svelte";
   import { EntityListCard, type EntityListCardBadge, type EntityListCardCounter } from "@decodelabs/underlay/templates";
   import type { ProjectWithCounts } from "@api-client";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
@@ -120,7 +120,7 @@
 />
 
 {#if confirmDeleteOpen}
-  <PoodleAlertDialog
+  <AlertDialog
     open={confirmDeleteOpen}
     title="Delete Project"
     description={`Are you sure you want to delete "${project.name}"? All tasks within this project will also be deleted.`}

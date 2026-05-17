@@ -212,17 +212,17 @@ import { auth } from "$lib/stores/auth";
         value={verificationCode}
         label="Authenticator code"
         disabled={verificationBusy}
-        on:valueChange={(event) => { verificationCode = event.detail.value; }}
-        on:complete={verifyTotp}
+        onValueChange={(value) => { verificationCode = value; }}
+        onComplete={verifyTotp}
       />
-      <PoodleFormActions align="start">
-        <PoodleButton type="button" variant="primary" disabled={verificationBusy} on:click={verifyTotp}>
+      <PoodleFormActions align="end">
+        <PoodleButton type="button" variant="primary" disabled={verificationBusy} onClick={verifyTotp}>
           {verificationBusy ? "Verifying..." : "Verify"}
         </PoodleButton>
       </PoodleFormActions>
     </PoodleCard>
     <p class="switch-method">
-      <PoodleButton variant="ghost" disabled={verificationBusy} on:click={switchToEmail}>
+      <PoodleButton variant="ghost" disabled={verificationBusy} onClick={switchToEmail}>
         Send code via email instead
       </PoodleButton>
     </p>
@@ -234,14 +234,14 @@ import { auth } from "$lib/stores/auth";
           value={verificationCode}
           label="Email code"
           disabled={verificationBusy}
-          on:valueChange={(event) => { verificationCode = event.detail.value; }}
-          on:complete={verifyEmailTotp}
+          onValueChange={(value) => { verificationCode = value; }}
+          onComplete={verifyEmailTotp}
         />
-        <PoodleFormActions align="start">
-          <PoodleButton type="button" variant="primary" disabled={verificationBusy} on:click={verifyEmailTotp}>
+        <PoodleFormActions align="end">
+          <PoodleButton type="button" variant="primary" disabled={verificationBusy} onClick={verifyEmailTotp}>
             {verificationBusy ? "Verifying..." : "Verify"}
           </PoodleButton>
-          <PoodleButton type="button" variant="secondary" disabled={verificationBusy} on:click={requestEmailTotp}>
+          <PoodleButton type="button" variant="secondary" disabled={verificationBusy} onClick={requestEmailTotp}>
             Resend Code
           </PoodleButton>
         </PoodleFormActions>
@@ -249,8 +249,8 @@ import { auth } from "$lib/stores/auth";
     {:else}
       <PoodleCard>
         <p class="muted">We'll send a verification code to your email address.</p>
-        <PoodleFormActions align="start">
-          <PoodleButton type="button" variant="primary" disabled={verificationBusy} on:click={requestEmailTotp}>
+        <PoodleFormActions align="end">
+          <PoodleButton type="button" variant="primary" disabled={verificationBusy} onClick={requestEmailTotp}>
             {verificationBusy ? "Sending..." : "Send Verification Code"}
           </PoodleButton>
         </PoodleFormActions>
@@ -258,7 +258,7 @@ import { auth } from "$lib/stores/auth";
     {/if}
     {#if pageData.data?.totpEnabled}
       <p class="switch-method">
-        <PoodleButton variant="ghost" disabled={verificationBusy} on:click={switchToTotp}>
+        <PoodleButton variant="ghost" disabled={verificationBusy} onClick={switchToTotp}>
           Use authenticator app instead
         </PoodleButton>
       </p>
@@ -276,30 +276,34 @@ import { auth } from "$lib/stores/auth";
     />
 
     <div class="password-form">
-      <PoodleField id="account-new-password" label="New password" let:describedBy>
-        <PoodleTextInput
-          id="account-new-password"
-          value={newPassword}
-          describedBy={describedBy}
-          type="password"
-          disabled={passwordBusy}
-          on:valueChange={(event) => { newPassword = event.detail.value; }}
-        />
+      <PoodleField id="account-new-password" label="New password">
+        {#snippet control({ describedBy })}
+          <PoodleTextInput
+            id="account-new-password"
+            value={newPassword}
+            describedBy={describedBy}
+            type="password"
+            disabled={passwordBusy}
+            onValueChange={(nextValue) => { newPassword = nextValue; }}
+          />
+        {/snippet}
       </PoodleField>
 
-      <PoodleField id="account-confirm-password" label="Confirm new password" let:describedBy>
-        <PoodleTextInput
-          id="account-confirm-password"
-          value={confirmPassword}
-          describedBy={describedBy}
-          type="password"
-          disabled={passwordBusy}
-          on:valueChange={(event) => { confirmPassword = event.detail.value; }}
-        />
+      <PoodleField id="account-confirm-password" label="Confirm new password">
+        {#snippet control({ describedBy })}
+          <PoodleTextInput
+            id="account-confirm-password"
+            value={confirmPassword}
+            describedBy={describedBy}
+            type="password"
+            disabled={passwordBusy}
+            onValueChange={(nextValue) => { confirmPassword = nextValue; }}
+          />
+        {/snippet}
       </PoodleField>
 
-      <PoodleFormActions align="start">
-        <PoodleButton type="button" variant="primary" disabled={passwordBusy} on:click={changePassword}>
+      <PoodleFormActions align="end">
+        <PoodleButton type="button" variant="primary" disabled={passwordBusy} onClick={changePassword}>
           {passwordBusy ? "Changing..." : "Change Password"}
         </PoodleButton>
       </PoodleFormActions>
@@ -310,8 +314,8 @@ import { auth } from "$lib/stores/auth";
     <p class="success-message">Your password has been changed successfully.</p>
     <p class="muted">For security, you've been logged out of all sessions and will need to sign in again with your new password.</p>
   </div>
-  <PoodleFormActions align="start">
-    <PoodleButton type="button" variant="primary" on:click={goToLogin}>
+  <PoodleFormActions align="end">
+    <PoodleButton type="button" variant="primary" onClick={goToLogin}>
       Sign In
     </PoodleButton>
   </PoodleFormActions>

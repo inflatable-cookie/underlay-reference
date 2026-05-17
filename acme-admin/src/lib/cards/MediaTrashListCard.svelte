@@ -20,8 +20,13 @@
   let { media, onRestore, onPurge }: Props = $props();
 
   let confirmPurgeOpen = $state(false);
+  let failedThumbnailUrl = $state<string | null>(null);
 
   const title = $derived(media.title ?? media.originalFilename ?? "Untitled");
+  const rawThumbnailUrl = $derived(media.thumbnailUrl?.trim() || null);
+  const previewImageUrl = $derived(
+    rawThumbnailUrl && rawThumbnailUrl !== failedThumbnailUrl ? rawThumbnailUrl : null
+  );
   const badges = $derived<EntityListCardBadge[]>([
     { label: getMediaKindLabel(media.kind), tone: "neutral", appearance: "badge", size: "lg" },
     { label: "Deleted", tone: "danger", appearance: "badge", size: "lg" }
@@ -41,6 +46,12 @@
     if (kind === "video") return "video";
     return "document";
   }
+  const leadingIcon = $derived.by((): string => {
+    if (media.kind === "image") return "image";
+    if (media.kind === "audio") return "music";
+    if (media.kind === "video") return "video";
+    return "file-text";
+  });
 
   function handleRestore(): void {
     onRestore?.(media.id);
@@ -59,19 +70,20 @@
     aspectRatio="square"
     ariaLabel={title}
   >
-    {#if media.thumbnailUrl}
-      <img
-        src={media.thumbnailUrl}
-        alt={media.title ?? ""}
-        class="media-trash-card__thumbnail-image"
-      />
-    {/if}
+    <img
+      src={previewImageUrl}
+      alt={media.title ?? ""}
+      class="media-trash-card__thumbnail-image"
+      onerror={() => {
+        failedThumbnailUrl = rawThumbnailUrl;
+      }}
+    />
   </PoodleMediaThumbnail>
 {/snippet}
 
 {#snippet mediaFooter()}
   <div class="media-trash-card__actions">
-    <PoodleButton type="button" variant="ghost" size="sm" on:click={handleRestore}>
+    <PoodleButton type="button" variant="ghost" size="sm" onClick={handleRestore}>
       <RotateCcw size={14} />
       Restore
     </PoodleButton>
@@ -80,7 +92,7 @@
       variant="ghost"
       tone="danger"
       size="sm"
-      on:click={() => (confirmPurgeOpen = true)}
+      onClick={() => (confirmPurgeOpen = true)}
     >
       <Trash2 size={14} />
       Delete
@@ -94,7 +106,8 @@
   accentColor="#64748b"
   {badges}
   footerText={footerText}
-  leading={mediaLeading}
+  leading={previewImageUrl ? mediaLeading : undefined}
+  {leadingIcon}
   footer={mediaFooter}
 />
 

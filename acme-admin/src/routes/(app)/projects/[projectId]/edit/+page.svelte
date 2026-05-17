@@ -215,7 +215,7 @@ import {
   {#snippet headerMeta()}
     <PoodleMetaBar ariaLabel="Project metadata">
       <PoodleMetaItem label="ID">
-        <PoodleCode inline source={project.id} showCopyButton />
+        <PoodleCode inline inlineVariant="plain" typography="inline" source={project.id} showCopyButton />
       </PoodleMetaItem>
     </PoodleMetaBar>
   {/snippet}

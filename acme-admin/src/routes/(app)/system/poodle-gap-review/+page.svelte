@@ -3,14 +3,14 @@ import {
   createClientPagination
 } from "@decodelabs/underlay/runtime/data";
     import {
-    Button as PoodleButton,
-    Card as PoodleCard,
-    Field as PoodleField,
-    Pill as PoodlePill,
-    TextInput as PoodleSearchField,
-    Select as PoodleSelect
+    Button,
+    Card,
+    Field,
+    Pill,
+    TextInput,
+    Select
   } from "@poodle/svelte";
-  import { ListContainer as PoodleListContainer, PageHeader as PoodlePageHeader } from "@poodle/svelte";
+  import { ListContainer, PageHeader } from "@poodle/svelte";
   import Activity from "lucide-svelte/icons/activity";
   import Layers from "lucide-svelte/icons/layers";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";
@@ -140,7 +140,7 @@ import {
   }
 </script>
 
-<PoodlePageHeader
+<PageHeader
   title="Poodle Gap Review"
   subtitle="Review the remaining ambiguous Underlay workflow surfaces with real examples before pushing them into Poodle contracts or composition guidance."
   backHref="/system"
@@ -165,14 +165,14 @@ import {
         <span>Last refresh: {pageRefreshCount}</span>
       </div>
       <div class="review-diagnostics-toolbar__actions">
-        <PoodleButton type="button" variant="ghost" on:click={() => pageRefreshCount += 1}>
+        <Button type="button" variant="ghost" onClick={() => pageRefreshCount += 1}>
           <RefreshCw size={14} />
           Refresh
-        </PoodleButton>
-        <PoodleButton type="button" variant="ghost">
+        </Button>
+        <Button type="button" variant="ghost">
           <ShieldAlert size={14} />
           Inspect warnings
-        </PoodleButton>
+        </Button>
       </div>
     </div>
   </section>
@@ -185,7 +185,7 @@ import {
       </p>
     </header>
 
-    <PoodleListContainer
+    <ListContainer
       title="Workflow incidents"
       subtitle="A Poodle-native list shell with built-in pagination and caller-owned content."
       eyebrow="Poodle composite"
@@ -196,66 +196,70 @@ import {
       totalPages={listPagination.totalPages ?? 1}
       totalItems={filteredListItems.length}
       pageSize={listPagination.pageSize}
-      on:pageChange={(event: CustomEvent<{ page: number }>) => listPagination.goToPage?.(event.detail.page)}
+      onPageChange={(page: number) => listPagination.goToPage?.(page)}
     >
-      <svelte:fragment slot="actions">
-        <PoodleButton type="button" variant="primary">Create report</PoodleButton>
-      </svelte:fragment>
+      {#snippet actions()}
+        <Button type="button" variant="primary">Create report</Button>
+      {/snippet}
 
-      <svelte:fragment slot="filters">
+      {#snippet filters()}
         <div class="review-filters">
-          <PoodleField id="review-list-search" label="Search" let:describedBy>
-            <PoodleSearchField type="search"
-              id="review-list-search"
-              value={listQuery}
-              describedBy={describedBy}
-              placeholder="Search title or summary"
-              on:valueChange={(event) => {
-                listQuery = event.detail.value;
-                void listPagination.reset();
-              }}
-            />
-          </PoodleField>
+          <Field id="review-list-search" label="Search">
+            {#snippet control({ describedBy })}
+              <TextInput type="search"
+                id="review-list-search"
+                value={listQuery}
+                describedBy={describedBy}
+                placeholder="Search title or summary"
+                onValueChange={(value) => {
+                  listQuery = value;
+                  void listPagination.reset();
+                }}
+              />
+            {/snippet}
+          </Field>
 
-          <PoodleField id="review-list-status" label="Status" let:describedBy>
-            <PoodleSelect
-              id="review-list-status"
-              value={listStatus}
-              describedBy={describedBy}
-              options={listStatusOptions}
-              on:valueChange={(event) => {
-                listStatus = event.detail.value;
-                void listPagination.reset();
-              }}
-            />
-          </PoodleField>
+          <Field id="review-list-status" label="Status">
+            {#snippet control({ describedBy })}
+              <Select
+                id="review-list-status"
+                value={listStatus}
+                describedBy={describedBy}
+                options={listStatusOptions}
+                onValueChange={(value) => {
+                  listStatus = value;
+                  void listPagination.reset();
+                }}
+              />
+            {/snippet}
+          </Field>
         </div>
-      </svelte:fragment>
+      {/snippet}
 
-      <svelte:fragment slot="batch">
+      {#snippet batch()}
         <div class="review-batch">
-          <PoodlePill tone="neutral" appearance="badge" size="lg">3 selected</PoodlePill>
-          <PoodleButton type="button" variant="ghost">Archive</PoodleButton>
-          <PoodleButton type="button" variant="ghost">Export</PoodleButton>
+          <Pill tone="neutral" appearance="badge" size="lg">3 selected</Pill>
+          <Button type="button" variant="ghost">Archive</Button>
+          <Button type="button" variant="ghost">Export</Button>
         </div>
-      </svelte:fragment>
+      {/snippet}
 
       <div class="review-list">
         {#each listPagination.items as item}
-          <PoodleCard>
+          <Card>
             <div class="review-list-card">
               <div class="review-list-card__header">
                 <strong>{item.title}</strong>
-                <PoodlePill tone={getReviewTone(item.status)} appearance="badge" size="lg">
+                <Pill tone={getReviewTone(item.status)} appearance="badge" size="lg">
                   {titleCase(item.status)}
-                </PoodlePill>
+                </Pill>
               </div>
               <p>{item.summary}</p>
             </div>
-          </PoodleCard>
+          </Card>
         {/each}
       </div>
-    </PoodleListContainer>
+    </ListContainer>
   </section>
 
   <section class="review-page__section">
@@ -267,21 +271,23 @@ import {
     </header>
 
     <div class="review-inline-filter">
-      <PoodleField id="review-grid-search" label="Queue filter" let:describedBy>
-        <PoodleSearchField type="search"
-          id="review-grid-search"
-          value={gridQuery}
-          describedBy={describedBy}
-          placeholder="Search queue or owner"
-          on:valueChange={(event) => {
-            gridQuery = event.detail.value;
-            void gridPagination.reset();
-          }}
-        />
-      </PoodleField>
+      <Field id="review-grid-search" label="Queue filter">
+        {#snippet control({ describedBy })}
+          <TextInput type="search"
+            id="review-grid-search"
+            value={gridQuery}
+            describedBy={describedBy}
+            placeholder="Search queue or owner"
+            onValueChange={(value) => {
+              gridQuery = value;
+              void gridPagination.reset();
+            }}
+          />
+        {/snippet}
+      </Field>
     </div>
 
-    <PoodleListContainer
+    <ListContainer
       title="Queue workers"
       subtitle="Client-side pagination with caller-owned filtering and card layout."
       eyebrow="Poodle composite"
@@ -292,25 +298,25 @@ import {
       totalPages={gridPagination.totalPages ?? 1}
       totalItems={filteredQueueItems.length}
       pageSize={gridPagination.pageSize}
-      on:pageChange={(event: CustomEvent<{ page: number }>) => gridPagination.goToPage?.(event.detail.page)}
+      onPageChange={(page: number) => gridPagination.goToPage?.(page)}
     >
       <div class="ops-grid">
         {#each gridPagination.items as item}
-          <PoodleCard>
+          <Card>
             <div class="queue-card">
               <div class="queue-card__header">
                 <strong>{item.name}</strong>
-                <PoodlePill tone={getQueueTone(item.status)} appearance="badge" size="lg">
+                <Pill tone={getQueueTone(item.status)} appearance="badge" size="lg">
                   {titleCase(item.status)}
-                </PoodlePill>
+                </Pill>
               </div>
               <div class="queue-card__meta">Owner: {item.owner}</div>
               <div class="queue-card__meta">Queue ID: {item.id}</div>
             </div>
-          </PoodleCard>
+          </Card>
         {/each}
       </div>
-    </PoodleListContainer>
+    </ListContainer>
   </section>
 
   <section class="review-page__section">
@@ -328,12 +334,12 @@ import {
           Background services
         </h3>
         <div class="review-ops-section__controls">
-          <PoodleButton type="button" variant="ghost">Mute alerts</PoodleButton>
-          <PoodleButton type="button" variant="primary">Restart all</PoodleButton>
+          <Button type="button" variant="ghost">Mute alerts</Button>
+          <Button type="button" variant="primary">Restart all</Button>
         </div>
       </div>
       <div class="ops-grid">
-        <PoodleCard>
+        <Card>
           <div class="ops-card">
             <Activity size={18} />
             <div>
@@ -341,8 +347,8 @@ import {
               <p>Running 18 jobs in the last hour without drift.</p>
             </div>
           </div>
-        </PoodleCard>
-        <PoodleCard>
+        </Card>
+        <Card>
           <div class="ops-card">
             <ShieldAlert size={18} />
             <div>
@@ -350,7 +356,7 @@ import {
               <p>Three items need manual acknowledgement after retry exhaustion.</p>
             </div>
           </div>
-        </PoodleCard>
+        </Card>
       </div>
     </section>
   </section>

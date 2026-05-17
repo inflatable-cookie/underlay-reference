@@ -190,7 +190,7 @@ import {
   {#if category}
     <PoodleMetaBar ariaLabel="Category metadata">
       <PoodleMetaItem label="ID">
-        <PoodleCode inline source={category.id} showCopyButton />
+        <PoodleCode inline inlineVariant="plain" typography="inline" source={category.id} showCopyButton />
       </PoodleMetaItem>
     </PoodleMetaBar>
   {/if}
