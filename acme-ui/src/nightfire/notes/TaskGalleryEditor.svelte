@@ -86,24 +86,24 @@
             type="text"
             placeholder="Page title"
             value={page.title ?? ""}
-            on:valueChange={(event: CustomEvent<{ value: string }>) =>
-              updatePage(index, { title: event.detail.value })}
+            onValueChange={(nextValue) =>
+              updatePage(index, { title: nextValue })}
           />
           <TextInput
             id={`gallery-page-image-${index}`}
             type="text"
             placeholder="Media ID (UUID)"
             value={page.imageId ?? ""}
-            on:valueChange={(event: CustomEvent<{ value: string }>) =>
-              updatePage(index, { imageId: event.detail.value })}
+            onValueChange={(nextValue) =>
+              updatePage(index, { imageId: nextValue })}
           />
           <TextInput
             id={`gallery-page-caption-${index}`}
             type="text"
             placeholder="Caption"
             value={page.caption ?? ""}
-            on:valueChange={(event: CustomEvent<{ value: string }>) =>
-              updatePage(index, { caption: event.detail.value })}
+            onValueChange={(nextValue) =>
+              updatePage(index, { caption: nextValue })}
           />
         </div>
 

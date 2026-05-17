@@ -42,7 +42,7 @@
   <MarkdownEditor
     placeholder="Write your notes here..."
     value={content}
-    on:change={(event) => handleChange(event.detail.value)}
+    onValueChange={handleChange}
   />
 </div>
 

@@ -101,7 +101,7 @@
           type="text"
           placeholder="Checklist item..."
           value={item.text}
-          on:valueChange={(event: CustomEvent<{ value: string }>) => updateItemText(index, event.detail.value)}
+          onValueChange={(nextValue) => updateItemText(index, nextValue)}
         />
         <div class="item-controls">
           <button
