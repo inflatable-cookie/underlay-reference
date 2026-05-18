@@ -21,6 +21,7 @@
 
   const loadList: ErrorLogListLoader = async (fetchFn, token, request) => {
     const response = await adminCommands.listErrorLogs(fetchFn, token, {
+      status_class: request.statusClass,
       status_code: request.statusCode,
       limit: request.limit,
       offset: request.offset

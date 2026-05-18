@@ -20,6 +20,7 @@ export async function listErrorLogs(
   const http = getAdminHttpClient({ fetchFn, accessToken });
 
   const params = new URLSearchParams();
+  if (query?.status_class) params.set("status_class", query.status_class);
   if (query?.status_code !== undefined) params.set("status_code", String(query.status_code));
   if (query?.error_code) params.set("error_code", query.error_code);
   if (query?.endpoint) params.set("endpoint", query.endpoint);

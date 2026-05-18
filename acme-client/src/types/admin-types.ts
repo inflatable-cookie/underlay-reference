@@ -482,6 +482,7 @@ export interface ErrorLogStats {
 }
 
 export interface ListErrorLogsQuery {
+  status_class?: "4xx" | "5xx";
   status_code?: number;
   error_code?: string;
   endpoint?: string;

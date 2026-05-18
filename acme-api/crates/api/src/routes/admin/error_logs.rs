@@ -14,6 +14,7 @@ use sqlx::Row;
 use underlay_core::{SingleResponse, Uuid};
 use underlay_http::{
     count_error_logs, get_error_log_by_id, list_error_logs, ApiError, ErrorLogFilters,
+    ErrorLogStatusClass,
 };
 
 use crate::state::{AdminUser, AppState, DB_POOL};
@@ -89,6 +90,8 @@ impl From<underlay_http::ErrorLogRow> for ErrorLogDetailDto {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ListErrorLogsQuery {
+    /// Filter by status class (`4xx` or `5xx`)
+    pub status_class: Option<String>,
     /// Filter by status code (e.g., 500, 404)
     pub status_code: Option<i32>,
     /// Filter by error code
@@ -103,6 +106,14 @@ pub struct ListErrorLogsQuery {
     pub limit: Option<i64>,
     /// Offset for pagination
     pub offset: Option<i64>,
+}
+
+fn parse_status_class(value: Option<&str>) -> Option<ErrorLogStatusClass> {
+    match value {
+        Some("4xx") => Some(ErrorLogStatusClass::Client),
+        Some("5xx") => Some(ErrorLogStatusClass::Server),
+        _ => None,
+    }
 }
 
 /// Response for paginated error log lists.
@@ -140,6 +151,7 @@ pub async fn list_error_logs_handler(
     let filters = ErrorLogFilters {
         since: query.since,
         until: query.until,
+        status_class: parse_status_class(query.status_class.as_deref()),
         status_code: query.status_code,
         error_code: query.error_code.clone(),
         endpoint: query.endpoint.clone(),
