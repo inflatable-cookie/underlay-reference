@@ -159,6 +159,7 @@ pub async fn list_tasks_admin(
     pool: &DbPool,
     project_id: Uuid,
     query: &QueryParams,
+    variant: Option<&str>,
     limit: i64,
     offset: i64,
 ) -> Result<TaskListResponse, sqlx::Error> {
@@ -168,6 +169,11 @@ pub async fn list_tasks_admin(
     let mut where_builder = WhereBuilder::new(2); // $1 is project_id
     where_builder.add_condition("t.project_id = $1");
     where_builder.add_condition("t.deleted_at IS NULL");
+    match variant {
+        Some("open") => where_builder.add_condition("t.status IN ('pending', 'in_progress')"),
+        Some("completed") => where_builder.add_condition("t.status = 'completed'"),
+        _ => {}
+    }
 
     for filter in &filters {
         where_builder.add_filter(filter, &mapping.filter_map());

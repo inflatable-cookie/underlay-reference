@@ -157,6 +157,7 @@ pub struct CreateTaskRequest {
 pub struct ListTasksQuery {
     #[serde(flatten)]
     pub query: QueryParams,
+    pub variant: Option<String>,
     pub page: Option<u32>,
     pub limit: Option<u32>,
 }
@@ -260,7 +261,25 @@ pub async fn list_tasks(
     let limit = params.limit.unwrap_or(20).clamp(1, 100);
     let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match tasks::list_tasks_admin(pool, project_id, &params.query, limit as i64, offset).await {
+    let variant = match params.variant.as_deref().unwrap_or("open") {
+        "open" => Some("open"),
+        "completed" => Some("completed"),
+        "all" => Some("all"),
+        other => {
+            return Err(ApiError::bad_request(
+                "tasks.invalid_variant",
+                "Invalid task list variant supplied",
+            )
+            .with_context(serde_json::json!({
+                "operation": "tasks.list",
+                "project_id": project_id,
+                "variant": other,
+                "allowed_variants": ["open", "completed", "all"]
+            })));
+        }
+    };
+
+    match tasks::list_tasks_admin(pool, project_id, &params.query, variant, limit as i64, offset).await {
         Ok(task_list) => {
             let response: Vec<TaskWithLabelsResponse> =
                 task_list.data.into_iter().map(Into::into).collect();

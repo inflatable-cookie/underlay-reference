@@ -114,8 +114,28 @@
     }
   ];
 
+  const taskQueryVariants = [
+    {
+      id: "open",
+      label: "Open",
+      description: "Pending and in-progress tasks",
+      isDefault: true
+    },
+    {
+      id: "completed",
+      label: "Completed",
+      description: "Finished tasks"
+    },
+    {
+      id: "all",
+      label: "All",
+      description: "Every task in the project"
+    }
+  ];
+
   const isTaskCollectionFiltered = $derived(
-    (effectiveQuery.filters?.length ?? 0) > 0 ||
+    (effectiveQuery.variant ?? "open") !== "all" ||
+      (effectiveQuery.filters?.length ?? 0) > 0 ||
       (effectiveQuery.sort ?? []).some((field) => field.field !== "position")
   );
 
@@ -231,6 +251,8 @@
   presentation="cards"
   renderItem={taskCard as never}
   filters={taskFilters}
+  queryVariants={taskQueryVariants}
+  defaultVariantId="open"
   query={effectiveQuery}
   onQueryChange={updateQuery}
   batchActions={taskBatchActions as never}
