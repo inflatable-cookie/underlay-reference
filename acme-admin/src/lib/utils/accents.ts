@@ -208,7 +208,6 @@ export function getSystemCardAccent(card: string): string {
     case "jobs": return ACCENT_COLORS.violet;
     case "scheduled_tasks": return ACCENT_COLORS.emerald;
     case "audit": return ACCENT_COLORS.indigo;
-    case "emails": return ACCENT_COLORS.blue;
     default: return ACCENT_COLORS.slate;
   }
 }

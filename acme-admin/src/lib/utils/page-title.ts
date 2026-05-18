@@ -22,7 +22,6 @@ const SEGMENT_LABELS: Record<string, { list: string; item: string }> = {
 	system: { list: "System", item: "System" },
 	jobs: { list: "Jobs", item: "Job" },
 	errors: { list: "Errors", item: "Error" },
-	emails: { list: "Emails", item: "Email" },
 	"scheduled-tasks": { list: "Scheduled Tasks", item: "Scheduled Task" },
 	audit: { list: "Audit Log", item: "Audit Log" }
 };
