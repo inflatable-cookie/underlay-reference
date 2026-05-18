@@ -170,6 +170,12 @@
           }
         }
   );
+
+  async function handleReorderError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    toastStore.push({ variant: "error", message });
+    return message;
+  }
 </script>
 
 {#snippet projectCard(project: ProjectWithCounts, ctx: { selectionMode: boolean; reorderMode: boolean; selected: boolean; onToggle: (selected: boolean) => void; refetch: () => Promise<void> })}
@@ -202,6 +208,7 @@
   {batchActions}
   onQueryChange={updateQuery}
   reorder={reorderConfig as never}
+  onReorderError={handleReorderError}
   onAdd={handleAdd}
   addLabel="Add Project"
 />
