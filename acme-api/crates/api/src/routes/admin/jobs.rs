@@ -516,6 +516,13 @@ pub async fn get_job_stats(
             "Job system not available",
         ));
     };
+    let Some(pool) = DB_POOL.get() else {
+        return Err(ApiError::new(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "service_unavailable",
+            "Database not available",
+        ));
+    };
 
     // Get counts for each status
     let pending = job_repo
@@ -548,15 +555,16 @@ pub async fn get_job_stats(
         .map(|jobs| jobs.len() as i64)
         .unwrap_or(0);
 
-    let succeeded_recent = job_repo
-        .list(JobFilters {
-            status: Some(JobStatus::Succeeded),
-            limit: 100,
-            ..Default::default()
-        })
-        .await
-        .map(|jobs| jobs.len() as i64)
-        .unwrap_or(0);
+    let succeeded = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*)
+        FROM platform.job
+        WHERE status = 'succeeded'
+        "#,
+    )
+    .fetch_one(pool)
+    .await
+    .unwrap_or(0);
 
     #[derive(Serialize)]
     #[serde(rename_all = "snake_case")]
@@ -564,7 +572,7 @@ pub async fn get_job_stats(
         pending: i64,
         running: i64,
         failed: i64,
-        succeeded_recent: i64,
+        succeeded: i64,
     }
 
     Ok(Json(SingleResponse {
@@ -572,7 +580,7 @@ pub async fn get_job_stats(
             pending,
             running,
             failed,
-            succeeded_recent,
+            succeeded,
         },
     })
     .into_response())

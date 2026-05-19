@@ -211,7 +211,7 @@ import {
             slugStatus = detail.status;
             slugValidationMessage = detail.status === "invalid" ? detail.message || null : null;
           }}
-          onblur={handleSlugBlur}
+          onBlur={handleSlugBlur}
         />
       {/snippet}
     </Field>

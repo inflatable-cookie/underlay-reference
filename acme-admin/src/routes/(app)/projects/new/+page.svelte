@@ -7,10 +7,11 @@ import { EntityFormPage } from "@decodelabs/underlay/templates";
 import {
   consumeNavigationContext
 } from "@decodelabs/underlay/runtime/navigation";
-import {
+  import {
   goto } from "$app/navigation";
   import { adminCommands,
-  type Category } from "@api-client";
+  type Category,
+  type SuggestionRequestOptions } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import { extractApiError } from "$lib/utils/api-errors";
   import ProjectForm from "$lib/forms/ProjectForm.svelte";
@@ -20,10 +21,10 @@ import {
   const { backInfo, returnTo } = consumeNavigationContext("Back to projects", defaultBackHref);
 
   // Lazy-load categories for the RelationSelector
-  async function fetchCategories(): Promise<Category[]> {
+  async function fetchCategories(options?: SuggestionRequestOptions): Promise<Category[]> {
     const token = auth.getToken();
     if (!token) return [];
-    return adminCommands.listCategoriesForSuggestions(fetch, token);
+    return adminCommands.listCategoriesForSuggestions(fetch, token, options);
   }
 
   // Function to create categories inline

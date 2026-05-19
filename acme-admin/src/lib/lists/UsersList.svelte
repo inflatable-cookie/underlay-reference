@@ -54,16 +54,10 @@
 
   const filters = [
     {
-      id: "email",
+      id: "query",
       type: "search" as const,
-      label: "Email",
-      placeholder: "Search by email..."
-    },
-    {
-      id: "displayName",
-      type: "search" as const,
-      label: "Display name",
-      placeholder: "Search by display name..."
+      label: "Search",
+      placeholder: "Search by email or display name..."
     },
     {
       id: "role",

@@ -1,4 +1,3 @@
-
 use super::*;
 use std::{env, sync::Arc};
 
@@ -442,7 +441,7 @@ async fn get_job_stats_returns_numeric_fields() {
     assert!(body["data"]["pending"].is_number());
     assert!(body["data"]["running"].is_number());
     assert!(body["data"]["failed"].is_number());
-    assert!(body["data"]["succeeded_recent"].is_number());
+    assert!(body["data"]["succeeded"].is_number());
 
     delete_job(&pool, pending_id).await;
     delete_job(&pool, failed_id).await;

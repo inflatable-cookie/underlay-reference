@@ -47,7 +47,12 @@ async fn main() {
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
         let s3_config = S3Config::minio_dev("acme-media", "https://s3.acme.test");
         match S3Adapter::new(s3_config).await {
-            Ok(adapter) => Arc::new(adapter),
+            Ok(adapter) => {
+                if let Err(err) = adapter.ensure_bucket_ready().await {
+                    error!(%err, "failed to reconcile MinIO media bucket");
+                }
+                Arc::new(adapter)
+            }
             Err(err) => {
                 error!(%err, "failed to create MinIO blob adapter; using noop");
                 Arc::new(NoopAdapter::new())

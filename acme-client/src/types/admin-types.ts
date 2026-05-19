@@ -392,7 +392,7 @@ export interface JobStats {
   pending: number;
   running: number;
   failed: number;
-  succeededRecent: number;
+  succeeded: number;
 }
 
 export interface ListJobsQuery {

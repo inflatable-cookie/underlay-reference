@@ -4,13 +4,16 @@ minimum_effigy_version = "0.7.0"
 [catalog]
 alias = "acme-api"
 
-[tasks]
-api = "cargo run -p acme-api {args}"
-jobs = "cargo run -p acme-jobs {args}"
-build = "cargo build {args}"
+[task_defaults]
+run_in = "host"
 
-"db:drop" = "cargo run -p acme-db --bin reset_dev_db {args}"
-"db:migrate" = "cargo run -p acme-db --bin migrate_dev_db {args}"
+[tasks]
+api = "cd {repo} && cargo run -p acme-api {args}"
+jobs = "cd {repo} && cargo run -p acme-jobs {args}"
+build = "cd {repo} && cargo build {args}"
+
+"db:drop" = "cd {repo} && cargo run -p acme-db --bin reset_dev_db {args}"
+"db:migrate" = "cd {repo} && cargo run -p acme-db --bin migrate_dev_db {args}"
 "db:reset" = [
   { task = "db:drop" },
   { task = "db:migrate" }

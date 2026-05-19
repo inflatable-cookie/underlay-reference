@@ -123,6 +123,7 @@ pub async fn list_users_admin(
     let mapping = FieldMapping::new()
         .map("email", "email")
         .map("display_name", "display_name")
+        .filter_only("query", "COALESCE(display_name, '') || ' ' || email")
         .map("role", "role")
         .map("status", "status")
         .sort_only("created_at", "created_at")

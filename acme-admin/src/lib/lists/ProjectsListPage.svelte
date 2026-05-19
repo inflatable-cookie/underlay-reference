@@ -88,10 +88,21 @@
     });
   }
 
-  async function loadCategories() {
+  async function loadCategories(context?: { query?: string; value?: string | null }) {
     const token = auth.getToken();
     if (!token) return [{ value: "All", label: "All categories" }];
-    const categories = await adminCommands.listCategoriesForSuggestions(fetch, token);
+    const categories = await adminCommands.listCategoriesForSuggestions(fetch, token, {
+      query: context?.query,
+      limit: 20
+    });
+    if (context?.value && context.value !== "All" && !categories.some((category) => category.id === context.value)) {
+      try {
+        const category = await adminCommands.getCategory(context.value, fetch, token);
+        categories.unshift(category);
+      } catch {
+        // Ignore stale selections and keep the rest of the option list.
+      }
+    }
     return [
       { value: "All", label: "All categories" },
       ...categories.map((c) => ({ value: c.id, label: c.name }))
@@ -109,7 +120,13 @@
     { id: "name", type: "search" as const, label: "Name", placeholder: "Search by name..." },
     ...(hasFixedCategory
       ? []
-      : [{ id: "categoryId", type: "select" as const, label: "Category", loadOptions: loadCategories }]),
+      : [{
+          id: "categoryId",
+          type: "select" as const,
+          label: "Category",
+          loadOptions: loadCategories,
+          searchable: true
+        }]),
     {
       id: "status",
       type: "select" as const,

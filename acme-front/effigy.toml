@@ -7,25 +7,28 @@ alias = "acme-front"
 [package_manager]
 js = "bun"
 
+[task_defaults]
+run_in = "host"
+
 [tasks]
 dev = [
   { task = "config:generate" },
   { task = "clean" },
   { task = "sync" },
-  "bun x vite dev --host 0.0.0.0 --force"
+  "cd {repo} && bun x vite dev --host 0.0.0.0 --force"
 ]
 build = [
   { task = "config:generate" },
-  "bun x vite build"
+  "cd {repo} && bun x vite build"
 ]
-preview = "bun x vite preview"
+preview = "cd {repo} && bun x vite preview"
 
-clean = "rm -rf .svelte-kit node_modules/.vite"
-sync = "bun x svelte-kit sync"
-"config:generate" = "bun scripts/generate-public-config.ts"
+clean = "cd {repo} && rm -rf .svelte-kit node_modules/.vite"
+sync = "cd {repo} && bun x svelte-kit sync"
+"config:generate" = "cd {repo} && bun scripts/generate-public-config.ts"
 prepare = [
   { task = "config:generate" },
-  "bun x svelte-kit sync || echo ''"
+  "cd {repo} && bun x svelte-kit sync || echo ''"
 ]
 
 health = [{ task = "check" }]
@@ -38,9 +41,9 @@ qa = [{ task = "validate" }]
 check = [
   { task = "config:generate" },
   { task = "sync" },
-  "bun x svelte-check --tsconfig ./tsconfig.json"
+  "cd {repo} && bun x svelte-check --tsconfig ./tsconfig.json"
 ]
 "check:watch" = [
   { task = "sync" },
-  "bun x svelte-check --tsconfig ./tsconfig.json --watch"
+  "cd {repo} && bun x svelte-check --tsconfig ./tsconfig.json --watch"
 ]

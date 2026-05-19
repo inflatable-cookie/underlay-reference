@@ -53,6 +53,16 @@ export async function listCategoriesForSuggestions(
   options?: SuggestionRequestOptions,
 ): Promise<Category[]> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
+  const query = options?.query?.trim();
+  if (query) {
+    const response = await listCategories(fetchFn, accessToken, {
+      page: 1,
+      limit: options?.limit ?? 20,
+      filters: [{ field: "name", value: query }],
+      sort: [{ field: "name", direction: "asc" }],
+    } satisfies QueryParams);
+    return response.data;
+  }
   const path = appendSuggestionParams("/v1/admin/categories", options);
   const response = await http.get<ListResponse<Category>>(path);
   return response.data;

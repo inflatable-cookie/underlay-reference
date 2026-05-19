@@ -23,7 +23,10 @@ bun.lockb
 
 # Logs
 *.log
-.effigy/
 .claude/settings.local.json
 
 node_modules
+
+# BEGIN EFFIGY LOCAL STATE
+.effigy/
+# END EFFIGY LOCAL STATE

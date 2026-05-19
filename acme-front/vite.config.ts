@@ -11,6 +11,9 @@ generatePublicApiConfig();
 const apiClientSrc = fileURLToPath(
   new URL("../acme-client/src", import.meta.url),
 );
+const underlaySrc = fileURLToPath(
+  new URL("../../underlay/ts/src", import.meta.url),
+);
 
 export default defineConfig({
   plugins: [
@@ -41,9 +44,13 @@ export default defineConfig({
     },
     sveltekit() as PluginOption,
   ],
+  build: {
+    chunkSizeWarningLimit: 1200,
+  },
   resolve: {
     alias: {
       "@api-client": apiClientSrc,
+      "@decodelabs/underlay": underlaySrc,
     },
     dedupe: ["@decodelabs/underlay"],
   },

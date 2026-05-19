@@ -18,6 +18,9 @@ const underlaySrc = fileURLToPath(
 
 export default defineConfig({
   plugins: [devtoolsJson(), sveltekit() as PluginOption],
+  build: {
+    chunkSizeWarningLimit: 1200,
+  },
   test: {
     include: ["tests/**/*.{test,spec}.ts"],
     environment: "jsdom",

@@ -20,6 +20,7 @@ import {
     value?: string | null;
     search: (query: string) => Promise<SearchResult<SelectableRelation>>;
     suggestions?: (options?: SuggestionOptions) => Promise<SelectableRelation[]>;
+    initialSelection?: SelectableRelation | null;
     selectionHistory?: SelectionHistory;
     placeholder?: string;
     label?: string;
@@ -39,6 +40,7 @@ import {
     value = $bindable(null),
     search,
     suggestions = undefined,
+    initialSelection = null,
     selectionHistory = undefined,
     placeholder = "Select a category…",
     label = "Select Category",
@@ -203,7 +205,9 @@ import {
     if (!value) {
       selectedItem = null;
     } else if (selectedItem?.id !== value) {
-      const items = [...suggestionItems, ...searchResults];
+      const items = initialSelection
+        ? [initialSelection, ...suggestionItems, ...searchResults]
+        : [...suggestionItems, ...searchResults];
       const match = items.find((item) => item.id === value) ?? null;
       if (match) selectedItem = match;
     }

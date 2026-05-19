@@ -279,7 +279,16 @@ pub async fn list_tasks(
         }
     };
 
-    match tasks::list_tasks_admin(pool, project_id, &params.query, variant, limit as i64, offset).await {
+    match tasks::list_tasks_admin(
+        pool,
+        project_id,
+        &params.query,
+        variant,
+        limit as i64,
+        offset,
+    )
+    .await
+    {
         Ok(task_list) => {
             let response: Vec<TaskWithLabelsResponse> =
                 task_list.data.into_iter().map(Into::into).collect();

@@ -1,4 +1,3 @@
-
 use super::*;
 use acme_auth::{UserId, UserPrincipal, UserRole};
 use acme_test_utils::setup_test_db;

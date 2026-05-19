@@ -1,4 +1,3 @@
-
 use super::*;
 
 // Integration tests would require a test database.

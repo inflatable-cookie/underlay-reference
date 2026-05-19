@@ -17,7 +17,8 @@ import {
   import { untrack } from "svelte";
   import type { PageData } from "./$types";
   import type { Project,
-  Category } from "@api-client";
+  Category,
+  SuggestionRequestOptions } from "@api-client";
   import { adminCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import { extractApiError,
@@ -56,10 +57,10 @@ import {
   });
 
   // Lazy-load categories for the RelationSelector
-  async function fetchCategories(): Promise<Category[]> {
+  async function fetchCategories(options?: SuggestionRequestOptions): Promise<Category[]> {
     const token = auth.getToken();
     if (!token) return [];
-    return adminCommands.listCategoriesForSuggestions(fetch, token);
+    return adminCommands.listCategoriesForSuggestions(fetch, token, options);
   }
 
   // Function to create categories inline
@@ -240,6 +241,13 @@ import {
       mode="edit"
       projectId={project.id}
       {fetchCategories}
+      initialCategorySelection={project.categoryId && project.categoryName
+        ? {
+            id: project.categoryId,
+            label: project.categoryName,
+            description: undefined
+          }
+        : null}
       createCategory={createCategoryInline}
       values={{
         name: typeof formValues?.name === "string" ? formValues.name : project.name,

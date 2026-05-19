@@ -14,7 +14,8 @@ const config = {
 		}),
 		alias: {
 			"@app": "src",
-			"@api-client": "../acme-client/src"
+			"@api-client": "../acme-client/src",
+			"@decodelabs/underlay": "../../underlay/ts/src"
 		},
 		prerender: {
 			handleUnseenRoutes: "ignore"

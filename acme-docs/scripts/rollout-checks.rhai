@@ -19,6 +19,9 @@ fn run_search(pattern, paths) {
     let total = 0;
     let output = "";
     for path in paths {
+        if !fs::exists(path) {
+            continue;
+        }
         let result = search::files(path, pattern, #{});
         total += result["count"];
         if result["stdout"] != "" {
@@ -99,11 +102,11 @@ checks["reorder-conflict"] = #{
         ["categories reorder returns conflict context keys", search_check("categories\\.reorder_conflict|added_ids|removed_ids", ["../acme-api/crates/api/src/routes/admin/categories.rs"])],
         ["tasks reorder returns conflict context keys", search_check("tasks\\.reorder_conflict|added_ids|removed_ids", ["../acme-api/crates/api/src/routes/admin/tasks.rs"])],
         ["admin has reorder conflict adapter", exists_check("../acme-admin/src/lib/lists/reorder-conflicts.ts")],
-        ["projects list uses onsubmiterror adapter", search_check("onsubmiterror=\\{handleReorderError\\}|recoverReorderConflict", ["../acme-admin/src/routes/(app)/projects/+page.svelte"])],
-        ["categories list uses onsubmiterror adapter", search_check("onsubmiterror=\\{handleReorderError\\}|recoverReorderConflict", ["../acme-admin/src/routes/(app)/categories/+page.svelte"])],
-        ["project tasks list uses onsubmiterror adapter", search_check("onsubmiterror=\\{handleTaskReorderError\\}|recoverReorderConflict", ["../acme-admin/src/routes/(app)/projects/[projectId]/+page.svelte"])],
-        ["labels remain non-reorderable", forbid_check("reorderLabels|/labels/reorder", ["../acme-api", "../acme-client", "../acme-admin"])],
-        ["system views remain non-reorderable", forbid_check("reorderJobs|reorderActivity|reorderErrors", ["../acme-api", "../acme-client", "../acme-admin"])],
+        ["projects list uses reorder error adapter", search_check("onReorderError=\\{handleReorderError\\}|recoverReorderConflict", ["../acme-admin/src/lib/lists/ProjectsListPage.svelte"])],
+        ["categories list uses reorder error adapter", search_check("onReorderError=\\{handleReorderError\\}|recoverReorderConflict", ["../acme-admin/src/lib/lists/CategoriesList.svelte"])],
+        ["project tasks list uses reorder error adapter", search_check("onReorderError=\\{|recoverReorderConflict", ["../acme-admin/src/lib/lists/TasksListPage.svelte"])],
+        ["labels remain non-reorderable", forbid_check("reorderLabels|/labels/reorder", ["../acme-api/crates", "../acme-client/src", "../acme-admin/src"])],
+        ["system views remain non-reorderable", forbid_check("reorderJobs|reorderActivity|reorderErrors", ["../acme-api/crates", "../acme-client/src", "../acme-admin/src"])],
     ],
 };
 

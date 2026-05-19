@@ -7,9 +7,12 @@ alias = "acme-client"
 [package_manager]
 js = "bun"
 
+[task_defaults]
+run_in = "host"
+
 [tasks]
-build = "bun x tsc -p tsconfig.json"
-check = "bun x tsc -p tsconfig.json --noEmit"
+build = "cd {repo} && bun x tsc -p tsconfig.json"
+check = "cd {repo} && bun x tsc -p tsconfig.json --noEmit"
 
 qa = [{ task = "validate" }]
 health = [{ task = "check" }]

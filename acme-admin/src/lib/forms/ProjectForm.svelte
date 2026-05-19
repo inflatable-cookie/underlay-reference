@@ -24,7 +24,7 @@ import {
     import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
   import { categorySelectionHistory } from "$lib/stores/selection-history";
   import { untrack } from "svelte";
-  import type { Category, CategoryWithCounts } from "@api-client";
+  import type { Category, CategoryWithCounts, SuggestionRequestOptions } from "@api-client";
   import ProjectCategorySelector from "./ProjectCategorySelector.svelte";
 
   type ProjectFormMode = "create" | "edit";
@@ -54,7 +54,8 @@ import {
     /** Available categories for the selector */
     categories?: (Category | CategoryWithCounts)[];
     /** Function to fetch categories with suggestion options */
-    fetchCategories?: (options?: { suggestions?: boolean; recentHints?: string[] }) => Promise<Category[]>;
+    fetchCategories?: (options?: SuggestionRequestOptions) => Promise<Category[]>;
+    initialCategorySelection?: ReturnType<typeof categoryToSelectable> | null;
     /** Function to create a new category inline */
     createCategory?: (name: string, slug: string, description: string | null, color: string | null) => Promise<Category>;
     intent?: "save" | "save-close";
@@ -70,6 +71,7 @@ import {
     values = {},
     categories = [],
     fetchCategories = undefined,
+    initialCategorySelection = null,
     createCategory = undefined,
     intent = $bindable("save-close"),
     errors = null,
@@ -122,12 +124,8 @@ import {
     if (!fetchCategories) {
       return searchCategories(query);
     }
-    const cats = await fetchCategories();
-    const q = query.toLowerCase();
-    const filtered = cats
-      .filter(c => c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q))
-      .map(categoryToSelectable);
-    return { items: filtered, total: filtered.length };
+    const cats = await fetchCategories({ query, limit: 20 });
+    return { items: cats.map(categoryToSelectable), total: cats.length };
   };
 
   // Suggestions function
@@ -179,6 +177,7 @@ import {
         label="Select Category"
         search={fetchCategories ? searchCategoriesServer : searchCategories}
         suggestions={fetchCategories ? suggestCategoriesServer : suggestCategories}
+        initialSelection={initialCategorySelection}
         selectionHistory={categorySelectionHistory}
         placeholder="Select a category…"
         createLabel="Add new category"
