@@ -153,7 +153,7 @@ import {
     <p class="success-message">Two-factor authentication is enabled on your account.</p>
     <p class="muted">Your account is protected with an authenticator app.</p>
 
-    <PoodleFormActions align="end">
+    <PoodleFormActions align="end" showTopBorder>
       <PoodleButton
         type="button"
         variant="secondary"
@@ -218,7 +218,7 @@ import {
           onComplete={enableTotp}
         />
 
-        <PoodleFormActions align="end">
+        <PoodleFormActions align="end" showTopBorder>
           <PoodleButton type="button" variant="primary" disabled={totpBusy} onClick={enableTotp}>
             {totpBusy ? "Enabling..." : "Enable 2FA"}
           </PoodleButton>
@@ -230,7 +230,7 @@ import {
   <div class="intro">
     <p class="muted">Two-factor authentication is not enabled.</p>
   </div>
-  <PoodleFormActions align="end">
+  <PoodleFormActions align="end" showTopBorder>
     <PoodleButton type="button" variant="primary" disabled={totpBusy} onClick={setupTotp}>
       {totpBusy ? "Loading..." : "Set up 2FA"}
     </PoodleButton>

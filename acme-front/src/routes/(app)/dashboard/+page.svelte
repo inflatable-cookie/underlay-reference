@@ -220,7 +220,7 @@ import {
 
   </form>
   {#snippet actions(submitting)}
-    <FormActions align="end">
+    <FormActions align="end" showTopBorder>
       <Button type="button" variant="ghost" disabled={creating} onClick={() => (showCreateDialog = false)}>
         Cancel
       </Button>

@@ -468,7 +468,7 @@ import {
 
     </form>
     {#snippet actions(submitting)}
-      <PoodleFormActions align="end">
+      <PoodleFormActions align="end" showTopBorder>
         <PoodleButton type="button" variant="ghost" disabled={saving} onClick={closeSettings}>
           Cancel
         </PoodleButton>

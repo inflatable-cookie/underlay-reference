@@ -5457,6 +5457,7 @@ name = "underlay-aws"
 version = "0.0.1"
 dependencies = [
  "aws-config",
+ "aws-credential-types",
  "aws-types",
 ]
 

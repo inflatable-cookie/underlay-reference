@@ -275,7 +275,7 @@ import {
     </Field>
 </FieldSet>
 
-<FormActions align="end">
+<FormActions align="end" showTopBorder>
   <div class="category-form__actions" bind:this={actionBarElement}>
     <input type="hidden" name="intent" value={intent} />
 

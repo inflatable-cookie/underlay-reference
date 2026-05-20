@@ -212,7 +212,7 @@
   </FieldSet>
 {/if}
 
-<FormActions align="end">
+<FormActions align="end" showTopBorder>
   <div class="user-form__actions" bind:this={actionBarElement}>
     <input type="hidden" name="intent" value={intent} />
 

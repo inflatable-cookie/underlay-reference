@@ -209,7 +209,7 @@
   </Field>
 {/if}
 
-<FormActions align="end">
+<FormActions align="end" showTopBorder>
   <Button type="button" variant="secondary" disabled={submitting} onClick={onCancel}>
     Cancel
   </Button>

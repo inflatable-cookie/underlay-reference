@@ -215,7 +215,7 @@ import { auth } from "$lib/stores/auth";
         onValueChange={(value) => { verificationCode = value; }}
         onComplete={verifyTotp}
       />
-      <PoodleFormActions align="end">
+      <PoodleFormActions align="end" showTopBorder>
         <PoodleButton type="button" variant="primary" disabled={verificationBusy} onClick={verifyTotp}>
           {verificationBusy ? "Verifying..." : "Verify"}
         </PoodleButton>
@@ -237,7 +237,7 @@ import { auth } from "$lib/stores/auth";
           onValueChange={(value) => { verificationCode = value; }}
           onComplete={verifyEmailTotp}
         />
-        <PoodleFormActions align="end">
+        <PoodleFormActions align="end" showTopBorder>
           <PoodleButton type="button" variant="primary" disabled={verificationBusy} onClick={verifyEmailTotp}>
             {verificationBusy ? "Verifying..." : "Verify"}
           </PoodleButton>
@@ -249,7 +249,7 @@ import { auth } from "$lib/stores/auth";
     {:else}
       <PoodleCard>
         <p class="muted">We'll send a verification code to your email address.</p>
-        <PoodleFormActions align="end">
+        <PoodleFormActions align="end" showTopBorder>
           <PoodleButton type="button" variant="primary" disabled={verificationBusy} onClick={requestEmailTotp}>
             {verificationBusy ? "Sending..." : "Send Verification Code"}
           </PoodleButton>
@@ -302,7 +302,7 @@ import { auth } from "$lib/stores/auth";
         {/snippet}
       </PoodleField>
 
-      <PoodleFormActions align="end">
+      <PoodleFormActions align="end" showTopBorder>
         <PoodleButton type="button" variant="primary" disabled={passwordBusy} onClick={changePassword}>
           {passwordBusy ? "Changing..." : "Change Password"}
         </PoodleButton>
@@ -314,7 +314,7 @@ import { auth } from "$lib/stores/auth";
     <p class="success-message">Your password has been changed successfully.</p>
     <p class="muted">For security, you've been logged out of all sessions and will need to sign in again with your new password.</p>
   </div>
-  <PoodleFormActions align="end">
+  <PoodleFormActions align="end" showTopBorder>
     <PoodleButton type="button" variant="primary" onClick={goToLogin}>
       Sign In
     </PoodleButton>

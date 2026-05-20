@@ -560,7 +560,7 @@
     </PoodleField>
   </form>
   {#snippet actions(submitting)}
-    <PoodleFormActions align="end">
+    <PoodleFormActions align="end" showTopBorder>
       <PoodleButton type="button" variant="ghost" disabled={updatingRole} onClick={() => (showRoleDialog = false)}>
         Cancel
       </PoodleButton>
