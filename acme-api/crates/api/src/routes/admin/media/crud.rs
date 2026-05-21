@@ -234,12 +234,16 @@ pub async fn list_media(
 pub async fn list_media_trash(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
+    Query(params): Query<MediaListQuery>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(30).clamp(1, 100);
+    let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match media::list_media_trash(pool).await {
+    match media::list_media_trash(pool, limit as i64, offset).await {
         Ok(rows) => {
-            let items: Vec<MediaSummaryDto> = rows
+            let items: Vec<MediaSummaryDto> = rows.data
                 .into_iter()
                 .map(|row| {
                     MediaSummaryDto::from_row_with_thumbnail(row, |key| {
@@ -247,11 +251,10 @@ pub async fn list_media_trash(
                     })
                 })
                 .collect();
-            let total = items.len();
             Ok(Json(json!({
                 "data": items,
-                "total": total,
-                "has_more": false
+                "total": rows.total,
+                "has_more": rows.has_more
             }))
             .into_response())
         }

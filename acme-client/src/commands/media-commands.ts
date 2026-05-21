@@ -165,10 +165,15 @@ export async function listMediaAdmin(
 export async function listMediaTrash(
   fetchFn: typeof fetch,
   accessToken: string,
+  query?: QueryParams,
 ): Promise<PagedListResponse<MediaSummary>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
+  let path = "/v1/admin/media/trash";
+  if (query) {
+    path = appendQueryParams(path, toSnakeQueryParams(query));
+  }
   const response = await http.get<PagedListResponse<MediaSummary>>(
-    "/v1/admin/media/trash",
+    path,
   );
   return {
     ...response,

@@ -170,8 +170,23 @@ pub async fn list_media_admin_paged(
 }
 
 /// List soft-deleted media items (trash).
-pub async fn list_media_trash(pool: &DbPool) -> Result<Vec<MediaWithVersionRow>, sqlx::Error> {
-    sqlx::query_as::<_, MediaWithVersionRow>(
+pub async fn list_media_trash(
+    pool: &DbPool,
+    limit: i64,
+    offset: i64,
+) -> Result<MediaListResponse, sqlx::Error> {
+    let total = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*)
+        FROM media.media
+        WHERE deleted_at IS NOT NULL
+          AND current_version_id IS NOT NULL
+        "#,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    let data = sqlx::query_as::<_, MediaWithVersionRow>(
         r#"
         SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
                m.created_at, m.updated_at, m.deleted_at,
@@ -183,10 +198,19 @@ pub async fn list_media_trash(pool: &DbPool) -> Result<Vec<MediaWithVersionRow>,
         WHERE m.deleted_at IS NOT NULL
           AND m.current_version_id IS NOT NULL
         ORDER BY m.deleted_at DESC
+        LIMIT $1 OFFSET $2
         "#,
     )
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
-    .await
+    .await?;
+
+    Ok(MediaListResponse {
+        has_more: offset + (data.len() as i64) < total,
+        data,
+        total,
+    })
 }
 
 /// Update a media item.
