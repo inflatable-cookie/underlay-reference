@@ -331,7 +331,6 @@ export interface ListActivityQuery {
   resourceType?: string;
   page?: number;
   limit?: number;
-  offset?: number;
 }
 
 // ============================================================================
@@ -488,8 +487,8 @@ export interface ListErrorLogsQuery {
   endpoint?: string;
   since?: string;
   until?: string;
+  page?: number;
   limit?: number;
-  offset?: number;
 }
 
 export interface ErrorLogsListResponse {

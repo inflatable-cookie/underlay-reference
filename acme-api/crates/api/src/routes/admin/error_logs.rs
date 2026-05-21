@@ -102,10 +102,10 @@ pub struct ListErrorLogsQuery {
     pub since: Option<DateTime<Utc>>,
     /// Filter by errors before this time
     pub until: Option<DateTime<Utc>>,
+    /// Page number (1-indexed)
+    pub page: Option<i64>,
     /// Maximum number of entries to return (default 50)
     pub limit: Option<i64>,
-    /// Offset for pagination
-    pub offset: Option<i64>,
 }
 
 fn parse_status_class(value: Option<&str>) -> Option<ErrorLogStatusClass> {
@@ -146,7 +146,8 @@ pub async fn list_error_logs_handler(
     };
 
     let limit = query.limit.unwrap_or(50);
-    let offset = query.offset.unwrap_or(0);
+    let page = query.page.unwrap_or(1).max(1);
+    let offset = (page - 1) * limit;
 
     let filters = ErrorLogFilters {
         since: query.since,
@@ -172,6 +173,7 @@ pub async fn list_error_logs_handler(
             .with_context(serde_json::json!({
                 "operation": "error_logs.count",
                 "status_code": query.status_code,
+                "page": page,
                 "limit": limit,
                 "offset": offset
             })));
@@ -201,6 +203,7 @@ pub async fn list_error_logs_handler(
             .with_context(serde_json::json!({
                 "operation": "error_logs.list",
                 "status_code": query.status_code,
+                "page": page,
                 "limit": limit,
                 "offset": offset
             })))

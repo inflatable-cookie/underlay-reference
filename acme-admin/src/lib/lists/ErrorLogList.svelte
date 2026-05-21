@@ -24,7 +24,7 @@
       status_class: request.statusClass,
       status_code: request.statusCode,
       limit: request.limit,
-      offset: request.offset
+      page: request.page
     });
     return toPagedListResult(response);
   };

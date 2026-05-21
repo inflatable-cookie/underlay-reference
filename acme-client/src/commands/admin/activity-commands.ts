@@ -19,7 +19,6 @@ export async function listActivity(
   if (query?.resourceType) params.set("resource_type", query.resourceType);
   if (query?.page !== undefined) params.set("page", String(query.page));
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
-  if (query?.offset !== undefined) params.set("offset", String(query.offset));
 
   const queryString = params.toString();
   const path = queryString ? `/v1/admin/activity?${queryString}` : "/v1/admin/activity";
@@ -39,8 +38,8 @@ export async function listActivityForUser(
   const http = getAdminHttpClient({ fetchFn, accessToken });
 
   const params = new URLSearchParams();
+  if (query?.page !== undefined) params.set("page", String(query.page));
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
-  if (query?.offset !== undefined) params.set("offset", String(query.offset));
 
   const queryString = params.toString();
   const basePath = `/v1/admin/users/${encodeURIComponent(userId)}/activity`;

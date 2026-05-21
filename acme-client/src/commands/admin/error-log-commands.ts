@@ -26,8 +26,8 @@ export async function listErrorLogs(
   if (query?.endpoint) params.set("endpoint", query.endpoint);
   if (query?.since) params.set("since", query.since);
   if (query?.until) params.set("until", query.until);
+  if (query?.page !== undefined) params.set("page", String(query.page));
   if (query?.limit !== undefined) params.set("limit", String(query.limit));
-  if (query?.offset !== undefined) params.set("offset", String(query.offset));
 
   const queryString = params.toString();
   const path = queryString ? `/v1/admin/error-logs?${queryString}` : "/v1/admin/error-logs";

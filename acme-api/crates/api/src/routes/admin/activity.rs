@@ -74,8 +74,6 @@ pub struct ListActivityQuery {
     pub page: Option<u32>,
     /// Limit (default 50)
     pub limit: Option<i64>,
-    /// Offset for pagination
-    pub offset: Option<i64>,
 }
 
 // ============================================================================
@@ -93,10 +91,8 @@ pub async fn list_activity(
     let pool = state.local_auth.pool();
 
     let limit = query.limit.unwrap_or(50);
-    let offset = query
-        .page
-        .map(|page| ((page.max(1) - 1) as i64) * limit)
-        .unwrap_or_else(|| query.offset.unwrap_or(0));
+    let page = query.page.unwrap_or(1).max(1) as i64;
+    let offset = (page - 1) * limit;
 
     match activity::list_activity(
         pool,
@@ -127,7 +123,7 @@ pub async fn list_activity(
                 "operation": "activity.list",
                 "action": query.action,
                 "resource_type": query.resource_type,
-                "page": query.page,
+                "page": page,
                 "limit": limit,
                 "offset": offset
             })))
@@ -147,7 +143,8 @@ pub async fn list_activity_for_entity(
     let pool = state.local_auth.pool();
 
     let limit = query.limit.unwrap_or(50);
-    let offset = query.offset.unwrap_or(0);
+    let page = query.page.unwrap_or(1).max(1) as i64;
+    let offset = (page - 1) * limit;
 
     match activity::list_activity_for_entity(pool, &entity_type, entity_id, limit, offset).await {
         Ok(response) => {
@@ -170,6 +167,7 @@ pub async fn list_activity_for_entity(
                 "operation": "activity.list_for_entity",
                 "entity_type": entity_type,
                 "entity_id": entity_id,
+                "page": page,
                 "limit": limit,
                 "offset": offset
             })))
@@ -189,7 +187,8 @@ pub async fn list_activity_for_user(
     let pool = state.local_auth.pool();
 
     let limit = query.limit.unwrap_or(50);
-    let offset = query.offset.unwrap_or(0);
+    let page = query.page.unwrap_or(1).max(1) as i64;
+    let offset = (page - 1) * limit;
 
     match activity::list_activity_for_user(pool, user_id, limit, offset).await {
         Ok(response) => {
@@ -211,6 +210,7 @@ pub async fn list_activity_for_user(
             .with_context(serde_json::json!({
                 "operation": "activity.list_for_user",
                 "user_id": user_id,
+                "page": page,
                 "limit": limit,
                 "offset": offset
             })))

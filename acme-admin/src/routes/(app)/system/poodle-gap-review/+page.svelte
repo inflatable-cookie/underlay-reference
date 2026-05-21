@@ -145,6 +145,7 @@ import {
   subtitle="Review the remaining ambiguous Underlay workflow surfaces with real examples before pushing them into Poodle contracts or composition guidance."
   backHref="/system"
   backLabel="Back to system"
+  sizeRole="prominent"
 />
 
 <div class="review-page">
