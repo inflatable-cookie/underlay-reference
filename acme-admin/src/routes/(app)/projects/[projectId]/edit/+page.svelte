@@ -222,7 +222,8 @@ import {
   {/snippet}
 
   <EntityFormPage
-    section="Edit Project"
+    section="Projects"
+    title="Edit project"
     subtitle={project.name}
     backHref={computedBackInfo.href}
     backLabel={computedBackInfo.label}

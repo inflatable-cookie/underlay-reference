@@ -99,7 +99,8 @@ import {
 </script>
 
 <EntityFormPage
-  section="New User"
+  section="Users"
+  title="New user"
   subtitle="Create a new user account"
   backHref={backInfo.href}
   backLabel={backInfo.label}

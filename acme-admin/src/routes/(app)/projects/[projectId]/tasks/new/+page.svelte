@@ -125,7 +125,8 @@
 </script>
 
 <EntityFormPage
-  section="New Task"
+  section="Tasks"
+  title="New task"
   subtitle={project ? `For project: ${project.name}` : undefined}
   backHref={computedBackInfo.href}
   backLabel={computedBackInfo.label}

@@ -138,7 +138,7 @@
 
 <EntityDetailPage
   title={task?.title ?? "Task"}
-  section="Task"
+  section="Tasks"
   showSubtitleWithBreadcrumbs
   breadcrumbsMarkLastCurrent={false}
   backHref={`/projects/${data.projectId}`}

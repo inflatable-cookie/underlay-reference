@@ -88,7 +88,7 @@
 
 <EntityDetailPage
   title={category?.name ?? "Category"}
-  section="Category"
+  section="Categories"
   backHref="/categories"
   backLabel="Back to categories"
   bannerMessage={bannerMessage}

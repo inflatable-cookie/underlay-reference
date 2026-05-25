@@ -140,7 +140,8 @@ import {
 </script>
 
 <EntityFormPage
-  section="New Project"
+  section="Projects"
+  title="New project"
   subtitle="Create a new project to organize your tasks"
   backHref={backInfo.href}
   backLabel={backInfo.label}

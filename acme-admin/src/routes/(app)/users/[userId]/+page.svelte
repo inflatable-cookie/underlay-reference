@@ -410,9 +410,9 @@
 </script>
 
 <EntityDetailPage
-  title={user?.email ?? "User"}
-  section="User"
-  subtitle={user?.displayName ?? undefined}
+  title={user?.displayName?.trim() || user?.email || "User"}
+  section="Users"
+  subtitle={user?.displayName?.trim() && user.displayName.trim() !== user.email ? user.email : undefined}
   backHref={computedBackInfo.href}
   backLabel={computedBackInfo.label}
   bannerMessage={user && user.status !== "active" ? `User status: ${user.status}` : undefined}

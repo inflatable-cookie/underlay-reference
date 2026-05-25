@@ -99,9 +99,6 @@
           {
             label: project.categoryName.trim(),
             href: `/categories/${project.categoryId}`
-          },
-          {
-            label: project.name
           }
         ]
       : []
@@ -123,13 +120,14 @@
 
 <EntityDetailPage
   title={project?.name ?? "Project"}
-  section="Project"
+  section="Projects"
   backHref="/projects"
   backLabel="Back to projects"
   bannerMessage={bannerMessage}
   bannerTone={bannerTone}
   dataLoader={projectLoader}
   breadcrumbs={breadcrumbs}
+  breadcrumbsMarkLastCurrent={false}
   meta={headerMeta as never}
   actions={[
     { label: "Edit", handler: handleEdit },

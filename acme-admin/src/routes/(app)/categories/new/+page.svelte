@@ -119,7 +119,8 @@ import {
 </script>
 
 <EntityFormPage
-  section="New Category"
+  section="Categories"
+  title="New category"
   subtitle="Create a new category to organize your projects"
   backHref={backInfo.href}
   backLabel={backInfo.label}

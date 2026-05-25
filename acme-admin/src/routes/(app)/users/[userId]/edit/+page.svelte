@@ -178,8 +178,9 @@ import {
 {/snippet}
 
 <EntityFormPage
-  section="Edit User"
-  subtitle={user?.email}
+  section="Users"
+  title="Edit user"
+  subtitle={user?.displayName?.trim() || user?.email}
   backHref={computedBackInfo.href}
   backLabel={computedBackInfo.label}
   backIsContextual={computedBackInfo.isContextual ?? false}
