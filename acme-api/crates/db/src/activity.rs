@@ -15,8 +15,9 @@ use crate::DbPool;
 // Re-export base audit types from underlay-audit for convenience.
 // Applications can use these for basic audit operations.
 pub use underlay_audit::{
-    append_audit_log, count_audit_logs, get_audit_log_by_id, list_audit_logs, AuditAction,
-    AuditEntry, AuditError, AuditLogFilters, AuditLogRow, AuditResult,
+    append_audit_log_to_table, count_audit_logs_from_table, get_audit_log_by_id_from_table,
+    list_audit_logs_from_table, AuditAction, AuditEntry, AuditError, AuditLogFilters, AuditLogRow,
+    AuditResult, AuditTable,
 };
 
 // ============================================================================
