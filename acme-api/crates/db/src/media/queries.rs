@@ -92,12 +92,17 @@ pub async fn list_media_admin(
         where_clause, order_by
     );
 
-    let mut query_builder = sqlx::query_as::<_, MediaWithVersionRow>(&sql);
+    let mut query_builder = sqlx::query_as::<_, RawMediaWithVersionRow>(&sql);
     for value in filter_values {
         query_builder = query_builder.bind(value);
     }
 
-    query_builder.fetch_all(pool).await
+    query_builder
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect()
 }
 
 /// List media items with pagination (admin, excluding deleted and incomplete uploads).
@@ -155,12 +160,19 @@ pub async fn list_media_admin_paged(
         filter_values.len() + 2
     );
 
-    let mut items_query = sqlx::query_as::<_, MediaWithVersionRow>(&sql);
+    let mut items_query = sqlx::query_as::<_, RawMediaWithVersionRow>(&sql);
     for value in &filter_values {
         items_query = items_query.bind(value);
     }
 
-    let items = items_query.bind(limit).bind(offset).fetch_all(pool).await?;
+    let items: Vec<MediaWithVersionRow> = items_query
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_, _>>()?;
 
     Ok(MediaListResponse {
         has_more: offset + limit < total,
@@ -186,7 +198,7 @@ pub async fn list_media_trash(
     .fetch_one(pool)
     .await?;
 
-    let data = sqlx::query_as::<_, MediaWithVersionRow>(
+    let data: Vec<MediaWithVersionRow> = sqlx::query_as::<_, RawMediaWithVersionRow>(
         r#"
         SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
                m.created_at, m.updated_at, m.deleted_at,
@@ -204,7 +216,10 @@ pub async fn list_media_trash(
     .bind(limit)
     .bind(offset)
     .fetch_all(pool)
-    .await?;
+    .await?
+    .into_iter()
+    .map(TryInto::try_into)
+    .collect::<Result<_, _>>()?;
 
     Ok(MediaListResponse {
         has_more: offset + (data.len() as i64) < total,

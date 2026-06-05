@@ -214,7 +214,7 @@ pub async fn delete_version(
 
     // Delete blob if exists
     if let Some(ref object_key) = version.object_key {
-        if let Err(e) = state.blob_adapter.delete(object_key).await {
+        if let Err(e) = state.blob_adapter.delete_object_key(object_key).await {
             tracing::warn!("Failed to delete blob {}: {}", object_key, e);
         }
     }

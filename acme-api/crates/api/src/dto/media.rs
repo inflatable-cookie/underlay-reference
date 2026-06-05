@@ -43,7 +43,10 @@ impl MediaSummaryDto {
     where
         F: FnOnce(&str) -> String,
     {
-        let thumbnail_url = row.thumbnail_object_key.as_ref().map(|key| url_fn(key));
+        let thumbnail_url = row
+            .thumbnail_object_key
+            .as_ref()
+            .map(|key| url_fn(key.as_str()));
         Self {
             id: row.id,
             kind: row.kind,
@@ -204,7 +207,7 @@ impl MediaVersionDto {
     where
         F: Fn(&str) -> String,
     {
-        let url = v.object_key.as_ref().map(|key| url_fn(key));
+        let url = v.object_key.as_ref().map(|key| url_fn(key.as_str()));
         let renditions_dto: Vec<MediaRenditionDto> = renditions
             .into_iter()
             .map(|r| MediaRenditionDto::from_row_with_url(r, &url_fn))
@@ -219,7 +222,7 @@ impl MediaVersionDto {
             sha256: v.sha256,
             storage_provider: v.storage_provider,
             bucket: v.bucket,
-            object_key: v.object_key,
+            object_key: v.object_key.map(Into::into),
             created_at: v.created_at,
             created_by: v.created_by,
             url,
@@ -239,7 +242,7 @@ impl From<MediaVersionRow> for MediaVersionDto {
             sha256: v.sha256,
             storage_provider: v.storage_provider,
             bucket: v.bucket,
-            object_key: v.object_key,
+            object_key: v.object_key.map(Into::into),
             created_at: v.created_at,
             created_by: v.created_by,
             url: None,
@@ -313,7 +316,7 @@ impl MediaRenditionDto {
     where
         F: Fn(&str) -> String,
     {
-        let url = Some(url_fn(&r.object_key));
+        let url = Some(url_fn(r.object_key.as_str()));
         Self {
             id: r.id,
             media_version_id: r.media_version_id,

@@ -243,7 +243,8 @@ pub async fn list_media_trash(
 
     match media::list_media_trash(pool, limit as i64, offset).await {
         Ok(rows) => {
-            let items: Vec<MediaSummaryDto> = rows.data
+            let items: Vec<MediaSummaryDto> = rows
+                .data
                 .into_iter()
                 .map(|row| {
                     MediaSummaryDto::from_row_with_thumbnail(row, |key| {
@@ -621,7 +622,7 @@ pub async fn purge_media(
     // Delete blobs for all versions
     for version in &versions {
         if let Some(ref object_key) = version.object_key {
-            if let Err(e) = state.blob_adapter.delete(object_key).await {
+            if let Err(e) = state.blob_adapter.delete_object_key(object_key).await {
                 tracing::warn!("Failed to delete blob {}: {}", object_key, e);
             }
         }

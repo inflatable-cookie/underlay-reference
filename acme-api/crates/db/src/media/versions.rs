@@ -7,7 +7,7 @@ pub async fn create_media_version(
     media_id: Uuid,
     created_by: Option<Uuid>,
 ) -> Result<MediaVersionRow, sqlx::Error> {
-    sqlx::query_as::<_, MediaVersionRow>(
+    sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         INSERT INTO media.media_version (id, media_id, state, created_by)
         VALUES ($1, $2, 'uploading', $3)
@@ -19,7 +19,8 @@ pub async fn create_media_version(
     .bind(media_id)
     .bind(created_by)
     .fetch_one(pool)
-    .await
+    .await?
+    .try_into()
 }
 
 /// Get a media version by ID.
@@ -27,7 +28,7 @@ pub async fn get_media_version(
     pool: &DbPool,
     id: Uuid,
 ) -> Result<Option<MediaVersionRow>, sqlx::Error> {
-    sqlx::query_as::<_, MediaVersionRow>(
+    sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         SELECT id, media_id, state, byte_size, mime_type, sha256,
                storage_provider, bucket, object_key, created_at, created_by
@@ -37,7 +38,9 @@ pub async fn get_media_version(
     )
     .bind(id)
     .fetch_optional(pool)
-    .await
+    .await?
+    .map(TryInto::try_into)
+    .transpose()
 }
 
 /// List all versions for a media item.
@@ -45,7 +48,7 @@ pub async fn list_media_versions(
     pool: &DbPool,
     media_id: Uuid,
 ) -> Result<Vec<MediaVersionRow>, sqlx::Error> {
-    sqlx::query_as::<_, MediaVersionRow>(
+    sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         SELECT id, media_id, state, byte_size, mime_type, sha256,
                storage_provider, bucket, object_key, created_at, created_by
@@ -56,7 +59,10 @@ pub async fn list_media_versions(
     )
     .bind(media_id)
     .fetch_all(pool)
-    .await
+    .await?
+    .into_iter()
+    .map(TryInto::try_into)
+    .collect()
 }
 
 /// Finalise a media version (transition to ready state).
@@ -71,7 +77,7 @@ pub async fn finalise_media_version(
     bucket: &str,
     object_key: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
-    sqlx::query_as::<_, MediaVersionRow>(
+    sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         UPDATE media.media_version
         SET state = 'ready',
@@ -94,7 +100,8 @@ pub async fn finalise_media_version(
     .bind(bucket)
     .bind(object_key)
     .fetch_one(pool)
-    .await
+    .await?
+    .try_into()
 }
 
 /// Update media's current_version_id.

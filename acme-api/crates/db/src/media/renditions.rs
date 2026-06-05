@@ -15,7 +15,7 @@ pub async fn create_media_rendition(
     bucket: &str,
     object_key: &str,
 ) -> Result<MediaRenditionRow, sqlx::Error> {
-    sqlx::query_as::<_, MediaRenditionRow>(
+    sqlx::query_as::<_, RawMediaRenditionRow>(
         r#"
         INSERT INTO media.media_rendition
             (id, media_version_id, kind, byte_size, mime_type, width, height,
@@ -36,7 +36,8 @@ pub async fn create_media_rendition(
     .bind(bucket)
     .bind(object_key)
     .fetch_one(pool)
-    .await
+    .await?
+    .try_into()
 }
 
 /// List renditions for a version.
@@ -44,7 +45,7 @@ pub async fn list_media_renditions(
     pool: &DbPool,
     media_version_id: Uuid,
 ) -> Result<Vec<MediaRenditionRow>, sqlx::Error> {
-    sqlx::query_as::<_, MediaRenditionRow>(
+    sqlx::query_as::<_, RawMediaRenditionRow>(
         r#"
         SELECT id, media_version_id, kind, byte_size, mime_type, width, height,
                storage_provider, bucket, object_key, created_at
@@ -55,5 +56,8 @@ pub async fn list_media_renditions(
     )
     .bind(media_version_id)
     .fetch_all(pool)
-    .await
+    .await?
+    .into_iter()
+    .map(TryInto::try_into)
+    .collect()
 }

@@ -3,9 +3,9 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{info, warn};
-use underlay_blob::{BlobAdapter, BlobAdapterObjectKeyExt, MediaConfig};
+use underlay_blob::{BlobAdapter, BlobAdapterObjectKeyExt, BlobObjectKey, MediaConfig};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
-use underlay_media::image::{ThumbnailConfig, generate_thumbnail};
+use underlay_media::image::{generate_thumbnail, ThumbnailConfig};
 use underlay_media::storage::rendition_object_key;
 
 // ============================================================================
@@ -82,6 +82,8 @@ impl JobHandler for GenerateThumbnailHandler {
             warn!(version_id = %payload.version_id, "version not found or not ready");
             return Ok(()); // Nothing to do
         };
+        let object_key = BlobObjectKey::parse(object_key)
+            .map_err(|e| JobHandlerError::permanent(format!("invalid source key: {e}")))?;
 
         // Only process images
         let mime = mime_type.as_deref().unwrap_or("");
@@ -110,7 +112,7 @@ impl JobHandler for GenerateThumbnailHandler {
         // Download original image
         let original_bytes = self
             .blob_adapter
-            .get_bytes(&object_key)
+            .get_object_bytes(&object_key)
             .await
             .map_err(|e| JobHandlerError::new(format!("failed to download original: {}", e)))?;
 
