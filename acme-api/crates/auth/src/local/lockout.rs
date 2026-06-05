@@ -3,14 +3,20 @@ use acme_db::activity::{log_activity, LogActivityParams};
 use chrono::{DateTime, Utc};
 use serde_json::json;
 use sqlx::Row;
+use std::sync::LazyLock;
 use tracing::warn;
 use underlay_security_alerts::{
-    evaluate_alerts, has_recent_alert, insert_alert_event, load_ip_signal_counts,
-    SecurityAlertEventInput,
+    evaluate_alerts, has_recent_alert_in_table, insert_alert_event_into_table,
+    load_ip_signal_counts_from_table, LoginAttemptsTable, SecurityAlertEventInput,
+    SecurityAlertEventsTable,
 };
 
-const LOGIN_ATTEMPTS_TABLE: &str = "auth.login_attempts";
-const SECURITY_ALERT_EVENTS_TABLE: &str = "auth.security_alert_events";
+static LOGIN_ATTEMPTS_TABLE: LazyLock<LoginAttemptsTable> = LazyLock::new(|| {
+    LoginAttemptsTable::parse("auth.login_attempts").expect("valid login-attempts table")
+});
+static SECURITY_ALERT_EVENTS_TABLE: LazyLock<SecurityAlertEventsTable> = LazyLock::new(|| {
+    SecurityAlertEventsTable::parse("auth.security_alert_events").expect("valid alerts table")
+});
 
 impl AcmeLocalAuthService {
     /// Check if a user is currently locked out.
@@ -171,24 +177,26 @@ impl AcmeLocalAuthService {
         let config = self.config.security_alert_config();
         let since = now - config.window;
 
-        let counts = match load_ip_signal_counts(&self.pool, LOGIN_ATTEMPTS_TABLE, ip, since).await
-        {
-            Ok(counts) => counts,
-            Err(err) => {
-                warn!(
-                    error = %err,
-                    ip_address = %ip,
-                    "failed to load login-attempt signal counts"
-                );
-                return;
-            }
-        };
+        let counts =
+            match load_ip_signal_counts_from_table(&self.pool, &LOGIN_ATTEMPTS_TABLE, ip, since)
+                .await
+            {
+                Ok(counts) => counts,
+                Err(err) => {
+                    warn!(
+                        error = %err,
+                        ip_address = %ip,
+                        "failed to load login-attempt signal counts"
+                    );
+                    return;
+                }
+            };
 
         let alert_types = evaluate_alerts(counts, &config);
         for alert_type in alert_types {
-            let already_emitted = match has_recent_alert(
+            let already_emitted = match has_recent_alert_in_table(
                 &self.pool,
-                SECURITY_ALERT_EVENTS_TABLE,
+                &SECURITY_ALERT_EVENTS_TABLE,
                 alert_type,
                 ip,
                 config.cooldown,
@@ -225,19 +233,24 @@ impl AcmeLocalAuthService {
                 }),
             };
 
-            let event_id =
-                match insert_alert_event(&self.pool, SECURITY_ALERT_EVENTS_TABLE, &event).await {
-                    Ok(id) => id,
-                    Err(err) => {
-                        warn!(
-                            error = %err,
-                            ip_address = %ip,
-                            alert_type = alert_type.as_str(),
-                            "failed to persist security alert event"
-                        );
-                        continue;
-                    }
-                };
+            let event_id = match insert_alert_event_into_table(
+                &self.pool,
+                &SECURITY_ALERT_EVENTS_TABLE,
+                &event,
+            )
+            .await
+            {
+                Ok(id) => id,
+                Err(err) => {
+                    warn!(
+                        error = %err,
+                        ip_address = %ip,
+                        alert_type = alert_type.as_str(),
+                        "failed to persist security alert event"
+                    );
+                    continue;
+                }
+            };
 
             warn!(
                 alert_event_id = %event_id,
