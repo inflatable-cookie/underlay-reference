@@ -7,7 +7,7 @@ use acme_db::{create_pool, run_migrations};
 use acme_infra::{init_tracing, log_effective_config, AppConfig};
 use acme_jobs::{
     scheduled_task_definitions, JobRepository, JobRunner, JobRunnerConfig, PgJobNotifier,
-    ScheduledTaskRepository, Scheduler,
+    PostgresJobRunnerExt, ScheduledTaskRepository, Scheduler,
 };
 use tracing::{error, info};
 use underlay_blob::{BlobAdapter, MediaConfig, NoopAdapter, S3Adapter, S3Config};

@@ -4,9 +4,9 @@
 //!
 //! ## Job Handlers
 //!
-//! ### Platform Maintenance (from underlay-jobs)
+//! ### Platform Maintenance (from underlay-jobs-postgres)
 //!
-//! Standard maintenance tasks are provided by `underlay_jobs::tasks`:
+//! Standard maintenance tasks are provided by `underlay_jobs_postgres::tasks`:
 //! - `purge_expired_sessions` - Remove expired sessions
 //! - `purge_auth_states` - Remove expired auth states
 //! - `purge_login_attempts` - Remove old login attempts
@@ -41,22 +41,25 @@ use std::sync::Arc;
 use sqlx::PgPool;
 use underlay_blob::{BlobAdapter, MediaConfig};
 
-// Re-export everything from underlay-jobs.
+// Re-export everything from underlay-jobs-postgres.
 pub use underlay_jobs::{
     BackoffStrategy, Job, JobConfig, JobErrorRecord, JobFilters, JobHandler, JobHandlerError,
-    JobId, JobProgress, JobRegistry, JobRepository, JobResult, JobRunner, JobRunnerConfig,
-    JobStatus, JobStore, PgJobNotifier, RepoError, ScheduledTask, ScheduledTaskDefinition,
-    ScheduledTaskRepository, Scheduler, DOMAIN_EVENT_NOTIFY_SQL, JOB_NOTIFY_CHANNEL,
-    JOB_NOTIFY_SQL, JOB_TABLES_SQL,
+    JobId, JobProgress, JobRegistry, JobResult, JobRunner, JobRunnerConfig, JobStatus, JobStore,
+    ScheduledTask, ScheduledTaskDefinition,
+};
+pub use underlay_jobs_postgres::{
+    JobRepository, PgDeadLetterRepository, PgJobNotifier, PostgresJobRunnerExt, RepoError,
+    ScheduledTaskRepository, Scheduler, DOMAIN_EVENT_NOTIFY_SQL, JOB_DEAD_LETTERS_SQL,
+    JOB_NOTIFY_CHANNEL, JOB_NOTIFY_SQL, JOB_TABLES_SQL,
 };
 
 // Re-export outbox components from underlay-jobs
-pub use underlay_jobs::outbox::{
+pub use underlay_jobs_postgres::outbox::{
     OutboxConfig, OutboxEvent, OutboxNotifier, OutboxProcessor, DOMAIN_EVENT_NOTIFY_CHANNEL,
 };
 
 // Re-export standard platform maintenance tasks from underlay-jobs
-pub use underlay_jobs::tasks::{
+pub use underlay_jobs_postgres::tasks::{
     // Job maintenance
     ArchiveCompletedJobsJob,
     // Auth cleanup
@@ -103,7 +106,7 @@ pub fn create_registry_with_media(
     let mut registry = JobRegistry::new();
 
     // ========================================================================
-    // Standard platform maintenance tasks (from underlay-jobs)
+    // Standard platform maintenance tasks (from underlay-jobs-postgres)
     // ========================================================================
 
     // Auth cleanup
@@ -174,7 +177,7 @@ pub fn create_registry_with_media(
 pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
     vec![
         // ====================================================================
-        // Platform maintenance tasks (from underlay-jobs)
+        // Platform maintenance tasks (from underlay-jobs-postgres)
         // ====================================================================
 
         // Purge expired sessions - every 15 minutes

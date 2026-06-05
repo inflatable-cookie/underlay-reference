@@ -133,7 +133,9 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // Create job repository for enqueueing jobs
-    let job_repository = Some(Arc::new(underlay_jobs::JobRepository::new(pool.clone())));
+    let job_repository = Some(Arc::new(underlay_jobs_postgres::JobRepository::new(
+        pool.clone(),
+    )));
 
     // Application config - use defaults, override as needed
     let config = AcmeConfig::default();

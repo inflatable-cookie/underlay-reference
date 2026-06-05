@@ -39,6 +39,7 @@ dependencies = [
  "underlay-email",
  "underlay-http",
  "underlay-jobs",
+ "underlay-jobs-postgres",
  "underlay-media",
  "underlay-nightfire",
  "underlay-observability",
@@ -156,6 +157,7 @@ dependencies = [
  "tracing",
  "underlay-blob",
  "underlay-jobs",
+ "underlay-jobs-postgres",
  "underlay-media",
  "uuid",
 ]
@@ -5467,14 +5469,27 @@ version = "0.0.1"
 dependencies = [
  "async-trait",
  "chrono",
- "cron",
  "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "underlay-core",
+]
+
+[[package]]
+name = "underlay-jobs-postgres"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "cron",
  "serde_json",
  "sqlx",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
  "underlay-core",
+ "underlay-jobs",
  "uuid",
 ]
 

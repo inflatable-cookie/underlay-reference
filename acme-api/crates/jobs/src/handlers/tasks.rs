@@ -3,7 +3,8 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{debug, info, warn};
-use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError, JobRepository};
+use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
+use underlay_jobs_postgres::JobRepository;
 
 // ============================================================================
 // Job Handler: tasks.cleanup_completed

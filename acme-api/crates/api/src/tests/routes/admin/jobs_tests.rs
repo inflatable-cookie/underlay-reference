@@ -9,7 +9,8 @@ use chrono::{Duration, Utc};
 use serde_json::json;
 use underlay_auth::AuthProvider;
 use underlay_blob::NoopAdapter;
-use underlay_jobs::{JobConfig, JobRepository};
+use underlay_jobs::JobConfig;
+use underlay_jobs_postgres::JobRepository;
 
 static TEST_ENV_ONCE: std::sync::OnceLock<()> = std::sync::OnceLock::new();
 

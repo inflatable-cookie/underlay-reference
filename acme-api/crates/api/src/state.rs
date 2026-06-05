@@ -16,7 +16,7 @@ use underlay_auth::Authenticated;
 use underlay_blob::BlobAdapter;
 use underlay_email::{EmailManager, EmailTemplateEngine};
 use underlay_http::AuthCookieConfig;
-use underlay_jobs::JobRepository;
+use underlay_jobs_postgres::JobRepository;
 
 use crate::config::AcmeConfig;
 

@@ -23,6 +23,7 @@ underlay-db = { workspace = true }
 underlay-email = { workspace = true, features = ["templates"] }
 underlay-http = { workspace = true }
 underlay-jobs = { workspace = true }
+underlay-jobs-postgres = { workspace = true }
 underlay-media = { workspace = true }
 underlay-nightfire = { workspace = true }
 underlay-observability = { workspace = true }
