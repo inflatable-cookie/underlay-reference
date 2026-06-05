@@ -5,8 +5,8 @@ use std::sync::Arc;
 use tracing::{info, warn};
 use underlay_blob::{BlobAdapter, MediaConfig};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
-use underlay_media::image::{generate_thumbnail, ThumbnailConfig};
-use underlay_media::storage::rendition_key;
+use underlay_media::image::{ThumbnailConfig, generate_thumbnail};
+use underlay_media::storage::rendition_object_key;
 
 // ============================================================================
 // Job Handler: media.generate_thumbnail
@@ -123,11 +123,12 @@ impl JobHandler for GenerateThumbnailHandler {
         })?;
 
         // Generate thumbnail object key using standardized storage pattern
-        let thumb_object_key = rendition_key(payload.media_id, payload.version_id, "thumb");
+        let thumb_object_key = rendition_object_key(payload.media_id, payload.version_id, "thumb")
+            .map_err(|e| JobHandlerError::permanent(format!("invalid thumbnail key: {e}")))?;
 
         // Upload thumbnail
         self.blob_adapter
-            .put_bytes(&thumb_object_key, &result.data, result.mime_type)
+            .put_bytes(thumb_object_key.as_str(), &result.data, result.mime_type)
             .await
             .map_err(|e| JobHandlerError::new(format!("failed to upload thumbnail: {}", e)))?;
 
@@ -147,7 +148,7 @@ impl JobHandler for GenerateThumbnailHandler {
         .bind(result.mime_type)
         .bind(result.width as i32)
         .bind(result.height as i32)
-        .bind(&thumb_object_key)
+        .bind(thumb_object_key.as_str())
         .execute(self.pool.as_ref())
         .await
         .map_err(|e| JobHandlerError::new(format!("failed to create rendition: {}", e)))?;

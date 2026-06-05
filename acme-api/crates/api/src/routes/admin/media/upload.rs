@@ -35,7 +35,7 @@ pub async fn initiate_upload(
             return Err(ApiError::not_found(
                 "media.not_found",
                 "Media item not found",
-            ))
+            ));
         }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
@@ -83,10 +83,12 @@ pub async fn initiate_upload(
         let ext = underlay_media::storage::mime_to_extension(&req.content_type);
         format!("file.{}", ext)
     });
-    let object_key = version_key(media_id, version_id, &filename);
+    let object_key = version_object_key(media_id, version_id, &filename)
+        .map_err(|e| ApiError::bad_request("media.invalid_object_key", e.to_string()))?;
 
     // Request upload URL from blob adapter
-    let upload_request = UploadRequest::new(&object_key, &req.content_type, req.content_length);
+    let upload_request =
+        UploadRequest::from_object_key(object_key, &req.content_type, req.content_length);
     let upload_plan = match state.blob_adapter.initiate_upload(upload_request).await {
         Ok(plan) => plan,
         Err(e) => {
@@ -135,13 +137,13 @@ pub async fn finalise_upload(
             return Err(ApiError::bad_request(
                 "version.wrong_media",
                 "Version does not belong to this media",
-            ))
+            ));
         }
         Ok(None) => {
             return Err(ApiError::not_found(
                 "version.not_found",
                 "Version not found",
-            ))
+            ));
         }
         Err(e) => {
             tracing::error!("Failed to get version: {}", e);
@@ -172,7 +174,7 @@ pub async fn finalise_upload(
             return Err(ApiError::not_found(
                 "media.not_found",
                 "Media item not found",
-            ))
+            ));
         }
         Err(e) => {
             tracing::error!("Failed to get media: {}", e);
@@ -195,10 +197,15 @@ pub async fn finalise_upload(
         let ext = underlay_media::storage::mime_to_extension(&req.content_type);
         format!("file.{}", ext)
     });
-    let object_key = version_key(media_id, version_id, &filename);
+    let object_key = version_object_key(media_id, version_id, &filename)
+        .map_err(|e| ApiError::bad_request("media.invalid_object_key", e.to_string()))?;
 
     // Finalise with blob adapter to get actual metadata
-    let stored = match state.blob_adapter.finalise_upload(&object_key).await {
+    let stored = match state
+        .blob_adapter
+        .finalise_upload(object_key.as_str())
+        .await
+    {
         Ok(s) => s,
         Err(e) => {
             tracing::error!("Failed to finalise upload: {}", e);
@@ -224,7 +231,7 @@ pub async fn finalise_upload(
             state.config.media.max_file_size_bytes
         );
         // Clean up: delete the uploaded blob and fail the version
-        let _ = state.blob_adapter.delete(&object_key).await;
+        let _ = state.blob_adapter.delete(object_key.as_str()).await;
         let _ = media::fail_media_version(pool, version_id).await;
         return Err(ApiError::new(
             StatusCode::PAYLOAD_TOO_LARGE,
@@ -238,7 +245,7 @@ pub async fn finalise_upload(
     }
 
     // Magic byte detection: verify file content matches declared MIME type
-    let file_bytes = match state.blob_adapter.get_bytes(&object_key).await {
+    let file_bytes = match state.blob_adapter.get_bytes(object_key.as_str()).await {
         Ok(bytes) => bytes,
         Err(e) => {
             tracing::error!("Failed to read file for magic byte detection: {}", e);
@@ -288,7 +295,7 @@ pub async fn finalise_upload(
 
             if !types_match {
                 // Clean up: delete the uploaded blob and fail the version
-                let _ = state.blob_adapter.delete(&object_key).await;
+                let _ = state.blob_adapter.delete(object_key.as_str()).await;
                 let _ = media::fail_media_version(pool, version_id).await;
                 return Err(ApiError::new(
                     StatusCode::UNPROCESSABLE_ENTITY,
@@ -312,7 +319,7 @@ pub async fn finalise_upload(
         &req.sha256,
         "local", // storage provider
         "media", // bucket
-        &object_key,
+        object_key.as_str(),
     )
     .await
     {
@@ -381,7 +388,7 @@ pub async fn finalise_upload(
             return Err(ApiError::not_found(
                 "media.not_found",
                 "Media item not found",
-            ))
+            ));
         }
         Err(e) => {
             tracing::error!("Failed to get updated media: {}", e);
