@@ -3,7 +3,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{info, warn};
-use underlay_blob::{BlobAdapter, MediaConfig};
+use underlay_blob::{BlobAdapter, BlobAdapterObjectKeyExt, MediaConfig};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
 use underlay_media::image::{ThumbnailConfig, generate_thumbnail};
 use underlay_media::storage::rendition_object_key;
@@ -128,7 +128,7 @@ impl JobHandler for GenerateThumbnailHandler {
 
         // Upload thumbnail
         self.blob_adapter
-            .put_bytes(thumb_object_key.as_str(), &result.data, result.mime_type)
+            .put_object_bytes(&thumb_object_key, &result.data, result.mime_type)
             .await
             .map_err(|e| JobHandlerError::new(format!("failed to upload thumbnail: {}", e)))?;
 

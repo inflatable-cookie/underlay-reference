@@ -203,7 +203,7 @@ pub async fn finalise_upload(
     // Finalise with blob adapter to get actual metadata
     let stored = match state
         .blob_adapter
-        .finalise_upload(object_key.as_str())
+        .finalise_upload_object_key(&object_key)
         .await
     {
         Ok(s) => s,
@@ -231,7 +231,7 @@ pub async fn finalise_upload(
             state.config.media.max_file_size_bytes
         );
         // Clean up: delete the uploaded blob and fail the version
-        let _ = state.blob_adapter.delete(object_key.as_str()).await;
+        let _ = state.blob_adapter.delete_object_key(&object_key).await;
         let _ = media::fail_media_version(pool, version_id).await;
         return Err(ApiError::new(
             StatusCode::PAYLOAD_TOO_LARGE,
@@ -245,7 +245,7 @@ pub async fn finalise_upload(
     }
 
     // Magic byte detection: verify file content matches declared MIME type
-    let file_bytes = match state.blob_adapter.get_bytes(object_key.as_str()).await {
+    let file_bytes = match state.blob_adapter.get_object_bytes(&object_key).await {
         Ok(bytes) => bytes,
         Err(e) => {
             tracing::error!("Failed to read file for magic byte detection: {}", e);
@@ -295,7 +295,7 @@ pub async fn finalise_upload(
 
             if !types_match {
                 // Clean up: delete the uploaded blob and fail the version
-                let _ = state.blob_adapter.delete(object_key.as_str()).await;
+                let _ = state.blob_adapter.delete_object_key(&object_key).await;
                 let _ = media::fail_media_version(pool, version_id).await;
                 return Err(ApiError::new(
                     StatusCode::UNPROCESSABLE_ENTITY,
