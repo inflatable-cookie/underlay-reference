@@ -44,7 +44,8 @@ infer = "0.19"
 underlay-core = { path = "../../underlay/rust/crates/underlay-core" }
 underlay-http = { path = "../../underlay/rust/crates/underlay-http", features = ["error-logging"] }
 underlay-observability = { path = "../../underlay/rust/crates/underlay-observability" }
-underlay-auth = { path = "../../underlay/rust/crates/underlay-auth", features = ["postgres"] }
+underlay-auth = { path = "../../underlay/rust/crates/underlay-auth" }
+underlay-auth-postgres = { path = "../../underlay/rust/crates/underlay-auth-postgres" }
 underlay-blob = { path = "../../underlay/rust/crates/underlay-blob", features = ["s3"] }
 underlay-auth-email-totp = { path = "../../underlay/rust/crates/underlay-auth-email-totp" }
 underlay-auth-jwt = { path = "../../underlay/rust/crates/underlay-auth-jwt" }

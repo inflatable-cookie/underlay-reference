@@ -15,7 +15,7 @@ use crate::config::AuthConfig;
 #[allow(unused_imports)] // These will be used when email TOTP is integrated
 use crate::email_totp::{EmailTotpService, VerificationSession};
 
-use underlay_auth::state::{AuthStateError, AuthStateStore};
+use underlay_auth_postgres::{AuthStateError, AuthStateStore};
 use underlay_auth::{
     AuthError, AuthResult, Credential, CredentialMetadata, CredentialType, RoleSet, Session,
     SessionStatus, User, UserStatus,

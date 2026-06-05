@@ -1,7 +1,8 @@
 use async_trait::async_trait;
+use underlay_media::sync::MediaUsageSyncRepository;
 use underlay_media::{
     MediaContentKind, MediaId, MediaLocatorKind, MediaUsageEdge, MediaUsageEdgeInput,
-    MediaUsageEdgeKey, MediaUsageProvenanceKind, MediaUsageRole, MediaUsageSyncRepository,
+    MediaUsageEdgeKey, MediaUsageProvenanceKind, MediaUsageRole,
 };
 
 use super::*;
