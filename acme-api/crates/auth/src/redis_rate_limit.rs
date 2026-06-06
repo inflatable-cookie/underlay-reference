@@ -56,7 +56,7 @@ impl RateLimitBackend for RedisRateLimitBackend {
             .map_err(|e| RateLimitError::Backend(format!("Redis connection error: {}", e)))?;
 
         let now = Self::current_timestamp_secs();
-        let window_size_secs = config.window.as_secs();
+        let window_size_secs = config.window_seconds();
         let window_start = now / window_size_secs * window_size_secs;
         let redis_key = Self::build_key(key, window_start);
 
@@ -66,7 +66,7 @@ impl RateLimitBackend for RedisRateLimitBackend {
             .map_err(|e| RateLimitError::Backend(format!("Redis GET error: {}", e)))?;
         let count = count.unwrap_or(0);
 
-        let max_requests = config.max_requests;
+        let max_requests = config.max_requests();
 
         if count < max_requests {
             let remaining = max_requests - count;
@@ -88,7 +88,7 @@ impl RateLimitBackend for RedisRateLimitBackend {
             .map_err(|e| RateLimitError::Backend(format!("Redis connection error: {}", e)))?;
 
         let now = Self::current_timestamp_secs();
-        let window_size_secs = config.window.as_secs();
+        let window_size_secs = config.window_seconds();
         let window_start = now / window_size_secs * window_size_secs;
         let redis_key = Self::build_key(key, window_start);
 
