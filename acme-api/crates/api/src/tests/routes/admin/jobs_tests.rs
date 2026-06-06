@@ -23,8 +23,8 @@ fn ensure_test_env() {
         let (jwt_cfg, _) =
             underlay_auth_jwt::JwtConfig::generate().expect("should generate test JWT keys");
 
-        env::set_var("AUTH_JWT_PRIVATE_KEY", jwt_cfg.private_key_b64);
-        env::set_var("AUTH_JWT_PUBLIC_KEY", jwt_cfg.public_key_b64);
+        env::set_var("AUTH_JWT_PRIVATE_KEY", jwt_cfg.private_key_b64());
+        env::set_var("AUTH_JWT_PUBLIC_KEY", jwt_cfg.public_key_b64());
         env::set_var("ENVIRONMENT", "test");
         env::set_var("WEBAUTHN_RP_ID", "localhost");
         env::set_var("WEBAUTHN_RP_ORIGIN", "http://localhost:3000");

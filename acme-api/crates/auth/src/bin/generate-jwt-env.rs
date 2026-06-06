@@ -8,6 +8,6 @@ fn main() {
     let (config, _keypair) =
         underlay_auth_jwt::JwtConfig::generate().expect("failed to generate jwt config");
 
-    println!("AUTH_JWT_PRIVATE_KEY={}", config.private_key_b64);
-    println!("AUTH_JWT_PUBLIC_KEY={}", config.public_key_b64);
+    println!("AUTH_JWT_PRIVATE_KEY={}", config.private_key_b64());
+    println!("AUTH_JWT_PUBLIC_KEY={}", config.public_key_b64());
 }
