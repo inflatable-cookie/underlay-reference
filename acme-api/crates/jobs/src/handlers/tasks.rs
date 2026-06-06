@@ -42,10 +42,7 @@ impl JobHandler for CleanupCompletedTasksHandler {
     }
 
     fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 3,
-            ..Default::default()
-        }
+        JobConfig::new().with_max_attempts(3)
     }
 
     async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
@@ -171,10 +168,7 @@ impl JobHandler for SendTaskReminderHandler {
     }
 
     fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 5,
-            ..Default::default()
-        }
+        JobConfig::new().with_max_attempts(5)
     }
 
     async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
@@ -257,10 +251,7 @@ impl JobHandler for CheckDueRemindersHandler {
     }
 
     fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 3,
-            ..Default::default()
-        }
+        JobConfig::new().with_max_attempts(3)
     }
 
     async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
@@ -327,10 +318,7 @@ impl JobHandler for CheckDueRemindersHandler {
                 "user_email": task.user_email,
             });
 
-            let reminder_config = JobConfig {
-                max_attempts: 5,
-                ..Default::default()
-            };
+            let reminder_config = JobConfig::new().with_max_attempts(5);
 
             match job_repo
                 .create("tasks.send_reminder", reminder_payload, &reminder_config)

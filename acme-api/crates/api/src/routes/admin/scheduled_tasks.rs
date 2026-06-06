@@ -3,10 +3,10 @@
 //! These endpoints provide visibility and control over cron scheduled tasks.
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -144,7 +144,7 @@ pub async fn list_scheduled_tasks(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "service_unavailable",
                 "Scheduled tasks not available",
-            ))
+            ));
         }
     };
 
@@ -236,7 +236,7 @@ pub async fn get_scheduled_task(
             return Err(ApiError::bad_request(
                 "invalid_id",
                 "Invalid scheduled task id",
-            ))
+            ));
         }
     };
 
@@ -247,7 +247,7 @@ pub async fn get_scheduled_task(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "service_unavailable",
                 "Scheduled tasks not available",
-            ))
+            ));
         }
     };
 
@@ -300,7 +300,7 @@ pub async fn toggle_scheduled_task(
             return Err(ApiError::bad_request(
                 "invalid_id",
                 "Invalid scheduled task id",
-            ))
+            ));
         }
     };
 
@@ -311,7 +311,7 @@ pub async fn toggle_scheduled_task(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "service_unavailable",
                 "Scheduled tasks not available",
-            ))
+            ));
         }
     };
 
@@ -363,7 +363,7 @@ pub async fn trigger_scheduled_task(
             return Err(ApiError::bad_request(
                 "invalid_id",
                 "Invalid scheduled task id",
-            ))
+            ));
         }
     };
 
@@ -382,7 +382,7 @@ pub async fn trigger_scheduled_task(
                 StatusCode::SERVICE_UNAVAILABLE,
                 "service_unavailable",
                 "Scheduled tasks not available",
-            ))
+            ));
         }
     };
 
@@ -415,13 +415,11 @@ pub async fn trigger_scheduled_task(
         }
     };
 
-    let config = JobConfig {
-        max_attempts: task.max_attempts as u32,
-        timeout_seconds: task.timeout_seconds.map(|s| s as u32),
-        allow_overlap: task.allow_overlap,
-        priority: task.priority,
-        ..Default::default()
-    };
+    let config = JobConfig::new()
+        .with_max_attempts(task.max_attempts as u32)
+        .with_optional_timeout(task.timeout_seconds.map(|s| s as u32))
+        .with_allow_overlap(task.allow_overlap)
+        .with_priority(task.priority);
 
     match job_repo.create(&task.job_type, task.payload, &config).await {
         Ok(job_id) => {

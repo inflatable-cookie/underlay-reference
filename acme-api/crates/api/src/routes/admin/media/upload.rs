@@ -361,10 +361,7 @@ pub async fn finalise_upload(
                 "media_id": media_id,
                 "version_id": version_id
             });
-            let config = JobConfig {
-                max_attempts: 3,
-                ..Default::default()
-            };
+            let config = JobConfig::new().with_max_attempts(3);
             if let Err(e) = job_repo
                 .create("media.generate_thumbnail", payload, &config)
                 .await

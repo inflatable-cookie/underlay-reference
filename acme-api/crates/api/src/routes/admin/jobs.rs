@@ -3,10 +3,10 @@
 //! These endpoints provide visibility into the job queue for administrators.
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -77,20 +77,16 @@ fn retry_job_config(
     scheduled_policy: Option<&RetryPolicyRow>,
 ) -> underlay_jobs::JobConfig {
     if let Some(policy) = scheduled_policy {
-        return underlay_jobs::JobConfig {
-            max_attempts: policy.max_attempts as u32,
-            timeout_seconds: policy.timeout_seconds.map(|s| s as u32),
-            allow_overlap: policy.allow_overlap,
-            priority: policy.priority,
-            ..Default::default()
-        };
+        return underlay_jobs::JobConfig::new()
+            .with_max_attempts(policy.max_attempts as u32)
+            .with_optional_timeout(policy.timeout_seconds.map(|s| s as u32))
+            .with_allow_overlap(policy.allow_overlap)
+            .with_priority(policy.priority);
     }
 
-    underlay_jobs::JobConfig {
-        max_attempts: job.max_attempts as u32,
-        priority: job.priority,
-        ..Default::default()
-    }
+    underlay_jobs::JobConfig::new()
+        .with_max_attempts(job.max_attempts as u32)
+        .with_priority(job.priority)
 }
 
 impl JobSummaryDto {
@@ -331,7 +327,7 @@ pub async fn cancel_job(
             .with_context(serde_json::json!({
                 "operation": "jobs.cancel.get",
                 "job_id": job_id
-            })))
+            })));
         }
     };
 
@@ -342,7 +338,7 @@ pub async fn cancel_job(
             return Err(ApiError::bad_request(
                 "invalid_status",
                 format!("Cannot cancel job with status {}", job.status.as_str()),
-            ))
+            ));
         }
     }
 
@@ -410,7 +406,7 @@ pub async fn retry_job(
             .with_context(serde_json::json!({
                 "operation": "jobs.retry.get",
                 "job_id": job_id
-            })))
+            })));
         }
     };
 
@@ -421,7 +417,7 @@ pub async fn retry_job(
             return Err(ApiError::bad_request(
                 "invalid_status",
                 format!("Cannot retry job with status {}", job.status.as_str()),
-            ))
+            ));
         }
     }
 

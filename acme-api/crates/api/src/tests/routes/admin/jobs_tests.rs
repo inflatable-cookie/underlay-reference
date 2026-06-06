@@ -185,10 +185,10 @@ fn retry_job_config_uses_scheduled_policy_when_present() {
 
     let config = retry_job_config(&job, Some(&policy));
 
-    assert_eq!(config.max_attempts, 7);
-    assert_eq!(config.timeout_seconds, Some(900));
-    assert!(config.allow_overlap);
-    assert_eq!(config.priority, 42);
+    assert_eq!(config.max_attempts(), 7);
+    assert_eq!(config.timeout_seconds(), Some(900));
+    assert!(config.allow_overlap_enabled());
+    assert_eq!(config.priority(), 42);
 }
 
 #[test]
@@ -197,10 +197,10 @@ fn retry_job_config_falls_back_to_job_values_without_policy() {
 
     let config = retry_job_config(&job, None);
 
-    assert_eq!(config.max_attempts, 4);
-    assert_eq!(config.timeout_seconds, None);
-    assert!(!config.allow_overlap);
-    assert_eq!(config.priority, 3);
+    assert_eq!(config.max_attempts(), 4);
+    assert_eq!(config.timeout_seconds(), None);
+    assert!(!config.allow_overlap_enabled());
+    assert_eq!(config.priority(), 3);
 }
 
 #[tokio::test]
@@ -215,10 +215,7 @@ async fn list_jobs_filters_by_status() {
     let state = build_test_state(pool.clone()).await;
     let repo = state.job_repository.clone().expect("job repo should exist");
 
-    let job_config = JobConfig {
-        max_attempts: 2,
-        ..Default::default()
-    };
+    let job_config = JobConfig::new().with_max_attempts(2);
     let pending_id = repo
         .create(
             "admin.jobs.test.pending",
@@ -358,11 +355,7 @@ async fn retry_job_creates_new_job_with_scheduled_policy_fields() {
         .create_scheduled(
             "admin.jobs.test.retry",
             json!({ "source": "retry" }),
-            &JobConfig {
-                max_attempts: 2,
-                priority: 1,
-                ..Default::default()
-            },
+            &JobConfig::new().with_max_attempts(2).with_priority(1),
             Some(scheduled_for),
         )
         .await

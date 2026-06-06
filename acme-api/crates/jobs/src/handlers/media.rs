@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tracing::{info, warn};
 use underlay_blob::{BlobAdapter, BlobAdapterObjectKeyExt, BlobObjectKey};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
-use underlay_media::image::{generate_thumbnail, ThumbnailConfig};
+use underlay_media::image::{ThumbnailConfig, generate_thumbnail};
 use underlay_media::renditions::RenditionConfig;
 use underlay_media::storage::rendition_object_key;
 
@@ -55,11 +55,7 @@ impl JobHandler for GenerateThumbnailHandler {
     }
 
     fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 3,
-            timeout_seconds: Some(60), // 1 minute timeout
-            ..Default::default()
-        }
+        JobConfig::new().with_max_attempts(3).with_timeout(60) // 1 minute timeout
     }
 
     async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
@@ -204,10 +200,7 @@ impl JobHandler for OrphanMediaCleanupHandler {
     }
 
     fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 3,
-            ..Default::default()
-        }
+        JobConfig::new().with_max_attempts(3)
     }
 
     async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {

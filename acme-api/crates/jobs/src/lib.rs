@@ -49,14 +49,14 @@ pub use underlay_jobs::{
     ScheduledTask, ScheduledTaskDefinition,
 };
 pub use underlay_jobs_postgres::{
-    JobRepository, PgDeadLetterRepository, PgJobNotifier, PostgresJobRunnerExt, RepoError,
-    ScheduledTaskRepository, Scheduler, DOMAIN_EVENT_NOTIFY_SQL, JOB_DEAD_LETTERS_SQL,
-    JOB_NOTIFY_CHANNEL, JOB_NOTIFY_SQL, JOB_TABLES_SQL,
+    DOMAIN_EVENT_NOTIFY_SQL, JOB_DEAD_LETTERS_SQL, JOB_NOTIFY_CHANNEL, JOB_NOTIFY_SQL,
+    JOB_TABLES_SQL, JobRepository, PgDeadLetterRepository, PgJobNotifier, PostgresJobRunnerExt,
+    RepoError, ScheduledTaskRepository, Scheduler,
 };
 
 // Re-export outbox components from underlay-jobs
 pub use underlay_jobs_postgres::outbox::{
-    OutboxConfig, OutboxEvent, OutboxNotifier, OutboxProcessor, DOMAIN_EVENT_NOTIFY_CHANNEL,
+    DOMAIN_EVENT_NOTIFY_CHANNEL, OutboxConfig, OutboxEvent, OutboxNotifier, OutboxProcessor,
 };
 
 // Re-export standard platform maintenance tasks from underlay-jobs
@@ -276,10 +276,7 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
             job_type: "media.cleanup_orphans",
             schedule: "0 30 3 * * *", // 3:30 AM daily
             payload: serde_json::json!({ "unused_days": 7 }),
-            config: JobConfig {
-                max_attempts: 3,
-                ..Default::default()
-            },
+            config: JobConfig::new().with_max_attempts(3),
         },
         // Cleanup completed tasks - daily at 3 AM
         ScheduledTaskDefinition {
@@ -287,10 +284,7 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
             job_type: "tasks.cleanup_completed",
             schedule: "0 0 3 * * *", // 3:00 AM daily
             payload: serde_json::json!({ "days_old": 30 }),
-            config: JobConfig {
-                max_attempts: 3,
-                ..Default::default()
-            },
+            config: JobConfig::new().with_max_attempts(3),
         },
         // Check for due date reminders - daily at 8 AM
         // Enqueues individual reminder jobs for tasks due tomorrow
@@ -299,10 +293,7 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
             job_type: "tasks.check_due_reminders",
             schedule: "0 0 8 * * *", // 8:00 AM daily
             payload: serde_json::json!({ "days_ahead": 1 }),
-            config: JobConfig {
-                max_attempts: 3,
-                ..Default::default()
-            },
+            config: JobConfig::new().with_max_attempts(3),
         },
         // Generate project reports - weekly on Sunday at 4 AM
         ScheduledTaskDefinition {
@@ -310,11 +301,7 @@ pub fn scheduled_task_definitions() -> Vec<ScheduledTaskDefinition> {
             job_type: "projects.generate_reports",
             schedule: "0 0 4 * * SUN", // 4:00 AM every Sunday
             payload: serde_json::json!({}),
-            config: JobConfig {
-                max_attempts: 3,
-                timeout_seconds: Some(600), // 10 minutes
-                ..Default::default()
-            },
+            config: JobConfig::new().with_max_attempts(3).with_timeout(600), // 10 minutes
         },
     ]
 }

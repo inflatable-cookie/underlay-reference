@@ -103,10 +103,7 @@ async fn check_due_reminders_skips_existing_reminder_jobs() {
     delete_reminder_jobs(pool, task.id, &user.email).await;
 
     let job_repo = JobRepository::new(db.pool_clone());
-    let config = JobConfig {
-        max_attempts: 5,
-        ..Default::default()
-    };
+    let config = JobConfig::new().with_max_attempts(5);
 
     job_repo
         .create(

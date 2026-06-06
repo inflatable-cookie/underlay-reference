@@ -42,10 +42,7 @@ impl JobHandler for GenerateProjectReportsHandler {
     }
 
     fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 3,
-            ..Default::default()
-        }
+        JobConfig::new().with_max_attempts(3)
     }
 
     async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
@@ -224,12 +221,10 @@ impl JobHandler for GenerateProjectReportHandler {
     }
 
     fn config(&self) -> JobConfig {
-        JobConfig {
-            max_attempts: 3,
-            timeout_seconds: Some(300), // 5 minute timeout
-            tracks_progress: true,
-            ..Default::default()
-        }
+        JobConfig::new()
+            .with_max_attempts(3)
+            .with_timeout(300) // 5 minute timeout
+            .with_progress_tracking()
     }
 
     async fn handle(&self, job: Job) -> Result<(), JobHandlerError> {
