@@ -1,4 +1,4 @@
-import type { SingleResponse } from "@decodelabs/underlay/client/types";
+import type { SingleResponse } from "@decodelabs/underlay/client/envelopes";
 
 import { getSharedHttpClient } from "../utils/client-factory.js";
 
