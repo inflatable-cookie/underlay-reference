@@ -77,10 +77,8 @@ async fn main() {
 
     // Create scheduler and job runner.
     let job_repo = JobRepository::new(pool.clone());
-    let runner = JobRunner::new(job_repo, registry).with_config(JobRunnerConfig {
-        poll_interval: Duration::from_secs(30),
-        ..Default::default()
-    });
+    let runner = JobRunner::new(job_repo, registry)
+        .with_config(JobRunnerConfig::default().with_poll_interval(Duration::from_secs(30)));
 
     let scheduler_job_repo = JobRepository::new(pool.clone());
     let task_repo = ScheduledTaskRepository::new(pool.clone());
