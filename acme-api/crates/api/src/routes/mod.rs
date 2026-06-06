@@ -416,8 +416,7 @@ fn build_cors_layer() -> tower_http::cors::CorsLayer {
     if mirror_origin {
         config = config.with_mirror_origin();
     } else if !origins.is_empty() {
-        config.allowed_origins = origins;
-        config.allow_any_origin = false;
+        config = config.with_origin_values(origins);
     }
 
     cors_layer(config)
