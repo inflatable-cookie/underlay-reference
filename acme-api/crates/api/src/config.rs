@@ -3,12 +3,12 @@
 //! This module provides a centralized configuration structure for Acme,
 //! combining reusable Underlay components with app-specific settings.
 
-// Re-export MediaConfig from underlay-blob for convenience
-pub use underlay_blob::MediaConfig;
+// Re-export blob upload config from underlay-blob for convenience.
+pub use underlay_blob::BlobUploadConfig;
 
 /// Acme application configuration.
 ///
-/// Combines Underlay's `MediaConfig` with any app-specific settings.
+/// Combines Underlay's upload-limit config with any app-specific settings.
 /// Provides sensible defaults that apps can override as needed.
 ///
 /// # Example
@@ -24,15 +24,15 @@ pub use underlay_blob::MediaConfig;
 ///     .with_media(|m| m.max_file_size_mb(100));
 ///
 /// // Or replace media config entirely
-/// use acme_api::config::MediaConfig;
+/// use acme_api::config::BlobUploadConfig;
 /// let config = AcmeConfig {
-///     media: MediaConfig::default().max_file_size_mb(100),
+///     media: BlobUploadConfig::default().max_file_size_mb(100),
 /// };
 /// ```
 #[derive(Debug, Clone, Default)]
 pub struct AcmeConfig {
-    /// Media handling configuration (file size limits, thumbnail dimensions).
-    pub media: MediaConfig,
+    /// Media upload configuration.
+    pub media: BlobUploadConfig,
 }
 
 impl AcmeConfig {
@@ -47,11 +47,11 @@ impl AcmeConfig {
     ///
     /// ```ignore
     /// let config = AcmeConfig::default()
-    ///     .with_media(|m| m.max_file_size_mb(100).thumbnail_dimension(400));
+    ///     .with_media(|m| m.max_file_size_mb(100));
     /// ```
     pub fn with_media<F>(mut self, f: F) -> Self
     where
-        F: FnOnce(MediaConfig) -> MediaConfig,
+        F: FnOnce(BlobUploadConfig) -> BlobUploadConfig,
     {
         self.media = f(self.media);
         self

@@ -10,7 +10,8 @@ use acme_jobs::{
     PostgresJobRunnerExt, ScheduledTaskRepository, Scheduler,
 };
 use tracing::{error, info};
-use underlay_blob::{BlobAdapter, MediaConfig, NoopAdapter, S3Adapter, S3Config};
+use underlay_blob::{BlobAdapter, NoopAdapter, S3Adapter, S3Config};
+use underlay_media::renditions::RenditionConfig;
 
 #[tokio::main]
 async fn main() {
@@ -64,14 +65,14 @@ async fn main() {
         Arc::new(NoopAdapter::new())
     };
 
-    // Media config (use defaults, can be customized here if needed)
-    let media_config = MediaConfig::default();
+    // Rendition config for generated media derivatives.
+    let rendition_config = RenditionConfig::default().thumbnail_size(300);
 
     // Create registry with all job handlers
     let registry = acme_jobs::create_registry_with_media(
         Arc::new(pool.clone()),
         Some(blob_adapter),
-        media_config,
+        rendition_config,
     );
 
     // Create scheduler and job runner.

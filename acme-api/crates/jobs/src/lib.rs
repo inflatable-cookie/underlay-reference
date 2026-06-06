@@ -39,7 +39,8 @@
 use std::sync::Arc;
 
 use sqlx::PgPool;
-use underlay_blob::{BlobAdapter, MediaConfig};
+use underlay_blob::BlobAdapter;
+use underlay_media::renditions::RenditionConfig;
 
 // Re-export everything from underlay-jobs-postgres.
 pub use underlay_jobs::{
@@ -86,7 +87,7 @@ pub use handlers::*;
 /// The `blob_adapter` is optional for backwards compatibility; if not provided,
 /// the media thumbnail handler will not be registered.
 pub fn create_registry(pool: Arc<PgPool>) -> JobRegistry {
-    create_registry_with_media(pool, None, MediaConfig::default())
+    create_registry_with_media(pool, None, RenditionConfig::default().thumbnail_size(300))
 }
 
 /// Create a job registry with blob adapter for media processing jobs.
@@ -94,14 +95,18 @@ pub fn create_registry_with_blob(
     pool: Arc<PgPool>,
     blob_adapter: Option<Arc<dyn BlobAdapter>>,
 ) -> JobRegistry {
-    create_registry_with_media(pool, blob_adapter, MediaConfig::default())
+    create_registry_with_media(
+        pool,
+        blob_adapter,
+        RenditionConfig::default().thumbnail_size(300),
+    )
 }
 
-/// Create a job registry with blob adapter and media config for media processing jobs.
+/// Create a job registry with blob adapter and rendition config for media processing jobs.
 pub fn create_registry_with_media(
     pool: Arc<PgPool>,
     blob_adapter: Option<Arc<dyn BlobAdapter>>,
-    media_config: MediaConfig,
+    rendition_config: RenditionConfig,
 ) -> JobRegistry {
     let mut registry = JobRegistry::new();
 
@@ -143,7 +148,7 @@ pub fn create_registry_with_media(
         registry.register(GenerateThumbnailHandler::new(
             pool.clone(),
             blob,
-            media_config,
+            rendition_config,
         ));
     }
     registry.register(OrphanMediaCleanupHandler::new(pool));

@@ -3,9 +3,10 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tracing::{info, warn};
-use underlay_blob::{BlobAdapter, BlobAdapterObjectKeyExt, BlobObjectKey, MediaConfig};
+use underlay_blob::{BlobAdapter, BlobAdapterObjectKeyExt, BlobObjectKey};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
 use underlay_media::image::{generate_thumbnail, ThumbnailConfig};
+use underlay_media::renditions::RenditionConfig;
 use underlay_media::storage::rendition_object_key;
 
 // ============================================================================
@@ -18,25 +19,25 @@ use underlay_media::storage::rendition_object_key;
 ///
 /// This handler:
 /// 1. Fetches the original image from blob storage
-/// 2. Resizes it to a thumbnail (size from MediaConfig)
+/// 2. Resizes it to a thumbnail (size from RenditionConfig)
 /// 3. Stores the thumbnail in blob storage
 /// 4. Creates a rendition record in the database
 pub struct GenerateThumbnailHandler {
     pool: Arc<PgPool>,
     blob_adapter: Arc<dyn BlobAdapter>,
-    media_config: MediaConfig,
+    rendition_config: RenditionConfig,
 }
 
 impl GenerateThumbnailHandler {
     pub fn new(
         pool: Arc<PgPool>,
         blob_adapter: Arc<dyn BlobAdapter>,
-        media_config: MediaConfig,
+        rendition_config: RenditionConfig,
     ) -> Self {
         Self {
             pool,
             blob_adapter,
-            media_config,
+            rendition_config,
         }
     }
 }
@@ -117,8 +118,9 @@ impl JobHandler for GenerateThumbnailHandler {
             .map_err(|e| JobHandlerError::new(format!("failed to download original: {}", e)))?;
 
         // Generate thumbnail using underlay-image (Lanczos3 resampling for quality)
-        let thumb_size = self.media_config.thumbnail_max_dimension;
-        let config = ThumbnailConfig::new(thumb_size, thumb_size).with_quality(85);
+        let thumb_size = self.rendition_config.thumbnail_max_dimension;
+        let config = ThumbnailConfig::new(thumb_size, thumb_size)
+            .with_quality(self.rendition_config.jpeg_quality);
 
         let result = generate_thumbnail(&original_bytes, &config).map_err(|e| {
             JobHandlerError::permanent(format!("failed to generate thumbnail: {}", e))

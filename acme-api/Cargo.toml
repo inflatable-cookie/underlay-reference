@@ -60,7 +60,7 @@ underlay-email = { path = "../../underlay/rust/crates/underlay-email", features 
 underlay-events = { path = "../../underlay/rust/crates/underlay-events" }
 underlay-jobs = { path = "../../underlay/rust/crates/underlay-jobs" }
 underlay-jobs-postgres = { path = "../../underlay/rust/crates/underlay-jobs-postgres" }
-underlay-media = { path = "../../underlay/rust/crates/underlay-media", features = ["object-keys"] }
+underlay-media = { path = "../../underlay/rust/crates/underlay-media", features = ["object-keys", "renditions"] }
 underlay-nightfire = { path = "../../underlay/rust/crates/underlay-nightfire" }
 underlay-ratelimit = { path = "../../underlay/rust/crates/underlay-ratelimit" }
 underlay-security-alerts = { path = "../../underlay/rust/crates/underlay-security-alerts" }
