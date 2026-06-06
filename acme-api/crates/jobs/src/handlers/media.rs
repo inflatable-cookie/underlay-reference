@@ -118,9 +118,9 @@ impl JobHandler for GenerateThumbnailHandler {
             .map_err(|e| JobHandlerError::new(format!("failed to download original: {}", e)))?;
 
         // Generate thumbnail using underlay-image (Lanczos3 resampling for quality)
-        let thumb_size = self.rendition_config.thumbnail_max_dimension;
+        let thumb_size = self.rendition_config.thumbnail_max_dimension();
         let config = ThumbnailConfig::new(thumb_size, thumb_size)
-            .with_quality(self.rendition_config.jpeg_quality);
+            .with_quality(self.rendition_config.jpeg_quality());
 
         let result = generate_thumbnail(&original_bytes, &config).map_err(|e| {
             JobHandlerError::permanent(format!("failed to generate thumbnail: {}", e))
