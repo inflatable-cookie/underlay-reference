@@ -81,8 +81,8 @@ async fn list_scheduled_tasks_respects_enabled_filter() {
         admin_user(),
         Query(ListScheduledTasksQuery {
             enabled: Some(true),
+            page: Some(1),
             limit: Some(200),
-            offset: Some(0),
         }),
     )
     .await

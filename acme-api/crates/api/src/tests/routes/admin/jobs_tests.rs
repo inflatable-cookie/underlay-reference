@@ -243,6 +243,7 @@ async fn list_jobs_filters_by_status() {
         Query(ListJobsQuery {
             status: Some("pending".to_string()),
             job_type: None,
+            page: Some(1),
             limit: Some(200),
         }),
     )
