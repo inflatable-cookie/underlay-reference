@@ -6,7 +6,7 @@ import type {
 } from "@decodelabs/underlay/runtime/relations";
 import type {
   SelectionHistory
-} from "@decodelabs/underlay/runtime/data";
+} from "@decodelabs/underlay/runtime/selection";
 import {
   onMount } from "svelte";
   import {
