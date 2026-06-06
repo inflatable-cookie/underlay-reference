@@ -21,15 +21,17 @@ import {
   createClosedMediaEditDialogState,
   createMediaEditDialogDraft,
   createMediaVersionDialogStateController,
-  formatFileSize,
-  getMediaKindLabel,
   getMediaVersionPreviewUrl,
-  getMediaVisibilityLabel,
-  getMediaVersionStateAccent,
   isCurrentMediaVersion,
   isImageMedia,
   isPdfMedia
-} from "@decodelabs/underlay/runtime/media";
+} from "@decodelabs/underlay/runtime/media/detail";
+import { formatFileSize } from "@decodelabs/underlay/runtime/media/upload";
+import {
+  getMediaKindLabel,
+  getMediaVersionStateAccent,
+  getMediaVisibilityLabel
+} from "@decodelabs/underlay/runtime/media/types";
 import {
   useToasts,
 } from "@decodelabs/underlay/runtime/feedback";
