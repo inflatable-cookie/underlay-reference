@@ -133,7 +133,7 @@ pub(super) fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
 }
 
 pub(crate) fn csrf_cookie_name(config: &underlay_http::AuthCookieConfig) -> String {
-    format!("{}csrf_token", config.cookie_prefix)
+    format!("{}csrf_token", config.cookie_prefix())
 }
 
 pub(crate) fn extract_csrf_token(
@@ -161,7 +161,7 @@ pub(crate) fn set_csrf_cookie(
     csrf_token: &str,
     config: &underlay_http::AuthCookieConfig,
 ) -> Result<(), String> {
-    let same_site = match config.same_site {
+    let same_site = match config.same_site() {
         SameSite::Lax => "Lax",
         SameSite::Strict => "Strict",
         SameSite::None => "None",
@@ -172,14 +172,14 @@ pub(crate) fn set_csrf_cookie(
         csrf_cookie_name(config),
         csrf_token,
         same_site,
-        config.refresh_token_max_age
+        config.refresh_token_max_age()
     );
 
-    if config.secure {
+    if config.secure() {
         cookie.push_str("; Secure");
     }
 
-    if let Some(domain) = &config.domain {
+    if let Some(domain) = config.domain() {
         cookie.push_str(&format!("; Domain={}", domain));
     }
 
