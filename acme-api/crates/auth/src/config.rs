@@ -269,15 +269,18 @@ impl AuthConfig {
     }
 
     pub fn security_alert_config(&self) -> SecurityAlertConfig {
-        SecurityAlertConfig {
-            window: chrono::Duration::from_std(self.security_alert_window)
-                .unwrap_or_else(|_| chrono::Duration::minutes(10)),
-            cooldown: chrono::Duration::from_std(self.security_alert_cooldown)
-                .unwrap_or_else(|_| chrono::Duration::minutes(30)),
-            failed_attempts_threshold: self.security_alert_failed_attempts_threshold as i64,
-            distinct_users_threshold: self.security_alert_distinct_users_threshold as i64,
-            lockouts_threshold: self.security_alert_lockouts_threshold as i64,
-        }
+        SecurityAlertConfig::default()
+            .with_window(
+                chrono::Duration::from_std(self.security_alert_window)
+                    .unwrap_or_else(|_| chrono::Duration::minutes(10)),
+            )
+            .with_cooldown(
+                chrono::Duration::from_std(self.security_alert_cooldown)
+                    .unwrap_or_else(|_| chrono::Duration::minutes(30)),
+            )
+            .with_failed_attempts_threshold(self.security_alert_failed_attempts_threshold as i64)
+            .with_distinct_users_threshold(self.security_alert_distinct_users_threshold as i64)
+            .with_lockouts_threshold(self.security_alert_lockouts_threshold as i64)
     }
 }
 

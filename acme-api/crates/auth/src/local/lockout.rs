@@ -175,7 +175,7 @@ impl AcmeLocalAuthService {
 
         let now = Utc::now();
         let config = self.config.security_alert_config();
-        let since = now - config.window;
+        let since = now - config.window();
 
         let counts =
             match load_ip_signal_counts_from_table(&self.pool, &LOGIN_ATTEMPTS_TABLE, ip, since)
@@ -199,7 +199,7 @@ impl AcmeLocalAuthService {
                 &SECURITY_ALERT_EVENTS_TABLE,
                 alert_type,
                 ip,
-                config.cooldown,
+                config.cooldown(),
                 now,
             )
             .await
@@ -228,8 +228,8 @@ impl AcmeLocalAuthService {
                 counts,
                 details: json!({
                     "source": "acme-auth",
-                    "window_seconds": config.window.num_seconds(),
-                    "cooldown_seconds": config.cooldown.num_seconds(),
+                    "window_seconds": config.window().num_seconds(),
+                    "cooldown_seconds": config.cooldown().num_seconds(),
                 }),
             };
 
