@@ -40,12 +40,12 @@ pub fn create_email_manager(config: &EmailConfig) -> Result<EmailManager, EmailI
         EmailAdapterType::Noop => Arc::new(NoopAdapter::new()),
 
         EmailAdapterType::Smtp => {
-            let smtp_config = config
+            let smtp = config
                 .smtp
                 .as_ref()
                 .ok_or_else(|| EmailInitError("smtp adapter requires smtp config".to_string()))?;
 
-            let tls_mode = match smtp_config.tls_mode.to_ascii_lowercase().as_str() {
+            let tls_mode = match smtp.tls_mode.to_ascii_lowercase().as_str() {
                 "required" => TlsMode::Required,
                 "opportunistic" => TlsMode::Opportunistic,
                 "none" => TlsMode::None,
@@ -56,13 +56,11 @@ pub fn create_email_manager(config: &EmailConfig) -> Result<EmailManager, EmailI
                 }
             };
 
-            let smtp_config = SmtpConfig {
-                host: smtp_config.host.clone(),
-                port: smtp_config.port,
-                username: smtp_config.username.clone(),
-                password: smtp_config.password.clone(),
-                tls_mode,
-            };
+            let mut smtp_config = SmtpConfig::new(smtp.host.clone()).with_port(smtp.port);
+            if let (Some(username), Some(password)) = (&smtp.username, &smtp.password) {
+                smtp_config = smtp_config.with_credentials(username.clone(), password.clone());
+            }
+            let smtp_config = smtp_config.with_tls_mode(tls_mode);
 
             let smtp_adapter = SmtpAdapter::new(&smtp_config)
                 .map_err(|e| EmailInitError(format!("failed to create SMTP adapter: {e}")))?;
