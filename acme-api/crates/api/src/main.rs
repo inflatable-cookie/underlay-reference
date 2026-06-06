@@ -74,12 +74,12 @@ async fn main() -> anyhow::Result<()> {
         .with_same_site(same_site);
 
     if let Some(domain) = app_config.cors.cookie_domain.clone() {
-        cookie_config = cookie_config.with_domain(domain);
+        cookie_config = cookie_config.try_with_domain(domain)?;
     }
 
     // Allow customizing cookie prefix (e.g., "acme_" for "acme_refresh_token")
     if let Ok(prefix) = std::env::var("COOKIE_PREFIX") {
-        cookie_config = cookie_config.with_cookie_prefix(prefix);
+        cookie_config = cookie_config.try_with_cookie_prefix(prefix)?;
     }
 
     // Allow customizing refresh token max age (in seconds)
