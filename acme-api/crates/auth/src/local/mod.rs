@@ -313,21 +313,20 @@ impl AcmeLocalAuthService {
             max_email_codes_per_hour: behavior.auth.max_email_codes_per_hour,
         };
 
-        let totp = TotpService::new(Some(TotpConfig {
-            issuer: behavior.auth.totp_issuer.clone(),
-            ..TotpConfig::default()
-        }));
+        let totp = TotpService::new(Some(
+            TotpConfig::default().with_issuer(behavior.auth.totp_issuer.clone()),
+        ));
 
         // WebAuthn relying party configuration
         let webauthn_rp_id = behavior.auth.webauthn_rp_id.clone();
         let webauthn_rp_origin = behavior.auth.webauthn_rp_origin.clone();
         let webauthn_rp_name = behavior.auth.webauthn_rp_name.clone();
 
-        let webauthn = WebAuthnService::new(WebAuthnConfig {
-            rp_id: webauthn_rp_id.clone(),
-            rp_origin: webauthn_rp_origin.clone(),
-            rp_name: webauthn_rp_name,
-        })?;
+        let webauthn = WebAuthnService::new(WebAuthnConfig::new(
+            webauthn_rp_id.clone(),
+            webauthn_rp_origin.clone(),
+            webauthn_rp_name,
+        ))?;
 
         let google_oauth = match GoogleOAuthService::from_env() {
             Ok(provider) => Some(GoogleOAuthAppService::new(provider)),
