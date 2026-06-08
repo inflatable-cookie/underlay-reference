@@ -40,8 +40,6 @@
 		--admin-color-text: var(--poodle-color-text-primary);
 		--admin-color-text-muted: var(--poodle-color-text-secondary);
 		--admin-color-accent: var(--poodle-color-accent-base);
-		--poodle-typography-code-adjustmentRatio: 1;
-
 		/* Status colors */
 		--admin-color-success: var(--poodle-color-status-success);
 		--admin-color-success-subtle: color-mix(in srgb, var(--poodle-color-status-success) 18%, transparent);
