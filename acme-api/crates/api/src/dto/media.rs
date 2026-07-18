@@ -6,7 +6,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use underlay_blob::UploadPlan;
-use underlay_db::{MediaKind, MediaVisibility};
+use underlay_media::{MediaKind, MediaVisibility};
 use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;

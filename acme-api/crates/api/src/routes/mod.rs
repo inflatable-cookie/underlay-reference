@@ -12,7 +12,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 use std::sync::OnceLock;
-use underlay_http::{cors_layer, ApiError, CorsConfig};
+use underlay_http::{cors_layer_for_env, ApiError, CorsConfig};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -419,7 +419,22 @@ fn build_cors_layer() -> tower_http::cors::CorsLayer {
         config = config.with_origin_values(origins);
     }
 
-    cors_layer(config)
+    // Underlay now gates mirror-origin + credentials to Local/Test; build with
+    // the resolved environment so that combination is only allowed in
+    // local/dev and a misconfigured prod fails fast.
+    cors_layer_for_env(config, underlay_env(&env))
+}
+
+fn underlay_env(env: &str) -> underlay_observability::Environment {
+    use underlay_observability::Environment;
+    match env.to_ascii_lowercase().as_str() {
+        "local" => Environment::Local,
+        "dev" | "development" => Environment::Dev,
+        "staging" | "stage" => Environment::Staging,
+        "prod" | "production" => Environment::Prod,
+        "test" => Environment::Test,
+        _ => Environment::Local,
+    }
 }
 
 fn parse_cors_origins() -> Vec<axum::http::HeaderValue> {

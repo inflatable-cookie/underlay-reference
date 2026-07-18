@@ -74,7 +74,7 @@ dependencies = [
  "underlay-auth-jwt",
  "underlay-auth-oauth",
  "underlay-auth-password",
- "underlay-auth-postgres",
+ "underlay-auth-state-postgres",
  "underlay-auth-totp",
  "underlay-auth-webauthn",
  "underlay-core",
@@ -110,6 +110,7 @@ dependencies = [
  "underlay-http",
  "underlay-media",
  "underlay-nightfire",
+ "underlay-query",
  "uuid",
 ]
 
@@ -5308,7 +5309,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "underlay-auth-postgres"
+name = "underlay-auth-state-postgres"
 version = "0.0.1"
 dependencies = [
  "chrono",
@@ -5333,6 +5334,7 @@ dependencies = [
  "thiserror 2.0.18",
  "underlay-auth",
  "underlay-core",
+ "underlay-ratelimit",
 ]
 
 [[package]]
@@ -5459,6 +5461,7 @@ dependencies = [
  "underlay-core",
  "underlay-db",
  "underlay-observability",
+ "underlay-query",
  "urlencoding",
  "uuid",
 ]
@@ -5505,7 +5508,6 @@ dependencies = [
  "thiserror 2.0.18",
  "tracing",
  "underlay-blob",
- "underlay-db",
  "underlay-nightfire",
  "uuid",
 ]
@@ -5530,6 +5532,7 @@ dependencies = [
  "blake3",
  "serde",
  "serde_json",
+ "thiserror 2.0.18",
  "uuid",
 ]
 
@@ -5544,6 +5547,13 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "underlay-core",
+]
+
+[[package]]
+name = "underlay-query"
+version = "0.0.1"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

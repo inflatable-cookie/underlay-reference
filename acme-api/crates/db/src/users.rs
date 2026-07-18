@@ -4,7 +4,8 @@
 
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
-use underlay_http::query::{FieldMapping, QueryParams, WhereBuilder};
+use underlay_http::query::QueryParams;
+use underlay_query::{FieldMapping, WhereBuilder};
 use uuid::Uuid;
 
 use crate::DbPool;

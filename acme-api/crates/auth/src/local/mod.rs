@@ -15,7 +15,7 @@ use crate::config::AuthConfig;
 #[allow(unused_imports)] // These will be used when email TOTP is integrated
 use crate::email_totp::{EmailTotpService, VerificationSession};
 
-use underlay_auth_postgres::{AuthStateError, AuthStateStore};
+use underlay_auth_state_postgres::{AuthStateError, AuthStateStore};
 use underlay_auth::{
     AuthError, AuthResult, Credential, CredentialMetadata, CredentialType, RoleSet, Session,
     SessionStatus, User, UserStatus,
@@ -82,6 +82,9 @@ fn map_auth_state_error(err: AuthStateError) -> AuthError {
             AuthError::Internal("Failed to encode auth state".into())
         }
         AuthStateError::Db(_) => AuthError::Internal("DB error".into()),
+        // AuthStateError is #[non_exhaustive]; map any future/config variant
+        // (e.g. InvalidTableName) to an internal error.
+        _ => AuthError::Internal("Auth state error".into()),
     }
 }
 

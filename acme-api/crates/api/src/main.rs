@@ -176,8 +176,21 @@ async fn main() -> anyhow::Result<()> {
         .with_client_errors(true)
         .with_server_errors(true);
 
+    // Map the app trusted-proxy config onto underlay's so `RequestContext`
+    // resolves the client IP correctly. Underlay no longer trusts forwarding
+    // headers unless a `TrustedProxyConfig` extension says so; without this
+    // (and the ConnectInfo below) `ctx.ip_address()` returns None.
+    let underlay_proxy = if state.trusted_proxy_config.trust_proxy_headers {
+        underlay_http::TrustedProxyConfig::ForwardedFor {
+            trusted_hops: state.trusted_proxy_config.trusted_proxies.len().max(1),
+        }
+    } else {
+        underlay_http::TrustedProxyConfig::None
+    };
+
     let app = routes::build_router()
         .with_state(state.clone())
+        .layer(axum::Extension(underlay_proxy))
         .layer(axum::middleware::from_fn(routes::api_version_middleware))
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
@@ -194,9 +207,14 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     info!(%addr, "api listening");
 
-    axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    // Serve with connection info so underlay's IP resolution has a socket-peer
+    // fallback when no trusted forwarding header is present.
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
     Ok(())
 }
 
