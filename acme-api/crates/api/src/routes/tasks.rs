@@ -158,6 +158,9 @@ const VALID_PROJECT_STATUSES: &[&str] = &["active", "archived", "completed"];
 const VALID_TASK_STATUSES: &[&str] = &["todo", "in_progress", "done"];
 const VALID_TASK_PRIORITIES: &[&str] = &["low", "medium", "high"];
 
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 fn validate_project_status_input(status: Option<&str>) -> Result<(), ApiError> {
     if let Some(status) = status {
         if !VALID_PROJECT_STATUSES.contains(&status) {
@@ -170,6 +173,9 @@ fn validate_project_status_input(status: Option<&str>) -> Result<(), ApiError> {
     Ok(())
 }
 
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 fn validate_task_input(status: Option<&str>, priority: Option<&str>) -> Result<(), ApiError> {
     if let Some(status) = status {
         if !VALID_TASK_STATUSES.contains(&status) {
@@ -335,7 +341,7 @@ pub async fn create_project(
             .await?;
 
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user_id),
@@ -496,7 +502,7 @@ pub async fn update_project(
             }
 
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user_id),
@@ -557,7 +563,7 @@ pub async fn delete_project(
             sync_project_description_media_usage(pool, project_id, None).await?;
 
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user_id),
@@ -669,7 +675,7 @@ pub async fn create_task(
     {
         Ok(task) => {
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user_id),
@@ -747,7 +753,7 @@ pub async fn update_task(
     {
         Ok(Some(task)) => {
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user_id),
@@ -809,7 +815,7 @@ pub async fn delete_task(
     match tasks::delete_task(pool, task_id, project_id).await {
         Ok(true) => {
             let ip_address = ctx.ip_address().map(|ip| ip.to_string());
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user_id),

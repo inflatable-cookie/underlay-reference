@@ -19,6 +19,15 @@ build = "cd {repo} && cargo build {args}"
   { task = "db:migrate" }
 ]
 
+test = "cd {repo} && cargo test --workspace {args}"
+clippy = "cd {repo} && cargo clippy --workspace --all-targets -- -D warnings"
+fmt = "cd {repo} && cargo fmt --all --check"
+
 health = [{ task = "build" }]
-validate = [{ task = "build" }]
+validate = [
+  { task = "build" },
+  { task = "test" },
+  { task = "clippy" },
+  { task = "fmt" }
+]
 qa = [{ task = "validate" }]

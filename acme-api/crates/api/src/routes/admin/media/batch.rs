@@ -30,7 +30,7 @@ pub async fn batch_delete_media(
         Ok(count) => {
             // Log activity for batch operation
             let batch_id = AcmeUuid::new_v7().into_inner();
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(actor_id),

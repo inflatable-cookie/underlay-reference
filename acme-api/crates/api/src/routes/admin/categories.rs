@@ -249,7 +249,7 @@ pub async fn create_category(
     {
         Ok(category) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -363,7 +363,7 @@ pub async fn update_category(
     {
         Ok(Some(category)) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -423,7 +423,7 @@ pub async fn soft_delete_category(
     match categories::soft_delete_category(pool, cid, batch_id).await {
         Ok(true) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -485,7 +485,7 @@ pub async fn batch_delete_categories(
 
     match categories::batch_soft_delete_categories(pool, &ids, batch_id).await {
         Ok(count) => {
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -530,7 +530,7 @@ pub async fn restore_category(
     match categories::restore_category(pool, cid).await {
         Ok(Some(category)) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -599,6 +599,9 @@ pub async fn reorder_categories(
     }
 }
 
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 fn map_reorder_categories_result(
     submitted_count: usize,
     result: categories::ReorderCategoriesResult,

@@ -262,6 +262,13 @@ pub(super) fn login_client_fingerprint(
     hex::encode(h.finalize())
 }
 
+pub(super) fn include_refresh_token_in_body(headers: &HeaderMap) -> bool {
+    headers
+        .get("x-auth-token-mode")
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.eq_ignore_ascii_case("body"))
+}
+
 #[cfg(test)]
 mod client_ip_tests {
     use super::*;
@@ -301,11 +308,4 @@ mod client_ip_tests {
         let spoofed = headers_with(&[("x-forwarded-for", "203.0.113.99")]);
         assert_eq!(acme_infra::extract_client_ip(&spoofed, &config), None);
     }
-}
-
-pub(super) fn include_refresh_token_in_body(headers: &HeaderMap) -> bool {
-    headers
-        .get("x-auth-token-mode")
-        .and_then(|v| v.to_str().ok())
-        .is_some_and(|v| v.eq_ignore_ascii_case("body"))
 }

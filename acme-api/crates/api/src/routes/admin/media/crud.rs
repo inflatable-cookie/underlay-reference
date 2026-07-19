@@ -133,7 +133,7 @@ pub async fn create_media(
     {
         Ok(row) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -417,7 +417,7 @@ pub async fn update_media(
     {
         Ok(row) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -492,7 +492,7 @@ pub async fn soft_delete_media(
     match media::soft_delete_media(pool, media_id, Some(user.user_id.0.into_inner())).await {
         Ok(()) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -537,7 +537,7 @@ pub async fn restore_media(
     match media::restore_media(pool, media_id).await {
         Ok(()) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),

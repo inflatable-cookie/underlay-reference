@@ -328,7 +328,7 @@ pub async fn create_project(
             .await?;
 
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -459,7 +459,7 @@ pub async fn update_project(
             }
 
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -521,7 +521,7 @@ pub async fn soft_delete_project(
             sync_project_description_media_usage(pool, pid, None).await?;
 
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -593,7 +593,7 @@ pub async fn restore_project(
             sync_project_description_media_usage(pool, pid, description.as_ref()).await?;
 
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -659,6 +659,9 @@ pub async fn reorder_projects(
     }
 }
 
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 fn map_reorder_projects_result(
     submitted_count: usize,
     result: tasks::ReorderProjectsResult,
@@ -718,7 +721,7 @@ pub async fn batch_delete_projects(
             }
 
             // Log activity for batch operation
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),

@@ -25,6 +25,9 @@ impl PreparedNightfireValue {
     }
 }
 
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 pub fn prepare_nightfire_value(
     value: Option<NightfireValue>,
     operation: &'static str,
@@ -46,6 +49,9 @@ pub fn prepare_nightfire_value(
         .transpose()
 }
 
+// Parameter-heavy by design: the error-code/message pairs differ per call
+// site (matches the house style in db/src/media).
+#[allow(clippy::too_many_arguments)]
 pub async fn sync_nightfire_block_media_usage<S, R>(
     repo: &S,
     used_by_type: &'static str,

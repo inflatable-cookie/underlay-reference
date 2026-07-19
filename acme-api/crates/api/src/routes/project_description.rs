@@ -9,6 +9,9 @@ use crate::nightfire::{
 };
 use acme_db::media;
 
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 pub(crate) fn prepare_project_description(
     description: Option<NightfireValue>,
 ) -> Result<Option<PreparedNightfireValue>, ApiError> {

@@ -201,7 +201,6 @@ pub async fn list_jobs(
         job_type: query.job_type.clone(),
         limit,
         offset,
-        ..Default::default()
     };
 
     let mut count_query = sqlx::QueryBuilder::<sqlx::Postgres>::new(

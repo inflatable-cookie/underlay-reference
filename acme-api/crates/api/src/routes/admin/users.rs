@@ -551,6 +551,9 @@ fn user_role_level(role: &acme_auth::UserRole) -> i32 {
 }
 
 /// Check if an admin can manage a target user based on roles.
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 fn can_manage_user(
     admin: &UserPrincipal,
     target_role: &str,
@@ -567,12 +570,7 @@ fn can_manage_user(
         ));
     }
 
-    let admin_level = admin
-        .roles
-        .iter()
-        .map(|r| user_role_level(r))
-        .max()
-        .unwrap_or(0);
+    let admin_level = admin.roles.iter().map(user_role_level).max().unwrap_or(0);
     let target_level = role_level(target_role);
 
     // Check if admin is superadmin
@@ -669,7 +667,7 @@ pub async fn update_user_role(
     match users::update_user_role(pool, user_id, &req.role).await {
         Ok(Some(user)) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(admin.user_id.0.into_inner()),
@@ -754,7 +752,7 @@ pub async fn suspend_user(
             }
 
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(admin.user_id.0.into_inner()),
@@ -830,7 +828,7 @@ pub async fn unsuspend_user(
     match users::update_user_status(pool, user_id, "active").await {
         Ok(Some(user)) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(admin.user_id.0.into_inner()),
@@ -965,7 +963,7 @@ pub async fn revoke_user_session(
     {
         Ok(true) => {
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(admin.user_id.0.into_inner()),

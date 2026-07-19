@@ -210,6 +210,9 @@ pub struct BatchUpdateTaskStatusRequest {
 // Task Handlers
 // ============================================================================
 
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 fn prepare_task_notes(
     notes: Option<NightfireValue>,
 ) -> Result<Option<PreparedNightfireValue>, ApiError> {
@@ -409,7 +412,7 @@ pub async fn create_task(
                 .await?;
 
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -544,7 +547,7 @@ pub async fn update_task(
             }
 
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -606,7 +609,7 @@ pub async fn soft_delete_task(
             sync_task_notes_media_usage(pool, tid, None).await?;
 
             // Log activity
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -675,6 +678,9 @@ pub async fn reorder_tasks(
     }
 }
 
+// ApiError is the canonical error type here; boxing it would force
+// map_err at every `?` call site (matches underlay-http house style).
+#[allow(clippy::result_large_err)]
 fn map_reorder_tasks_result(
     project_id: RawUuid,
     submitted_count: usize,
@@ -893,7 +899,7 @@ pub async fn batch_delete_tasks(
     match tasks::batch_soft_delete_tasks(pool, &ids, batch_id).await {
         Ok(count) => {
             // Log activity for batch operation
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),
@@ -963,7 +969,7 @@ pub async fn batch_update_task_status(
     match tasks::batch_update_task_status(pool, &ids, &req.status).await {
         Ok(count) => {
             // Log activity for batch operation
-            let _ = activity::log_activity(
+            activity::log_activity_reported(
                 pool,
                 activity::LogActivityParams {
                     user_id: Some(user.user_id.0.into_inner()),

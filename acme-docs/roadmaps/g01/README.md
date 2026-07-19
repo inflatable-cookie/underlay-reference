@@ -38,5 +38,5 @@ and spoofable-IP findings.
 ## Next Task
 
 Two independent threads are live: finish `g01.007` (retained-surface owner), and
-execute the g08 consumer-audit tranche — `g01.008`-`g01.010` are done
-(2026-07-19); finish with `g01.011` (gate hardening and lint cleanup).
+the g08 consumer-audit tranche (`g01.008`-`g01.011`) is **complete**
+(2026-07-19). Open `g01.012` when the next real milestone is scoped.

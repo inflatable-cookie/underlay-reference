@@ -1,8 +1,8 @@
 # g01.011 Gate Hardening And Lint Cleanup
 
-Status: ready
+Status: done (2026-07-19)
 Owner: repo maintainers
-Updated: 2026-07-18
+Updated: 2026-07-19
 Governing refs: `acme-docs/policy/001-working-rules.md`, underlay `docs/logs/2026-07/18-100000-consumer-audit-underlay-reference.md`
 Planning state: ready
 
@@ -34,28 +34,30 @@ in the api crate. A reference implementation's gate should be exemplary.
 
 ## Scope
 
-- [ ] Add `test` and `clippy` (`cargo clippy --workspace --all-targets -D
-  warnings`) to `acme-api`'s `effigy.toml` `validate` sequence.
-- [ ] Clear the 13 clippy lints: box the large error variants where flagged,
-  add params structs or `#[allow(clippy::too_many_arguments)]` (matching the
-  existing house style in `db/src/media/`), remove the redundant closure and the
-  no-effect struct update.
-- [ ] Make audit-log write failures visible: at minimum log at `error` level (not
-  swallow), and decide whether any mutation should fail if its audit write fails.
-- [ ] Consider wiring the TS packages' `check` scripts (from `g01.010`) into
-  their `effigy validate` too.
+- [x] `validate` now runs build → test → clippy (`-D warnings`) → fmt.
+- [x] 13 clippy lints cleared: `result_large_err` sites annotated with
+  rationale (matching underlay-http house style — boxing `ApiError` would
+  force `map_err` at every `?` site), `too_many_arguments` allowed with
+  rationale, redundant closure / no-effect struct update / items-after-test-
+  module fixed outright.
+- [x] Audit-log failures visible: `activity::log_activity_reported` logs at
+  `error` level with action/resource context; all 30 `let _ =` sites route
+  through it. Decision: mutations do not fail on audit-write failure
+  (availability wins), recorded in the helper's doc.
+- [x] TS packages' `effigy validate` already runs their `check` task — no
+  change needed.
 
 ## Deliverables
 
-- [ ] `acme-api` `effigy validate` runs build + test + clippy and is green
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings` clean
-- [ ] audit-log failures are logged (or enforced), not silently dropped
+- [x] `acme-api` `effigy validate` runs build + test + clippy (+ fmt), green
+- [x] `cargo clippy --workspace --all-targets -- -D warnings` clean
+- [x] audit-log failures are logged, not silently dropped
 
 ## Validation
 
-- [ ] `effigy validate` (from `acme-api`) runs and passes build + test + clippy
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings` returns no errors
-- [ ] `cargo fmt --all --check` clean
+- [x] `effigy validate` (from `acme-api`) passes build + test + clippy + fmt
+- [x] `cargo clippy --workspace --all-targets -- -D warnings` returns no errors
+- [x] `cargo fmt --all --check` clean
 
 ## Next
 

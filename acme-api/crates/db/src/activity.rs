@@ -299,3 +299,26 @@ pub async fn log_activity(
 
     Ok(id)
 }
+
+/// Log an activity, surfacing write failures at `error` level instead of
+/// dropping them.
+///
+/// Mutations deliberately do not fail when their audit write fails
+/// (g01.011 decision: availability wins over audit completeness), but a
+/// security-relevant action completing with no audit trail must be visible
+/// and alertable, never silent.
+pub async fn log_activity_reported(pool: &DbPool, params: LogActivityParams<'_>) {
+    let action = params.action.to_string();
+    let resource_type = params.resource_type.to_string();
+    let resource_id = params.resource_id;
+
+    if let Err(err) = log_activity(pool, params).await {
+        tracing::error!(
+            error = %err,
+            action = %action,
+            resource_type = %resource_type,
+            resource_id = %resource_id,
+            "audit log write failed"
+        );
+    }
+}
