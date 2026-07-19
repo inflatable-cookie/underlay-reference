@@ -296,6 +296,7 @@ pub async fn create_user_admin(
 /// Update a user (admin).
 ///
 /// Allows updating display name, role, and status.
+#[allow(clippy::too_many_arguments)]
 pub async fn update_user_admin(
     pool: &DbPool,
     user_id: Uuid,

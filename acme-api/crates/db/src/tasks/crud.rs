@@ -67,6 +67,7 @@ pub fn task_field_mapping() -> FieldMapping {
 }
 
 /// Create a new task.
+#[allow(clippy::too_many_arguments)]
 pub async fn create_task(
     pool: &DbPool,
     id: Uuid,
@@ -238,6 +239,7 @@ pub async fn list_tasks_admin(
 }
 
 /// Update a task.
+#[allow(clippy::too_many_arguments)]
 pub async fn update_task(
     pool: &DbPool,
     id: Uuid,

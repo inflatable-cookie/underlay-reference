@@ -1,5 +1,5 @@
 use super::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());

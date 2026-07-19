@@ -13,6 +13,7 @@ import {
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem } from "@poodle/svelte";
   import { untrack } from "svelte";
+  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
   import type { PageData } from "./$types";
   import type { Category } from "@api-client";
   import { adminCommands } from "@api-client";
@@ -139,9 +140,10 @@ import {
       currentEtag = result.etag;
 
       if (formIntent === "save-close") {
-        const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
-          ? formReturnTo
-          : `/categories/${data.categoryId}`;
+        const redirectTarget = resolveRedirectTo(
+          formReturnTo,
+          `/categories/${data.categoryId}`
+        );
         return { success: true, redirectTo: redirectTarget };
       }
 

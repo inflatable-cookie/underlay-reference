@@ -13,6 +13,7 @@ import {
   type Category,
   type SuggestionRequestOptions } from "@api-client";
   import { auth } from "$lib/stores/auth";
+  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
   import { extractApiError } from "$lib/utils/api-errors";
   import ProjectForm from "$lib/forms/ProjectForm.svelte";
   
@@ -109,9 +110,7 @@ import {
       );
 
       if (formIntent === "save-close") {
-        const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
-          ? formReturnTo
-          : "/projects";
+        const redirectTarget = resolveRedirectTo(formReturnTo, "/projects");
         return { success: true, redirectTo: redirectTarget };
       }
 

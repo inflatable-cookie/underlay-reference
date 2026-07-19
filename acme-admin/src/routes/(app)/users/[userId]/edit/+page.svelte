@@ -13,6 +13,7 @@ import {
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem } from "@poodle/svelte";
   import { untrack } from "svelte";
+  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
   import { adminCommands,
@@ -121,9 +122,7 @@ import {
       currentEtag = result.etag;
 
       if (formIntent === "save-close") {
-        const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
-          ? formReturnTo
-          : `/users/${user.id}`;
+        const redirectTarget = resolveRedirectTo(formReturnTo, `/users/${user.id}`);
         return { success: true, redirectTo: redirectTarget };
       }
 

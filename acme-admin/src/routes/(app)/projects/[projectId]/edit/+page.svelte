@@ -15,6 +15,7 @@ import {
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem } from "@poodle/svelte";
   import { untrack } from "svelte";
+  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
   import type { PageData } from "./$types";
   import type { Project,
   Category,
@@ -162,9 +163,10 @@ import {
       currentEtag = result.etag;
 
       if (formIntent === "save-close") {
-        const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
-          ? formReturnTo
-          : `/projects/${data.projectId}`;
+        const redirectTarget = resolveRedirectTo(
+          formReturnTo,
+          `/projects/${data.projectId}`
+        );
         return { success: true, redirectTo: redirectTarget };
       }
 

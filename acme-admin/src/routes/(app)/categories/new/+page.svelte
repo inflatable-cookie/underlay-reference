@@ -12,6 +12,7 @@ import {
   import { adminCommands,
   type Category } from "@api-client";
   import { auth } from "$lib/stores/auth";
+  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
   import { extractApiError } from "$lib/utils/api-errors";
   import CategoryForm from "$lib/forms/CategoryForm.svelte";
     
@@ -88,9 +89,7 @@ import {
       );
 
       if (formIntent === "save-close") {
-        const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
-          ? formReturnTo
-          : "/categories";
+        const redirectTarget = resolveRedirectTo(formReturnTo, "/categories");
         return { success: true, redirectTo: redirectTarget };
       }
 

@@ -126,10 +126,18 @@ async fn main() -> anyhow::Result<()> {
                 Arc::new(NoopAdapter::new())
             }
         }
-    } else {
-        // Production: use NoopAdapter as placeholder (configure S3 in production)
-        tracing::warn!("Using NoopAdapter for blob storage - configure S3 for production");
+    } else if std::env::var("ACME_ALLOW_NOOP_BLOB").as_deref() == Ok("1") {
+        // Explicit opt-in for a deliberately storage-less deployment.
+        tracing::warn!("ACME_ALLOW_NOOP_BLOB=1 set — media uploads are discarded (NoopAdapter)");
         Arc::new(NoopAdapter::new())
+    } else {
+        // Fail closed: silently accepting-then-dropping prod uploads with a
+        // NoopAdapter is data loss. Production blob storage (S3) is still TODO;
+        // until it is wired, refuse to boot rather than pretend uploads work.
+        panic!(
+            "No production blob storage configured. Wire an S3Adapter for prod, \
+             or set ACME_ALLOW_NOOP_BLOB=1 to run without media storage on purpose."
+        );
     };
 
     // Create job repository for enqueueing jobs

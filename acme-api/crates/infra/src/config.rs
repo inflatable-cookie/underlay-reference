@@ -26,8 +26,8 @@ impl HttpConfig {
     pub fn public_origin(&self) -> String {
         match self.public_port {
             Some(port)
-                if !(self.public_scheme == "https" && port == 443)
-                    && !(self.public_scheme == "http" && port == 80) =>
+                if !(self.public_scheme == "https" && port == 443
+                    || self.public_scheme == "http" && port == 80) =>
             {
                 format!("{}://{}:{}", self.public_scheme, self.public_host, port)
             }

@@ -51,6 +51,16 @@ impl AcmeLocalAuthService {
         })
     }
 
+    /// Burn one KDF computation to equalize the timing of account-miss paths
+    /// against a real password verify. The result is intentionally discarded.
+    async fn dummy_verify(&self) {
+        let _ = hash_password_blocking(
+            self.password_hasher.clone(),
+            b"acme-login-timing-equalizer".to_vec(),
+        )
+        .await;
+    }
+
     /// Verify user credentials (email + password) with rate limiting and lockout.
     pub(super) async fn verify_user_credentials(
         &self,
@@ -62,6 +72,10 @@ impl AcmeLocalAuthService {
         self.check_login_rate_limit(email, ip).await?;
 
         let Some(user) = self.find_user_by_email(email).await? else {
+            // Burn one KDF pass so an unknown email costs the same as a real
+            // verify (mirrors underlay's PasswordAuthService::dummy_verify).
+            // Without this, the fast miss path is an account-existence oracle.
+            self.dummy_verify().await;
             return Err(AuthError::WrongCredentials);
         };
 
@@ -89,6 +103,9 @@ impl AcmeLocalAuthService {
 
         let Some((credential, role)) = self.find_password_credential_and_role(user.id).await?
         else {
+            // Same timing equalizer: a user with no password credential must
+            // not resolve faster than a real password verify.
+            self.dummy_verify().await;
             return Err(AuthError::WrongCredentials);
         };
 

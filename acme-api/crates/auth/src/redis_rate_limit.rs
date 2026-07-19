@@ -130,18 +130,13 @@ impl RateLimitBackend for RedisRateLimitBackend {
 }
 
 /// Rate limiter backend type selector.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RateLimitBackendType {
     /// In-memory backend (default, single-instance only).
+    #[default]
     InMemory,
     /// Redis backend (distributed, multi-instance).
     Redis,
-}
-
-impl Default for RateLimitBackendType {
-    fn default() -> Self {
-        Self::InMemory
-    }
 }
 
 impl std::str::FromStr for RateLimitBackendType {

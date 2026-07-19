@@ -14,6 +14,7 @@ import {
   UserRole as UserRoleConst,
   UserStatus as UserStatusConst } from "@api-client";
   import { auth } from "$lib/stores/auth";
+  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
   import { extractApiError } from "$lib/utils/api-errors";
   import UserForm from "$lib/forms/UserForm.svelte";
   
@@ -72,9 +73,7 @@ import {
       );
 
       if (formIntent === "save-close") {
-        const redirectTarget = formReturnTo && formReturnTo.startsWith("/")
-          ? formReturnTo
-          : "/users";
+        const redirectTarget = resolveRedirectTo(formReturnTo, "/users");
         return { success: true, redirectTo: redirectTarget };
       }
 

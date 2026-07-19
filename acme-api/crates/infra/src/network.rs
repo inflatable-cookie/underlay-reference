@@ -6,7 +6,7 @@
 use std::net::IpAddr;
 
 /// Configuration for trusted proxy handling.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TrustedProxyConfig {
     /// List of trusted proxy IPs or CIDR ranges.
     /// If empty, proxy headers are not trusted.
@@ -14,15 +14,6 @@ pub struct TrustedProxyConfig {
 
     /// Whether to trust proxy headers at all.
     pub trust_proxy_headers: bool,
-}
-
-impl Default for TrustedProxyConfig {
-    fn default() -> Self {
-        Self {
-            trusted_proxies: Vec::new(),
-            trust_proxy_headers: false,
-        }
-    }
 }
 
 impl TrustedProxyConfig {

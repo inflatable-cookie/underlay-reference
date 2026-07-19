@@ -1,5 +1,6 @@
 <script lang="ts">
   import { marked } from "marked";
+  import { sanitizeHtml } from "@decodelabs/underlay/utils/html";
 
   type TaskNotesBlock = {
     data?: {
@@ -14,7 +15,11 @@
   let { block }: Props = $props();
 
   const content = $derived(block?.data?.content ?? "");
-  const html = $derived(content ? marked.parse(content) : "");
+  // Sanitize before {@html}: task notes are user-authored, so raw marked output
+  // is a stored-XSS vector. sanitizeHtml is underlay's shared DOMPurify pass.
+  const html = $derived(
+    content ? sanitizeHtml(marked.parse(content, { async: false }) as string) : ""
+  );
 </script>
 
 {#if content}
