@@ -14,7 +14,7 @@ acme-domain = { path = "../domain" }
 acme-db = { path = "../db" }
 
 # Async runtime
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["sync"] }
 
 # Database
 sqlx = { workspace = true }

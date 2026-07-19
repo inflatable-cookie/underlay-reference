@@ -3,15 +3,29 @@
 //! Provides utilities for creating isolated test database connections
 //! and managing test data lifecycle.
 
+use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 use std::env;
 use std::sync::OnceLock;
 
-/// Global test database pool.
+/// Shared multi-thread runtime for tests that exercise code reading a
+/// process-global pool (e.g. handlers using `DB_POOL`).
 ///
-/// Uses a static pool to avoid creating multiple connections during
-/// parallel test execution. The pool is lazily initialized on first use.
-static TEST_POOL: OnceLock<PgPool> = OnceLock::new();
+/// A pool stored in a process-global can only be bound to one runtime; if
+/// each `#[tokio::test]` spins its own runtime, the pool dies with the first
+/// test's runtime and later tests fail with "Tokio context is being
+/// shutdown". Such tests must use `#[test]` +
+/// `shared_runtime().block_on(...)` so they all share this runtime.
+pub fn shared_runtime() -> &'static tokio::runtime::Runtime {
+    static RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
+    RT.get_or_init(|| {
+        tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .expect("build shared test runtime")
+    })
+}
 
 /// A wrapper around a database pool for testing.
 ///
@@ -67,25 +81,25 @@ impl AsRef<PgPool> for TestDb {
 /// }
 /// ```
 pub async fn setup_test_db() -> TestDb {
-    // Try to get existing pool or create new one
-    let pool = TEST_POOL
-        .get_or_init(|| {
-            tokio::task::block_in_place(|| {
-                tokio::runtime::Handle::current().block_on(async { create_test_pool().await })
-            })
-        })
-        .clone();
-
-    TestDb::new(pool)
+    TestDb::new(create_test_pool().await)
 }
 
 /// Create a new test database pool.
+///
+/// Each call creates a fresh pool bound to the calling test's runtime.
+/// A process-global pool cannot be shared here: every `#[tokio::test]`
+/// runs its own runtime, and a pool created on the first test's runtime
+/// breaks with "Tokio context is being shutdown" / pool timeouts once that
+/// runtime exits. Connection count is kept small so parallel tests stay
+/// within Postgres limits.
 async fn create_test_pool() -> PgPool {
     let database_url = env::var("DATABASE_URL")
         .or_else(|_| env::var("TEST_DATABASE_URL"))
         .expect("DATABASE_URL or TEST_DATABASE_URL must be set for tests");
 
-    PgPool::connect(&database_url)
+    PgPoolOptions::new()
+        .max_connections(2)
+        .connect(&database_url)
         .await
         .expect("Failed to connect to test database")
 }

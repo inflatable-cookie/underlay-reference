@@ -30,7 +30,8 @@ pub struct TestProject {
     pub owner_id: Uuid,
     pub category_id: Option<Uuid>,
     pub name: String,
-    pub description: Option<String>,
+    /// Rich-text document (JSONB in acme.projects).
+    pub description: Option<serde_json::Value>,
     pub status: String,
     pub created_at: DateTime<Utc>,
 }
@@ -96,19 +97,16 @@ pub async fn create_test_user(pool: &PgPool, opts: CreateUserOptions) -> TestUse
     let status = opts.status.unwrap_or_else(|| "active".to_string());
     let display_name = opts.display_name;
 
-    // Create a password hash (we don't need a real one for tests)
-    let password_hash = "$argon2id$v=19$m=19456,t=2,p=1$test$testpasswordhash";
-
+    // Passwords live in auth.credentials; fixture users don't need one.
     let row = sqlx::query_as::<_, (Uuid, String, String, String, Option<String>, DateTime<Utc>)>(
         r#"
-        INSERT INTO auth.users (id, email, password_hash, role, status, display_name)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO auth.users (id, email, role, status, display_name)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id, email, role, status, display_name, created_at
         "#,
     )
     .bind(id)
     .bind(&email)
-    .bind(password_hash)
     .bind(&role)
     .bind(&status)
     .bind(&display_name)
@@ -195,7 +193,8 @@ pub async fn create_test_category(pool: &PgPool, opts: CreateCategoryOptions) ->
 #[derive(Debug, Default)]
 pub struct CreateProjectOptions {
     pub name: Option<String>,
-    pub description: Option<String>,
+    /// Rich-text document (JSONB in acme.projects).
+    pub description: Option<serde_json::Value>,
     pub category_id: Option<Uuid>,
     pub status: Option<String>,
 }
@@ -231,7 +230,7 @@ pub async fn create_test_project(
             Uuid,
             Option<Uuid>,
             String,
-            Option<String>,
+            Option<serde_json::Value>,
             String,
             DateTime<Utc>,
         ),

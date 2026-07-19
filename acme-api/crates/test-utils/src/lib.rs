@@ -24,5 +24,5 @@ pub mod cleanup;
 pub mod db;
 pub mod fixtures;
 
-pub use db::{setup_test_db, TestDb};
+pub use db::{setup_test_db, shared_runtime, TestDb};
 pub use fixtures::{TestCategory, TestProject, TestTask, TestUser};
