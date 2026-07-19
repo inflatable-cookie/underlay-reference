@@ -38,7 +38,6 @@ sqlx = { version = "0.8.6", default-features = true, features = ["runtime-tokio-
 image = "0.25"
 
 # File type detection by magic bytes
-infer = "0.19"
 
 # Underlay crates (via sibling repo)
 underlay-core = { path = "../../underlay/rust/crates/underlay-core" }

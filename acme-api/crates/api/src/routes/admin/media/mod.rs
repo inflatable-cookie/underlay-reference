@@ -38,3 +38,7 @@ use crate::dto::media::{
     MediaSummaryDto, MediaUsageDto, MediaVersionDto, UpdateMediaRequest,
 };
 use crate::state::{AdminUser, AppState};
+
+#[cfg(test)]
+#[path = "../../../tests/routes/admin/media_upload_validation_tests.rs"]
+mod upload_validation_tests;

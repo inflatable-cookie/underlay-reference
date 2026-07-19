@@ -111,7 +111,9 @@ async fn main() -> anyhow::Result<()> {
     ));
 
     // Initialize blob storage adapter.
-    // Local/dev uses the shared MinIO-backed S3 shape; production is still TODO.
+    // Local/dev uses the shared MinIO-backed S3 shape; production builds a
+    // real S3 adapter from ACME_S3_* env vars (credentials come from the AWS
+    // default chain: env vars, shared config, or an instance/task role).
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
         let s3_config = S3Config::minio_dev("acme-media", "https://s3.acme.test");
         match S3Adapter::new(s3_config).await {
@@ -126,18 +128,45 @@ async fn main() -> anyhow::Result<()> {
                 Arc::new(NoopAdapter::new())
             }
         }
+    } else if let Ok(bucket) = std::env::var("ACME_S3_BUCKET") {
+        let region = std::env::var("ACME_S3_REGION").unwrap_or_else(|_| "us-east-1".to_string());
+        let mut s3_config = S3Config::new(bucket.clone(), region);
+        if let Ok(endpoint) = std::env::var("ACME_S3_ENDPOINT") {
+            s3_config = s3_config.endpoint_url(endpoint);
+        }
+        if let Ok(public_url_base) = std::env::var("ACME_S3_PUBLIC_URL_BASE") {
+            s3_config = s3_config.public_url_base(public_url_base);
+        }
+        if std::env::var("ACME_S3_PATH_STYLE").as_deref() == Ok("1") {
+            s3_config = s3_config.path_style(true);
+        }
+
+        // Production storage must not fall back to noop: a broken adapter is
+        // a boot failure, not silent data loss.
+        let adapter = S3Adapter::new(s3_config).await.map_err(|e| {
+            anyhow::anyhow!("failed to initialize S3 blob adapter for bucket {bucket}: {e}")
+        })?;
+        if let Err(err) = adapter.ensure_bucket_ready().await {
+            return Err(anyhow::anyhow!(
+                "S3 media bucket {bucket} is not usable: {err}"
+            ));
+        }
+        info!(%bucket, "S3 blob adapter initialised");
+        Arc::new(adapter)
     } else if std::env::var("ACME_ALLOW_NOOP_BLOB").as_deref() == Ok("1") {
         // Explicit opt-in for a deliberately storage-less deployment.
         tracing::warn!("ACME_ALLOW_NOOP_BLOB=1 set — media uploads are discarded (NoopAdapter)");
         Arc::new(NoopAdapter::new())
     } else {
         // Fail closed: silently accepting-then-dropping prod uploads with a
-        // NoopAdapter is data loss. Production blob storage (S3) is still TODO;
-        // until it is wired, refuse to boot rather than pretend uploads work.
-        panic!(
-            "No production blob storage configured. Wire an S3Adapter for prod, \
-             or set ACME_ALLOW_NOOP_BLOB=1 to run without media storage on purpose."
-        );
+        // NoopAdapter is data loss. Either configure real storage or opt out
+        // explicitly.
+        return Err(anyhow::anyhow!(
+            "No production blob storage configured. Set ACME_S3_BUCKET (plus \
+             optional ACME_S3_REGION / ACME_S3_ENDPOINT / ACME_S3_PUBLIC_URL_BASE / \
+             ACME_S3_PATH_STYLE=1) to wire S3, or set ACME_ALLOW_NOOP_BLOB=1 to run \
+             without media storage on purpose."
+        ));
     };
 
     // Create job repository for enqueueing jobs

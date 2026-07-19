@@ -44,10 +44,11 @@ once_cell = "1"
 sha2 = "0.10"
 hex = "0.4"
 uuid = { workspace = true }
-infer = { workspace = true }
 
 [dev-dependencies]
 acme-test-utils = { path = "../test-utils" }
+# LocalAdapter (dev-only seam) for exercising the validated upload helpers.
+underlay-blob = { workspace = true, features = ["local"] }
 axum-test = "20"
 tower = "0.5"
 http-body-util = "0.1"

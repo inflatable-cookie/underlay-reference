@@ -1,8 +1,8 @@
 # g01.009 Media And Blob Production Path
 
-Status: ready
+Status: done (2026-07-19)
 Owner: repo maintainers
-Updated: 2026-07-18
+Updated: 2026-07-19
 Governing refs: underlay `docs/contracts/040` (media and upload enforcement), underlay `docs/logs/2026-07/18-100000-consumer-audit-underlay-reference.md`
 Planning state: ready
 
@@ -35,29 +35,29 @@ foundation now provides.
 
 ## Scope
 
-- [ ] Wire a real production `S3Adapter` from environment config (bucket,
-  region, endpoint, credentials) in `main.rs`; keep `ACME_ALLOW_NOOP_BLOB=1` as
-  the explicit storage-less escape hatch, and remove the panic once a real
-  adapter path exists.
-- [ ] Replace the hand-rolled upload validation with the foundation's
-  `initiate_upload_validated` and `finalise_upload_verified`; delete the
-  duplicated sniffing logic in `upload.rs` once the validated helpers cover it.
-- [ ] Confirm the SVG/HTML/JS content-type exclusions and size limit come from
-  the foundation defaults (not a local re-list that can drift).
+- [x] Production `S3Adapter` built from `ACME_S3_*` env config in `main.rs`
+  (credentials via the AWS default chain); `ACME_ALLOW_NOOP_BLOB=1` kept as
+  the explicit storage-less escape hatch; the audit panic replaced with a
+  clean fail-closed startup error naming the env vars.
+- [x] Upload path routed through `initiate_upload_validated` and
+  `finalise_upload_verified`; the duplicated `infer`-based sniffing deleted
+  (and the `infer` dependency dropped).
+- [x] Policy is `BlobUploadConfig` foundation defaults (asserted by test):
+  SVG/HTML/JS excluded, 50 MB limit — no local re-list.
 
 ## Deliverables
 
-- [ ] production-capable blob adapter construction with documented env vars
-  (add to `.env.example`)
-- [ ] media upload path routed through the validated foundation helpers
-- [ ] tests: an upload whose bytes do not match the declared content type is
-  rejected; an oversized upload is rejected; an allowed image succeeds
+- [x] production-capable blob adapter construction with documented env vars
+  (`.env.example` added)
+- [x] media upload path routed through the validated foundation helpers
+- [x] tests: mismatched bytes rejected; oversized rejected; allowed image
+  succeeds (`media_upload_validation_tests.rs`)
 
 ## Validation
 
-- [ ] `cargo build` and `cargo test` green
-- [ ] no local magic-byte / content-type re-implementation remains in
-  `upload.rs` once the validated helpers are adopted
+- [x] `cargo build` and `cargo test` green (local Postgres 16)
+- [x] no local magic-byte / content-type re-implementation remains in
+  `upload.rs`
 
 ## Next
 

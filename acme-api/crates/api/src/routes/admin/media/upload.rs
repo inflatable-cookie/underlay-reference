@@ -1,4 +1,39 @@
 use super::*;
+use underlay_blob::{BlobAdapterUploadExt, BlobError};
+
+fn file_too_large_error(size: u64, state: &AppState) -> ApiError {
+    ApiError::new(
+        StatusCode::PAYLOAD_TOO_LARGE,
+        "media.file_too_large",
+        format!(
+            "File size ({:.1} MB) exceeds maximum allowed size ({})",
+            size as f64 / (1024.0 * 1024.0),
+            state.config.media.max_file_size_display()
+        ),
+    )
+}
+
+fn content_type_not_allowed_error(content_type: &str) -> ApiError {
+    ApiError::new(
+        StatusCode::UNPROCESSABLE_ENTITY,
+        "media.content_type_not_allowed",
+        format!("Content type '{content_type}' is not allowed"),
+    )
+}
+
+/// Map a rejection from the foundation's validated upload helpers to an API
+/// error, or `None` when the failure is an internal/storage error.
+fn blob_rejection_to_api_error(err: &BlobError, state: &AppState) -> Option<ApiError> {
+    match err {
+        BlobError::TooLarge(size, _) => Some(file_too_large_error(*size, state)),
+        BlobError::InvalidContentType(detail) => Some(ApiError::new(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "media.content_type_mismatch",
+            format!("Upload rejected: {detail}"),
+        )),
+        _ => None,
+    }
+}
 
 /// Initiate an upload for a media item.
 ///
@@ -13,17 +48,18 @@ pub async fn initiate_upload(
         return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
 
-    // Check declared file size before initiating upload
-    if req.content_length > state.config.media.max_file_size_bytes_limit() {
-        return Err(ApiError::new(
-            StatusCode::PAYLOAD_TOO_LARGE,
-            "media.file_too_large",
-            format!(
-                "File size ({:.1} MB) exceeds maximum allowed size ({})",
-                req.content_length as f64 / (1024.0 * 1024.0),
-                state.config.media.max_file_size_display()
-            ),
-        ));
+    // Pre-check the declared size and content type against the foundation
+    // upload policy before creating any rows. `initiate_upload_validated`
+    // re-enforces both before signing the upload URL.
+    if !state.config.media.is_size_allowed(req.content_length) {
+        return Err(file_too_large_error(req.content_length, &state));
+    }
+    if !state
+        .config
+        .media
+        .is_content_type_allowed(&req.content_type)
+    {
+        return Err(content_type_not_allowed_error(&req.content_type));
     }
 
     let pool = state.local_auth.pool();
@@ -86,15 +122,25 @@ pub async fn initiate_upload(
     let object_key = version_object_key(media_id, version_id, &filename)
         .map_err(|e| ApiError::bad_request("media.invalid_object_key", e.to_string()))?;
 
-    // Request upload URL from blob adapter
+    // Request upload URL from the blob adapter through the foundation's
+    // validated helper (size cap + MIME allowlist enforced before signing).
     let upload_request =
         UploadRequest::from_object_key(object_key, &req.content_type, req.content_length);
-    let upload_plan = match state.blob_adapter.initiate_upload(upload_request).await {
+    let upload_plan = match state
+        .blob_adapter
+        .initiate_upload_validated(upload_request, &state.config.media)
+        .await
+    {
         Ok(plan) => plan,
         Err(e) => {
-            tracing::error!("Failed to initiate upload: {}", e);
             // Mark version as failed
             let _ = media::fail_media_version(pool, version_id).await;
+
+            if let Some(rejection) = blob_rejection_to_api_error(&e, &state) {
+                return Err(rejection);
+            }
+
+            tracing::error!("Failed to initiate upload: {}", e);
             return Err(crate::db_errors::internal_with_diagnostics(
                 "media.upload_initiate_failed",
                 "Failed to initiate upload",
@@ -200,14 +246,25 @@ pub async fn finalise_upload(
     let object_key = version_object_key(media_id, version_id, &filename)
         .map_err(|e| ApiError::bad_request("media.invalid_object_key", e.to_string()))?;
 
-    // Finalise with blob adapter to get actual metadata
+    // Finalise through the foundation's verified helper: it enforces the
+    // size cap, the MIME allowlist, and magic-byte verification of the
+    // stored bytes against the declared content type in one place, then pins
+    // the content type to the validated declared value.
     let stored = match state
         .blob_adapter
-        .finalise_upload_object_key(&object_key)
+        .finalise_upload_verified(object_key.as_str(), &req.content_type, &state.config.media)
         .await
     {
         Ok(s) => s,
         Err(e) => {
+            if let Some(rejection) = blob_rejection_to_api_error(&e, &state) {
+                // Policy rejection: clean up the stored object and fail the
+                // version, then surface the 4xx.
+                let _ = state.blob_adapter.delete_object_key(&object_key).await;
+                let _ = media::fail_media_version(pool, version_id).await;
+                return Err(rejection);
+            }
+
             tracing::error!("Failed to finalise upload: {}", e);
             let _ = media::fail_media_version(pool, version_id).await;
             return Err(crate::db_errors::internal_with_diagnostics(
@@ -222,93 +279,6 @@ pub async fn finalise_upload(
             })));
         }
     };
-
-    // Check file size limit
-    if stored.size > state.config.media.max_file_size_bytes_limit() {
-        tracing::warn!(
-            "Upload rejected: file size {} exceeds limit {}",
-            stored.size,
-            state.config.media.max_file_size_bytes_limit()
-        );
-        // Clean up: delete the uploaded blob and fail the version
-        let _ = state.blob_adapter.delete_object_key(&object_key).await;
-        let _ = media::fail_media_version(pool, version_id).await;
-        return Err(ApiError::new(
-            StatusCode::PAYLOAD_TOO_LARGE,
-            "media.file_too_large",
-            format!(
-                "File size ({:.1} MB) exceeds maximum allowed size ({})",
-                stored.size as f64 / (1024.0 * 1024.0),
-                state.config.media.max_file_size_display()
-            ),
-        ));
-    }
-
-    // Magic byte detection: verify file content matches declared MIME type
-    let file_bytes = match state.blob_adapter.get_object_bytes(&object_key).await {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            tracing::error!("Failed to read file for magic byte detection: {}", e);
-            // Continue without magic byte check - don't block upload for this
-            vec![]
-        }
-    };
-
-    if !file_bytes.is_empty() {
-        // Use infer crate to detect actual file type
-        if let Some(detected) = infer::get(&file_bytes) {
-            let detected_mime = detected.mime_type();
-            let declared_mime = &stored.content_type;
-
-            // Check if types are compatible
-            let types_match = match (detected_mime, declared_mime.as_str()) {
-                // Exact match
-                (d, s) if d == s => true,
-                // JPEG variations
-                ("image/jpeg", "image/jpg") | ("image/jpg", "image/jpeg") => true,
-                // SVG is XML-based, infer might detect as text/xml
-                ("text/xml", "image/svg+xml") | ("application/xml", "image/svg+xml") => true,
-                // PDF check (exact match already handled above, but keep for explicitness)
-                ("application/pdf", "application/pdf") => true,
-                // Generic image type checks (same category is OK)
-                (d, s) if d.starts_with("image/") && s.starts_with("image/") => {
-                    // Log mismatch but allow - some formats are flexible
-                    if d != s {
-                        tracing::info!(
-                            detected = detected_mime,
-                            declared = declared_mime,
-                            "Minor MIME type mismatch (allowed)"
-                        );
-                    }
-                    true
-                }
-                // Different categories - reject
-                _ => {
-                    tracing::warn!(
-                        detected = detected_mime,
-                        declared = declared_mime,
-                        "MIME type mismatch detected"
-                    );
-                    false
-                }
-            };
-
-            if !types_match {
-                // Clean up: delete the uploaded blob and fail the version
-                let _ = state.blob_adapter.delete_object_key(&object_key).await;
-                let _ = media::fail_media_version(pool, version_id).await;
-                return Err(ApiError::new(
-                    StatusCode::UNPROCESSABLE_ENTITY,
-                    "media.content_type_mismatch",
-                    format!(
-                        "File content does not match declared type. Detected: {}, Declared: {}",
-                        detected_mime, declared_mime
-                    ),
-                ));
-            }
-        }
-        // If infer returns None, allow the upload (unknown format)
-    }
 
     // Update version with storage info
     let finalised_version = match media::finalise_media_version(
