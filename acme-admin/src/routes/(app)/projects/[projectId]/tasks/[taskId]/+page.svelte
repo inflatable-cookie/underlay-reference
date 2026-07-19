@@ -102,9 +102,9 @@
   }
 
   const headerMeta = $derived.by(() => [
-    { label: "ID", value: idSnippet as never },
-    { label: "", value: statusSnippet as never, separator: false },
-    { label: "", value: prioritySnippet as never, separator: false }
+    { label: "ID", value: idSnippet },
+    { label: "", value: statusSnippet, separator: false },
+    { label: "", value: prioritySnippet, separator: false }
   ]);
 
   const breadcrumbs = $derived.by(() => {
@@ -131,7 +131,7 @@
     {
       id: "details",
       label: "Details",
-      content: detailsTabSnippet as never
+      content: detailsTabSnippet
     }
   ]);
 </script>
@@ -147,8 +147,8 @@
   bannerTone={bannerMessage ? bannerTone : undefined}
   dataLoader={taskLoader}
   breadcrumbs={breadcrumbs}
-  meta={headerMeta as never}
-  tabs={detailTabs as never}
+  meta={headerMeta}
+  tabs={detailTabs}
   actions={[
     { label: "Edit", handler: handleEdit },
     {
@@ -242,31 +242,31 @@
         items={[
           {
             label: "Due Date",
-            value: dueDateSnippet as never,
+            value: dueDateSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Project",
-            value: projectSnippet as never,
+            value: projectSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Created",
-            value: createdSnippet as never,
+            value: createdSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Updated",
-            value: updatedSnippet as never,
+            value: updatedSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Labels",
-            value: labelsSnippet as never,
+            value: labelsSnippet,
             layout: "stacked",
             presentation: "surface",
             span: "full"

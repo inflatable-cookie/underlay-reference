@@ -163,12 +163,12 @@
   {backLabel}
   {dataLoader}
   presentation="cards"
-  renderItem={categoryCard as never}
+  renderItem={categoryCard}
   {filters}
   {query}
   {batchActions}
   {onQueryChange}
-  reorder={reorderConfig as never}
+  reorder={reorderConfig}
   onAdd={handleAdd}
   addLabel="Add category"
   onReorderError={handleReorderError}

@@ -8,7 +8,7 @@
       title: "Poodle gap review",
       description: "Assess ambiguous Underlay workflow surfaces with live examples before reclassifying them.",
       accent: "var(--admin-color-primary, #8b5cf6)",
-      icon: gapReviewIconSnippet as never
+      icon: gapReviewIconSnippet
     }
   ];
 </script>

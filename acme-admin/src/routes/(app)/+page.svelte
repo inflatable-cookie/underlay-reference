@@ -66,8 +66,8 @@
 	title="Dashboard"
 	subtitle="Platform overview and key metrics"
 	sections={[
-		{ id: "metrics", content: metricsSectionSnippet as never },
-		{ id: "activity", title: "Recent Activity", content: activitySectionSnippet as never }
+		{ id: "metrics", content: metricsSectionSnippet },
+		{ id: "activity", title: "Recent Activity", content: activitySectionSnippet }
 	]}
 />
 

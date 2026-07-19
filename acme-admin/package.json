@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "scripts": {
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
   "dependencies": {
     "@acme/ui": "file:../acme-ui",
     "@poodle/icons-lucide": "file:../../poodle/packages/svelte/icons-lucide",

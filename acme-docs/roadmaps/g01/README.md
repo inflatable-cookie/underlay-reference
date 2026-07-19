@@ -38,6 +38,5 @@ and spoofable-IP findings.
 ## Next Task
 
 Two independent threads are live: finish `g01.007` (retained-surface owner), and
-execute the g08 consumer-audit tranche — `g01.008` and `g01.009` are done
-(2026-07-19); continue with `g01.010` (TypeScript type-safety hygiene), then
-`g01.011`.
+execute the g08 consumer-audit tranche — `g01.008`-`g01.010` are done
+(2026-07-19); finish with `g01.011` (gate hardening and lint cleanup).

@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {

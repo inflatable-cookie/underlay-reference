@@ -194,9 +194,9 @@ import {
 
     try {
       const startData = await authCommands.passkeyConnectStart(fetch, token) as PasskeyStartResponse;
-      const publicKey = toPublicKeyCreationOptions(startData.options as any);
+      const publicKey = toPublicKeyCreationOptions(startData.options);
 
-      if (!(publicKey as any).challenge) {
+      if (!publicKey.challenge) {
         passkeyError = "Passkey setup failed: server did not return a challenge.";
         return;
       }

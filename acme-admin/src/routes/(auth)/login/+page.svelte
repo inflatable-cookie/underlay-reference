@@ -53,9 +53,9 @@ import {
 
     // Start passkey login
     const startData = await authCommands.passkeyLoginStart({ email }, fetch);
-    const publicKey = toPublicKeyRequestOptions(startData.options as any);
+    const publicKey = toPublicKeyRequestOptions(startData.options);
 
-    if (!(publicKey as any).challenge) {
+    if (!publicKey.challenge) {
       throw new Error("Passkey login failed: server did not return a challenge.");
     }
 
@@ -70,7 +70,7 @@ import {
     // Complete passkey login
     const loginResponse = await authCommands.passkeyLoginFinish({
       stateId: startData.stateId,
-      credential: assertionToJson(cred) as any
+      credential: assertionToJson(cred)
     }, fetch);
 
     // Store session

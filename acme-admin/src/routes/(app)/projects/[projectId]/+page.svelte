@@ -89,8 +89,8 @@
   // Linked local packages currently expose nominally different Snippet types.
   // Cast at the page boundary instead of loosening the shared template API.
   const headerMeta = $derived.by(() => [
-    { label: "ID", value: idSnippet as never },
-    { label: "", value: statusSnippet as never, separator: false }
+    { label: "ID", value: idSnippet },
+    { label: "", value: statusSnippet, separator: false }
   ]);
 
   const breadcrumbs = $derived.by(() =>
@@ -108,12 +108,12 @@
     {
       id: "details",
       label: "Details",
-      content: detailsTabSnippet as never
+      content: detailsTabSnippet
     },
     {
       id: "tasks",
       label: "Tasks",
-      content: tasksTabSnippet as never
+      content: tasksTabSnippet
     }
   ]);
 </script>
@@ -128,7 +128,7 @@
   dataLoader={projectLoader}
   breadcrumbs={breadcrumbs}
   breadcrumbsMarkLastCurrent={false}
-  meta={headerMeta as never}
+  meta={headerMeta}
   actions={[
     { label: "Edit", handler: handleEdit },
     {
@@ -143,7 +143,7 @@
       handler: handleDelete
     }
   ]}
-  tabs={detailPageTabs as never}
+  tabs={detailPageTabs}
 />
 
 {#snippet idSnippet()}
@@ -218,26 +218,26 @@
         items={[
           {
             label: "Progress",
-            value: progressSnippet as never,
+            value: progressSnippet,
             span: "full",
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Category",
-            value: categorySnippet as never,
+            value: categorySnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Created",
-            value: createdSnippet as never,
+            value: createdSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Updated",
-            value: updatedSnippet as never,
+            value: updatedSnippet,
             layout: "stacked",
             presentation: "surface"
           }

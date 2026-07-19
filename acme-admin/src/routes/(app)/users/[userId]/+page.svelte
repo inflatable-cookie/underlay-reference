@@ -397,15 +397,15 @@
   }
 
   const headerMeta = $derived.by(() => [
-    { label: "ID", value: idSnippet as never },
-    { label: "", value: roleSnippet as never, separator: false },
-    { label: "", value: statusSnippet as never, separator: false }
+    { label: "ID", value: idSnippet },
+    { label: "", value: roleSnippet, separator: false },
+    { label: "", value: statusSnippet, separator: false }
   ]);
 
   const detailTabs = $derived.by(() => [
-    { id: "details", label: "Details", content: detailsTabSnippet as never },
-    { id: "sessions", label: "Sessions", count: user?.activeSessionCount, content: sessionsTabSnippet as never },
-    { id: "activity", label: "Activity", content: activityTabSnippet as never }
+    { id: "details", label: "Details", content: detailsTabSnippet },
+    { id: "sessions", label: "Sessions", count: user?.activeSessionCount, content: sessionsTabSnippet },
+    { id: "activity", label: "Activity", content: activityTabSnippet }
   ]);
 </script>
 
@@ -418,9 +418,9 @@
   bannerMessage={user && user.status !== "active" ? `User status: ${user.status}` : undefined}
   dataLoader={userLoader}
   reloadKey={reloadRevision}
-  meta={headerMeta as never}
-  headerActions={headerActionsSnippet as never}
-  tabs={detailTabs as never}
+  meta={headerMeta}
+  headerActions={headerActionsSnippet}
+  tabs={detailTabs}
   tabsSize="sm"
   keepMountedTabs
   onTabChange={(tabId) => {

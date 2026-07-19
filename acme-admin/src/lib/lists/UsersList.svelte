@@ -197,7 +197,7 @@
   {columns}
   {filters}
   rowActions={getRowActions}
-  renderCell={renderCell as never}
+  renderCell={renderCell}
   onRowActionSelect={handleRowActionSelect}
   {query}
   {onQueryChange}

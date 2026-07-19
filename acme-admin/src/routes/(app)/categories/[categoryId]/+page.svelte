@@ -64,20 +64,20 @@
   }
 
   const detailPageMeta = $derived.by(() => [
-    { label: "ID", value: idSnippet as never },
-    { label: "", value: statusSnippet as never, separator: false }
+    { label: "ID", value: idSnippet },
+    { label: "", value: statusSnippet, separator: false }
   ]);
 
   const detailPageTabs = $derived.by(() => [
     {
       id: "details",
       label: "Details",
-      content: detailsTabSnippet as never
+      content: detailsTabSnippet
     },
     {
       id: "projects",
       label: "Projects",
-      content: projectsTabSnippet as never
+      content: projectsTabSnippet
     }
   ]);
 
@@ -94,8 +94,8 @@
   bannerMessage={bannerMessage}
   bannerTone="warning"
   dataLoader={categoryLoader}
-  meta={detailPageMeta as never}
-  tabs={detailPageTabs as never}
+  meta={detailPageMeta}
+  tabs={detailPageTabs}
   actions={[
     { label: "Edit", handler: handleEdit },
     {
@@ -182,25 +182,25 @@
         items={[
           {
             label: "Slug",
-            value: slugSnippet as never,
+            value: slugSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Color",
-            value: colorSnippet as never,
+            value: colorSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Created",
-            value: createdSnippet as never,
+            value: createdSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Updated",
-            value: updatedSnippet as never,
+            value: updatedSnippet,
             layout: "stacked",
             presentation: "surface"
           }

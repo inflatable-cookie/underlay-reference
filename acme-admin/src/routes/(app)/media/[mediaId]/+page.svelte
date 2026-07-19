@@ -330,20 +330,20 @@ import { browser } from "$app/environment";
     {
       id: "details",
       label: "Details",
-      content: detailsTabSnippet as never
+      content: detailsTabSnippet
     },
     ...(showPreviewTab
       ? [{
           id: "preview",
           label: "Preview",
-          content: previewTabSnippet as never
+          content: previewTabSnippet
         }]
       : []),
     {
       id: "usage",
       label: "Usage",
       count: usageCount,
-      content: usageTabSnippet as never
+      content: usageTabSnippet
     }
   ]);
 
@@ -357,8 +357,8 @@ import { browser } from "$app/environment";
   dataLoader={mediaLoader}
   reloadKey={reloadKey}
   onTabChange={(tabId) => { activeTab = tabId; }}
-  headerActions={headerActionsSnippet as never}
-  tabs={mediaTabs as never}
+  headerActions={headerActionsSnippet}
+  tabs={mediaTabs}
   tabsVariant="underline"
 />
 
@@ -366,7 +366,7 @@ import { browser } from "$app/environment";
   {#if media}
     <MediaActionsMenu
       {media}
-      trigger={mediaActionsTriggerSnippet as never}
+      trigger={mediaActionsTriggerSnippet}
       onEditRequest={openEditDialog}
       onSoftDeleteSuccess={() => goto("/media")}
       onRestoreSuccess={() => { reloadKey++; }}
@@ -429,7 +429,7 @@ import { browser } from "$app/environment";
         items={[
           {
             label: "Original Filename",
-            value: originalFilenameSnippet as never,
+            value: originalFilenameSnippet,
             layout: "stacked",
             presentation: "surface"
           },
@@ -437,13 +437,13 @@ import { browser } from "$app/environment";
             ? [
                 {
                   label: "File Size",
-                  value: fileSizeSnippet as never,
+                  value: fileSizeSnippet,
                   layout: "stacked" as const,
                   presentation: "surface" as const
                 },
                 {
                   label: "MIME Type",
-                  value: mimeTypeSnippet as never,
+                  value: mimeTypeSnippet,
                   layout: "stacked" as const,
                   presentation: "surface" as const
                 }
@@ -451,20 +451,20 @@ import { browser } from "$app/environment";
             : []),
           {
             label: "Created",
-            value: createdSnippet as never,
+            value: createdSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           {
             label: "Last Updated",
-            value: updatedSnippet as never,
+            value: updatedSnippet,
             layout: "stacked",
             presentation: "surface"
           },
           ...(media?.deletedAt
             ? [{
                 label: "Deleted",
-                value: deletedAtSnippet as never,
+                value: deletedAtSnippet,
                 layout: "stacked" as const,
                 presentation: "surface" as const
               }]

@@ -249,14 +249,14 @@
   {headerLevel}
   {dataLoader}
   presentation="cards"
-  renderItem={taskCard as never}
+  renderItem={taskCard}
   filters={taskFilters}
   queryVariants={taskQueryVariants}
   defaultVariantId="open"
   query={effectiveQuery}
   onQueryChange={updateQuery}
-  batchActions={taskBatchActions as never}
-  reorder={taskReorderConfig as never}
+  batchActions={taskBatchActions}
+  reorder={taskReorderConfig}
   onReorderError={async (error) => {
     const message = error instanceof Error ? error.message : String(error);
     toastStore.push({ variant: "info", message: `Reorder conflict: ${message}. Please refresh and try again.` });

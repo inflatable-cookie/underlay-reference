@@ -1,8 +1,8 @@
 # g01.010 TypeScript Type-Safety Hygiene
 
-Status: ready
+Status: done (2026-07-19)
 Owner: repo maintainers
-Updated: 2026-07-18
+Updated: 2026-07-19
 Governing refs: underlay `docs/contracts/090` (TS runtime), underlay `docs/roadmaps/g08/024-strict-type-and-dependency-hygiene.md`, underlay `docs/logs/2026-07/18-100000-consumer-audit-underlay-reference.md`
 Planning state: ready
 
@@ -33,29 +33,29 @@ casts are the real erosion and remain.
 
 ## Scope
 
-- [ ] Replace `as never` casts with correctly-typed props. Where the underlay
-  template's prop type genuinely does not fit, capture it as an upstream
-  finding (a real underlay template typing gap) rather than casting past it.
-- [ ] Replace the 5 webauthn `as any` casts with the proper WebAuthn/underlay
-  types (`toPublicKeyRequestOptions` / assertion helpers already exist in
-  underlay `utils/webauthn`).
-- [ ] Add `check` scripts to each package's `package.json`
-  (`svelte-check --tsconfig ./tsconfig.json`, or `tsc --noEmit` for
-  `acme-client`) so type checking has an npm-level entry point alongside effigy.
-- [ ] Keep `noImplicitAny` on (do not reintroduce the override).
+- [x] All 63 `as never` casts removed. Root cause was a real underlay
+  template typing gap (`TemplateSurface` rejected parameterized snippets) —
+  fixed **upstream** (underlay `c5f3cb7c`) rather than cast past or merely
+  recorded, since the foundation lives in this workspace.
+- [x] The 5 webauthn `as any` casts removed — the underlay
+  `utils/webauthn` helpers already take `unknown` and return typed options;
+  no cast was needed.
+- [x] `check` scripts added to all four packages
+  (`svelte-check --tsconfig ./tsconfig.json`; `tsc --noEmit -p
+  tsconfig.json` for `acme-client`).
+- [x] `noImplicitAny` stays on (no overrides exist).
 
 ## Deliverables
 
-- [ ] `acme-admin`/`acme-front`/`acme-client`/`acme-ui` free of `as never` and
-  `as any` (or each remaining cast justified with a comment + upstream link)
-- [ ] `package.json` `check` scripts wired for all four packages
+- [x] `acme-admin`/`acme-front`/`acme-client`/`acme-ui` free of `as never`
+  and `as any` (zero occurrences, none needed justification)
+- [x] `package.json` `check` scripts wired for all four packages
 
 ## Validation
 
-- [ ] `svelte-check` reports 0 errors for each package
-- [ ] `grep -rn "as never\|as any" src` returns only justified, commented
-  occurrences
-- [ ] each package's `npm run check` (or `bun run check`) runs the type check
+- [x] `svelte-check` reports 0 errors for each package
+- [x] `grep -rn "as never\|as any" src` returns nothing
+- [x] each package's `bun run check` runs the type check (verified green)
 
 ## Next
 

@@ -2,9 +2,8 @@
   import { goto } from "$app/navigation";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { MediaActionsMenu as SharedMediaActionsMenu } from "@decodelabs/underlay/templates";
-  import type { MediaActionsMenuItem } from "@decodelabs/underlay/templates";
+  import type { MediaActionsMenuItem, TemplateSurface } from "@decodelabs/underlay/templates";
   import type { NavigationContext } from "@decodelabs/underlay/runtime/navigation";
-  import type { Snippet } from "svelte";
   import { mediaCommands, type MediaDetail, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";
 
@@ -13,7 +12,7 @@
   interface Props {
     media: MediaItem;
     sourceContext?: NavigationContext;
-    trigger?: Snippet;
+    trigger?: TemplateSurface;
     onSoftDeleteSuccess?: () => void;
     onRestoreSuccess?: () => void;
     onPurgeSuccess?: () => void;

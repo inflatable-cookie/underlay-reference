@@ -219,12 +219,12 @@
   {backLabel}
   {dataLoader}
   presentation="cards"
-  renderItem={projectCard as never}
+  renderItem={projectCard}
   filters={filters}
   query={effectiveQuery}
   {batchActions}
   onQueryChange={updateQuery}
-  reorder={reorderConfig as never}
+  reorder={reorderConfig}
   onReorderError={handleReorderError}
   onAdd={handleAdd}
   addLabel="Add Project"
