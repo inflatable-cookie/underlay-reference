@@ -1,8 +1,8 @@
 # g01.008 Auth Service Adoption And Hardening
 
-Status: ready
+Status: done (2026-07-19)
 Owner: repo maintainers
-Updated: 2026-07-18
+Updated: 2026-07-19
 Governing refs: `acme-docs/roadmaps/g01/002-security-audit.md`, `acme-docs/architecture/product-guardrails.md`, underlay `docs/contracts/030` (auth session and token boundary), underlay `docs/logs/2026-07/18-100000-consumer-audit-underlay-reference.md`
 Planning state: ready
 
@@ -42,39 +42,41 @@ acme-api is what downstream apps copy — divergence here propagates.
 
 ## Scope
 
-- [ ] **Refresh-replay revocation.** Adopt the foundation `SessionManager`
-  refresh path (or replicate its behavior): on detecting reuse of a superseded
-  refresh token, revoke the entire session family, not just reject the token.
-  Preserve the legitimate concurrent-refresh race (the atomic
-  `rotate_session_if_current` path must not revoke on a lost CAS).
-- [ ] **Reject on refresh fingerprint mismatch** (or make the strictness
-  explicit and configurable) rather than warn-and-continue.
-- [ ] **Throttle 2FA.** Route TOTP + backup-code verification through
-  `verify_second_factor_throttled` (per-user attempt caps against a
-  `RateLimitBackend`, incrementing on failure, resetting on success).
-- [ ] **Consolidate client-IP extraction.** Remove the two unvalidated
-  `X-Forwarded-For` helpers; route every caller through the single trusted-proxy
-  path (`acme_infra::extract_client_ip` + the `TrustedProxyConfig` extension).
-- [ ] **Prefer adopting `PasswordAuthService`** for login rather than the
-  hand-rolled `verify_user_credentials`, so the dummy-verify timing, lockout,
-  and failure accounting come from the foundation (the in-place `dummy_verify`
-  added in the audit becomes redundant once the service is adopted). If full
-  adoption is judged too invasive, keep the hand-rolled path but document why and
-  keep the `dummy_verify`.
+- [x] **Refresh-replay revocation.** Replicated the foundation `SessionManager`
+  refresh behavior in `local/session.rs`: reuse of a superseded refresh token
+  (stale fingerprint or id/version mismatch) revokes the entire session family;
+  rotation commits through an atomic `rotate_session_if_current` CAS, and a
+  lost CAS (legitimate concurrent refresh) rejects without revoking.
+- [x] **Reject on refresh fingerprint mismatch** — strict by default via the
+  layered-config knob `auth.refresh_fingerprint_strict` (set `false` to
+  restore warn-and-continue).
+- [x] **Throttle 2FA.** TOTP + backup-code verification routed through
+  `verify_second_factor_throttled` (per-user `2fa:<user_id>` key,
+  `max_totp_attempts`/hour against the shared rate-limit backend).
+- [x] **Consolidate client-IP extraction.** Both unvalidated `X-Forwarded-For`
+  helpers removed; all callers use `acme_infra::extract_client_ip` +
+  `TrustedProxyConfig`.
+- [x] **`PasswordAuthService` adoption evaluated, hand-rolled path retained**
+  with rationale documented in code: the local path records per-IP login
+  attempts and feeds the security-alert pipeline, which the foundation's
+  `PasswordAuthRepository` seam cannot express. `dummy_verify` kept.
 
 ## Deliverables
 
-- [ ] refactored `acme-api/crates/auth/src/local/` that uses the foundation
-  session/2FA (and ideally password) services, with the three findings closed
-- [ ] tests: refresh replay revokes the family; 2FA verify is capped per user;
+- [x] refactored `acme-api/crates/auth/src/local/` with the three findings
+  closed (session/2FA via foundation services/behavior; password path retained
+  by documented decision)
+- [x] tests: refresh replay revokes the family; 2FA verify is capped per user;
   a spoofed `X-Forwarded-For` cannot change the resolved client IP
-- [ ] one roadmap-aligned execution log recording the batch
+- [x] execution log:
+  `acme-docs/logs/2026-07/19-120000-g01-008-auth-service-adoption-and-hardening.md`
 
 ## Validation
 
-- [ ] `cargo build` and `cargo test` green across the acme-api workspace
-- [ ] new tests above pass
-- [ ] no remaining direct `X-Forwarded-For` reads outside the trusted-proxy path
+- [x] `cargo build` and `cargo test` green across the acme-api workspace
+  (validated against a local Postgres 16)
+- [x] new tests above pass
+- [x] no remaining direct `X-Forwarded-For` reads outside the trusted-proxy path
   (grep clean)
 
 ## Next

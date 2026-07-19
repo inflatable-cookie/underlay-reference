@@ -203,241 +203,251 @@ fn retry_job_config_falls_back_to_job_values_without_policy() {
     assert_eq!(config.priority(), 3);
 }
 
-#[tokio::test]
-async fn list_jobs_filters_by_status() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
+#[test]
+fn list_jobs_filters_by_status() {
+    acme_test_utils::shared_runtime().block_on(async {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
 
-    let db = setup_test_db().await;
-    let pool = db.pool_clone();
-    let state = build_test_state(pool.clone()).await;
-    let repo = state.job_repository.clone().expect("job repo should exist");
+        let db = setup_test_db().await;
+        let pool = db.pool_clone();
+        let state = build_test_state(pool.clone()).await;
+        let repo = state.job_repository.clone().expect("job repo should exist");
 
-    let job_config = JobConfig::new().with_max_attempts(2);
-    let pending_id = repo
-        .create(
-            "admin.jobs.test.pending",
-            json!({ "kind": "pending" }),
-            &job_config,
+        let job_config = JobConfig::new().with_max_attempts(2);
+        let pending_id = repo
+            .create(
+                "admin.jobs.test.pending",
+                json!({ "kind": "pending" }),
+                &job_config,
+            )
+            .await
+            .expect("should create pending job");
+        let failed_id = repo
+            .create(
+                "admin.jobs.test.failed",
+                json!({ "kind": "failed" }),
+                &job_config,
+            )
+            .await
+            .expect("should create failed job");
+        mark_job_failed(&pool, failed_id).await;
+
+        let response = list_jobs(
+            admin_user(),
+            State(state),
+            Query(ListJobsQuery {
+                status: Some("pending".to_string()),
+                job_type: None,
+                page: Some(1),
+                limit: Some(200),
+            }),
         )
         .await
-        .expect("should create pending job");
-    let failed_id = repo
-        .create(
-            "admin.jobs.test.failed",
-            json!({ "kind": "failed" }),
-            &job_config,
-        )
-        .await
-        .expect("should create failed job");
-    mark_job_failed(&pool, failed_id).await;
+        .expect("list jobs should succeed");
 
-    let response = list_jobs(
-        admin_user(),
-        State(state),
-        Query(ListJobsQuery {
-            status: Some("pending".to_string()),
-            job_type: None,
-            page: Some(1),
-            limit: Some(200),
-        }),
-    )
-    .await
-    .expect("list jobs should succeed");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_json(response).await;
+        let items = body["data"].as_array().expect("data should be array");
 
-    assert_eq!(response.status(), StatusCode::OK);
-    let body = response_json(response).await;
-    let items = body["data"].as_array().expect("data should be array");
+        let has_pending = items
+            .iter()
+            .any(|item| item["id"] == pending_id.to_string());
+        let has_failed = items.iter().any(|item| item["id"] == failed_id.to_string());
 
-    let has_pending = items
-        .iter()
-        .any(|item| item["id"] == pending_id.to_string());
-    let has_failed = items.iter().any(|item| item["id"] == failed_id.to_string());
+        assert!(has_pending);
+        assert!(!has_failed);
 
-    assert!(has_pending);
-    assert!(!has_failed);
-
-    delete_job(&pool, pending_id).await;
-    delete_job(&pool, failed_id).await;
+        delete_job(&pool, pending_id).await;
+        delete_job(&pool, failed_id).await;
+    })
 }
 
-#[tokio::test]
-async fn get_job_returns_job_detail() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
+#[test]
+fn get_job_returns_job_detail() {
+    acme_test_utils::shared_runtime().block_on(async {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
 
-    let db = setup_test_db().await;
-    let pool = db.pool_clone();
-    let state = build_test_state(pool.clone()).await;
-    let repo = state.job_repository.clone().expect("job repo should exist");
+        let db = setup_test_db().await;
+        let pool = db.pool_clone();
+        let state = build_test_state(pool.clone()).await;
+        let repo = state.job_repository.clone().expect("job repo should exist");
 
-    let job_id = repo
-        .create(
-            "admin.jobs.test.get",
-            json!({ "source": "get" }),
-            &JobConfig::default(),
-        )
-        .await
-        .expect("should create job");
+        let job_id = repo
+            .create(
+                "admin.jobs.test.get",
+                json!({ "source": "get" }),
+                &JobConfig::default(),
+            )
+            .await
+            .expect("should create job");
 
-    let response = get_job(admin_user(), State(state), Path(job_id))
-        .await
-        .expect("get job should succeed");
+        let response = get_job(admin_user(), State(state), Path(job_id))
+            .await
+            .expect("get job should succeed");
 
-    assert_eq!(response.status(), StatusCode::OK);
-    let body = response_json(response).await;
-    assert_eq!(body["data"]["id"], job_id.to_string());
-    assert_eq!(body["data"]["job_type"], "admin.jobs.test.get");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_json(response).await;
+        assert_eq!(body["data"]["id"], job_id.to_string());
+        assert_eq!(body["data"]["job_type"], "admin.jobs.test.get");
 
-    delete_job(&pool, job_id).await;
+        delete_job(&pool, job_id).await;
+    })
 }
 
-#[tokio::test]
-async fn cancel_job_updates_job_status() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
+#[test]
+fn cancel_job_updates_job_status() {
+    acme_test_utils::shared_runtime().block_on(async {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
 
-    let db = setup_test_db().await;
-    let pool = db.pool_clone();
-    let state = build_test_state(pool.clone()).await;
-    let repo = state.job_repository.clone().expect("job repo should exist");
+        let db = setup_test_db().await;
+        let pool = db.pool_clone();
+        let state = build_test_state(pool.clone()).await;
+        let repo = state.job_repository.clone().expect("job repo should exist");
 
-    let job_id = repo
-        .create(
-            "admin.jobs.test.cancel",
-            json!({ "source": "cancel" }),
-            &JobConfig::default(),
-        )
-        .await
-        .expect("should create job");
+        let job_id = repo
+            .create(
+                "admin.jobs.test.cancel",
+                json!({ "source": "cancel" }),
+                &JobConfig::default(),
+            )
+            .await
+            .expect("should create job");
 
-    let response = cancel_job(admin_user(), State(state.clone()), Path(job_id))
-        .await
-        .expect("cancel job should succeed");
+        let response = cancel_job(admin_user(), State(state.clone()), Path(job_id))
+            .await
+            .expect("cancel job should succeed");
 
-    assert_eq!(response.status(), StatusCode::OK);
-    let body = response_json(response).await;
-    assert_eq!(body["data"]["status"], "cancelled");
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_json(response).await;
+        assert_eq!(body["data"]["status"], "cancelled");
 
-    let cancelled = state
-        .job_repository
-        .as_ref()
-        .expect("job repo should exist")
-        .get(job_id)
-        .await
-        .expect("job lookup should succeed")
-        .expect("job should still exist");
-    assert_eq!(cancelled.status, JobStatus::Cancelled);
+        let cancelled = state
+            .job_repository
+            .as_ref()
+            .expect("job repo should exist")
+            .get(job_id)
+            .await
+            .expect("job lookup should succeed")
+            .expect("job should still exist");
+        assert_eq!(cancelled.status, JobStatus::Cancelled);
 
-    delete_job(&pool, job_id).await;
+        delete_job(&pool, job_id).await;
+    })
 }
 
-#[tokio::test]
-async fn retry_job_creates_new_job_with_scheduled_policy_fields() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
+#[test]
+fn retry_job_creates_new_job_with_scheduled_policy_fields() {
+    acme_test_utils::shared_runtime().block_on(async {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
 
-    let db = setup_test_db().await;
-    let pool = db.pool_clone();
-    let state = build_test_state(pool.clone()).await;
-    let repo = state.job_repository.clone().expect("job repo should exist");
+        let db = setup_test_db().await;
+        let pool = db.pool_clone();
+        let state = build_test_state(pool.clone()).await;
+        let repo = state.job_repository.clone().expect("job repo should exist");
 
-    let scheduled_for = Utc::now() + Duration::hours(2);
-    let original_id = repo
-        .create_scheduled(
-            "admin.jobs.test.retry",
-            json!({ "source": "retry" }),
-            &JobConfig::new().with_max_attempts(2).with_priority(1),
-            Some(scheduled_for),
+        let scheduled_for = Utc::now() + Duration::hours(2);
+        let original_id = repo
+            .create_scheduled(
+                "admin.jobs.test.retry",
+                json!({ "source": "retry" }),
+                &JobConfig::new().with_max_attempts(2).with_priority(1),
+                Some(scheduled_for),
+            )
+            .await
+            .expect("should create scheduled job");
+        mark_job_failed(&pool, original_id).await;
+
+        let policy_id = insert_scheduled_policy(&pool, "admin.jobs.test.retry").await;
+
+        let response = retry_job(admin_user(), State(state.clone()), Path(original_id))
+            .await
+            .expect("retry should succeed");
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+        let body = response_json(response).await;
+
+        let retried_id = Uuid::parse_str(
+            body["data"]["id"]
+                .as_str()
+                .expect("retried id should be a string"),
         )
-        .await
-        .expect("should create scheduled job");
-    mark_job_failed(&pool, original_id).await;
+        .expect("retried id should parse");
 
-    let policy_id = insert_scheduled_policy(&pool, "admin.jobs.test.retry").await;
+        let retried = state
+            .job_repository
+            .as_ref()
+            .expect("job repo should exist")
+            .get(retried_id)
+            .await
+            .expect("retried job lookup should succeed")
+            .expect("retried job should exist");
 
-    let response = retry_job(admin_user(), State(state.clone()), Path(original_id))
-        .await
-        .expect("retry should succeed");
+        assert_eq!(retried.max_attempts, 9);
+        assert_eq!(retried.priority, 33);
+        assert_eq!(retried.scheduled_for, Some(scheduled_for));
 
-    assert_eq!(response.status(), StatusCode::CREATED);
-    let body = response_json(response).await;
-
-    let retried_id = Uuid::parse_str(
-        body["data"]["id"]
-            .as_str()
-            .expect("retried id should be a string"),
-    )
-    .expect("retried id should parse");
-
-    let retried = state
-        .job_repository
-        .as_ref()
-        .expect("job repo should exist")
-        .get(retried_id)
-        .await
-        .expect("retried job lookup should succeed")
-        .expect("retried job should exist");
-
-    assert_eq!(retried.max_attempts, 9);
-    assert_eq!(retried.priority, 33);
-    assert_eq!(retried.scheduled_for, Some(scheduled_for));
-
-    delete_job(&pool, original_id).await;
-    delete_job(&pool, retried_id).await;
-    delete_scheduled_policy(&pool, policy_id).await;
+        delete_job(&pool, original_id).await;
+        delete_job(&pool, retried_id).await;
+        delete_scheduled_policy(&pool, policy_id).await;
+    })
 }
 
-#[tokio::test]
-async fn get_job_stats_returns_numeric_fields() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
+#[test]
+fn get_job_stats_returns_numeric_fields() {
+    acme_test_utils::shared_runtime().block_on(async {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
 
-    let db = setup_test_db().await;
-    let pool = db.pool_clone();
-    let state = build_test_state(pool.clone()).await;
-    let repo = state.job_repository.clone().expect("job repo should exist");
+        let db = setup_test_db().await;
+        let pool = db.pool_clone();
+        let state = build_test_state(pool.clone()).await;
+        let repo = state.job_repository.clone().expect("job repo should exist");
 
-    let pending_id = repo
-        .create(
-            "admin.jobs.test.stats.pending",
-            json!({ "source": "stats" }),
-            &JobConfig::default(),
-        )
-        .await
-        .expect("should create pending job");
-    let failed_id = repo
-        .create(
-            "admin.jobs.test.stats.failed",
-            json!({ "source": "stats" }),
-            &JobConfig::default(),
-        )
-        .await
-        .expect("should create failed job");
-    mark_job_failed(&pool, failed_id).await;
+        let pending_id = repo
+            .create(
+                "admin.jobs.test.stats.pending",
+                json!({ "source": "stats" }),
+                &JobConfig::default(),
+            )
+            .await
+            .expect("should create pending job");
+        let failed_id = repo
+            .create(
+                "admin.jobs.test.stats.failed",
+                json!({ "source": "stats" }),
+                &JobConfig::default(),
+            )
+            .await
+            .expect("should create failed job");
+        mark_job_failed(&pool, failed_id).await;
 
-    let response = get_job_stats(admin_user(), State(state))
-        .await
-        .expect("job stats should succeed");
+        let response = get_job_stats(admin_user(), State(state))
+            .await
+            .expect("job stats should succeed");
 
-    assert_eq!(response.status(), StatusCode::OK);
-    let body = response_json(response).await;
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_json(response).await;
 
-    assert!(body["data"]["pending"].is_number());
-    assert!(body["data"]["running"].is_number());
-    assert!(body["data"]["failed"].is_number());
-    assert!(body["data"]["succeeded"].is_number());
+        assert!(body["data"]["pending"].is_number());
+        assert!(body["data"]["running"].is_number());
+        assert!(body["data"]["failed"].is_number());
+        assert!(body["data"]["succeeded"].is_number());
 
-    delete_job(&pool, pending_id).await;
-    delete_job(&pool, failed_id).await;
+        delete_job(&pool, pending_id).await;
+        delete_job(&pool, failed_id).await;
+    })
 }

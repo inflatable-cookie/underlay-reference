@@ -52,8 +52,8 @@ pub fn notes_gallery_media_registration() -> NightfireBlockMediaRegistration {
     NightfireBlockMediaRegistration::new("notes.gallery", NotesGalleryMediaHandler)
 }
 
-pub fn notes_gallery_block_registration()
--> BlockRegistration<NotesBlockCategory, NightfireBlockMediaRegistration> {
+pub fn notes_gallery_block_registration(
+) -> BlockRegistration<NotesBlockCategory, NightfireBlockMediaRegistration> {
     BlockRegistration::new(
         BlockDescriptor {
             type_name: "notes.gallery",
@@ -64,8 +64,8 @@ pub fn notes_gallery_block_registration()
     )
 }
 
-pub fn notes_block_registrations()
--> [BlockRegistration<NotesBlockCategory, NightfireBlockMediaRegistration>; 1] {
+pub fn notes_block_registrations(
+) -> [BlockRegistration<NotesBlockCategory, NightfireBlockMediaRegistration>; 1] {
     [notes_gallery_block_registration()]
 }
 

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tracing::{info, warn};
 use underlay_blob::{BlobAdapter, BlobAdapterObjectKeyExt, BlobObjectKey};
 use underlay_jobs::{Job, JobConfig, JobHandler, JobHandlerError};
-use underlay_media::image::{ThumbnailConfig, generate_thumbnail};
+use underlay_media::image::{generate_thumbnail, ThumbnailConfig};
 use underlay_media::renditions::RenditionConfig;
 use underlay_media::storage::rendition_object_key;
 

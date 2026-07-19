@@ -1,4 +1,4 @@
-use super::helpers::{map_session_row, session_status_db, timestamp_to_datetime};
+use super::helpers::{map_session_row, timestamp_to_datetime};
 use super::*;
 
 impl AcmeLocalAuthService {
@@ -7,6 +7,14 @@ impl AcmeLocalAuthService {
     }
 
     /// Refresh tokens with optional fingerprint validation.
+    ///
+    /// Mirrors the foundation `SessionManager::refresh_session` posture
+    /// (underlay contract 030, RFC 6819 / OAuth 2.0 Security BCP):
+    /// - Reuse of a superseded refresh token (stale token fingerprint or
+    ///   mismatched token id/version) revokes the whole session family.
+    /// - The legitimate concurrent-refresh race is settled by an atomic CAS
+    ///   (`rotate_session_if_current`); the loser is rejected without
+    ///   revocation and retries with the freshly issued token.
     pub async fn refresh_with_fingerprint(
         &self,
         refresh_token: &str,
@@ -26,17 +34,32 @@ impl AcmeLocalAuthService {
             return Err(AuthError::SessionRevoked);
         }
 
+        // Reuse detection: a token whose fingerprint or id/version no longer
+        // matches the stored rotation state is a superseded token being
+        // replayed. Revoke the entire session family.
         if session.refresh_token_fingerprint != token_fingerprint(refresh_token) {
+            tracing::warn!(
+                session_id = %session.id,
+                user_id = %session.user_id,
+                "Superseded refresh token replayed (fingerprint mismatch), revoking session family"
+            );
+            self.revoke_session(session.id, "refresh_reuse_detected")
+                .await?;
             return Err(AuthError::TokenFingerprintMismatch);
-        }
-
-        if session.refresh_token_id != claims.common.token_id {
-            return Err(AuthError::TokenInvalid);
         }
 
         let expected_version =
             i32::try_from(claims.version).map_err(|_| AuthError::TokenInvalid)?;
-        if session.refresh_token_version != expected_version {
+        if session.refresh_token_id != claims.common.token_id
+            || session.refresh_token_version != expected_version
+        {
+            tracing::warn!(
+                session_id = %session.id,
+                user_id = %session.user_id,
+                "Superseded refresh token replayed (id/version mismatch), revoking session family"
+            );
+            self.revoke_session(session.id, "refresh_reuse_detected")
+                .await?;
             return Err(AuthError::TokenInvalid);
         }
 
@@ -57,7 +80,10 @@ impl AcmeLocalAuthService {
             return Err(AuthError::SessionExpired);
         }
 
-        // Validate session fingerprint if provided
+        // Validate the client fingerprint (IP / User-Agent) if provided.
+        // Strict mode rejects the refresh; the session is left intact because
+        // a fingerprint change can be a legitimate network/browser change and
+        // the token itself is still current.
         if let Some(ref current) = current_fingerprint {
             let stored = SessionFingerprint {
                 ip_address: session.ip_address.clone(),
@@ -69,10 +95,19 @@ impl AcmeLocalAuthService {
                     session_id = %session.id,
                     user_id = %session.user_id,
                     mismatch = %mismatch,
+                    strict = self.config.refresh_fingerprint_strict,
                     "Session fingerprint mismatch on token refresh"
                 );
+
+                if self.config.refresh_fingerprint_strict {
+                    return Err(AuthError::TokenFingerprintMismatch);
+                }
             }
         }
+
+        // Snapshot the rotation state the CAS below must still observe.
+        let expected_fingerprint = session.refresh_token_fingerprint.clone();
+        let expected_token_id = session.refresh_token_id;
 
         let roles = session.roles.clone();
 
@@ -111,7 +146,27 @@ impl AcmeLocalAuthService {
             }
         }
 
-        self.update_session(&session).await?;
+        // Atomic rotate-if-current: the WHERE clause re-checks the rotation
+        // state so two concurrent refreshes with the same (valid) token cannot
+        // both rotate. The loser of the race is rejected without revoking the
+        // family - it lost to a legitimate rotation, not a replay.
+        let rotated = self
+            .rotate_session_if_current(
+                &session,
+                &expected_fingerprint,
+                expected_token_id,
+                expected_version,
+            )
+            .await?;
+
+        if !rotated {
+            tracing::info!(
+                session_id = %session.id,
+                user_id = %session.user_id,
+                "Lost concurrent refresh race, rejecting without revocation"
+            );
+            return Err(AuthError::TokenInvalid);
+        }
 
         let user = self
             .find_user_by_id(session.user_id)
@@ -258,31 +313,40 @@ impl AcmeLocalAuthService {
         Ok(row.map(map_session_row))
     }
 
-    pub(super) async fn update_session(&self, session: &DbSession) -> AuthResult<()> {
-        sqlx::query(
+    /// Persist a refresh rotation only if the stored rotation state still
+    /// matches what this request observed (mirrors the foundation
+    /// `SessionStore::rotate_session_if_current` contract). The compare and
+    /// the write are one atomic statement; returns `false` when a concurrent
+    /// refresh rotated first.
+    pub(super) async fn rotate_session_if_current(
+        &self,
+        session: &DbSession,
+        expected_refresh_token_fingerprint: &str,
+        expected_refresh_token_id: Uuid,
+        expected_refresh_token_version: i32,
+    ) -> AuthResult<bool> {
+        let result = sqlx::query(
             r#"
             UPDATE auth.sessions
-            SET roles = $2,
-                is_active = $3,
-                access_token_fingerprint = $4,
-                refresh_token_fingerprint = $5,
-                refresh_token_id = $6,
-                refresh_token_version = $7,
-                access_token_expires_at = $8,
-                refresh_token_expires_at = $9,
-                updated_at = $10,
-                last_used_at = $11,
-                ip_address = $12,
-                user_agent = $13,
-                status = $14,
-                revocation_reason = $15,
-                revoked_at = $16
+            SET access_token_fingerprint = $2,
+                refresh_token_fingerprint = $3,
+                refresh_token_id = $4,
+                refresh_token_version = $5,
+                access_token_expires_at = $6,
+                refresh_token_expires_at = $7,
+                updated_at = $8,
+                last_used_at = $9,
+                ip_address = $10,
+                user_agent = $11
             WHERE id = $1
+              AND is_active = TRUE
+              AND status = 'active'
+              AND refresh_token_fingerprint = $12
+              AND refresh_token_id = $13
+              AND refresh_token_version = $14
             "#,
         )
         .bind(session.id.into_inner())
-        .bind(serde_json::to_value(&session.roles).unwrap_or_else(|_| serde_json::json!([])))
-        .bind(session.is_active)
         .bind(&session.access_token_fingerprint)
         .bind(&session.refresh_token_fingerprint)
         .bind(session.refresh_token_id.into_inner())
@@ -293,14 +357,14 @@ impl AcmeLocalAuthService {
         .bind(session.last_used_at)
         .bind(&session.ip_address)
         .bind(&session.user_agent)
-        .bind(session_status_db(&session.status))
-        .bind(&session.revocation_reason)
-        .bind(session.revoked_at)
+        .bind(expected_refresh_token_fingerprint)
+        .bind(expected_refresh_token_id.into_inner())
+        .bind(expected_refresh_token_version)
         .execute(&self.pool)
         .await
         .map_err(|_| AuthError::Internal("DB error".into()))?;
 
-        Ok(())
+        Ok(result.rows_affected() > 0)
     }
 
     pub(super) async fn create_session(

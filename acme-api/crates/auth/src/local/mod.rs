@@ -15,7 +15,6 @@ use crate::config::AuthConfig;
 #[allow(unused_imports)] // These will be used when email TOTP is integrated
 use crate::email_totp::{EmailTotpService, VerificationSession};
 
-use underlay_auth_state_postgres::{AuthStateError, AuthStateStore};
 use underlay_auth::{
     AuthError, AuthResult, Credential, CredentialMetadata, CredentialType, RoleSet, Session,
     SessionStatus, User, UserStatus,
@@ -29,7 +28,8 @@ use underlay_auth_oauth::{
 use underlay_auth_password::{
     Argon2Hasher, PasswordHasherExt, PasswordStrengthAnalyzer, PasswordVerifierExt,
 };
-use underlay_auth_totp::{TotpConfig, TotpService, TwoFactorVerified};
+use underlay_auth_state_postgres::{AuthStateError, AuthStateStore};
+use underlay_auth_totp::{TotpConfig, TotpService, TwoFactorCode, TwoFactorVerified};
 use underlay_auth_webauthn::{WebAuthnConfig, WebAuthnService};
 use underlay_ratelimit::{InMemoryBackend, RateLimitBackend, RateLimitConfig};
 
@@ -273,6 +273,7 @@ impl AcmeLocalAuthService {
                 .passkey_register_rate_limit_per_hour,
             passkey_login_rate_limit_per_hour: behavior.auth.passkey_login_rate_limit_per_hour,
             refresh_rate_limit_per_hour: behavior.auth.refresh_rate_limit_per_hour,
+            refresh_fingerprint_strict: behavior.auth.refresh_fingerprint_strict,
             rate_limit_backend,
             redis_url,
             max_totp_attempts: behavior.auth.max_totp_attempts,
@@ -527,6 +528,10 @@ impl AcmeLocalAuthProvider {
         Self { service }
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/local_hardening_tests.rs"]
+mod local_hardening_tests;
 
 #[async_trait]
 impl underlay_auth::AuthProvider for AcmeLocalAuthProvider {

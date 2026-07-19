@@ -110,11 +110,3 @@ pub(super) fn timestamp_to_datetime(ts: u64) -> DateTime<Utc> {
         .single()
         .unwrap_or_else(Utc::now)
 }
-
-pub(super) fn session_status_db(status: &SessionStatus) -> &'static str {
-    match status {
-        SessionStatus::Active => "active",
-        SessionStatus::Revoked => "revoked",
-        SessionStatus::Expired => "expired",
-    }
-}

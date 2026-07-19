@@ -14,10 +14,10 @@ mod health_tests {
     //! Health endpoint tests - simplest integration test example.
 
     use axum::{
-        Router,
         body::Body,
         http::{Request, StatusCode},
         routing::get,
+        Router,
     };
     use tower::util::ServiceExt;
 
@@ -61,10 +61,10 @@ mod health_tests {
 
 mod api_version_tests {
     use axum::{
-        Router,
         body::Body,
-        http::{Request, StatusCode, header},
+        http::{header, Request, StatusCode},
         routing::get,
+        Router,
     };
     use tower::util::ServiceExt;
 
@@ -132,10 +132,10 @@ mod auth_boundary_router_tests {
 
     use async_trait::async_trait;
     use axum::{
-        Router,
         body::Body,
-        http::{Request, StatusCode, header},
+        http::{header, Request, StatusCode},
         routing::get,
+        Router,
     };
     use tower::util::ServiceExt;
     use underlay_auth::{AuthError, AuthProvider, HasAuthProvider, Principal, RoleSet};
@@ -242,10 +242,10 @@ mod json_response_tests {
     //! Tests demonstrating JSON response handling patterns.
 
     use axum::{
-        Json, Router,
         body::Body,
-        http::{Request, StatusCode, header},
+        http::{header, Request, StatusCode},
         routing::get,
+        Json, Router,
     };
     use serde::{Deserialize, Serialize};
     use tower::util::ServiceExt;
@@ -299,10 +299,10 @@ mod request_validation_tests {
     //! Tests demonstrating request validation patterns.
 
     use axum::{
-        Json, Router,
         body::Body,
-        http::{Method, Request, StatusCode, header},
+        http::{header, Method, Request, StatusCode},
         routing::post,
+        Json, Router,
     };
     use serde::{Deserialize, Serialize};
     use tower::util::ServiceExt;
@@ -465,11 +465,11 @@ mod state_extraction_tests {
     //! Tests demonstrating state extraction patterns.
 
     use axum::{
-        Json, Router,
         body::Body,
         extract::State,
         http::{Request, StatusCode},
         routing::get,
+        Json, Router,
     };
     use std::sync::Arc;
     use tower::util::ServiceExt;
@@ -525,11 +525,11 @@ mod pagination_tests {
     //! Tests demonstrating pagination patterns.
 
     use axum::{
-        Json, Router,
         body::Body,
         extract::Query,
         http::{Request, StatusCode},
         routing::get,
+        Json, Router,
     };
     use serde::{Deserialize, Serialize};
     use tower::util::ServiceExt;
@@ -689,7 +689,7 @@ mod database_tests {
         use acme_test_utils::{
             cleanup,
             fixtures::{
-                CreateTaskOptions, create_test_project, create_test_task, create_test_user,
+                create_test_project, create_test_task, create_test_user, CreateTaskOptions,
             },
             setup_test_db,
         };
@@ -846,8 +846,8 @@ mod database_tests {
 
         use acme_db::media;
         use acme_test_utils::{cleanup, setup_test_db};
-        use underlay_media::MediaUsageProvenanceKind;
         use underlay_media::nightfire::{NightfireFieldNameMatcher, NightfireMediaUsageExtractor};
+        use underlay_media::MediaUsageProvenanceKind;
         use underlay_nightfire::NightfireValue;
         use uuid::Uuid;
 
@@ -1068,8 +1068,8 @@ mod database_tests {
 
         use acme_db::media;
         use acme_test_utils::{cleanup, setup_test_db};
-        use underlay_media::MediaUsageProvenanceKind;
         use underlay_media::nightfire::{NightfireFieldNameMatcher, NightfireMediaUsageExtractor};
+        use underlay_media::MediaUsageProvenanceKind;
         use underlay_nightfire::NightfireValue;
         use uuid::Uuid;
 

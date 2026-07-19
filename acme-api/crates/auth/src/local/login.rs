@@ -62,6 +62,16 @@ impl AcmeLocalAuthService {
     }
 
     /// Verify user credentials (email + password) with rate limiting and lockout.
+    ///
+    /// Deliberately hand-rolled rather than adopting the foundation
+    /// `PasswordAuthService` (g01.008 decision): this path additionally records
+    /// per-IP login attempts and feeds the security-alert pipeline
+    /// (`record_failed_login` / `record_locked_login_attempt`), which the
+    /// foundation's `PasswordAuthRepository` seam cannot express (its
+    /// `record_failed_login` does not receive the client IP). It preserves the
+    /// same contract-030 posture the service ships: per-email+IP rate limits,
+    /// lockout with failure accounting, and the `dummy_verify` timing
+    /// equalizer on every miss path.
     pub(super) async fn verify_user_credentials(
         &self,
         email: &str,
@@ -160,7 +170,7 @@ impl AcmeLocalAuthService {
             let Some(code) = code else {
                 return Err(AuthError::TwoFactorRequired);
             };
-            self.verify_totp_second_factor(&totp, code).await?;
+            self.verify_totp_second_factor(user.id, &totp, code).await?;
         }
 
         let roles = roles_for_user(&role);
@@ -453,7 +463,7 @@ impl AcmeLocalAuthService {
             return Err(AuthError::TwoFactorNotSetUp);
         };
 
-        if let Err(err) = self.verify_totp_second_factor(&totp, code).await {
+        if let Err(err) = self.verify_totp_second_factor(user.id, &totp, code).await {
             state.attempts = state.attempts.saturating_add(1);
             let state_json = serde_json::to_value(&state)
                 .map_err(|_| AuthError::Internal("Failed to encode auth state".into()))?;

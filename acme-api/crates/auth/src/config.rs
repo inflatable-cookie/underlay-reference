@@ -93,6 +93,12 @@ pub struct AuthConfig {
     /// Prevents brute force enumeration of valid refresh tokens.
     pub refresh_rate_limit_per_hour: u32,
 
+    /// Reject token refresh when the presented client fingerprint (IP or
+    /// User-Agent) conflicts with the fingerprint stored on the session.
+    /// When false, mismatches are logged but the refresh proceeds.
+    /// Default: true (strict).
+    pub refresh_fingerprint_strict: bool,
+
     /// Type of rate limiter backend to use.
     /// Default: InMemory (single-instance)
     /// Set to Redis for distributed deployments.
@@ -187,6 +193,7 @@ impl Default for AuthConfig {
             passkey_register_rate_limit_per_hour: 5,
             passkey_login_rate_limit_per_hour: 10,
             refresh_rate_limit_per_hour: 60,
+            refresh_fingerprint_strict: true,
             rate_limit_backend: RateLimitBackendType::InMemory,
             redis_url: "redis://localhost:6379".to_string(),
 

@@ -63,120 +63,128 @@ async fn response_json(response: Response) -> serde_json::Value {
     serde_json::from_slice(&body).expect("response should be valid json")
 }
 
-#[tokio::test]
-async fn list_scheduled_tasks_respects_enabled_filter() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
+#[test]
+fn list_scheduled_tasks_respects_enabled_filter() {
+    acme_test_utils::shared_runtime().block_on(async {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
 
-    let db = setup_test_db().await;
-    let pool = db.pool();
-    let _ = DB_POOL.set(db.pool_clone());
+        let db = setup_test_db().await;
+        let pool = db.pool();
+        let _ = DB_POOL.set(db.pool_clone());
 
-    let enabled_id = insert_scheduled_task(pool, true).await;
-    let disabled_id = insert_scheduled_task(pool, false).await;
+        let enabled_id = insert_scheduled_task(pool, true).await;
+        let disabled_id = insert_scheduled_task(pool, false).await;
 
-    let response = list_scheduled_tasks(
-        admin_user(),
-        Query(ListScheduledTasksQuery {
-            enabled: Some(true),
-            page: Some(1),
-            limit: Some(200),
-        }),
-    )
-    .await
-    .expect("list should succeed");
+        let response = list_scheduled_tasks(
+            admin_user(),
+            Query(ListScheduledTasksQuery {
+                enabled: Some(true),
+                page: Some(1),
+                limit: Some(200),
+            }),
+        )
+        .await
+        .expect("list should succeed");
 
-    assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.status(), StatusCode::OK);
 
-    let body = response_json(response).await;
-    let items = body["data"].as_array().expect("data should be an array");
+        let body = response_json(response).await;
+        let items = body["data"].as_array().expect("data should be an array");
 
-    let enabled_id_str = enabled_id.to_string();
-    let disabled_id_str = disabled_id.to_string();
+        let enabled_id_str = enabled_id.to_string();
+        let disabled_id_str = disabled_id.to_string();
 
-    let has_enabled = items.iter().any(|item| item["id"] == enabled_id_str);
-    let has_disabled = items.iter().any(|item| item["id"] == disabled_id_str);
+        let has_enabled = items.iter().any(|item| item["id"] == enabled_id_str);
+        let has_disabled = items.iter().any(|item| item["id"] == disabled_id_str);
 
-    assert!(has_enabled);
-    assert!(!has_disabled);
+        assert!(has_enabled);
+        assert!(!has_disabled);
 
-    delete_scheduled_task(pool, enabled_id).await;
-    delete_scheduled_task(pool, disabled_id).await;
+        delete_scheduled_task(pool, enabled_id).await;
+        delete_scheduled_task(pool, disabled_id).await;
+    })
 }
 
-#[tokio::test]
-async fn toggle_scheduled_task_updates_enabled_state() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
+#[test]
+fn toggle_scheduled_task_updates_enabled_state() {
+    acme_test_utils::shared_runtime().block_on(async {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
 
-    let db = setup_test_db().await;
-    let pool = db.pool();
-    let _ = DB_POOL.set(db.pool_clone());
+        let db = setup_test_db().await;
+        let pool = db.pool();
+        let _ = DB_POOL.set(db.pool_clone());
 
-    let task_id = insert_scheduled_task(pool, true).await;
+        let task_id = insert_scheduled_task(pool, true).await;
 
-    let response = toggle_scheduled_task(
-        admin_user(),
-        Path(task_id.to_string()),
-        Json(ToggleScheduledTaskRequest { enabled: false }),
-    )
-    .await
-    .expect("toggle should succeed");
+        let response = toggle_scheduled_task(
+            admin_user(),
+            Path(task_id.to_string()),
+            Json(ToggleScheduledTaskRequest { enabled: false }),
+        )
+        .await
+        .expect("toggle should succeed");
 
-    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+        assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
-    let enabled: bool = sqlx::query_scalar(
-        r#"
+        let enabled: bool = sqlx::query_scalar(
+            r#"
             SELECT enabled
             FROM platform.scheduled_task
             WHERE id = $1
             "#,
-    )
-    .bind(task_id)
-    .fetch_one(pool)
-    .await
-    .expect("should fetch updated task");
-
-    assert!(!enabled);
-
-    delete_scheduled_task(pool, task_id).await;
-}
-
-#[tokio::test]
-async fn get_scheduled_task_rejects_invalid_uuid() {
-    let result = get_scheduled_task(admin_user(), Path("not-a-uuid".to_string())).await;
-
-    let error = result.expect_err("invalid task id should fail");
-    let response = error.into_response();
-
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-}
-
-#[tokio::test]
-async fn get_scheduled_task_returns_inserted_task() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
-
-    let db = setup_test_db().await;
-    let pool = db.pool();
-    let _ = DB_POOL.set(db.pool_clone());
-
-    let task_id = insert_scheduled_task(pool, true).await;
-
-    let response = get_scheduled_task(admin_user(), Path(task_id.to_string()))
+        )
+        .bind(task_id)
+        .fetch_one(pool)
         .await
-        .expect("get should succeed");
+        .expect("should fetch updated task");
 
-    assert_eq!(response.status(), StatusCode::OK);
+        assert!(!enabled);
 
-    let body = response_json(response).await;
-    assert_eq!(body["data"]["id"], task_id.to_string());
+        delete_scheduled_task(pool, task_id).await;
+    })
+}
 
-    delete_scheduled_task(pool, task_id).await;
+#[test]
+fn get_scheduled_task_rejects_invalid_uuid() {
+    acme_test_utils::shared_runtime().block_on(async {
+        let result = get_scheduled_task(admin_user(), Path("not-a-uuid".to_string())).await;
+
+        let error = result.expect_err("invalid task id should fail");
+        let response = error.into_response();
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    })
+}
+
+#[test]
+fn get_scheduled_task_returns_inserted_task() {
+    acme_test_utils::shared_runtime().block_on(async {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        let db = setup_test_db().await;
+        let pool = db.pool();
+        let _ = DB_POOL.set(db.pool_clone());
+
+        let task_id = insert_scheduled_task(pool, true).await;
+
+        let response = get_scheduled_task(admin_user(), Path(task_id.to_string()))
+            .await
+            .expect("get should succeed");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_json(response).await;
+        assert_eq!(body["data"]["id"], task_id.to_string());
+
+        delete_scheduled_task(pool, task_id).await;
+    })
 }

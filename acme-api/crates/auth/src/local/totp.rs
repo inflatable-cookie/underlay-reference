@@ -101,28 +101,38 @@ impl AcmeLocalAuthService {
 
     pub(super) async fn verify_totp_second_factor(
         &self,
+        user_id: Uuid,
         details: &TotpDetails,
         code: &str,
     ) -> AuthResult<TwoFactorVerified> {
         let code = code.trim();
 
-        let verified = if code.contains('-') {
-            let index = self
-                .totp
-                .verify_backup_code(code, &details.backup_code_hashes)?;
-            TwoFactorVerified::BackupCode { index }
+        // Route through the foundation's throttled entrypoint: per-user
+        // attempt cap against the shared rate-limit backend, incrementing on
+        // failure and resetting on success. TOTP and backup-code guesses
+        // consume the same budget (underlay contract 030).
+        let input = if code.contains('-') {
+            TwoFactorCode::BackupCode(code)
         } else {
-            TwoFactorVerified::Totp(
-                self.totp
-                    .verify_totp_with_replay_protection(
-                        &details.secret_base32,
-                        code,
-                        SystemTime::now(),
-                        details.last_counter,
-                    )
-                    .map_err(AuthError::from)?,
-            )
+            TwoFactorCode::Totp(code)
         };
+
+        let rate_limit_key = format!("2fa:{}", user_id);
+        let rate_limit_config = RateLimitConfig::per_hour(self.config.max_totp_attempts.into());
+
+        let verified = self
+            .totp
+            .verify_second_factor_throttled(
+                &self.rate_limiter,
+                &rate_limit_key,
+                &rate_limit_config,
+                &details.secret_base32,
+                Some(details.last_counter),
+                input,
+                &details.backup_code_hashes,
+                SystemTime::now(),
+            )
+            .await?;
 
         let mut updated = details.clone();
 
@@ -302,7 +312,7 @@ impl AcmeLocalAuthService {
             .ok_or(AuthError::TwoFactorNotSetUp)?;
 
         // Verify the TOTP code
-        self.verify_totp_second_factor(&totp, code).await?;
+        self.verify_totp_second_factor(user_id, &totp, code).await?;
 
         // Create a verification session (5-minute expiry)
         let session = create_verification_session(

@@ -102,36 +102,6 @@ pub(super) fn extract_session_fingerprint(
     SessionFingerprint::new(ip_address, user_agent)
 }
 
-/// Extract client IP from request headers.
-///
-/// Checks `X-Forwarded-For` first (for proxied requests), then `X-Real-IP`.
-/// Returns `None` if no IP header is present.
-pub(super) fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
-    // X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
-    // The first one is the original client IP
-    if let Some(forwarded) = headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.split(',').next())
-        .map(|v| v.trim())
-        .filter(|v| !v.is_empty())
-    {
-        return Some(forwarded.to_string());
-    }
-
-    // X-Real-IP is a single IP set by some proxies (e.g., nginx)
-    if let Some(real_ip) = headers
-        .get("x-real-ip")
-        .and_then(|v| v.to_str().ok())
-        .map(|v| v.trim())
-        .filter(|v| !v.is_empty())
-    {
-        return Some(real_ip.to_string());
-    }
-
-    None
-}
-
 pub(crate) fn csrf_cookie_name(config: &underlay_http::AuthCookieConfig) -> String {
     format!("{}csrf_token", config.cookie_prefix())
 }
@@ -272,24 +242,65 @@ pub(super) fn map_auth_error_to_response(
     ApiError::new(status, err.code(), err.message()).into_response()
 }
 
-pub(super) fn login_client_fingerprint(headers: &HeaderMap) -> String {
+/// Hash of the client's resolved IP + User-Agent, used to bind multi-step
+/// login state to one client. The IP comes from the trusted-proxy path only -
+/// a spoofed `X-Forwarded-For` from an untrusted peer cannot influence it.
+pub(super) fn login_client_fingerprint(
+    headers: &HeaderMap,
+    config: &acme_infra::TrustedProxyConfig,
+) -> String {
     let ua = headers
         .get(header::USER_AGENT)
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
-    let ip = headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.split(',').next())
-        .map(|v| v.trim())
-        .filter(|v| !v.is_empty())
-        .unwrap_or("");
+    let ip = acme_infra::extract_client_ip(headers, config).unwrap_or_default();
 
     let raw = format!("{ip}|{ua}");
     let mut h = Sha256::new();
     h.update(raw.as_bytes());
     hex::encode(h.finalize())
+}
+
+#[cfg(test)]
+mod client_ip_tests {
+    use super::*;
+    use acme_infra::TrustedProxyConfig;
+
+    fn headers_with(pairs: &[(&str, &str)]) -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        for (k, v) in pairs {
+            headers.insert(
+                axum::http::HeaderName::try_from(*k).unwrap(),
+                v.parse().unwrap(),
+            );
+        }
+        headers
+    }
+
+    #[test]
+    fn spoofed_forwarded_for_does_not_change_fingerprint() {
+        // No trusted proxies configured: X-Forwarded-For must be ignored.
+        let config = TrustedProxyConfig::default();
+        let ua = [("user-agent", "test-agent")];
+        let spoofed = [
+            ("user-agent", "test-agent"),
+            ("x-forwarded-for", "203.0.113.99"),
+        ];
+
+        assert_eq!(
+            login_client_fingerprint(&headers_with(&ua), &config),
+            login_client_fingerprint(&headers_with(&spoofed), &config),
+            "spoofed X-Forwarded-For changed the resolved client fingerprint"
+        );
+    }
+
+    #[test]
+    fn spoofed_forwarded_for_does_not_resolve_an_ip() {
+        let config = TrustedProxyConfig::default();
+        let spoofed = headers_with(&[("x-forwarded-for", "203.0.113.99")]);
+        assert_eq!(acme_infra::extract_client_ip(&spoofed, &config), None);
+    }
 }
 
 pub(super) fn include_refresh_token_in_body(headers: &HeaderMap) -> bool {

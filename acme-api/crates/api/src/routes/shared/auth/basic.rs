@@ -14,7 +14,7 @@ pub async fn register(
     let password = payload.password.trim();
     let display_name = payload.display_name.trim();
 
-    let client_ip = extract_client_ip(&headers);
+    let client_ip = acme_infra::extract_client_ip(&headers, &state.trusted_proxy_config);
 
     match state
         .local_auth
@@ -73,7 +73,7 @@ pub async fn login(
     let email = payload.email.trim();
     let password = payload.password.trim();
 
-    let client_ip = extract_client_ip(&headers);
+    let client_ip = acme_infra::extract_client_ip(&headers, &state.trusted_proxy_config);
 
     match state
         .local_auth
@@ -128,8 +128,8 @@ pub async fn login_start(
     let email = payload.email.trim();
     let password = payload.password.trim();
 
-    let fingerprint = login_client_fingerprint(&headers);
-    let client_ip = extract_client_ip(&headers);
+    let fingerprint = login_client_fingerprint(&headers, &state.trusted_proxy_config);
+    let client_ip = acme_infra::extract_client_ip(&headers, &state.trusted_proxy_config);
 
     // Use the method that supports email fallback
     match state
@@ -233,7 +233,7 @@ pub async fn login_finish(
         }
     };
 
-    let fingerprint = login_client_fingerprint(&headers);
+    let fingerprint = login_client_fingerprint(&headers, &state.trusted_proxy_config);
     let session_fp = extract_session_fingerprint(&headers, &state.trusted_proxy_config);
 
     // Try TOTP first

@@ -3,10 +3,10 @@
 //! These endpoints provide visibility into the job queue for administrators.
 
 use axum::{
-    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
+    Json,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

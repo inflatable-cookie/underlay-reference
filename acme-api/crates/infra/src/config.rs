@@ -188,6 +188,10 @@ pub struct AuthBehaviorDefaults {
     pub passkey_register_rate_limit_per_hour: u32,
     pub passkey_login_rate_limit_per_hour: u32,
     pub refresh_rate_limit_per_hour: u32,
+    /// Reject token refresh when the presented client fingerprint (IP or
+    /// User-Agent) conflicts with the one stored on the session. When false,
+    /// mismatches are logged but the refresh proceeds.
+    pub refresh_fingerprint_strict: bool,
     pub max_totp_attempts: u32,
     pub max_email_code_attempts: u32,
     pub max_backup_code_attempts: u32,
@@ -250,6 +254,7 @@ impl Default for AppBehaviorConfig {
                 passkey_register_rate_limit_per_hour: 5,
                 passkey_login_rate_limit_per_hour: 10,
                 refresh_rate_limit_per_hour: 60,
+                refresh_fingerprint_strict: true,
                 max_totp_attempts: 5,
                 max_email_code_attempts: 5,
                 max_backup_code_attempts: 5,
@@ -332,6 +337,7 @@ struct FileAuthBehaviorDefaults {
     passkey_register_rate_limit_per_hour: Option<u32>,
     passkey_login_rate_limit_per_hour: Option<u32>,
     refresh_rate_limit_per_hour: Option<u32>,
+    refresh_fingerprint_strict: Option<bool>,
     max_totp_attempts: Option<u32>,
     max_email_code_attempts: Option<u32>,
     max_backup_code_attempts: Option<u32>,
@@ -468,6 +474,9 @@ impl AppBehaviorConfig {
             }
             if let Some(v) = auth.refresh_rate_limit_per_hour {
                 behavior.auth.refresh_rate_limit_per_hour = v;
+            }
+            if let Some(v) = auth.refresh_fingerprint_strict {
+                behavior.auth.refresh_fingerprint_strict = v;
             }
             if let Some(v) = auth.max_totp_attempts {
                 behavior.auth.max_totp_attempts = v;

@@ -49,14 +49,14 @@ pub use underlay_jobs::{
     ScheduledTask, ScheduledTaskDefinition,
 };
 pub use underlay_jobs_postgres::{
-    DOMAIN_EVENT_NOTIFY_SQL, JOB_DEAD_LETTERS_SQL, JOB_NOTIFY_CHANNEL, JOB_NOTIFY_SQL,
-    JOB_TABLES_SQL, JobRepository, PgDeadLetterRepository, PgJobNotifier, PostgresJobRunnerExt,
-    RepoError, ScheduledTaskRepository, Scheduler,
+    JobRepository, PgDeadLetterRepository, PgJobNotifier, PostgresJobRunnerExt, RepoError,
+    ScheduledTaskRepository, Scheduler, DOMAIN_EVENT_NOTIFY_SQL, JOB_DEAD_LETTERS_SQL,
+    JOB_NOTIFY_CHANNEL, JOB_NOTIFY_SQL, JOB_TABLES_SQL,
 };
 
 // Re-export outbox components from underlay-jobs
 pub use underlay_jobs_postgres::outbox::{
-    DOMAIN_EVENT_NOTIFY_CHANNEL, OutboxConfig, OutboxEvent, OutboxNotifier, OutboxProcessor,
+    OutboxConfig, OutboxEvent, OutboxNotifier, OutboxProcessor, DOMAIN_EVENT_NOTIFY_CHANNEL,
 };
 
 // Re-export standard platform maintenance tasks from underlay-jobs

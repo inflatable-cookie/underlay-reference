@@ -38,6 +38,6 @@ and spoofable-IP findings.
 ## Next Task
 
 Two independent threads are live: finish `g01.007` (retained-surface owner), and
-execute the g08 consumer-audit tranche `g01.008`-`g01.011` — start with
-`g01.008` (auth service adoption and hardening), the highest-priority security
-follow-up.
+execute the g08 consumer-audit tranche — `g01.008` is done (2026-07-19);
+continue with `g01.009` (media and blob production path), then `g01.010` and
+`g01.011`.
