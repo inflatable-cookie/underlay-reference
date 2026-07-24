@@ -1,7 +1,7 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import "@poodle/svelte-tokens/styles.css";
-	import "@poodle/svelte-tokens/theme-light.css";
+	import "@poodle/svelte-tokens/theme-iceberg.css";
 	import "@poodle/svelte-tokens/density-comfortable.css";
 	import "@poodle/svelte-tokens/control-size-md.css";
 	import "@decodelabs/underlay/styles/base.css";
@@ -17,7 +17,7 @@
 
 <div
 	class="container front-theme-shell"
-	data-theme="light"
+	data-theme="iceberg"
 	data-density="comfortable"
 	data-control-size="md"
 >
