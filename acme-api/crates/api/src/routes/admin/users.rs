@@ -532,31 +532,34 @@ pub async fn update_user(
     }
 }
 
-/// Role hierarchy for privilege checking.
-/// Higher number = more privileges.
-fn role_level(role: &str) -> i32 {
+/// Role hierarchy for privilege checking, delegated to the canonical
+/// underlay implementation. Local code only maps the typed role enum to
+/// role-name strings and converts errors to ApiError.
+fn role_name(role: &acme_auth::UserRole) -> &'static str {
+    use acme_auth::UserRole;
     match role {
-        "user" => 0,
-        "tester" => 1,
-        "editor" => 2,
-        "support" => 3,
-        "admin" => 4,
-        "superadmin" => 5,
-        _ => 0,
+        UserRole::User => "user",
+        UserRole::Tester => "tester",
+        UserRole::Support => "support",
+        UserRole::Admin => "admin",
+        UserRole::Superadmin => "superadmin",
     }
 }
 
-/// Convert UserRole to level.
-fn user_role_level(role: &acme_auth::UserRole) -> i32 {
-    use acme_auth::UserRole;
-    match role {
-        UserRole::User => 0,
-        UserRole::Tester => 1,
-        // Editor doesn't exist in UserRole enum, map to support
-        UserRole::Support => 3,
-        UserRole::Admin => 4,
-        UserRole::Superadmin => 5,
-    }
+fn caller_roles(admin: &UserPrincipal) -> Vec<&'static str> {
+    admin.roles.iter().map(role_name).collect()
+}
+
+fn hierarchy_error(err: underlay_auth::RoleHierarchyError) -> ApiError {
+    use axum::http::StatusCode;
+    use underlay_auth::RoleHierarchyError as E;
+    let code = match &err {
+        E::CannotManageSelf => "admin.users.cannot_manage_self",
+        E::CannotManageSuperRole => "admin.users.cannot_manage_superadmin",
+        E::InsufficientPrivileges { .. } => "admin.users.insufficient_privileges",
+        E::CannotPromoteToSuperRole => "admin.users.cannot_promote_to_superadmin",
+    };
+    ApiError::new(StatusCode::FORBIDDEN, code, err.to_string())
 }
 
 /// Check if an admin can manage a target user based on roles.
@@ -568,57 +571,9 @@ fn can_manage_user(
     target_role: &str,
     is_self: bool,
 ) -> Result<(), ApiError> {
-    use axum::http::StatusCode;
-
-    // No one can manage themselves (prevents self-demotion, self-suspension)
-    if is_self {
-        return Err(ApiError::new(
-            StatusCode::FORBIDDEN,
-            "admin.users.cannot_manage_self",
-            "You cannot modify your own account.",
-        ));
-    }
-
-    let admin_level = admin.roles.iter().map(user_role_level).max().unwrap_or(0);
-    let target_level = role_level(target_role);
-
-    // Check if admin is superadmin
-    let is_superadmin = admin
-        .roles
-        .iter()
-        .any(|r| matches!(r, acme_auth::UserRole::Superadmin));
-
-    // Superadmin can manage anyone except other superadmins (unless self-check passed)
-    if is_superadmin {
-        if target_role == "superadmin" {
-            return Err(ApiError::new(
-                StatusCode::FORBIDDEN,
-                "admin.users.cannot_manage_superadmin",
-                "Only superadmins can manage other superadmins.",
-            ));
-        }
-        return Ok(());
-    }
-
-    // Admin can only manage users with lower role levels
-    if admin_level <= target_level {
-        return Err(ApiError::new(
-            StatusCode::FORBIDDEN,
-            "admin.users.insufficient_privileges",
-            "You can only manage users with lower privileges than your own.",
-        ));
-    }
-
-    // Admin cannot promote to superadmin
-    if target_role == "superadmin" && !is_superadmin {
-        return Err(ApiError::new(
-            StatusCode::FORBIDDEN,
-            "admin.users.cannot_promote_to_superadmin",
-            "Only superadmins can promote users to superadmin.",
-        ));
-    }
-
-    Ok(())
+    underlay_auth::RoleHierarchy::standard()
+        .can_manage(&caller_roles(admin), target_role, is_self)
+        .map_err(hierarchy_error)
 }
 
 /// Update a user's role.

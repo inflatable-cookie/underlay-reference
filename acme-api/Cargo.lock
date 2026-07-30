@@ -5211,9 +5211,11 @@ dependencies = [
 name = "underlay-auth"
 version = "0.8.0"
 dependencies = [
+ "aes-gcm",
  "argon2",
  "async-trait",
  "axum",
+ "base64 0.22.1",
  "chrono",
  "getrandom 0.4.2",
  "http 1.4.0",
