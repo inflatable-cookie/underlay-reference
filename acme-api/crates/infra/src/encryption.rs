@@ -76,6 +76,9 @@ impl EncryptionService {
     /// Format: base64(nonce || ciphertext || tag)
     /// Nonce: 12 bytes
     /// Tag: 16 bytes (GCM authentication tag)
+    ///
+    /// LEGACY FORMAT: retained only so pre-`SecretCipher` rows stay readable.
+    /// New writes must use `underlay_auth::SecretCipher` (`enc:v1:` format).
     pub fn encrypt(&self, plaintext: &str) -> Result<String> {
         let mut nonce_bytes = [0u8; 12];
         rand::rng().fill(&mut nonce_bytes);

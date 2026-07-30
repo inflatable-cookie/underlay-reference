@@ -6,8 +6,8 @@ impl AcmeLocalAuthService {
     /// Fails closed: an encryption error aborts the operation rather than
     /// persisting a plaintext secret.
     fn encrypt_totp_secret(&self, secret: &str) -> AuthResult<String> {
-        match &self.encryption {
-            Some(enc) => enc.encrypt(secret).map_err(|e| {
+        match &self.totp_cipher {
+            Some(cipher) => cipher.encrypt(secret).map_err(|e| {
                 tracing::error!("Failed to encrypt TOTP secret: {}", e);
                 AuthError::Internal("Failed to encrypt TOTP secret".into())
             }),
@@ -15,26 +15,34 @@ impl AcmeLocalAuthService {
         }
     }
 
-    /// Decrypt a TOTP secret if encryption is enabled.
+    /// Decrypt a stored TOTP secret.
     ///
-    /// Fails closed: a value that looks encrypted but fails decryption is an
-    /// error, never a plaintext fallback.
-    fn decrypt_totp_secret(&self, encrypted: &str) -> AuthResult<String> {
-        match &self.encryption {
-            Some(enc) => {
-                // Check if value is encrypted
-                if acme_infra::EncryptionService::is_encrypted(encrypted) {
-                    enc.decrypt(encrypted).map_err(|e| {
-                        tracing::error!("Failed to decrypt TOTP secret: {}", e);
-                        AuthError::Internal("Failed to decrypt TOTP secret".into())
-                    })
-                } else {
-                    // Plaintext - migrate on next write
-                    Ok(encrypted.to_string())
+    /// - `enc:v1:` values go through the canonical SecretCipher and fail
+    ///   closed on error.
+    /// - Legacy base64(nonce||ct) values (pre-SecretCipher rows) go through
+    ///   the legacy reader; a heuristic misfire falls back to plaintext
+    ///   because the legacy format has no reliable marker.
+    /// - Anything else is legacy plaintext, re-encrypted on next write.
+    fn decrypt_totp_secret(&self, stored: &str) -> AuthResult<String> {
+        if let Some(cipher) = &self.totp_cipher {
+            if SecretCipher::is_encrypted(stored) {
+                return cipher.decrypt(stored).map_err(|e| {
+                    tracing::error!("Failed to decrypt TOTP secret: {}", e);
+                    AuthError::Internal("Failed to decrypt TOTP secret".into())
+                });
+            }
+        }
+
+        if let Some(legacy) = &self.encryption {
+            if acme_infra::EncryptionService::is_encrypted(stored) {
+                if let Ok(decrypted) = legacy.decrypt(stored) {
+                    return Ok(decrypted);
                 }
             }
-            None => Ok(encrypted.to_string()), // No encryption configured
         }
+
+        // Plaintext - migrate on next write
+        Ok(stored.to_string())
     }
 
     pub(super) async fn find_totp_details(&self, user_id: Uuid) -> AuthResult<Option<TotpDetails>> {

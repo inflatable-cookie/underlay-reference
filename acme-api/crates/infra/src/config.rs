@@ -640,8 +640,10 @@ impl AppConfig {
 
         let behavior = AppBehaviorConfig::load();
 
-        // Environment
-        let env_str = env::var("ENVIRONMENT").unwrap_or_else(|_| "local".to_string());
+        // Environment. Fail closed: an unset ENVIRONMENT must not boot with
+        // development behavior (dev seeds, insecure cookies, permissive CORS).
+        // Local dev sets ENVIRONMENT=local explicitly via the Effigy bundle.
+        let env_str = env::var("ENVIRONMENT").unwrap_or_else(|_| "prod".to_string());
         let env = Environment::parse(&env_str);
 
         // Port

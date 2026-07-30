@@ -16,8 +16,8 @@ use crate::config::AuthConfig;
 use crate::email_totp::{EmailTotpService, VerificationSession};
 
 use underlay_auth::{
-    AuthError, AuthResult, Credential, CredentialMetadata, CredentialType, RoleSet, Session,
-    SessionStatus, User, UserStatus,
+    AuthError, AuthResult, Credential, CredentialMetadata, CredentialType, RoleSet, SecretCipher,
+    Session, SessionStatus, User, UserStatus,
 };
 use underlay_auth_jwt::{token_fingerprint, JwtBehaviorDefaults, JwtConfig, JwtService};
 #[allow(unused_imports)] // Prepared for future OAuth implementation
@@ -89,9 +89,10 @@ fn map_auth_state_error(err: AuthStateError) -> AuthError {
 }
 
 fn is_local_or_dev_environment() -> bool {
+    // Fail closed: unset ENVIRONMENT is not a development environment.
     let environment = std::env::var("ENVIRONMENT")
         .or_else(|_| std::env::var("ACME_ENV"))
-        .unwrap_or_else(|_| "local".to_string())
+        .unwrap_or_else(|_| "prod".to_string())
         .to_ascii_lowercase();
 
     matches!(
@@ -211,6 +212,9 @@ pub struct AcmeLocalAuthService {
     oauth_cipher: Option<OAuthTokenCipher>,
     rate_limiter: DynamicRateLimiter,
     config: AuthConfig,
+    /// Canonical cipher for new TOTP secret writes (enc:v1: format).
+    totp_cipher: Option<SecretCipher>,
+    /// Legacy format reader for TOTP rows written before SecretCipher.
     encryption: Option<acme_infra::EncryptionService>,
     argon2_memory_kb: u32,
     argon2_iterations: u32,
@@ -366,9 +370,12 @@ impl AcmeLocalAuthService {
         let password_hasher =
             Argon2Hasher::with_params(argon2_memory_kb, argon2_iterations, argon2_parallelism);
 
-        // Initialize encryption service for TOTP secrets.
+        // Initialize ciphers for TOTP secrets. New writes use the canonical
+        // SecretCipher (enc:v1:); the legacy EncryptionService stays as a
+        // read-path for rows written before the migration.
+        let totp_cipher = SecretCipher::from_env_var_optional("ENCRYPTION_KEY")?;
         let encryption = acme_infra::EncryptionService::from_env();
-        if encryption.is_none() {
+        if totp_cipher.is_none() {
             if is_local_or_dev_environment() {
                 tracing::warn!(
                     "ENCRYPTION_KEY not set - TOTP secrets will be stored in plaintext in local/dev"
@@ -395,6 +402,7 @@ impl AcmeLocalAuthService {
             oauth_cipher,
             rate_limiter,
             config,
+            totp_cipher,
             encryption,
             argon2_memory_kb,
             argon2_iterations,

@@ -409,7 +409,7 @@ fn build_cors_layer() -> tower_http::cors::CorsLayer {
 
     let env = std::env::var("ENVIRONMENT")
         .or_else(|_| std::env::var("ACME_ENV"))
-        .unwrap_or_else(|_| "local".to_string());
+        .unwrap_or_else(|_| "prod".to_string());
 
     let origins = parse_cors_origins();
 
