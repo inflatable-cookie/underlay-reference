@@ -2,38 +2,38 @@ use super::*;
 
 impl AcmeLocalAuthService {
     /// Encrypt a TOTP secret if encryption is enabled.
-    fn encrypt_totp_secret(&self, secret: &str) -> String {
+    ///
+    /// Fails closed: an encryption error aborts the operation rather than
+    /// persisting a plaintext secret.
+    fn encrypt_totp_secret(&self, secret: &str) -> AuthResult<String> {
         match &self.encryption {
-            Some(enc) => match enc.encrypt(secret) {
-                Ok(encrypted) => encrypted,
-                Err(e) => {
-                    tracing::error!("Failed to encrypt TOTP secret: {}", e);
-                    secret.to_string() // Fallback to plaintext on error
-                }
-            },
-            None => secret.to_string(), // No encryption configured
+            Some(enc) => enc.encrypt(secret).map_err(|e| {
+                tracing::error!("Failed to encrypt TOTP secret: {}", e);
+                AuthError::Internal("Failed to encrypt TOTP secret".into())
+            }),
+            None => Ok(secret.to_string()), // No encryption configured
         }
     }
 
     /// Decrypt a TOTP secret if encryption is enabled.
-    fn decrypt_totp_secret(&self, encrypted: &str) -> String {
+    ///
+    /// Fails closed: a value that looks encrypted but fails decryption is an
+    /// error, never a plaintext fallback.
+    fn decrypt_totp_secret(&self, encrypted: &str) -> AuthResult<String> {
         match &self.encryption {
             Some(enc) => {
                 // Check if value is encrypted
                 if acme_infra::EncryptionService::is_encrypted(encrypted) {
-                    match enc.decrypt(encrypted) {
-                        Ok(decrypted) => decrypted,
-                        Err(e) => {
-                            tracing::error!("Failed to decrypt TOTP secret: {}", e);
-                            encrypted.to_string() // Fallback
-                        }
-                    }
+                    enc.decrypt(encrypted).map_err(|e| {
+                        tracing::error!("Failed to decrypt TOTP secret: {}", e);
+                        AuthError::Internal("Failed to decrypt TOTP secret".into())
+                    })
                 } else {
                     // Plaintext - migrate on next write
-                    encrypted.to_string()
+                    Ok(encrypted.to_string())
                 }
             }
-            None => encrypted.to_string(), // No encryption configured
+            None => Ok(encrypted.to_string()), // No encryption configured
         }
     }
 
@@ -67,7 +67,7 @@ impl AcmeLocalAuthService {
             serde_json::from_value::<Vec<String>>(backup_code_hashes_value).unwrap_or_default();
 
         // Decrypt the secret
-        let secret_base32 = self.decrypt_totp_secret(&encrypted_secret);
+        let secret_base32 = self.decrypt_totp_secret(&encrypted_secret)?;
 
         Ok(Some(TotpDetails {
             credential_id: Uuid(credential_id),
@@ -211,7 +211,7 @@ impl AcmeLocalAuthService {
             .map_err(|_| AuthError::Internal("Failed to encode credential metadata".into()))?;
 
         // Encrypt the TOTP secret before storing
-        let encrypted_secret = self.encrypt_totp_secret(&state.secret_base32);
+        let encrypted_secret = self.encrypt_totp_secret(&state.secret_base32)?;
 
         sqlx::query(
             r#"

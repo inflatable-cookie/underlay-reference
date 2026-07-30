@@ -371,7 +371,7 @@ pub async fn get_user(
 ///
 /// PUT /v1/admin/users/:user_id
 pub async fn update_user(
-    AdminUser(_admin): AdminUser,
+    AdminUser(admin): AdminUser,
     State(state): State<AppState>,
     headers: HeaderMap,
     Path(user_id): Path<Uuid>,
@@ -470,6 +470,15 @@ pub async fn update_user(
             "operation": "admin.users.update",
             "user_id": user_id
         })));
+    }
+
+    // Enforce the same role-hierarchy rules as update_user_role/suspend_user:
+    // no self-management, no managing peers/superiors, no promotion beyond
+    // the caller's own level.
+    let is_self = admin.user_id.0.into_inner() == user_id;
+    can_manage_user(&admin, &current.role, is_self)?;
+    if let Some(new_role) = role {
+        can_manage_user(&admin, new_role, is_self)?;
     }
 
     match users::update_user_admin(

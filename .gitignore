@@ -7,6 +7,11 @@
 **/.env.local
 **/.env.*.local
 
+# Local config overrides (keep the .example tracked)
+config/local.toml
+config/local.*.toml
+!config/local.toml.example
+
 # IDE
 .idea/
 .vscode/

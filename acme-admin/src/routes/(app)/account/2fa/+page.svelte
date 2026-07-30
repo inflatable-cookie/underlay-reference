@@ -2,6 +2,7 @@
 import {
   useAuthenticatedData
 } from "@decodelabs/underlay/runtime/auth";
+import { sanitizeSvgHtml } from "@decodelabs/underlay/utils/html";
 import {
   CodeInput as PoodleCodeInput,
   AlertDialog as PoodleAlertDialog,
@@ -126,15 +127,11 @@ import {
   };
 
   /**
-   * Validate SVG content for QR code rendering.
+   * Sanitize API-supplied QR SVG before rendering (DOMPurify, svg profile).
    */
-  const validateQrSvg = (svg: string): boolean => {
-    if (!svg) return false;
-    const trimmed = svg.trim();
-    if (!trimmed.includes("<svg") || !trimmed.endsWith("</svg>")) return false;
-    const dangerous = /<script|javascript:|\bon\w+\s*=/i;
-    if (dangerous.test(svg)) return false;
-    return true;
+  const safeQrSvg = (svg: string): string => {
+    if (!svg || !svg.trim().includes("<svg")) return "";
+    return sanitizeSvgHtml(svg);
   };
 </script>
 
@@ -188,8 +185,8 @@ import {
   <PoodleCard>
     <div class="totp-setup">
       <div class="totp-setup__qr" aria-label="TOTP QR code">
-        {#if validateQrSvg(totpSetup.qrSvg)}
-          {@html totpSetup.qrSvg}
+        {#if safeQrSvg(totpSetup.qrSvg)}
+          {@html safeQrSvg(totpSetup.qrSvg)}
         {:else}
           <p class="totp-setup__qr-error">Unable to display QR code. Use manual setup below.</p>
         {/if}

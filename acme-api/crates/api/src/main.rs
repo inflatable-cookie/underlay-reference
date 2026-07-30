@@ -29,8 +29,13 @@ async fn main() -> anyhow::Result<()> {
     let pool = create_pool(&db_url).await?;
     run_migrations(&pool).await?;
 
-    // Run dev seeds in local/dev environments
-    if app_config.env.is_development() {
+    // Run dev seeds only in local/test environments. Dev seeds contain
+    // well-known credentials and must never reach a deployed (dev/staging)
+    // instance.
+    if matches!(
+        app_config.env,
+        acme_infra::Environment::Local | acme_infra::Environment::Test
+    ) {
         if let Err(err) = run_dev_seeds(&pool).await {
             tracing::error!(%err, "failed to run dev seed SQL");
         }
@@ -225,7 +230,7 @@ async fn main() -> anyhow::Result<()> {
         underlay_http::TrustedProxyConfig::None
     };
 
-    let app = routes::build_router()
+    let app = routes::build_router_with_options(app_config.env.is_development())
         .with_state(state.clone())
         .layer(axum::Extension(underlay_proxy))
         .layer(axum::middleware::from_fn(routes::api_version_middleware))

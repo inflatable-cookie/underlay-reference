@@ -26,11 +26,22 @@ mod tasks;
 
 /// Build the main API router with all routes configured.
 pub fn build_router() -> Router<AppState> {
+    build_router_with_options(true)
+}
+
+/// Build the main API router, optionally exposing Swagger UI / OpenAPI JSON.
+/// Production deployments should pass `include_docs = false`.
+pub fn build_router_with_options(include_docs: bool) -> Router<AppState> {
     let cors = build_cors_layer();
 
-    let router = Router::new()
-        // OpenAPI / Swagger UI
-        .merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
+    let router = Router::new();
+    let router = if include_docs {
+        router.merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
+    } else {
+        router
+    };
+
+    let router = router
         // Favicon (return 204 to stop browser 404s)
         .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
         // Health
@@ -433,7 +444,8 @@ fn underlay_env(env: &str) -> underlay_observability::Environment {
         "staging" | "stage" => Environment::Staging,
         "prod" | "production" => Environment::Prod,
         "test" => Environment::Test,
-        _ => Environment::Local,
+        // Fail closed: unknown values must not enable permissive local CORS.
+        _ => Environment::Prod,
     }
 }
 
