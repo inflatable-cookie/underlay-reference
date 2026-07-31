@@ -5,7 +5,6 @@
 
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
-use std::collections::HashSet;
 use underlay_http::query::QueryParams;
 use underlay_query::{FieldMapping, WhereBuilder};
 use uuid::Uuid;
@@ -350,53 +349,45 @@ pub struct ReorderCategoriesResult {
 }
 
 /// Reorder categories by setting weights with conflict detection.
+///
+/// Delegates to the canonical underlay reorder helper: one transaction,
+/// single weight-rewrite statement, set-conflict on drift. Weights are
+/// assigned 1..=N in the submitted order.
 pub async fn reorder_categories(
     pool: &DbPool,
     category_ids: &[Uuid],
 ) -> Result<ReorderCategoriesResult, sqlx::Error> {
-    let current_ids = sqlx::query_scalar::<_, Uuid>(
-        r#"
-        SELECT id
-        FROM acme.categories
-        WHERE deleted_at IS NULL
-        "#,
+    let table = underlay_db::QualifiedTableName::parse("acme.categories")
+        .expect("valid table name");
+    let id_col = underlay_db::SqlIdentifier::parse("id").expect("valid column");
+    let weight_col = underlay_db::SqlIdentifier::parse("weight").expect("valid column");
+    let deleted_col = underlay_db::SqlIdentifier::parse("deleted_at").expect("valid column");
+
+    match underlay_db::reorder_scoped(
+        pool,
+        &table,
+        &id_col,
+        &weight_col,
+        underlay_db::ReorderScope::none().exclude_deleted(&deleted_col),
+        category_ids,
     )
-    .fetch_all(pool)
-    .await?;
-
-    let submitted_set: HashSet<Uuid> = category_ids.iter().copied().collect();
-    let current_set: HashSet<Uuid> = current_ids.iter().copied().collect();
-
-    let missing_from_submission: Vec<Uuid> =
-        current_set.difference(&submitted_set).copied().collect();
-    let not_found: Vec<Uuid> = submitted_set.difference(&current_set).copied().collect();
-
-    if !missing_from_submission.is_empty() || !not_found.is_empty() {
-        return Ok(ReorderCategoriesResult {
+    .await
+    {
+        Ok(rows) => Ok(ReorderCategoriesResult {
+            reordered_count: rows as usize,
+            missing_from_submission: Vec::new(),
+            not_found: Vec::new(),
+        }),
+        Err(underlay_db::ReorderError::Conflict(conflict)) => Ok(ReorderCategoriesResult {
             reordered_count: 0,
-            missing_from_submission,
-            not_found,
-        });
+            missing_from_submission: conflict.removed_ids,
+            not_found: conflict.added_ids,
+        }),
+        Err(underlay_db::ReorderError::DuplicateIds) => Err(sqlx::Error::InvalidArgument(
+            "reorder submission contains duplicate ids".to_string(),
+        )),
+        Err(underlay_db::ReorderError::Db(err)) => Err(err),
     }
-
-    for (weight, category_id) in category_ids.iter().enumerate() {
-        sqlx::query(
-            r#"
-            UPDATE acme.categories
-            SET weight = $2, updated_at = NOW()
-            WHERE id = $1 AND deleted_at IS NULL
-            "#,
-        )
-        .bind(category_id)
-        .bind(weight as i32)
-        .execute(pool)
-        .await?;
-    }
-    Ok(ReorderCategoriesResult {
-        reordered_count: category_ids.len(),
-        missing_from_submission: Vec::new(),
-        not_found: Vec::new(),
-    })
 }
 
 /// Validate that a slug is unique (for async field validation).
