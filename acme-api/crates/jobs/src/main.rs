@@ -43,8 +43,10 @@ async fn main() {
 
     info!("starting acme job worker");
 
-    // Initialize blob adapter for media processing.
-    // Local/dev uses the shared MinIO-backed S3 shape; production is still TODO.
+    // Initialize blob adapter for media processing. Mirrors the API binary:
+    // local/dev uses MinIO; production builds real S3 from ACME_S3_* and
+    // refuses to boot with a data-dropping NoopAdapter unless explicitly
+    // opted out.
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
         let s3_config = S3Config::minio_dev("acme-media", "https://s3.acme.test");
         match S3Adapter::new(s3_config).await {
@@ -59,10 +61,36 @@ async fn main() {
                 Arc::new(NoopAdapter::new())
             }
         }
-    } else {
-        // Production: use NoopAdapter as placeholder (configure S3 for production)
-        info!("using NoopAdapter for blob storage - configure S3 for production");
+    } else if let Ok(bucket) = std::env::var("ACME_S3_BUCKET") {
+        let region = std::env::var("ACME_S3_REGION").unwrap_or_else(|_| "us-east-1".to_string());
+        let mut s3_config = S3Config::new(bucket.clone(), region);
+        if let Ok(endpoint) = std::env::var("ACME_S3_ENDPOINT") {
+            s3_config = s3_config.endpoint_url(endpoint);
+        }
+        if let Ok(public_url_base) = std::env::var("ACME_S3_PUBLIC_URL_BASE") {
+            s3_config = s3_config.public_url_base(public_url_base);
+        }
+        if std::env::var("ACME_S3_PATH_STYLE").as_deref() == Ok("1") {
+            s3_config = s3_config.path_style(true);
+        }
+
+        let adapter = match S3Adapter::new(s3_config).await {
+            Ok(adapter) => adapter,
+            Err(err) => {
+                error!(%err, %bucket, "failed to initialize S3 blob adapter; job worker exiting");
+                std::process::exit(1);
+            }
+        };
+        info!(%bucket, "S3 blob adapter initialised");
+        Arc::new(adapter)
+    } else if std::env::var("ACME_ALLOW_NOOP_BLOB").as_deref() == Ok("1") {
+        tracing::warn!("ACME_ALLOW_NOOP_BLOB=1 set — media job outputs are discarded (NoopAdapter)");
         Arc::new(NoopAdapter::new())
+    } else {
+        error!(
+            "blob storage is not configured (set ACME_S3_BUCKET, or ACME_ALLOW_NOOP_BLOB=1 for a deliberately storage-less deployment); job worker exiting"
+        );
+        std::process::exit(1);
     };
 
     // Rendition config for generated media derivatives.
