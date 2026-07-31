@@ -29,13 +29,15 @@ async fn main() -> anyhow::Result<()> {
     let pool = create_pool(&db_url).await?;
     run_migrations(&pool).await?;
 
-    // Run dev seeds only in local/test environments. Dev seeds contain
-    // well-known credentials and must never reach a deployed (dev/staging)
-    // instance.
-    if matches!(
+    // Run dev seeds only in local/test environments against local
+    // databases. Dev seeds contain well-known credentials and must never
+    // reach a deployed instance.
+    let seed_allowed = matches!(
         app_config.env,
         acme_infra::Environment::Local | acme_infra::Environment::Test
-    ) {
+    ) && underlay_db::is_local_database_url(&db_url);
+
+    if seed_allowed {
         if let Err(err) = run_dev_seeds(&pool).await {
             tracing::error!(%err, "failed to run dev seed SQL");
         }
