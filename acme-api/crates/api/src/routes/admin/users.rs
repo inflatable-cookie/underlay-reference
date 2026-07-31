@@ -222,7 +222,7 @@ pub async fn list_users(
 ///
 /// POST /v1/admin/users
 pub async fn create_user(
-    AdminUser(_admin): AdminUser,
+    AdminUser(admin): AdminUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateUserRequest>,
 ) -> Result<Response, ApiError> {
@@ -265,6 +265,9 @@ pub async fn create_user(
         )
         .with_field_errors(field_errors));
     }
+
+    // Role hierarchy: callers may only create users below their own level.
+    can_assign_role(&admin, role)?;
 
     let display_name = payload
         .display_name
@@ -573,6 +576,15 @@ fn can_manage_user(
 ) -> Result<(), ApiError> {
     underlay_auth::RoleHierarchy::standard()
         .can_manage(&caller_roles(admin), target_role, is_self)
+        .map_err(hierarchy_error)
+}
+
+/// Check if an admin can create/assign a user with the given role.
+/// Superadmins may assign any role; others only roles below their own level.
+#[allow(clippy::result_large_err)]
+fn can_assign_role(admin: &UserPrincipal, role: &str) -> Result<(), ApiError> {
+    underlay_auth::RoleHierarchy::standard()
+        .can_assign(&caller_roles(admin), role)
         .map_err(hierarchy_error)
 }
 
