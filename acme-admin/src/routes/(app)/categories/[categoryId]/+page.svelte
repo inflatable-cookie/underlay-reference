@@ -5,7 +5,6 @@
     EntityAttributeList,
     EntityDetailModule
   } from "@decodelabs/underlay/templates";
-  import { useAuthenticatedData } from "@decodelabs/underlay/runtime/auth";
   import { copyToClipboard, useToasts } from "@decodelabs/underlay/runtime/feedback";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
   import { goto } from "$app/navigation";
@@ -23,21 +22,14 @@
 
   const toastStore = useToasts();
 
-  const pageData = useAuthenticatedData(
-    async (fetch, token) => {
-      const category = await adminCommands.getCategory(data.categoryId, fetch, token);
-      return { category };
-    },
-    {
-      defaultValue: { category: null as Category | null }
-    }
-  );
-
-  const category = $derived(pageData.data?.category);
+  // Single fetch: the loader both feeds EntityDetailPage and updates
+  // local state as a side effect (no duplicate request).
+  let category = $state<Category | null>(null);
 
   async function categoryLoader(fetch: typeof window.fetch, token: string | null) {
     if (!token) throw new Error("Not authenticated");
     const nextCategory = await adminCommands.getCategory(data.categoryId, fetch, token);
+    category = nextCategory;
     return nextCategory;
   }
 
