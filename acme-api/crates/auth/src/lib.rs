@@ -10,6 +10,7 @@ mod email_totp_sender;
 mod local;
 mod principal;
 mod provider;
+mod session_repo;
 mod rate_limiter;
 mod redis_rate_limit;
 mod underlay;

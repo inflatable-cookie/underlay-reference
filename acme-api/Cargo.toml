@@ -45,6 +45,7 @@ underlay-http = { path = "../../underlay/rust/crates/underlay-http", features = 
 underlay-query = { path = "../../underlay/rust/crates/underlay-query" }
 underlay-observability = { path = "../../underlay/rust/crates/underlay-observability" }
 underlay-auth = { path = "../../underlay/rust/crates/underlay-auth" }
+underlay-auth-session = { path = "../../underlay/rust/crates/underlay-auth-session" }
 underlay-auth-state-postgres = { path = "../../underlay/rust/crates/underlay-auth-state-postgres" }
 underlay-blob = { path = "../../underlay/rust/crates/underlay-blob", features = ["s3"] }
 underlay-auth-email-totp = { path = "../../underlay/rust/crates/underlay-auth-email-totp" }

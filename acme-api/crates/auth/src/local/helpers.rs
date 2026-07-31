@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn roles_for_user(role: &str) -> Vec<String> {
+pub(crate) fn roles_for_user(role: &str) -> Vec<String> {
     match role {
         "superadmin" => vec!["superadmin".to_string()],
         "admin" => vec!["admin".to_string()],
@@ -67,46 +67,4 @@ pub(super) fn map_credential_row(row: sqlx::postgres::PgRow) -> Credential {
         updated_at: row.get("updated_at"),
         last_used_at: row.get("last_used_at"),
     }
-}
-
-pub(super) fn map_session_row(row: sqlx::postgres::PgRow) -> DbSession {
-    let id: sqlx::types::Uuid = row.get("id");
-    let user_id: sqlx::types::Uuid = row.get("user_id");
-    let roles_value: serde_json::Value = row.get("roles");
-    let roles = serde_json::from_value::<Vec<String>>(roles_value).unwrap_or_default();
-
-    let status: String = row.get("status");
-    let status = match status.as_str() {
-        "active" => SessionStatus::Active,
-        "revoked" => SessionStatus::Revoked,
-        "expired" => SessionStatus::Expired,
-        _ => SessionStatus::Active,
-    };
-
-    DbSession {
-        id: Uuid(id),
-        user_id: Uuid(user_id),
-        roles,
-        is_active: row.get("is_active"),
-        access_token_fingerprint: row.get("access_token_fingerprint"),
-        refresh_token_fingerprint: row.get("refresh_token_fingerprint"),
-        refresh_token_id: Uuid(row.get("refresh_token_id")),
-        refresh_token_version: row.get("refresh_token_version"),
-        access_token_expires_at: row.get("access_token_expires_at"),
-        refresh_token_expires_at: row.get("refresh_token_expires_at"),
-        created_at: row.get("created_at"),
-        updated_at: row.get("updated_at"),
-        last_used_at: row.get("last_used_at"),
-        ip_address: row.get("ip_address"),
-        user_agent: row.get("user_agent"),
-        status,
-        revocation_reason: row.get("revocation_reason"),
-        revoked_at: row.get("revoked_at"),
-    }
-}
-
-pub(super) fn timestamp_to_datetime(ts: u64) -> DateTime<Utc> {
-    Utc.timestamp_opt(ts as i64, 0)
-        .single()
-        .unwrap_or_else(Utc::now)
 }

@@ -73,6 +73,7 @@ dependencies = [
  "underlay-auth-jwt",
  "underlay-auth-oauth",
  "underlay-auth-password",
+ "underlay-auth-session",
  "underlay-auth-state-postgres",
  "underlay-auth-totp",
  "underlay-auth-webauthn",
@@ -5287,6 +5288,20 @@ dependencies = [
  "underlay-ratelimit",
  "uuid",
  "zxcvbn",
+]
+
+[[package]]
+name = "underlay-auth-session"
+version = "0.8.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tracing",
+ "underlay-auth",
+ "underlay-auth-jwt",
+ "underlay-core",
 ]
 
 [[package]]

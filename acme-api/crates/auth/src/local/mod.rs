@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use std::time::SystemTime;
@@ -19,7 +19,7 @@ use underlay_auth::{
     AuthError, AuthResult, Credential, CredentialMetadata, CredentialType, RoleSet, SecretCipher,
     Session, SessionStatus, User, UserStatus,
 };
-use underlay_auth_jwt::{token_fingerprint, JwtBehaviorDefaults, JwtConfig, JwtService};
+use underlay_auth_jwt::{JwtBehaviorDefaults, JwtConfig, JwtService};
 #[allow(unused_imports)] // Prepared for future OAuth implementation
 use underlay_auth_oauth::{
     GoogleOAuthAppService, GoogleOAuthService, OAuthCallbackRequest, OAuthLoginState, OAuthStart,
@@ -38,7 +38,7 @@ use crate::redis_rate_limit::RedisRateLimitBackend;
 use webauthn_rs_proto::{attest::RegisterPublicKeyCredential, auth::PublicKeyCredential};
 
 mod auth_state;
-mod helpers;
+pub(crate) mod helpers;
 mod lockout;
 mod login;
 mod passkey;
@@ -199,7 +199,6 @@ impl SessionFingerprint {
 pub struct AcmeLocalAuthService {
     pool: sqlx::PgPool,
     auth_state: AuthStateStore,
-    jwt: JwtService,
     password_hasher: Argon2Hasher,
     password_analyzer: PasswordStrengthAnalyzer,
     totp: TotpService,
@@ -216,6 +215,11 @@ pub struct AcmeLocalAuthService {
     totp_cipher: Option<SecretCipher>,
     /// Legacy format reader for TOTP rows written before SecretCipher.
     encryption: Option<acme_infra::EncryptionService>,
+    /// Canonical session rotation state machine (underlay-auth-session).
+    sessions: underlay_auth_session::SessionService<
+        crate::session_repo::AcmeSessionRepo,
+        crate::session_repo::AcmeAccountProvider,
+    >,
     argon2_memory_kb: u32,
     argon2_iterations: u32,
     argon2_parallelism: u32,
@@ -387,10 +391,19 @@ impl AcmeLocalAuthService {
             }
         }
 
+        let sessions = underlay_auth_session::SessionService::new(
+            jwt.clone(),
+            crate::session_repo::AcmeSessionRepo::new(pool.clone()),
+            crate::session_repo::AcmeAccountProvider::new(pool.clone()),
+        )
+        .with_config(
+            underlay_auth_session::SessionServiceConfig::default()
+                .with_absolute_session_timeout(config.absolute_session_timeout),
+        );
+
         Ok(Self {
             auth_state: AuthStateStore::new(pool.clone()),
             pool,
-            jwt,
             password_hasher,
             password_analyzer: PasswordStrengthAnalyzer::new()
                 .with_min_length(behavior.auth.password_min_length),
@@ -404,6 +417,7 @@ impl AcmeLocalAuthService {
             config,
             totp_cipher,
             encryption,
+            sessions,
             argon2_memory_kb,
             argon2_iterations,
             argon2_parallelism,
@@ -474,53 +488,6 @@ struct Tokens {
     refresh_token: String,
 }
 
-#[derive(Debug, Clone)]
-struct DbSession {
-    id: Uuid,
-    user_id: Uuid,
-    roles: Vec<String>,
-    is_active: bool,
-
-    access_token_fingerprint: String,
-    refresh_token_fingerprint: String,
-
-    refresh_token_id: Uuid,
-    refresh_token_version: i32,
-
-    access_token_expires_at: DateTime<Utc>,
-    refresh_token_expires_at: DateTime<Utc>,
-
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-    last_used_at: DateTime<Utc>,
-
-    ip_address: Option<String>,
-    user_agent: Option<String>,
-
-    status: SessionStatus,
-    revocation_reason: Option<String>,
-    revoked_at: Option<DateTime<Utc>>,
-}
-
-impl DbSession {
-    fn into_public(self) -> Session {
-        Session {
-            id: self.id,
-            user_id: self.user_id,
-            access_token_fingerprint: self.access_token_fingerprint,
-            refresh_token_fingerprint: self.refresh_token_fingerprint,
-            access_token_expires_at: self.access_token_expires_at,
-            refresh_token_expires_at: self.refresh_token_expires_at,
-            created_at: self.created_at,
-            last_used_at: self.last_used_at,
-            ip_address: self.ip_address,
-            user_agent: self.user_agent,
-            status: self.status,
-            revocation_reason: self.revocation_reason,
-            revoked_at: self.revoked_at,
-        }
-    }
-}
 
 // ========================================================================
 // Auth Provider trait implementation

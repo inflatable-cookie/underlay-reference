@@ -19,6 +19,7 @@ thiserror = "2"
 tokio = { workspace = true }
 tracing = { workspace = true }
 underlay-auth = { workspace = true }
+underlay-auth-session = { workspace = true }
 underlay-auth-email-totp = { workspace = true }
 underlay-auth-jwt = { workspace = true }
 underlay-auth-oauth = { workspace = true }
