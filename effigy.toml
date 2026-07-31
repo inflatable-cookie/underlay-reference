@@ -21,3 +21,7 @@ admin = "acme-admin"
 
 [systems.dev]
 mounts = ["../underlay", "../poodle"]
+
+[tasks."qa:security"]
+run = "../underlay/scripts/check-consumer-conformance.sh ."
+run_in = "host"
