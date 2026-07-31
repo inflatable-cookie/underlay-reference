@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 use sqlx::FromRow;
-use std::collections::HashSet;
 use underlay_http::query::QueryParams;
 use underlay_query::{FieldMapping, WhereBuilder};
 use uuid::Uuid;
@@ -339,49 +338,37 @@ pub async fn reorder_projects(
     pool: &DbPool,
     project_ids: &[Uuid],
 ) -> Result<ReorderProjectsResult, sqlx::Error> {
-    let current_ids = sqlx::query_scalar::<_, Uuid>(
-        r#"
-        SELECT id
-        FROM acme.projects
-        WHERE deleted_at IS NULL
-        "#,
+    let table = underlay_db::QualifiedTableName::parse("acme.projects")
+        .expect("valid table name");
+    let id_col = underlay_db::SqlIdentifier::parse("id").expect("valid column");
+    let weight_col = underlay_db::SqlIdentifier::parse("weight").expect("valid column");
+    let deleted_col = underlay_db::SqlIdentifier::parse("deleted_at").expect("valid column");
+
+    match underlay_db::reorder_scoped(
+        pool,
+        &table,
+        &id_col,
+        &weight_col,
+        underlay_db::ReorderScope::none().exclude_deleted(&deleted_col),
+        project_ids,
     )
-    .fetch_all(pool)
-    .await?;
-
-    let submitted_set: HashSet<Uuid> = project_ids.iter().copied().collect();
-    let current_set: HashSet<Uuid> = current_ids.iter().copied().collect();
-
-    let missing_from_submission: Vec<Uuid> =
-        current_set.difference(&submitted_set).copied().collect();
-    let not_found: Vec<Uuid> = submitted_set.difference(&current_set).copied().collect();
-
-    if !missing_from_submission.is_empty() || !not_found.is_empty() {
-        return Ok(ReorderProjectsResult {
+    .await
+    {
+        Ok(rows) => Ok(ReorderProjectsResult {
+            reordered_count: rows as usize,
+            missing_from_submission: Vec::new(),
+            not_found: Vec::new(),
+        }),
+        Err(underlay_db::ReorderError::Conflict(conflict)) => Ok(ReorderProjectsResult {
             reordered_count: 0,
-            missing_from_submission,
-            not_found,
-        });
+            missing_from_submission: conflict.removed_ids,
+            not_found: conflict.added_ids,
+        }),
+        Err(underlay_db::ReorderError::DuplicateIds) => Err(sqlx::Error::InvalidArgument(
+            "reorder submission contains duplicate ids".to_string(),
+        )),
+        Err(underlay_db::ReorderError::Db(err)) => Err(err),
     }
-
-    for (weight, project_id) in project_ids.iter().enumerate() {
-        sqlx::query(
-            r#"
-            UPDATE acme.projects
-            SET weight = $2, updated_at = NOW()
-            WHERE id = $1 AND deleted_at IS NULL
-            "#,
-        )
-        .bind(project_id)
-        .bind(weight as i32)
-        .execute(pool)
-        .await?;
-    }
-    Ok(ReorderProjectsResult {
-        reordered_count: project_ids.len(),
-        missing_from_submission: Vec::new(),
-        not_found: Vec::new(),
-    })
 }
 
 /// Batch soft delete projects.

@@ -1,3 +1,5 @@
+// conformance: allow — parent-scoped collection, small by design
+
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;

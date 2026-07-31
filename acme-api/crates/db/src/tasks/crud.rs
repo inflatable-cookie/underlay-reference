@@ -1,7 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde_json::Value;
 use sqlx::FromRow;
-use std::collections::HashSet;
 use underlay_http::query::QueryParams;
 use underlay_query::{FieldMapping, WhereBuilder};
 use uuid::Uuid;
@@ -335,51 +334,39 @@ pub async fn reorder_tasks(
     project_id: Uuid,
     task_ids: &[Uuid],
 ) -> Result<ReorderTasksResult, sqlx::Error> {
-    let current_ids = sqlx::query_scalar::<_, Uuid>(
-        r#"
-        SELECT id
-        FROM acme.tasks
-        WHERE project_id = $1 AND deleted_at IS NULL
-        "#,
+    let table = underlay_db::QualifiedTableName::parse("acme.tasks")
+        .expect("valid table name");
+    let id_col = underlay_db::SqlIdentifier::parse("id").expect("valid column");
+    let weight_col = underlay_db::SqlIdentifier::parse("position").expect("valid column");
+    let parent_col = underlay_db::SqlIdentifier::parse("project_id").expect("valid column");
+    let deleted_col = underlay_db::SqlIdentifier::parse("deleted_at").expect("valid column");
+
+    match underlay_db::reorder_scoped(
+        pool,
+        &table,
+        &id_col,
+        &weight_col,
+        underlay_db::ReorderScope::parent(&parent_col, project_id)
+            .exclude_deleted(&deleted_col),
+        task_ids,
     )
-    .bind(project_id)
-    .fetch_all(pool)
-    .await?;
-
-    let submitted_set: HashSet<Uuid> = task_ids.iter().copied().collect();
-    let current_set: HashSet<Uuid> = current_ids.iter().copied().collect();
-
-    let missing_from_submission: Vec<Uuid> =
-        current_set.difference(&submitted_set).copied().collect();
-    let not_found: Vec<Uuid> = submitted_set.difference(&current_set).copied().collect();
-
-    if !missing_from_submission.is_empty() || !not_found.is_empty() {
-        return Ok(ReorderTasksResult {
+    .await
+    {
+        Ok(rows) => Ok(ReorderTasksResult {
+            reordered_count: rows as usize,
+            missing_from_submission: Vec::new(),
+            not_found: Vec::new(),
+        }),
+        Err(underlay_db::ReorderError::Conflict(conflict)) => Ok(ReorderTasksResult {
             reordered_count: 0,
-            missing_from_submission,
-            not_found,
-        });
+            missing_from_submission: conflict.removed_ids,
+            not_found: conflict.added_ids,
+        }),
+        Err(underlay_db::ReorderError::DuplicateIds) => Err(sqlx::Error::InvalidArgument(
+            "reorder submission contains duplicate ids".to_string(),
+        )),
+        Err(underlay_db::ReorderError::Db(err)) => Err(err),
     }
-
-    for (position, task_id) in task_ids.iter().enumerate() {
-        sqlx::query(
-            r#"
-            UPDATE acme.tasks
-            SET position = $3, updated_at = NOW()
-            WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL
-            "#,
-        )
-        .bind(task_id)
-        .bind(project_id)
-        .bind(position as i32)
-        .execute(pool)
-        .await?;
-    }
-    Ok(ReorderTasksResult {
-        reordered_count: task_ids.len(),
-        missing_from_submission: Vec::new(),
-        not_found: Vec::new(),
-    })
 }
 
 /// Batch soft delete tasks.

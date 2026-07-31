@@ -1,3 +1,5 @@
+// conformance: allow — parent-scoped collection, small by design
+
 use async_trait::async_trait;
 use underlay_media::sync::MediaUsageSyncRepository;
 use underlay_media::{

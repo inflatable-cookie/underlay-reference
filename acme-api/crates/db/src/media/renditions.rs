@@ -1,3 +1,5 @@
+// conformance: allow — parent-scoped collection, small by design
+
 use super::*;
 
 /// Create a rendition.
