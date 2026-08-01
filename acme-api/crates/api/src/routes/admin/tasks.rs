@@ -295,11 +295,11 @@ pub async fn list_tasks(
         Ok(task_list) => {
             let response: Vec<TaskWithLabelsResponse> =
                 task_list.data.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({
-                "data": response,
-                "total": task_list.total,
-                "has_more": task_list.has_more
-            }))
+            Ok(Json(underlay_http::PageList {
+                data: response,
+                total: task_list.total as u64,
+                has_more: task_list.has_more,
+            })
             .into_response())
         }
         Err(e) => {

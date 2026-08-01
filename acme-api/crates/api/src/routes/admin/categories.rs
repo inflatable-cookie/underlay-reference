@@ -155,11 +155,11 @@ pub async fn list_categories(
         Ok(cats) => {
             let response: Vec<CategoryWithCountsResponse> =
                 cats.data.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({
-                "data": response,
-                "total": cats.total,
-                "has_more": cats.has_more
-            }))
+            Ok(Json(underlay_http::PageList {
+                data: response,
+                total: cats.total as u64,
+                has_more: cats.has_more,
+            })
             .into_response())
         }
         Err(e) => {

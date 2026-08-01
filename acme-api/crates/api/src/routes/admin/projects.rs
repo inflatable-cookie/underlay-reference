@@ -184,11 +184,11 @@ pub async fn list_projects(
         Ok(projects) => {
             let response: Vec<ProjectWithCountsResponse> =
                 projects.data.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({
-                "data": response,
-                "total": projects.total,
-                "has_more": projects.has_more
-            }))
+            Ok(Json(underlay_http::PageList {
+                data: response,
+                total: projects.total as u64,
+                has_more: projects.has_more,
+            })
             .into_response())
         }
         Err(e) => {

@@ -1,23 +1,14 @@
 <script lang="ts">
-  import { page } from "$app/stores";
-  import { goto } from "$app/navigation";
-  import { buildQueryString, parseQueryParams } from "@decodelabs/underlay/client/query";
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
+  import { createPageListQueryState } from "@decodelabs/underlay/patterns";
   import ProjectsListPage from "$lib/lists/ProjectsListPage.svelte";
 
-  const currentQuery = $derived(parseQueryParams($page.url.searchParams));
-
-  function updateUrl(nextQuery: QueryParams) {
-    const url = new URL($page.url);
-    url.search = buildQueryString(nextQuery);
-    goto(url.toString(), { replaceState: true, keepFocus: true });
-  }
+  const listQuery = createPageListQueryState({ mode: "url" });
 </script>
 
 <ProjectsListPage
   title="Projects"
   backHref="/"
   backLabel="Back to dashboard"
-  query={currentQuery}
-  onQueryChange={updateUrl}
+  query={listQuery.query}
+  onQueryChange={listQuery.setQuery}
 />

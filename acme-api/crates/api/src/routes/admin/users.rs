@@ -195,11 +195,11 @@ pub async fn list_users(
     match users::list_users_admin(pool, &query.query, limit, offset).await {
         Ok(response) => {
             let items: Vec<UserResponse> = response.data.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({
-                "data": items,
-                "has_more": response.has_more,
-                "total": response.total
-            }))
+            Ok(Json(underlay_http::PageList {
+                data: items,
+                total: response.total as u64,
+                has_more: response.has_more,
+            })
             .into_response())
         }
         Err(e) => {
