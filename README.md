@@ -60,7 +60,13 @@ effigy db:migrate
 ## Config And Secrets Policy
 
 - shared non-secret behavior belongs in the workspace-root config stack:
-  `config/default.toml` plus optional `config/local.toml`
+  `config/default.toml` plus `config/effigy.toml` (shared dev-stack overlay,
+  loaded when `ENVIRONMENT=effigy`) plus optional `config/local.toml`
+- **`config/local.toml` is for personal, machine-local overrides only** — it
+  layers last, so anything duplicated from `effigy.toml` silently wins on your
+  machine. After pulling the config convergence (2026-08), strip existing
+  `local.toml` files back to personal tweaks; the shared dev-stack config now
+  lives in the committed `config/effigy.toml`
 - `acme-admin/` and `acme-front/` generate public runtime config from the root
   stack rather than reading `.env` files
 - true secrets should move through Effigy-managed runtime injection or the local
@@ -267,13 +273,17 @@ underlay-core = { path = "../../underlay/rust/crates/underlay-core" }
 
 ## Environment Variables
 
-`acme-api` uses layered config precedence:
+`acme-api` uses layered config precedence (repo-root `config/` stack):
 
-1. `acme-api/config/default.toml`
-2. `acme-api/config/local.toml` (optional, gitignored)
-3. `.env` / environment variables (override layer)
+1. `config/default.toml` (committed, all environments)
+2. `config/<environment>.toml` (env-named overlay — `config/effigy.toml` for
+   the shared dev stack)
+3. `config/local.toml` (personal overrides, gitignored)
+4. allowlisted environment variables (secrets and runtime wiring)
 
-Use TOML for app behavior defaults, and env vars for secrets/runtime wiring and per-environment overrides.
+Use TOML for app behavior defaults, and env vars for secrets/runtime wiring
+and per-environment overrides. `.env` files are not part of the runtime
+contract.
 
 For the current `underlay-reference` local shape:
 
