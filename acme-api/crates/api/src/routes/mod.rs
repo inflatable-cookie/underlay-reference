@@ -37,15 +37,10 @@ pub fn build_router_with_options(include_docs: bool) -> Router<AppState> {
     // - Use `CORS_ORIGINS` in production.
     // - In local dev, if `CORS_ORIGINS` is unset, mirror the request origin.
     // - Allow credentials so cookie-based auth can be enabled without reworking CORS.
-    let env = Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
-    let origins: Vec<String> = std::env::var("CORS_ORIGINS")
-        .unwrap_or_default()
-        .split(',')
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(ToString::to_string)
-        .collect();
-    let cors = underlay_http::admin_cors_layer(env, origins);
+    let cors = underlay_http::admin_cors_layer_from_env(Environment::resolve(
+        "ENVIRONMENT",
+        Some("ACME_ENV"),
+    ));
 
     let router = Router::new();
     let router = if include_docs {
