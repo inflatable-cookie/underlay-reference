@@ -643,8 +643,7 @@ impl AppConfig {
         // Environment. Fail closed: an unset ENVIRONMENT must not boot with
         // development behavior (dev seeds, insecure cookies, permissive CORS).
         // Local dev sets ENVIRONMENT=local explicitly via the Effigy bundle.
-        let env_str = env::var("ENVIRONMENT").unwrap_or_else(|_| "prod".to_string());
-        let env = Environment::parse(&env_str);
+        let env = Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
 
         // Port
         let port = env::var("PORT")
@@ -716,10 +715,7 @@ impl AppConfig {
         let smtp_config = if email_adapter == EmailAdapterType::Smtp {
             Some(SmtpEmailConfig {
                 host: env::var("SMTP_HOST").unwrap_or_else(|_| {
-                    if matches!(
-                        env,
-                        Environment::Local | Environment::Dev | Environment::Test
-                    ) {
+                    if env.is_local_dev() {
                         "smtp.acme.test".to_string()
                     } else {
                         "localhost".to_string()

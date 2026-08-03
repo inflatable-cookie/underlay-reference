@@ -12,7 +12,8 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 use std::sync::OnceLock;
-use underlay_http::{cors_layer_for_env, ApiError, CorsConfig};
+use underlay_http::ApiError;
+use underlay_observability::Environment;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -32,7 +33,19 @@ pub fn build_router() -> Router<AppState> {
 /// Build the main API router, optionally exposing Swagger UI / OpenAPI JSON.
 /// Production deployments should pass `include_docs = false`.
 pub fn build_router_with_options(include_docs: bool) -> Router<AppState> {
-    let cors = build_cors_layer();
+    // Underlay CORS policy (matches guide patterns):
+    // - Use `CORS_ORIGINS` in production.
+    // - In local dev, if `CORS_ORIGINS` is unset, mirror the request origin.
+    // - Allow credentials so cookie-based auth can be enabled without reworking CORS.
+    let env = Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
+    let origins: Vec<String> = std::env::var("CORS_ORIGINS")
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(ToString::to_string)
+        .collect();
+    let cors = underlay_http::admin_cors_layer(env, origins);
 
     let router = Router::new();
     let router = if include_docs {
@@ -399,67 +412,6 @@ pub fn build_router_with_options(include_docs: bool) -> Router<AppState> {
     let router = router.route("/v1/dev/error-smoke", post(shared::health::error_smoke));
 
     router
-}
-
-fn build_cors_layer() -> tower_http::cors::CorsLayer {
-    // Underlay CORS policy (matches guide patterns):
-    // - Use `CORS_ORIGINS` in production.
-    // - In local/dev, if `CORS_ORIGINS` is unset, mirror the request origin.
-    // - Allow credentials so cookie-based auth can be enabled without reworking CORS.
-
-    let env = std::env::var("ENVIRONMENT")
-        .or_else(|_| std::env::var("ACME_ENV"))
-        .unwrap_or_else(|_| "prod".to_string());
-
-    let origins = parse_cors_origins();
-
-    // If no explicit origins are set and we're in local/dev, mirror request origin.
-    let mirror_origin = origins.is_empty() && (env == "local" || env == "dev");
-
-    // NOTE: the browser will preflight if we send `X-Api-Version`.
-    // Add it explicitly to allowed headers.
-    let mut config = CorsConfig::default()
-        .with_header(HeaderName::from_static("x-api-version"))
-        .with_header(HeaderName::from_static("x-auth-token-mode"))
-        .with_header(HeaderName::from_static("x-csrf-token"))
-        .with_credentials(true);
-
-    if mirror_origin {
-        config = config.with_mirror_origin();
-    } else if !origins.is_empty() {
-        config = config.with_origin_values(origins);
-    }
-
-    // Underlay now gates mirror-origin + credentials to Local/Test; build with
-    // the resolved environment so that combination is only allowed in
-    // local/dev and a misconfigured prod fails fast.
-    cors_layer_for_env(config, underlay_env(&env))
-}
-
-fn underlay_env(env: &str) -> underlay_observability::Environment {
-    use underlay_observability::Environment;
-    match env.to_ascii_lowercase().as_str() {
-        "local" => Environment::Local,
-        "dev" | "development" => Environment::Dev,
-        "staging" | "stage" => Environment::Staging,
-        "prod" | "production" => Environment::Prod,
-        "test" => Environment::Test,
-        // Fail closed: unknown values must not enable permissive local CORS.
-        _ => Environment::Prod,
-    }
-}
-
-fn parse_cors_origins() -> Vec<axum::http::HeaderValue> {
-    let raw = std::env::var("CORS_ORIGINS").unwrap_or_default();
-    if raw.trim().is_empty() {
-        return vec![];
-    }
-
-    raw.split(',')
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .filter_map(|s| axum::http::HeaderValue::from_str(s).ok())
-        .collect()
 }
 
 fn supported_api_versions() -> &'static Vec<String> {

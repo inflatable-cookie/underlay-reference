@@ -90,15 +90,8 @@ fn map_auth_state_error(err: AuthStateError) -> AuthError {
 
 fn is_local_or_dev_environment() -> bool {
     // Fail closed: unset ENVIRONMENT is not a development environment.
-    let environment = std::env::var("ENVIRONMENT")
-        .or_else(|_| std::env::var("ACME_ENV"))
-        .unwrap_or_else(|_| "prod".to_string())
-        .to_ascii_lowercase();
-
-    matches!(
-        environment.as_str(),
-        "local" | "dev" | "development" | "test"
-    )
+    let env = acme_infra::Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
+    env.is_development() || env.is_local_dev()
 }
 
 #[derive(Debug, Clone)]
