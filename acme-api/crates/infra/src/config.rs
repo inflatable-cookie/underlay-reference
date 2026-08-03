@@ -369,9 +369,12 @@ impl AppBehaviorConfig {
     pub fn load() -> Self {
         let mut behavior = Self::default();
         // Resolve the environment first: it also names the config overlay
-        // (config/<environment>.toml — e.g. effigy.toml for the dev stack).
-        // ENVIRONMENT is primary, ACME_ENV the deprecated fallback.
-        let environment = Environment::resolve("ENVIRONMENT", Some("ACME_ENV")).to_string();
+        // (config/<name>.toml — e.g. effigy.toml for the dev stack).
+        // ENVIRONMENT is primary, ACME_ENV the deprecated fallback. Raw name,
+        // not the enum: overlay names are arbitrary strings. Behavior
+        // resolves via Environment::resolve.
+        let environment = Environment::resolve_name("ENVIRONMENT", Some("ACME_ENV"))
+            .unwrap_or_else(|| "dev".to_string());
         let parsed = underlay_config::ConfigStack::new(underlay_config::discover_config_dir(None))
             .with_environment(environment)
             .with_optional_local_overlay("local")
