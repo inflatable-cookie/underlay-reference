@@ -368,8 +368,12 @@ struct FileAuthBehaviorDefaults {
 impl AppBehaviorConfig {
     pub fn load() -> Self {
         let mut behavior = Self::default();
+        // Resolve the environment first: it also names the config overlay
+        // (config/<environment>.toml — e.g. effigy.toml for the dev stack).
+        // ENVIRONMENT is primary, ACME_ENV the deprecated fallback.
+        let environment = Environment::resolve("ENVIRONMENT", Some("ACME_ENV")).to_string();
         let parsed = underlay_config::ConfigStack::new(underlay_config::discover_config_dir(None))
-            .with_environment_from_env()
+            .with_environment(environment)
             .with_optional_local_overlay("local")
             .load_namespaced_or_legacy::<FileBehaviorConfig>("acme_api");
         let parsed = match parsed {
@@ -642,7 +646,8 @@ impl AppConfig {
 
         // Environment. Fail closed: an unset ENVIRONMENT must not boot with
         // development behavior (dev seeds, insecure cookies, permissive CORS).
-        // Local dev sets ENVIRONMENT=local explicitly via the Effigy bundle.
+        // The effigy dev stack sets ENVIRONMENT=effigy via the bundle's env
+        // schema; ACME_ENV is the deprecated legacy alias.
         let env = Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
 
         // Port
