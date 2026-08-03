@@ -6,7 +6,7 @@
 --
 --   Email: admin@example.com
 --   Password: UnderlayDev2026!
---   TOTP: otpauth://totp/Acme:admin%40example.com?secret=UNDERLAYDEVTOTPSECRET2345678ABCD&issuer=Acme&algorithm=SHA1&digits=6&period=30
+--   TOTP: otpauth://totp/Acme:admin%40example.com?secret=UNDERLAYDEVTOTPSECRET234567ABCDE&issuer=Acme&algorithm=SHA1&digits=6&period=30
 --
 --   Email: user@example.com (and alice@/bob@example.com)
 --   Password: UnderlayDev2026!
@@ -90,13 +90,13 @@ VALUES
    TRUE);
 
 -- TOTP credential for admin user
--- Secret: UNDERLAYDEVTOTPSECRET2345678ABCD
+-- Secret: UNDERLAYDEVTOTPSECRET234567ABCDE
 INSERT INTO auth.credentials (id, user_id, type, secret_encrypted, metadata, verified)
 VALUES
   ('018f2a3b-3c4d-7e8f-8a9b-00000000c001'::uuid,
    '018f2a3b-3c4d-7e8f-8a9b-00000000a001'::uuid,
    'totp',
-   'UNDERLAYDEVTOTPSECRET2345678ABCD',
+   'UNDERLAYDEVTOTPSECRET234567ABCDE',
    '{"type":"totp","issuer":"Acme","algorithm":"SHA1","digits":6,"period":30}'::jsonb,
    TRUE);
 
