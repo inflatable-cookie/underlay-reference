@@ -104,7 +104,7 @@ pub async fn list_categories(
         where_sql, order_by
     );
 
-    let mut query_builder = sqlx::query_as::<_, CategoryRow>(&sql);
+    let mut query_builder = sqlx::query_as::<_, CategoryRow>(sqlx::AssertSqlSafe(sql));
     for value in filter_values {
         query_builder = query_builder.bind(value);
     }
@@ -147,7 +147,7 @@ pub async fn list_categories_with_counts(
         where_clause
     );
 
-    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    let mut count_query = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(count_sql));
     for value in &filter_values {
         count_query = count_query.bind(value);
     }
@@ -173,7 +173,7 @@ pub async fn list_categories_with_counts(
         filter_values.len() + 2
     );
 
-    let mut query_builder = sqlx::query_as::<_, CategoryWithCountsRow>(&sql);
+    let mut query_builder = sqlx::query_as::<_, CategoryWithCountsRow>(sqlx::AssertSqlSafe(sql));
     for value in filter_values {
         query_builder = query_builder.bind(value);
     }

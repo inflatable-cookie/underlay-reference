@@ -37,7 +37,7 @@ acme-domain = { path = "../domain" }
 
 # Auth dependencies
 validator = { version = "0.20", features = ["derive"] }
-utoipa = { version = "5.4.0", features = ["chrono", "uuid"] }
+utoipa = { version = "5.5", features = ["chrono", "uuid"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 webauthn-rs-proto = "0.5.4"
 once_cell = "1"

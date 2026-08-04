@@ -82,11 +82,11 @@ impl EncryptionService {
     pub fn encrypt(&self, plaintext: &str) -> Result<String> {
         let mut nonce_bytes = [0u8; 12];
         rand::rng().fill(&mut nonce_bytes);
-        let nonce = Nonce::from_slice(&nonce_bytes);
+        let nonce = Nonce::from(nonce_bytes);
 
         let ciphertext = self
             .cipher
-            .encrypt(nonce, plaintext.as_bytes())
+            .encrypt(&nonce, plaintext.as_bytes())
             .map_err(|e| EncryptionError::EncryptionFailed(e.to_string()))?;
 
         // Combine nonce + ciphertext
@@ -109,11 +109,14 @@ impl EncryptionService {
         }
 
         let (nonce_bytes, ciphertext) = data.split_at(12);
-        let nonce = Nonce::from_slice(nonce_bytes);
+        let nonce_arr: [u8; 12] = nonce_bytes
+            .try_into()
+            .map_err(|_| EncryptionError::InvalidFormat)?;
+        let nonce = Nonce::from(nonce_arr);
 
         let plaintext = self
             .cipher
-            .decrypt(nonce, ciphertext)
+            .decrypt(&nonce, ciphertext)
             .map_err(|e| EncryptionError::DecryptionFailed(e.to_string()))?;
 
         String::from_utf8(plaintext)

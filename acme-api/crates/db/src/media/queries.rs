@@ -92,7 +92,7 @@ pub async fn list_media_admin(
         where_clause, order_by
     );
 
-    let mut query_builder = sqlx::query_as::<_, RawMediaWithVersionRow>(&sql);
+    let mut query_builder = sqlx::query_as::<_, RawMediaWithVersionRow>(sqlx::AssertSqlSafe(sql));
     for value in filter_values {
         query_builder = query_builder.bind(value);
     }
@@ -135,7 +135,7 @@ pub async fn list_media_admin_paged(
         where_clause
     );
 
-    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql);
+    let mut count_query = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(count_sql));
     for value in &filter_values {
         count_query = count_query.bind(value);
     }
@@ -160,7 +160,7 @@ pub async fn list_media_admin_paged(
         filter_values.len() + 2
     );
 
-    let mut items_query = sqlx::query_as::<_, RawMediaWithVersionRow>(&sql);
+    let mut items_query = sqlx::query_as::<_, RawMediaWithVersionRow>(sqlx::AssertSqlSafe(sql));
     for value in &filter_values {
         items_query = items_query.bind(value);
     }

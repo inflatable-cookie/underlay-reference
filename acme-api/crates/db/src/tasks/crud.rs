@@ -192,7 +192,7 @@ pub async fn list_tasks_admin(
         where_clause
     );
 
-    let mut count_query = sqlx::query_scalar::<_, i64>(&count_sql).bind(project_id);
+    let mut count_query = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(count_sql)).bind(project_id);
     for value in &filter_values {
         count_query = count_query.bind(value);
     }
@@ -220,7 +220,7 @@ pub async fn list_tasks_admin(
         filter_values.len() + 3
     );
 
-    let mut query_builder = sqlx::query_as::<_, TaskWithLabelsRow>(&sql);
+    let mut query_builder = sqlx::query_as::<_, TaskWithLabelsRow>(sqlx::AssertSqlSafe(sql));
     query_builder = query_builder.bind(project_id);
     for value in filter_values {
         query_builder = query_builder.bind(value);
@@ -275,7 +275,7 @@ pub async fn update_task(
         completed_at_expr
     );
 
-    sqlx::query_as::<_, TaskRow>(&query)
+    sqlx::query_as::<_, TaskRow>(sqlx::AssertSqlSafe(query))
         .bind(id)
         .bind(project_id)
         .bind(title)
@@ -423,7 +423,7 @@ pub async fn batch_update_task_status(
         completed_at_expr
     );
 
-    let result = sqlx::query(&query)
+    let result = sqlx::query(sqlx::AssertSqlSafe(query))
         .bind(status)
         .bind(ids)
         .execute(pool)

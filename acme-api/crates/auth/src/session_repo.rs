@@ -65,9 +65,9 @@ impl AcmeSessionRepo {
 #[async_trait]
 impl SessionRepository for AcmeSessionRepo {
     async fn get_session(&self, session_id: Uuid) -> AuthResult<Option<SessionRecord>> {
-        let row = sqlx::query(&format!(
+        let row = sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT {SESSION_COLUMNS} FROM auth.sessions WHERE id = $1"
-        ))
+        )))
         .bind(session_id.into_inner())
         .fetch_optional(&self.pool)
         .await
@@ -182,9 +182,9 @@ impl SessionRepository for AcmeSessionRepo {
     }
 
     async fn list_sessions_for_user(&self, user_id: Uuid) -> AuthResult<Vec<SessionRecord>> {
-        let rows = sqlx::query(&format!(
+        let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
             "SELECT {SESSION_COLUMNS} FROM auth.sessions WHERE user_id = $1 ORDER BY created_at DESC"
-        ))
+        )))
         .bind(user_id.into_inner())
         .fetch_all(&self.pool)
         .await
