@@ -12,7 +12,7 @@
 	import Layers from "lucide-svelte/icons/layers";
 	import Calendar from "lucide-svelte/icons/calendar";
 	import ClipboardList from "lucide-svelte/icons/clipboard-list";
-	import AlertTriangle from "lucide-svelte/icons/alert-triangle";
+	import AlertTriangle from "lucide-svelte/icons/triangle-alert";
 	import { AdminNavList as UnderlayAdminNavList } from "@decodelabs/underlay/templates";
 	import type { AdminNavItem } from "@decodelabs/underlay/templates";
 
