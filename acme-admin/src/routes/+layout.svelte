@@ -2,10 +2,10 @@
 	import { page } from '$app/stores';
 	import favicon from '$lib/assets/favicon.svg';
 	import { resolveAdminPageTitle } from '$lib/utils/page-title';
-	import "@inflatable-cookie/poodle-svelte-tokens/styles.css";
-	import "@inflatable-cookie/poodle-svelte-tokens/theme-eclipse.css";
-	import "@inflatable-cookie/poodle-svelte-tokens/density-compact.css";
-	import "@inflatable-cookie/poodle-svelte-tokens/control-size-md.css";
+	import "@inflatable-cookie/poodle-core/tokens/styles.css";
+	import "@inflatable-cookie/poodle-core/tokens/theme-eclipse.css";
+	import "@inflatable-cookie/poodle-core/tokens/density-compact.css";
+	import "@inflatable-cookie/poodle-core/tokens/control-size-md.css";
 	import "@inflatable-cookie/underlay/styles/base.css";
 	// Import Underlay CSS FIRST so our :root overrides take precedence.
 	import "@inflatable-cookie/underlay/styles/tokens.css";

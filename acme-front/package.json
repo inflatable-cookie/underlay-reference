@@ -21,7 +21,10 @@
     "@acme/ui": "file:../acme-ui",
     "@inflatable-cookie/underlay": "file:../../underlay",
     "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components",
-    "@inflatable-cookie/poodle-svelte-tokens": "file:../../poodle/packages/svelte/tokens",
+    "@inflatable-cookie/poodle-core": "file:../../poodle/packages/core",
     "acme-client": "file:../acme-client"
+  },
+  "overrides": {
+    "@inflatable-cookie/poodle-core": "file:../../poodle/packages/core"
   }
 }
