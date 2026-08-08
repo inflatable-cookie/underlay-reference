@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { auth } from "$lib/stores/auth";
-  import { Button, Callout, Field, TextInput } from "@poodle/svelte";
+  import { Button, Callout, Field, TextInput } from "@inflatable-cookie/poodle-svelte";
 
   let displayName = $state("");
   let email = $state("");

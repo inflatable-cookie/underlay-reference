@@ -2,8 +2,8 @@
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { auth, currentUser, authLoading } from "$lib/stores/auth";
-  import { Button } from "@poodle/svelte";
-  import { PageLoading } from "@poodle/svelte";
+  import { Button } from "@inflatable-cookie/poodle-svelte";
+  import { PageLoading } from "@inflatable-cookie/poodle-svelte";
   import LogOut from "lucide-svelte/icons/log-out";
   import User from "lucide-svelte/icons/user";
 

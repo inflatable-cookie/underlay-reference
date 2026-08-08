@@ -11,15 +11,15 @@ import {
   onMount } from "svelte";
 	import { goto } from "$app/navigation";
 	import { page } from "$app/stores";
-	import { ToastHost } from "@poodle/svelte";
-	import { Drawer } from "@poodle/svelte";
+	import { ToastHost } from "@inflatable-cookie/poodle-svelte";
+	import { Drawer } from "@inflatable-cookie/poodle-svelte";
 	import Menu from "lucide-svelte/icons/menu";
 	import X from "lucide-svelte/icons/x";
 	import PanelRight from "lucide-svelte/icons/panel-right";
 		import { auth, authLoading, currentUser } from "$lib/stores/auth";
 	import AdminNavList from "$lib/ui/AdminNavList.svelte";
 	import AdminUserMenu from "$lib/ui/AdminUserMenu.svelte";
-	import { ErrorBoundary as AdminErrorBoundary } from "@poodle/svelte";
+	import { ErrorBoundary as AdminErrorBoundary } from "@inflatable-cookie/poodle-svelte";
 
 	// Configure global auth handlers for useAuthenticatedData
 	// Enables automatic token refresh on 401 errors and auto-fetch on auth readiness

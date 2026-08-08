@@ -13,7 +13,7 @@ import {
   Callout as PoodleCallout,
   Code as PoodleCode,
   MetaBar as PoodleMetaBar,
-  MetaItem as PoodleMetaItem } from "@poodle/svelte";
+  MetaItem as PoodleMetaItem } from "@inflatable-cookie/poodle-svelte";
   import { untrack } from "svelte";
   import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
   import type { PageData } from "./$types";
@@ -26,7 +26,7 @@ import {
   isPreconditionFailed } from "$lib/utils/api-errors";
   import ProjectForm from "$lib/forms/ProjectForm.svelte";
   import { goto } from "$app/navigation";
-    import { PageLoading } from "@poodle/svelte";
+    import { PageLoading } from "@inflatable-cookie/poodle-svelte";
 
   interface Props {
     data: PageData;

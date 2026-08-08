@@ -13,7 +13,7 @@ import {
     Button,
   Callout,
   Dialog,
-  TextInput } from "@poodle/svelte";
+  TextInput } from "@inflatable-cookie/poodle-svelte";
   import CategoryForm from "./CategoryForm.svelte";
 
   interface Props {

@@ -20,8 +20,8 @@
   "dependencies": {
     "@acme/ui": "file:../acme-ui",
     "@decodelabs/underlay": "file:../../underlay",
-    "@poodle/svelte": "file:../../poodle/packages/svelte/components",
-    "@poodle/svelte-tokens": "file:../../poodle/packages/svelte/tokens",
+    "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components",
+    "@inflatable-cookie/poodle-svelte-tokens": "file:../../poodle/packages/svelte/tokens",
     "acme-client": "file:../acme-client"
   }
 }

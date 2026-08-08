@@ -35,6 +35,6 @@
   },
   "dependencies": {
     "@decodelabs/underlay": "file:../../underlay",
-    "@poodle/svelte": "file:../../poodle/packages/svelte/components"
+    "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components"
   }
 }

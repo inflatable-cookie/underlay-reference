@@ -12,7 +12,7 @@
   import { goto } from "$app/navigation";
   import { adminCommands, type Label, type Project, type Task } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { Code, Pill, TimeAgo } from "@poodle/svelte";
+  import { Code, Pill, TimeAgo } from "@inflatable-cookie/poodle-svelte";
   import { getTaskPriorityTone, getTaskStatusTone } from "$lib/utils/accents";
 
   interface Props {

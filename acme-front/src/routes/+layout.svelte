@@ -1,9 +1,9 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
-	import "@poodle/svelte-tokens/styles.css";
-	import "@poodle/svelte-tokens/theme-iceberg.css";
-	import "@poodle/svelte-tokens/density-comfortable.css";
-	import "@poodle/svelte-tokens/control-size-md.css";
+	import "@inflatable-cookie/poodle-svelte-tokens/styles.css";
+	import "@inflatable-cookie/poodle-svelte-tokens/theme-iceberg.css";
+	import "@inflatable-cookie/poodle-svelte-tokens/density-comfortable.css";
+	import "@inflatable-cookie/poodle-svelte-tokens/control-size-md.css";
 	import "@decodelabs/underlay/styles/base.css";
 	import "@decodelabs/underlay/styles/tokens.css";
 	import "@decodelabs/underlay/styles/forms.css";

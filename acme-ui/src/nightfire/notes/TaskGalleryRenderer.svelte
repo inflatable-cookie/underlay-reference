@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Code } from "@poodle/svelte";
+  import { Code } from "@inflatable-cookie/poodle-svelte";
 
   type GalleryPage = {
     title?: string | null;

@@ -9,7 +9,7 @@
     FormActions,
     Select,
     TextInput
-  } from "@poodle/svelte";
+  } from "@inflatable-cookie/poodle-svelte";
   import type { Label, TaskPriority, TaskStatus } from "@api-client";
 
   type TaskFormMode = "create" | "edit";

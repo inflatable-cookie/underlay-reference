@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import { PageHeader } from "@poodle/svelte";
-  import { Tabs, type TabItem } from "@poodle/svelte";
+  import { PageHeader } from "@inflatable-cookie/poodle-svelte";
+  import { Tabs, type TabItem } from "@inflatable-cookie/poodle-svelte";
 
   let { children } = $props();
 

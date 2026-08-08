@@ -2,7 +2,7 @@
   import type { QueryParams } from "@decodelabs/underlay/client/query";
   import { SystemAuditLogListPage, toPagedListResult } from "@decodelabs/underlay/templates";
   import type { SystemAuditLogEntry } from "@decodelabs/underlay/templates";
-  import type { LogActor } from "@poodle/svelte";
+  import type { LogActor } from "@inflatable-cookie/poodle-svelte";
   import { adminCommands, type ActivityEntry } from "@api-client";
 
   interface Props {

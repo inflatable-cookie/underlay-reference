@@ -11,7 +11,7 @@ import {
 import {
   Code as PoodleCode,
   MetaBar as PoodleMetaBar,
-  MetaItem as PoodleMetaItem } from "@poodle/svelte";
+  MetaItem as PoodleMetaItem } from "@inflatable-cookie/poodle-svelte";
   import { untrack } from "svelte";
   import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
   import type { PageData } from "./$types";

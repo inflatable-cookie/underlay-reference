@@ -7,7 +7,7 @@
     Field,
     Pill,
     Select
-  } from "@poodle/svelte";
+  } from "@inflatable-cookie/poodle-svelte";
   import { adminCommands, TaskStatus, type TaskWithLabels } from "@api-client";
   import { auth } from "$lib/stores/auth";
   import { useToasts } from "@decodelabs/underlay/runtime/feedback";

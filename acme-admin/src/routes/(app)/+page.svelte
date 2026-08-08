@@ -2,8 +2,8 @@
 	import { onMount } from "svelte";
 	import { adminCommands, type DashboardStats, type ActivityEntry } from "@api-client";
 	import { AdminDashboardPage } from "@decodelabs/underlay/templates";
-	import { LogList, MetricTile, PageHeader, type LogEntry } from "@poodle/svelte";
-	import { Pill } from "@poodle/svelte";
+	import { LogList, MetricTile, PageHeader, type LogEntry } from "@inflatable-cookie/poodle-svelte";
+	import { Pill } from "@inflatable-cookie/poodle-svelte";
 	import Users from "lucide-svelte/icons/users";
 	import Image from "lucide-svelte/icons/image";
 	import Settings from "lucide-svelte/icons/settings";

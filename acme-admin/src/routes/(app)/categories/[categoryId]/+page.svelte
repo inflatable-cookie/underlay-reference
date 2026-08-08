@@ -12,7 +12,7 @@
   import type { PageData } from "./$types";
   import { adminCommands, type Category } from "@api-client";
   import ProjectsListPage from "$lib/lists/ProjectsListPage.svelte";
-  import { Code, Pill, TimeAgo } from "@poodle/svelte";
+  import { Code, Pill, TimeAgo } from "@inflatable-cookie/poodle-svelte";
 
   interface Props {
     data: PageData;

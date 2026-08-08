@@ -9,8 +9,8 @@ import {
     Pill,
     TextInput,
     Select
-  } from "@poodle/svelte";
-  import { ListContainer, PageHeader } from "@poodle/svelte";
+  } from "@inflatable-cookie/poodle-svelte";
+  import { ListContainer, PageHeader } from "@inflatable-cookie/poodle-svelte";
   import Activity from "lucide-svelte/icons/activity";
   import Layers from "lucide-svelte/icons/layers";
   import RefreshCw from "lucide-svelte/icons/refresh-cw";

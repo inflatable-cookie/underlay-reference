@@ -280,7 +280,7 @@ pub async fn batch_delete_projects(
 
 ```svelte
 <script lang="ts">
-  import { Checkbox } from "@poodle/svelte-primitives";
+  import { Checkbox } from "@inflatable-cookie/poodle-svelte-primitives";
 
   let items = $state<Item[]>([]);
   let selectedIds = $state<Set<string>>(new Set());

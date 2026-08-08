@@ -15,7 +15,7 @@
     Pill,
     Progress,
     TimeAgo
-  } from "@poodle/svelte";
+  } from "@inflatable-cookie/poodle-svelte";
   import type { PageData } from "./$types";
   import {
     adminCommands,

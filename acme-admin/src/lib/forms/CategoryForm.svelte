@@ -14,8 +14,8 @@ import {
   Switch,
   TextInput,
   type InputValidationStatus,
-  } from "@poodle/svelte";
-  import type { ValidationResult } from "@poodle/svelte";
+  } from "@inflatable-cookie/poodle-svelte";
+  import type { ValidationResult } from "@inflatable-cookie/poodle-svelte";
     import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
   import { untrack } from "svelte";
 

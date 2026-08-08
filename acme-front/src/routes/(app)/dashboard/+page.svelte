@@ -27,8 +27,8 @@ import {
     Grid,
     ListCard,
     TextInput
-  } from "@poodle/svelte";
-  import { FormDialog, PageLoading } from "@poodle/svelte";
+  } from "@inflatable-cookie/poodle-svelte";
+  import { FormDialog, PageLoading } from "@inflatable-cookie/poodle-svelte";
   import Plus from "lucide-svelte/icons/plus";
   import FolderOpen from "lucide-svelte/icons/folder-open";
 

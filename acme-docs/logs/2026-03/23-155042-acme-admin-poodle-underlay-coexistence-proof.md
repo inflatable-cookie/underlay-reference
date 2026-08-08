@@ -19,8 +19,8 @@ tags: [execution, migration, poodle, underlay]
 ## Coexistence notes
 
 - The original proof used a temporary canonical-package alias bridge while Poodle packaging was still incomplete.
-- `acme-admin` now installs [`@poodle/svelte-tokens`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L19), [`@poodle/svelte-primitives`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L20), and [`@poodle/svelte-composites`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L21) directly via local `file:` dependencies.
-- The temporary alias bridge has been removed from [~/Dev/projects/underlay-reference/acme-admin/svelte.config.js](~/Dev/projects/underlay-reference/acme-admin/svelte.config.js), and the root layout now imports [`@poodle/svelte-tokens/styles.css`](~\/Dev\/projects\/underlay-reference\/acme-admin\/src\/routes\/+layout.svelte#L7) instead of a raw filesystem token path.
+- `acme-admin` now installs [`@inflatable-cookie/poodle-svelte-tokens`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L19), [`@inflatable-cookie/poodle-svelte-primitives`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L20), and [`@inflatable-cookie/poodle-svelte-composites`](~\/Dev\/projects\/underlay-reference\/acme-admin\/package.json#L21) directly via local `file:` dependencies.
+- The temporary alias bridge has been removed from [~/Dev/projects/underlay-reference/acme-admin/svelte.config.js](~/Dev/projects/underlay-reference/acme-admin/svelte.config.js), and the root layout now imports [`@inflatable-cookie/poodle-svelte-tokens/styles.css`](~\/Dev\/projects\/underlay-reference\/acme-admin\/src\/routes\/+layout.svelte#L7) instead of a raw filesystem token path.
 
 ## Validation
 

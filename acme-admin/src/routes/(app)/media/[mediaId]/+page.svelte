@@ -44,19 +44,19 @@ import {
 import {
   EmptyState as PoodleEmptyState,
   PageLoading
-} from "@poodle/svelte";
+} from "@inflatable-cookie/poodle-svelte";
 import {
   Callout as PoodleCallout,
   Code,
   Dialog as PoodleDialog,
-} from "@poodle/svelte";
+} from "@inflatable-cookie/poodle-svelte";
 import type { PageData } from "./$types";
 import { goto } from "$app/navigation";
 import {
   Button as PoodleButton,
   IconButton as PoodleIconButton,
   TimeAgo
-} from "@poodle/svelte";
+} from "@inflatable-cookie/poodle-svelte";
 import {
   mediaCommands,
   type MediaDetail,

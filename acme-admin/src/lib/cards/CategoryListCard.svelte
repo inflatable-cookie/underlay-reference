@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AlertDialog } from "@poodle/svelte";
+  import { AlertDialog } from "@inflatable-cookie/poodle-svelte";
   import { EntityListCard } from "@decodelabs/underlay/templates";
   import type { CategoryWithCounts } from "@api-client";
   import { gotoWithContext } from "@decodelabs/underlay/client/navigation";

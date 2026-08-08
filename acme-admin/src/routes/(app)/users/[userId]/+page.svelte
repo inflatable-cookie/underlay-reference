@@ -28,7 +28,7 @@
     type TableRow,
     type TableRowAction,
     formatDisplayDateTime
-  } from "@poodle/svelte";
+  } from "@inflatable-cookie/poodle-svelte";
   import {
     adminCommands,
     type ActivityEntry,

@@ -1,4 +1,4 @@
-import type { IconNodes } from "@poodle/svelte";
+import type { IconNodes } from "@inflatable-cookie/poodle-svelte";
 
 export const arrowUpDownIcon: IconNodes = [
   ["path", { d: "m21 16-4 4-4-4" }],
