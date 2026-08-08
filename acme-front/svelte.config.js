@@ -15,7 +15,7 @@ const config = {
 		alias: {
 			"@app": "src",
 			"@api-client": "../acme-client/src",
-			"@decodelabs/underlay": "../../underlay/ts/src"
+			"@inflatable-cookie/underlay": "../../underlay/ts/src"
 		},
 		prerender: {
 			handleUnseenRoutes: "ignore"

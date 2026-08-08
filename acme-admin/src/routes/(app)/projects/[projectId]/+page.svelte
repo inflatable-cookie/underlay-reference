@@ -6,9 +6,9 @@
     EntityDetail,
     EntityAttributeList,
     EntityDetailModule
-  } from "@decodelabs/underlay/templates";
-  import { NightfireRenderer } from "@decodelabs/underlay/nightfire/renderer";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+  } from "@inflatable-cookie/underlay/templates";
+  import { NightfireRenderer } from "@inflatable-cookie/underlay/nightfire/renderer";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
   import TasksListPage from "$lib/lists/TasksListPage.svelte";
   import {
     Code,
@@ -22,7 +22,7 @@
     type Project
   } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { useToasts } from "@decodelabs/underlay/runtime/feedback";
+  import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
   import { getProjectStatusTone } from "$lib/utils/accents";
 
   let { data }: { data: PageData } = $props();

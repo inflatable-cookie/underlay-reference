@@ -50,17 +50,17 @@ export default defineConfig({
   resolve: {
     alias: {
       "@api-client": apiClientSrc,
-      "@decodelabs/underlay": underlaySrc,
+      "@inflatable-cookie/underlay": underlaySrc,
     },
-    dedupe: ["@decodelabs/underlay"],
+    dedupe: ["@inflatable-cookie/underlay"],
   },
   optimizeDeps: {
     exclude: [
-      "@decodelabs/underlay",
-      "@decodelabs/underlay/nightfire",
-      "@decodelabs/underlay/runtime",
-      "@decodelabs/underlay/styles",
-      "@decodelabs/underlay/client",
+      "@inflatable-cookie/underlay",
+      "@inflatable-cookie/underlay/nightfire",
+      "@inflatable-cookie/underlay/runtime",
+      "@inflatable-cookie/underlay/styles",
+      "@inflatable-cookie/underlay/client",
     ],
   },
   ssr: {
@@ -78,7 +78,7 @@ export default defineConfig({
       // where inotify/fs.events don't propagate from the host filesystem.
       usePolling: true,
       ignored: [
-        "!**/node_modules/@decodelabs/underlay/**",
+        "!**/node_modules/@inflatable-cookie/underlay/**",
         "!**/node_modules/@acme/api-client/**",
       ],
     },

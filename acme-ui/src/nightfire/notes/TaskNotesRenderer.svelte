@@ -1,6 +1,6 @@
 <script lang="ts">
   import { marked } from "marked";
-  import { sanitizeHtml } from "@decodelabs/underlay/utils/html";
+  import { sanitizeHtml } from "@inflatable-cookie/underlay/utils/html";
 
   type TaskNotesBlock = {
     data?: {

@@ -1,4 +1,4 @@
-import type { QueryParams } from "@decodelabs/underlay/client/query";
+import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
 
 export interface WithEtag<T> {
   data: T;

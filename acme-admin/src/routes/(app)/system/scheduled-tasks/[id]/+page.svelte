@@ -5,7 +5,7 @@
     SystemScheduledTaskDetailPage,
     type SystemJobListItem,
     type SystemScheduledTaskDetailItem
-  } from "@decodelabs/underlay/templates";
+  } from "@inflatable-cookie/underlay/templates";
 
   const taskId = $derived.by(() => $page.params.id ?? "");
 

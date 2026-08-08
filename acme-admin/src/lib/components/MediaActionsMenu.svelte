@@ -1,9 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import { MediaActionsMenu as SharedMediaActionsMenu } from "@decodelabs/underlay/templates";
-  import type { MediaActionsMenuItem, TemplateSurface } from "@decodelabs/underlay/templates";
-  import type { NavigationContext } from "@decodelabs/underlay/runtime/navigation";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
+  import { MediaActionsMenu as SharedMediaActionsMenu } from "@inflatable-cookie/underlay/templates";
+  import type { MediaActionsMenuItem, TemplateSurface } from "@inflatable-cookie/underlay/templates";
+  import type { NavigationContext } from "@inflatable-cookie/underlay/runtime/navigation";
   import { mediaCommands, type MediaDetail, type MediaSummary } from "@api-client";
   import { auth } from "$lib/stores/auth";
 

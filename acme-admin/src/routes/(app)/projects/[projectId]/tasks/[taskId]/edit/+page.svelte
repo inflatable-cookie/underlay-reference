@@ -2,12 +2,12 @@
   import { goto } from "$app/navigation";
   import { untrack } from "svelte";
   import type { PageData } from "./$types";
-  import { EntityFormPage } from "@decodelabs/underlay/templates";
-  import type { SpaFormResult } from "@decodelabs/underlay/patterns";
-  import { useAuthenticatedData } from "@decodelabs/underlay/runtime/auth";
-  import { computeBackInfo, consumeNavigationContext } from "@decodelabs/underlay/runtime/navigation";
-  import type { NightfireDraftValue } from "@decodelabs/underlay/nightfire/validation";
-  import { prepareNightfireForSave } from "@decodelabs/underlay/nightfire/validation";
+  import { EntityFormPage } from "@inflatable-cookie/underlay/templates";
+  import type { SpaFormResult } from "@inflatable-cookie/underlay/patterns";
+  import { useAuthenticatedData } from "@inflatable-cookie/underlay/runtime/auth";
+  import { computeBackInfo, consumeNavigationContext } from "@inflatable-cookie/underlay/runtime/navigation";
+  import type { NightfireDraftValue } from "@inflatable-cookie/underlay/nightfire/validation";
+  import { prepareNightfireForSave } from "@inflatable-cookie/underlay/nightfire/validation";
   import {
     adminCommands,
     type Label,

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
-  import { SystemJobListPage, toPagedListResult } from "@decodelabs/underlay/templates";
-  import type { SystemJobListRequest } from "@decodelabs/underlay/templates";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
+  import { SystemJobListPage, toPagedListResult } from "@inflatable-cookie/underlay/templates";
+  import type { SystemJobListRequest } from "@inflatable-cookie/underlay/templates";
   import {
     adminCommands,
     type JobStatus,

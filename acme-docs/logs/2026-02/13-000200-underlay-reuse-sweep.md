@@ -21,7 +21,7 @@ Scope reviewed:
 ### [FORMS] [MEDIUM] Raw color input duplicates shared color widget
 
 - **Location:** `acme-admin/src/lib/forms/CategoryForm.svelte:107`
-- **Existing shared alternative:** `@decodelabs/underlay/components` `ColorPicker`
+- **Existing shared alternative:** `@inflatable-cookie/underlay/components` `ColorPicker`
 - **Why this is duplicate:** A native `<input type="color">` is used directly inside a shared `Field`, while Underlay already exposes a color picker primitive.
 - **Classification:** Must migrate
 - **Remediation plan:** Replace native color input with `ColorPicker`, keep field name/value contract unchanged.
@@ -32,7 +32,7 @@ Scope reviewed:
 ### [FORM DIALOGS] [HIGH] Create-project flow uses `AlertDialog` for form input
 
 - **Location:** `acme-front/src/routes/(app)/dashboard/+page.svelte:113`
-- **Existing shared alternative:** `@decodelabs/underlay/patterns` `FormDialog` (or `Dialog` + `Form` + `FormActions`)
+- **Existing shared alternative:** `@inflatable-cookie/underlay/patterns` `FormDialog` (or `Dialog` + `Form` + `FormActions`)
 - **Why this is duplicate:** Input fields are embedded in `AlertDialog`, which is intended for confirm/destructive prompts; this diverges from shared form dialog pattern.
 - **Classification:** Must migrate
 - **Remediation plan:** Switch to `FormDialog` and shared submit/cancel action layout.

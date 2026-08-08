@@ -2,7 +2,7 @@ import { getAcmeClientConfig, getAdminHttpClient } from "../utils/client-factory
 import {
   appendQueryParams,
   type QueryParams,
-} from "@decodelabs/underlay/client/query";
+} from "@inflatable-cookie/underlay/client/query";
 /**
  * Media Library commands - media operations for admin UI
  */

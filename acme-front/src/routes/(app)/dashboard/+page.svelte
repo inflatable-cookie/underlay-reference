@@ -3,21 +3,21 @@ import "@acme/ui/editor";
 import "@acme/ui/validation";
 import {
   useToasts
-} from "@decodelabs/underlay/runtime/feedback";
+} from "@inflatable-cookie/underlay/runtime/feedback";
 import {
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
+} from "@inflatable-cookie/underlay/runtime/auth";
 import {
   goto } from "$app/navigation";
   import { auth,
   authLoading,
   currentUser } from "$lib/stores/auth";
   import * as userCommands from "@api-client/commands/user-commands.js";
-  import { NightfireEditor } from "@decodelabs/underlay/nightfire/editor";
+  import { NightfireEditor } from "@inflatable-cookie/underlay/nightfire/editor";
   import {
     prepareNightfireForSave,
     type NightfireDraftValue
-  } from "@decodelabs/underlay/nightfire/validation";
+  } from "@inflatable-cookie/underlay/nightfire/validation";
   import type { UserProject } from "@api-client/commands/user-commands.js";
     import {
     Button,

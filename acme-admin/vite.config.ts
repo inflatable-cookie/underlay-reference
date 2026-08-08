@@ -31,17 +31,17 @@ export default defineConfig({
     alias: {
       "@api-client": apiClientSrc,
       "acme-client": apiClientSrc,
-      "@decodelabs/underlay": underlaySrc,
+      "@inflatable-cookie/underlay": underlaySrc,
     },
-    dedupe: ["@decodelabs/underlay"],
+    dedupe: ["@inflatable-cookie/underlay"],
   },
   optimizeDeps: {
     // Underlay is a local `file:` dependency and changes frequently.
     exclude: [
-      "@decodelabs/underlay",
-      "@decodelabs/underlay/runtime",
-      "@decodelabs/underlay/styles",
-      "@decodelabs/underlay/client",
+      "@inflatable-cookie/underlay",
+      "@inflatable-cookie/underlay/runtime",
+      "@inflatable-cookie/underlay/styles",
+      "@inflatable-cookie/underlay/client",
     ],
   },
   ssr: {
@@ -67,7 +67,7 @@ export default defineConfig({
       usePolling: true,
       // Watch changes in symlinked local dependencies
       ignored: [
-        "!**/node_modules/@decodelabs/underlay/**",
+        "!**/node_modules/@inflatable-cookie/underlay/**",
         "!**/node_modules/@compli-me/ui/**",
         "!**/node_modules/acme-client/**",
       ],

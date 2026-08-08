@@ -86,7 +86,7 @@ This repository expects sibling `underlay` and `poodle` repos mounted into the w
 ../poodle
 ```
 
-All `package.json` files reference `@decodelabs/underlay` via `file:../../underlay`.
+All `package.json` files reference `@inflatable-cookie/underlay` via `file:../../underlay`.
 The `Cargo.toml` uses path dependencies like `../../underlay/rust/crates/...`.
 
 ## What's Included
@@ -262,7 +262,7 @@ Keep the workspace-level bootstrap assumptions aligned when you rename the refer
 If your `underlay` checkout is at a different relative path, update `package.json` files:
 
 ```json
-"@decodelabs/underlay": "file:../../underlay"
+"@inflatable-cookie/underlay": "file:../../underlay"
 ```
 
 And `Cargo.toml` workspace dependencies:

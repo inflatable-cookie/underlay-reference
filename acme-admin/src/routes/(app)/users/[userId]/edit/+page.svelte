@@ -1,19 +1,19 @@
 <script lang="ts">
-import { type SpaFormResult } from "@decodelabs/underlay/patterns";
-import { EntityFormPage } from "@decodelabs/underlay/templates";
+import { type SpaFormResult } from "@inflatable-cookie/underlay/patterns";
+import { EntityFormPage } from "@inflatable-cookie/underlay/templates";
 import {
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
+} from "@inflatable-cookie/underlay/runtime/auth";
 import {
   computeBackInfo,
   consumeNavigationContext
-} from "@decodelabs/underlay/runtime/navigation";
+} from "@inflatable-cookie/underlay/runtime/navigation";
 import {
   Code,
   MetaBar as PoodleMetaBar,
   MetaItem as PoodleMetaItem } from "@inflatable-cookie/poodle-svelte";
   import { untrack } from "svelte";
-  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
+  import { resolveRedirectTo } from "@inflatable-cookie/underlay/client/route-protection";
   import { goto } from "$app/navigation";
   import type { PageData } from "./$types";
   import { adminCommands,

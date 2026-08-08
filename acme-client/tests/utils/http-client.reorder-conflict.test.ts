@@ -4,7 +4,7 @@ import { HttpClient } from "../../src/utils/http-client";
 
 const requestMock = vi.fn();
 
-vi.mock("@decodelabs/underlay/client", () => {
+vi.mock("@inflatable-cookie/underlay/client", () => {
   class MockUnderlayHttpError extends Error {
     readonly status: number;
     readonly envelope?: unknown;
@@ -32,7 +32,7 @@ vi.mock("@decodelabs/underlay/client", () => {
   };
 });
 
-const { UnderlayHttpError } = await import("@decodelabs/underlay/client");
+const { UnderlayHttpError } = await import("@inflatable-cookie/underlay/client");
 
 describe("HttpClient reorder conflict envelope passthrough", () => {
   beforeEach(() => {

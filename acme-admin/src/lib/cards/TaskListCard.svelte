@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { EntityListCard, type EntityListCardBadge } from "@decodelabs/underlay/templates";
+  import { EntityListCard, type EntityListCardBadge } from "@inflatable-cookie/underlay/templates";
   import type { TaskWithLabels } from "@api-client";
 
   interface Props {

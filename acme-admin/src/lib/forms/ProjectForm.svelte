@@ -5,13 +5,13 @@ import {
   createLocalSearchFns,
   type SearchResult,
   type SuggestionOptions
-} from "@decodelabs/underlay/runtime/relations";
-import { NightfireEditor } from "@decodelabs/underlay/nightfire/editor";
+} from "@inflatable-cookie/underlay/runtime/relations";
+import { NightfireEditor } from "@inflatable-cookie/underlay/nightfire/editor";
 import {
   prepareNightfireForSave,
   type NightfireDraftValue,
   type NightfireValue
-} from "@decodelabs/underlay/nightfire/validation";
+} from "@inflatable-cookie/underlay/nightfire/validation";
 import {
   Button,
   Field,
@@ -21,7 +21,7 @@ import {
   Select,
   TextInput
   } from "@inflatable-cookie/poodle-svelte";
-    import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
+    import { navigateOnCancel } from "@inflatable-cookie/underlay/client/navigation";
   import { categorySelectionHistory } from "$lib/stores/selection-history";
   import { untrack } from "svelte";
   import type { Category, CategoryWithCounts, SuggestionRequestOptions } from "@api-client";

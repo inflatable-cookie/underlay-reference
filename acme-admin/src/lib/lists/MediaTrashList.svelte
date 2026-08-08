@@ -1,10 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { buildQueryString, parseQueryParams, type QueryParams } from "@decodelabs/underlay/client/query";
-  import { SystemMediaTrashListPage } from "@decodelabs/underlay/templates";
+  import { buildQueryString, parseQueryParams, type QueryParams } from "@inflatable-cookie/underlay/client/query";
+  import { SystemMediaTrashListPage } from "@inflatable-cookie/underlay/templates";
   import { mediaCommands } from "@api-client";
-  import type { SystemMediaTrashItem } from "@decodelabs/underlay/templates";
+  import type { SystemMediaTrashItem } from "@inflatable-cookie/underlay/templates";
 
   interface Props {
     title?: string;

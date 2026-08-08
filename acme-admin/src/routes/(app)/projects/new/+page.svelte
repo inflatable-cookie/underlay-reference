@@ -1,19 +1,19 @@
 <script lang="ts">
 import {
   type SpaFormResult
-} from "@decodelabs/underlay/patterns";
-import type { NightfireValue } from "@decodelabs/underlay/nightfire/validation";
-import { EntityFormPage } from "@decodelabs/underlay/templates";
+} from "@inflatable-cookie/underlay/patterns";
+import type { NightfireValue } from "@inflatable-cookie/underlay/nightfire/validation";
+import { EntityFormPage } from "@inflatable-cookie/underlay/templates";
 import {
   consumeNavigationContext
-} from "@decodelabs/underlay/runtime/navigation";
+} from "@inflatable-cookie/underlay/runtime/navigation";
   import {
   goto } from "$app/navigation";
   import { adminCommands,
   type Category,
   type SuggestionRequestOptions } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
+  import { resolveRedirectTo } from "@inflatable-cookie/underlay/client/route-protection";
   import { extractApiError } from "$lib/utils/api-errors";
   import ProjectForm from "$lib/forms/ProjectForm.svelte";
   

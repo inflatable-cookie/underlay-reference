@@ -2,7 +2,7 @@
 //
 // This file should import (and thereby execute) registration modules that
 // call `registerBlockRenderer(...)` from
-// `@decodelabs/underlay/nightfire/render-registry`.
+// `@inflatable-cookie/underlay/nightfire/render-registry`.
 
 import "./notes/render";
 import "./project-description/render";

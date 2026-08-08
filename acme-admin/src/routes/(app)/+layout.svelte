@@ -1,11 +1,11 @@
 <script lang="ts">
 import {
   configureAuth
-} from "@decodelabs/underlay/runtime/auth";
+} from "@inflatable-cookie/underlay/runtime/auth";
 import {
   UNDERLAY_TOASTS_CONTEXT_KEY,
   createToastStore,
-} from "@decodelabs/underlay/runtime/feedback";
+} from "@inflatable-cookie/underlay/runtime/feedback";
 import {
   setContext,
   onMount } from "svelte";

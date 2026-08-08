@@ -1,10 +1,10 @@
 <script lang="ts">
 import {
   PasswordRequirements
-} from "@decodelabs/underlay/patterns";
+} from "@inflatable-cookie/underlay/patterns";
 import {
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
+} from "@inflatable-cookie/underlay/runtime/auth";
 import {
   Callout as PoodleCallout,
   CodeInput as PoodleCodeInput

@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import { EntityDetailPage } from "@decodelabs/underlay/templates";
-  import { useAuthenticatedData } from "@decodelabs/underlay/runtime/auth";
-  import { useToasts } from "@decodelabs/underlay/runtime/feedback";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
+  import { EntityDetailPage } from "@inflatable-cookie/underlay/templates";
+  import { useAuthenticatedData } from "@inflatable-cookie/underlay/runtime/auth";
+  import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
   import {
     computeBackInfo,
     consumeNavigationContext
-  } from "@decodelabs/underlay/runtime/navigation";
+  } from "@inflatable-cookie/underlay/runtime/navigation";
   import {
     AlertDialog as PoodleAlertDialog,
     Button as PoodleButton,

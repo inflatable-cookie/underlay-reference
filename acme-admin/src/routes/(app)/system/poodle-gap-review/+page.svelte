@@ -1,7 +1,7 @@
 <script lang="ts">
 import {
   createClientPagination
-} from "@decodelabs/underlay/runtime/collections";
+} from "@inflatable-cookie/underlay/runtime/collections";
     import {
     Button,
     Card,

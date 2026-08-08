@@ -2,7 +2,7 @@ import {
   DEFAULT_MEDIA_UPLOAD_MAX_FILE_SIZE,
   createMediaUploadPipeline,
   type UploadProgress
-} from "@decodelabs/underlay/runtime/media/upload";
+} from "@inflatable-cookie/underlay/runtime/media/upload";
 import { detectMediaKindFromMimeType, mediaCommands } from "@api-client";
 
 export const MAX_FILE_SIZE = DEFAULT_MEDIA_UPLOAD_MAX_FILE_SIZE;

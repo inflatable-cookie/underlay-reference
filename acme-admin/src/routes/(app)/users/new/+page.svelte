@@ -1,11 +1,11 @@
 <script lang="ts">
 import {
   type SpaFormResult
-} from "@decodelabs/underlay/patterns";
-import { EntityFormPage } from "@decodelabs/underlay/templates";
+} from "@inflatable-cookie/underlay/patterns";
+import { EntityFormPage } from "@inflatable-cookie/underlay/templates";
 import {
   consumeNavigationContext
-} from "@decodelabs/underlay/runtime/navigation";
+} from "@inflatable-cookie/underlay/runtime/navigation";
 import {
   goto } from "$app/navigation";
   import { adminCommands,
@@ -14,7 +14,7 @@ import {
   UserRole as UserRoleConst,
   UserStatus as UserStatusConst } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
+  import { resolveRedirectTo } from "@inflatable-cookie/underlay/client/route-protection";
   import { extractApiError } from "$lib/utils/api-errors";
   import UserForm from "$lib/forms/UserForm.svelte";
   

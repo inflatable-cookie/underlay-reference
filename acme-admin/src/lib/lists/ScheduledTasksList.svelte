@@ -1,9 +1,9 @@
 <script lang="ts">
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
   import {
     SystemScheduledTasksListPage,
     toPagedListResult
-  } from "@decodelabs/underlay/templates";
+  } from "@inflatable-cookie/underlay/templates";
   import { adminCommands, type ScheduledTaskSummary } from "@api-client";
 
   interface Props {

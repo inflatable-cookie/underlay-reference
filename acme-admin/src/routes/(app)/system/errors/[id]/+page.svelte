@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { adminCommands } from "@api-client";
-  import { ErrorLogDetailPage } from "@decodelabs/underlay/templates";
+  import { ErrorLogDetailPage } from "@inflatable-cookie/underlay/templates";
 
   const errorLogId = $derived.by(() => $page.params.id ?? "");
 

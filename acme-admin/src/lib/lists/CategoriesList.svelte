@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
-  import { useToasts } from "@decodelabs/underlay/runtime/feedback";
-  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
+  import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
+  import { EntityListPage, toPagedListResult } from "@inflatable-cookie/underlay/templates";
   import { adminCommands, type CategoryWithCounts } from "@api-client";
   import { CategoryListCard } from "$lib/cards";
   import { auth } from "$lib/stores/auth";

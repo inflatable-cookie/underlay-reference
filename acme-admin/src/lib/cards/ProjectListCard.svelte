@@ -1,8 +1,8 @@
 <script lang="ts">
   import { AlertDialog } from "@inflatable-cookie/poodle-svelte";
-  import { EntityListCard, type EntityListCardBadge, type EntityListCardCounter } from "@decodelabs/underlay/templates";
+  import { EntityListCard, type EntityListCardBadge, type EntityListCardCounter } from "@inflatable-cookie/underlay/templates";
   import type { ProjectWithCounts } from "@api-client";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
 
   interface Props {
     project: ProjectWithCounts;

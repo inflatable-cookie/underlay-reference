@@ -1,8 +1,8 @@
 import {
   parseNightfireMediaLocator,
   resolveNightfireMediaLocator,
-} from "@decodelabs/underlay/nightfire/media-locator";
-import type { NightfireValue } from "@decodelabs/underlay/nightfire/validation";
+} from "@inflatable-cookie/underlay/nightfire/media-locator";
+import type { NightfireValue } from "@inflatable-cookie/underlay/nightfire/validation";
 import type { MediaUsage, Task } from "@api-client";
 
 function decodePointerSegment(segment: string): string {

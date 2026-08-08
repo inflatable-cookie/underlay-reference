@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AdminUserMenu as UnderlayAdminUserMenu } from "@decodelabs/underlay/templates";
+	import { AdminUserMenu as UnderlayAdminUserMenu } from "@inflatable-cookie/underlay/templates";
 	import { auth } from "$lib/stores/auth";
 	import type { LoginUser } from "@api-client";
 

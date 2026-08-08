@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
-  import { MediaListPage, toPagedListResult } from "@decodelabs/underlay/templates";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
+  import { MediaListPage, toPagedListResult } from "@inflatable-cookie/underlay/templates";
   import { mediaCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
 

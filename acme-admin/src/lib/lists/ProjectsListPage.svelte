@@ -1,12 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
+  import { EntityListPage, toPagedListResult } from "@inflatable-cookie/underlay/templates";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
   import { ProjectListCard } from "$lib/cards";
   import { adminCommands, type ProjectWithCounts } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { useToasts } from "@decodelabs/underlay/runtime/feedback";
+  import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
 
   interface Props {
     title?: string;

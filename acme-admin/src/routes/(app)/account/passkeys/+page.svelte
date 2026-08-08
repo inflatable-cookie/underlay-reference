@@ -1,7 +1,7 @@
 <script lang="ts">
 import {
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
+} from "@inflatable-cookie/underlay/runtime/auth";
 import {
   AlertDialog as PoodleAlertDialog,
   Button as PoodleButton,
@@ -15,7 +15,7 @@ import {
   import { PageLoading } from "@inflatable-cookie/poodle-svelte";
   import { authCommands } from "@api-client";
   import { auth } from "$lib/stores/auth";
-    import { toPublicKeyCreationOptions, credentialCreationToJson } from "@decodelabs/underlay/utils/webauthn";
+    import { toPublicKeyCreationOptions, credentialCreationToJson } from "@inflatable-cookie/underlay/utils/webauthn";
 
   // Passkey type
   type PasskeyCredential = {

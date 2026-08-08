@@ -1,7 +1,7 @@
 <script lang="ts">
 import {
   LoginPage
-} from "@decodelabs/underlay/patterns";
+} from "@inflatable-cookie/underlay/patterns";
 import {
   browser } from "$app/environment";
   import { goto } from "$app/navigation";
@@ -10,7 +10,7 @@ import {
   authLoading,
   currentUser } from "$lib/stores/auth";
   import { authCommands } from "@api-client";
-    import { toPublicKeyRequestOptions, assertionToJson } from "@decodelabs/underlay/utils/webauthn";
+    import { toPublicKeyRequestOptions, assertionToJson } from "@inflatable-cookie/underlay/utils/webauthn";
 
   // Initialize auth and redirect if already logged in
   onMount(async () => {

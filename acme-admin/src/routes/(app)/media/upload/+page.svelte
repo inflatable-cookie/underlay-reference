@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useToasts } from "@decodelabs/underlay/runtime/feedback";
-  import { MediaUploadWorkflowPage } from "@decodelabs/underlay/templates";
+  import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
+  import { MediaUploadWorkflowPage } from "@inflatable-cookie/underlay/templates";
   import { auth } from "$lib/stores/auth";
   import {
     MAX_FILE_SIZE,

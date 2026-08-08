@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
-  import { SystemAuditLogListPage, toPagedListResult } from "@decodelabs/underlay/templates";
-  import type { SystemAuditLogEntry } from "@decodelabs/underlay/templates";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
+  import { SystemAuditLogListPage, toPagedListResult } from "@inflatable-cookie/underlay/templates";
+  import type { SystemAuditLogEntry } from "@inflatable-cookie/underlay/templates";
   import type { LogActor } from "@inflatable-cookie/poodle-svelte";
   import { adminCommands, type ActivityEntry } from "@api-client";
 

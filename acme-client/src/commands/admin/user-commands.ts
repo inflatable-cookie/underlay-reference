@@ -10,7 +10,7 @@ import type {
 } from "../../types/admin-types.js";
 import { getAdminHttpClient } from "../../utils/client-factory.js";
 import { getHeaderValueCaseInsensitive, type WithEtag } from "./utils.js";
-import { appendQueryParams } from "@decodelabs/underlay/client/query";
+import { appendQueryParams } from "@inflatable-cookie/underlay/client/query";
 import { toSnakeQueryParams } from "./utils.js";
 
 /**

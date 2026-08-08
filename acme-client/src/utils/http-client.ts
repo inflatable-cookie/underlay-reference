@@ -3,10 +3,10 @@ import {
   type HttpClient as UnderlayHttpClient,
   type HttpClientOptions,
   type RefreshContext,
-} from "@decodelabs/underlay/client/http";
+} from "@inflatable-cookie/underlay/client/http";
 import {
   UnderlayHttpError,
-} from "@decodelabs/underlay/client/errors";
+} from "@inflatable-cookie/underlay/client/errors";
 
 import type { ApiError } from "../types/common-types.js";
 import { getCsrfHeaders, clearCsrfToken } from "./csrf-manager.js";

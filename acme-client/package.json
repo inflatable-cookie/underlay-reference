@@ -9,7 +9,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@decodelabs/underlay": "file:../../underlay"
+    "@inflatable-cookie/underlay": "file:../../underlay"
   },
   "devDependencies": {
     "@types/node": "^25.3.0",

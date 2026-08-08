@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { UserForm as SharedUserForm } from "@decodelabs/underlay/templates";
+  import { UserForm as SharedUserForm } from "@inflatable-cookie/underlay/templates";
 
   type UserFormMode = "create" | "edit";
 

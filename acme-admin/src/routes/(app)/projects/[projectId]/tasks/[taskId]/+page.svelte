@@ -5,9 +5,9 @@
     EntityDetail,
     EntityDetailModule,
     EntityDetailPage
-  } from "@decodelabs/underlay/templates";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import { NightfireRenderer } from "@decodelabs/underlay/nightfire/renderer";
+  } from "@inflatable-cookie/underlay/templates";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
+  import { NightfireRenderer } from "@inflatable-cookie/underlay/nightfire/renderer";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Label, type Project, type Task } from "@api-client";

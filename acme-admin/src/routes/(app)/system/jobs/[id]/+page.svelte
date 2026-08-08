@@ -4,7 +4,7 @@
   import {
     SystemJobDetailPage,
     type SystemJobDetailItem
-  } from "@decodelabs/underlay/templates";
+  } from "@inflatable-cookie/underlay/templates";
   import { getJobStatusTone } from "$lib/utils/accents";
 
   const jobId = $derived.by(() => $page.params.id ?? "");

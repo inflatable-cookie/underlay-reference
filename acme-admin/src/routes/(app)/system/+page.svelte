@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { SystemIndexPage } from "@decodelabs/underlay/templates";
+  import { SystemIndexPage } from "@inflatable-cookie/underlay/templates";
   import LayoutPanelTop from "lucide-svelte/icons/layout-panel-top";
 
   const extraCards = [

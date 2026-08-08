@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
   import {
     toPagedListResult,
     UsersListPage,
     type UsersListLoader
-  } from "@decodelabs/underlay/templates";
+  } from "@inflatable-cookie/underlay/templates";
   import { adminCommands, type User } from "@api-client";
 
   interface Props {

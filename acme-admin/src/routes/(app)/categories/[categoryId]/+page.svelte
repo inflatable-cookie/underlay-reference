@@ -4,9 +4,9 @@
     EntityDetail,
     EntityAttributeList,
     EntityDetailModule
-  } from "@decodelabs/underlay/templates";
-  import { copyToClipboard, useToasts } from "@decodelabs/underlay/runtime/feedback";
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+  } from "@inflatable-cookie/underlay/templates";
+  import { copyToClipboard, useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
   import { goto } from "$app/navigation";
   import { auth } from "$lib/stores/auth";
   import type { PageData } from "./$types";

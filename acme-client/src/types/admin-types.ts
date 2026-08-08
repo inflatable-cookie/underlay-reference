@@ -4,7 +4,7 @@
  * These types match the admin route responses from acme-api.
  */
 
-import type { NightfireValue } from "@decodelabs/underlay/nightfire/validation";
+import type { NightfireValue } from "@inflatable-cookie/underlay/nightfire/validation";
 
 // ============================================================================
 // Categories

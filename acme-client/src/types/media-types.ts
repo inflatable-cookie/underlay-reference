@@ -38,4 +38,4 @@ export {
   detectMediaKindFromMimeType,
   isMediaDeleted,
   getMediaDisplayName,
-} from "@decodelabs/underlay/client/media";
+} from "@inflatable-cookie/underlay/client/media";

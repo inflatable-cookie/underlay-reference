@@ -1,18 +1,18 @@
 <script lang="ts">
 import {
   type SpaFormResult
-} from "@decodelabs/underlay/patterns";
-import { EntityFormPage } from "@decodelabs/underlay/templates";
+} from "@inflatable-cookie/underlay/patterns";
+import { EntityFormPage } from "@inflatable-cookie/underlay/templates";
 import {
   consumeNavigationContext
-} from "@decodelabs/underlay/runtime/navigation";
-import { slugify } from "@decodelabs/underlay/utils/slug";
+} from "@inflatable-cookie/underlay/runtime/navigation";
+import { slugify } from "@inflatable-cookie/underlay/utils/slug";
 import {
   goto } from "$app/navigation";
   import { adminCommands,
   type Category } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { resolveRedirectTo } from "@decodelabs/underlay/client/route-protection";
+  import { resolveRedirectTo } from "@inflatable-cookie/underlay/client/route-protection";
   import { extractApiError } from "$lib/utils/api-errors";
   import CategoryForm from "$lib/forms/CategoryForm.svelte";
     

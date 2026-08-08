@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
-  import { EntityListPage, toPagedListResult } from "@decodelabs/underlay/templates";
-  import type { QueryParams } from "@decodelabs/underlay/client/query";
+  import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
+  import { EntityListPage, toPagedListResult } from "@inflatable-cookie/underlay/templates";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
   import {
     Button,
     Field,
@@ -10,7 +10,7 @@
   } from "@inflatable-cookie/poodle-svelte";
   import { adminCommands, TaskStatus, type TaskWithLabels } from "@api-client";
   import { auth } from "$lib/stores/auth";
-  import { useToasts } from "@decodelabs/underlay/runtime/feedback";
+  import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
   import { TaskListCard } from "$lib/cards";
 
   interface Props {

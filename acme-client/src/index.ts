@@ -112,7 +112,7 @@ export {
 } from "./types/admin-types.js";
 
 // Utilities - re-export from Underlay
-export { toUserMessage } from "@decodelabs/underlay/client/errors";
+export { toUserMessage } from "@inflatable-cookie/underlay/client/errors";
 
 // Query utilities - re-export from Underlay
 export {
@@ -130,7 +130,7 @@ export {
   appendQueryParams,
   createFilterBuilder,
   parseQueryParams,
-} from "@decodelabs/underlay/client/query";
+} from "@inflatable-cookie/underlay/client/query";
 
 // Selection history and suggestion utilities - re-export from Underlay
 export {
@@ -139,7 +139,7 @@ export {
   buildSuggestionParams,
   appendSuggestionParams,
   type SuggestionRequestOptions,
-} from "@decodelabs/underlay/client/suggestions";
+} from "@inflatable-cookie/underlay/client/suggestions";
 
 // Client factory (for apps to configure)
 export {

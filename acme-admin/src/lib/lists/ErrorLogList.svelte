@@ -1,14 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { buildQueryString, parseQueryParams, type QueryParams } from "@decodelabs/underlay/client/query";
+  import { buildQueryString, parseQueryParams, type QueryParams } from "@inflatable-cookie/underlay/client/query";
   import {
     ErrorLogListPage,
     type ErrorLogDetailLoader,
     type ErrorLogListLoader,
     type ErrorLogStatsLoader,
     toPagedListResult,
-  } from "@decodelabs/underlay/templates";
+  } from "@inflatable-cookie/underlay/templates";
   import { adminCommands } from "@api-client";
 
   const currentQuery = $derived(parseQueryParams($page.url.searchParams));

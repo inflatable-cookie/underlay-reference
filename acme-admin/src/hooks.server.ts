@@ -3,8 +3,8 @@ import {
   createCspConfig,
   createCspResolveOptions,
   generateNonce,
-} from "@decodelabs/underlay/server";
-import { UnderlayHttpError } from "@decodelabs/underlay/client/errors";
+} from "@inflatable-cookie/underlay/server";
+import { UnderlayHttpError } from "@inflatable-cookie/underlay/client/errors";
 import { dev } from "$app/environment";
 import type { Handle, HandleServerError } from "@sveltejs/kit";
 import { env as privateEnv } from "$env/dynamic/private";

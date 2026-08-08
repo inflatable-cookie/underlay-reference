@@ -1,12 +1,12 @@
 import {
   appendSuggestionParams,
   type SuggestionRequestOptions,
-} from "@decodelabs/underlay/client/suggestions";
+} from "@inflatable-cookie/underlay/client/suggestions";
 import { getAdminHttpClient } from "../../utils/client-factory.js";
 import {
   appendQueryParams,
   type QueryParams,
-} from "@decodelabs/underlay/client/query";
+} from "@inflatable-cookie/underlay/client/query";
 import type { ListResponse, PagedListResponse, SingleResponse } from "../../types/common-types.js";
 import type {
   BatchDeletePayload,

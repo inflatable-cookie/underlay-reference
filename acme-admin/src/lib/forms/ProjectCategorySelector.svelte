@@ -3,10 +3,10 @@ import type {
   SearchResult,
   SelectableRelation,
   SuggestionOptions,
-} from "@decodelabs/underlay/runtime/relations";
+} from "@inflatable-cookie/underlay/runtime/relations";
 import type {
   SelectionHistory
-} from "@decodelabs/underlay/runtime/selection";
+} from "@inflatable-cookie/underlay/runtime/selection";
 import {
   onMount } from "svelte";
   import {

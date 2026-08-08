@@ -1,8 +1,8 @@
 <script lang="ts">
 import {
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
-import { sanitizeSvgHtml } from "@decodelabs/underlay/utils/html";
+} from "@inflatable-cookie/underlay/runtime/auth";
+import { sanitizeSvgHtml } from "@inflatable-cookie/underlay/utils/html";
 import {
   CodeInput as PoodleCodeInput,
   AlertDialog as PoodleAlertDialog,

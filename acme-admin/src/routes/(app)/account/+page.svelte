@@ -1,10 +1,10 @@
 <script lang="ts">
 import {
   detectBrowserTimezone
-} from "@decodelabs/underlay/runtime/browser";
+} from "@inflatable-cookie/underlay/runtime/browser";
 import {
   useAuthenticatedData
-} from "@decodelabs/underlay/runtime/auth";
+} from "@inflatable-cookie/underlay/runtime/auth";
 import {
   Callout as PoodleCallout,
   DetailItem as PoodleDetailItem

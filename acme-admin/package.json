@@ -12,7 +12,7 @@
     "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components",
     "@inflatable-cookie/poodle-svelte-tokens": "file:../../poodle/packages/svelte/tokens",
     "acme-client": "file:../acme-client",
-    "@decodelabs/underlay": "file:../../underlay",
+    "@inflatable-cookie/underlay": "file:../../underlay",
     "bits-ui": "^2.18.1",
     "lucide-svelte": "^1.0.1"
   },

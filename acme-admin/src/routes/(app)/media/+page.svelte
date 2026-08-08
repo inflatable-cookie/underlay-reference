@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { buildQueryString, parseQueryParams, type QueryParams } from "@decodelabs/underlay/client/query";
+  import { buildQueryString, parseQueryParams, type QueryParams } from "@inflatable-cookie/underlay/client/query";
   import { MediaList } from "$lib/lists";
 
   const currentQuery = $derived(parseQueryParams($page.url.searchParams));

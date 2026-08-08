@@ -13,8 +13,8 @@
 	import Calendar from "lucide-svelte/icons/calendar";
 	import ClipboardList from "lucide-svelte/icons/clipboard-list";
 	import AlertTriangle from "lucide-svelte/icons/triangle-alert";
-	import { AdminNavList as UnderlayAdminNavList } from "@decodelabs/underlay/templates";
-	import type { AdminNavItem } from "@decodelabs/underlay/templates";
+	import { AdminNavList as UnderlayAdminNavList } from "@inflatable-cookie/underlay/templates";
+	import type { AdminNavItem } from "@inflatable-cookie/underlay/templates";
 
 
 	interface Props {

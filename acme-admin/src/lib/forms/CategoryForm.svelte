@@ -3,7 +3,7 @@ import {
   isReservedSlug,
   isValidSlugFormat,
   slugify
-} from "@decodelabs/underlay/utils/slug";
+} from "@inflatable-cookie/underlay/utils/slug";
 import {
   Button,
   ColorPicker,
@@ -16,7 +16,7 @@ import {
   type InputValidationStatus,
   } from "@inflatable-cookie/poodle-svelte";
   import type { ValidationResult } from "@inflatable-cookie/poodle-svelte";
-    import { navigateOnCancel } from "@decodelabs/underlay/client/navigation";
+    import { navigateOnCancel } from "@inflatable-cookie/underlay/client/navigation";
   import { untrack } from "svelte";
 
   type CategoryFormMode = "create" | "edit";

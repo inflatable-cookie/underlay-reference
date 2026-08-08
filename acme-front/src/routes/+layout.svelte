@@ -4,9 +4,9 @@
 	import "@inflatable-cookie/poodle-svelte-tokens/theme-iceberg.css";
 	import "@inflatable-cookie/poodle-svelte-tokens/density-comfortable.css";
 	import "@inflatable-cookie/poodle-svelte-tokens/control-size-md.css";
-	import "@decodelabs/underlay/styles/base.css";
-	import "@decodelabs/underlay/styles/tokens.css";
-	import "@decodelabs/underlay/styles/forms.css";
+	import "@inflatable-cookie/underlay/styles/base.css";
+	import "@inflatable-cookie/underlay/styles/tokens.css";
+	import "@inflatable-cookie/underlay/styles/forms.css";
 
 	let { children } = $props();
 </script>

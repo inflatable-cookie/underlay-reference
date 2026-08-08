@@ -1,8 +1,8 @@
 <script lang="ts">
   import "@acme/ui/editor";
   import "@acme/ui/validation";
-  import { NightfireEditor } from "@decodelabs/underlay/nightfire/editor";
-  import type { NightfireDraftValue } from "@decodelabs/underlay/nightfire/validation";
+  import { NightfireEditor } from "@inflatable-cookie/underlay/nightfire/editor";
+  import type { NightfireDraftValue } from "@inflatable-cookie/underlay/nightfire/validation";
   import {
     Button,
     Field,

@@ -2,7 +2,7 @@
 //
 // This file should import (and thereby execute) registration modules that
 // call `registerBlockValidator(...)` from
-// `@decodelabs/underlay/nightfire/validator-registry`.
+// `@inflatable-cookie/underlay/nightfire/validator-registry`.
 
 import "./notes/validation";
 import "./project-description/validation";

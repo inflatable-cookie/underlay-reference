@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MediaListCard as UnderlayMediaListCard } from "@decodelabs/underlay/templates";
+  import { MediaListCard as UnderlayMediaListCard } from "@inflatable-cookie/underlay/templates";
   import type { MediaSummary } from "@api-client";
 
   interface Props {

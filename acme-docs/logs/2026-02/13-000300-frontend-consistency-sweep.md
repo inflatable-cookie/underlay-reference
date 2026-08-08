@@ -16,7 +16,7 @@ Scope reviewed:
   - Typed client command usage is consistent.
 - Step 3 (naming/import hygiene): pass
   - Deep relative import drift (`../../../`) not detected.
-  - Alias imports (`$lib`, `@api-client`, `@decodelabs/underlay`) are dominant.
+  - Alias imports (`$lib`, `@api-client`, `@inflatable-cookie/underlay`) are dominant.
 - Step 4 (state handling): pass with one consistency note
   - Tokens are not passed via load data.
   - Admin uses URL-backed tab/list state more broadly than front.

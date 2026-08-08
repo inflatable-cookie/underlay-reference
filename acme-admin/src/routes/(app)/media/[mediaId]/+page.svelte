@@ -11,8 +11,8 @@ import {
   MediaVersionActionDialogs,
   MediaVersionPreviewDialog,
   MediaVersionsList
-} from "@decodelabs/underlay/templates";
-import { MediaDetailWorkflowPage } from "@decodelabs/underlay/templates";
+} from "@inflatable-cookie/underlay/templates";
+import { MediaDetailWorkflowPage } from "@inflatable-cookie/underlay/templates";
 import {
   canActivateMediaVersion,
   canDeleteMediaVersion,
@@ -25,22 +25,22 @@ import {
   isCurrentMediaVersion,
   isImageMedia,
   isPdfMedia
-} from "@decodelabs/underlay/runtime/media/detail";
-import { formatFileSize } from "@decodelabs/underlay/runtime/media/upload";
+} from "@inflatable-cookie/underlay/runtime/media/detail";
+import { formatFileSize } from "@inflatable-cookie/underlay/runtime/media/upload";
 import {
   getMediaKindLabel,
   getMediaVersionStateAccent,
   getMediaVisibilityLabel
-} from "@decodelabs/underlay/runtime/media/types";
+} from "@inflatable-cookie/underlay/runtime/media/types";
 import {
   useToasts,
-} from "@decodelabs/underlay/runtime/feedback";
+} from "@inflatable-cookie/underlay/runtime/feedback";
 import {
   getBackButtonInfo,
-} from "@decodelabs/underlay/runtime/navigation";
+} from "@inflatable-cookie/underlay/runtime/navigation";
 import {
   useAuthenticatedData,
-} from "@decodelabs/underlay/runtime/auth";
+} from "@inflatable-cookie/underlay/runtime/auth";
 import {
   EmptyState as PoodleEmptyState,
   PageLoading
@@ -67,7 +67,7 @@ import {
   MediaVisibility,
   MediaVersionState
 } from "@api-client";
-import { gotoWithContext } from "@decodelabs/underlay/client/navigation";
+import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
 import { auth, authLoading, currentUser } from "$lib/stores/auth";
 import { isPreconditionFailed } from "$lib/utils/api-errors";
 import MediaActionsMenu from "$lib/components/MediaActionsMenu.svelte";

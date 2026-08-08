@@ -5,7 +5,7 @@ import {
   generateNonce,
   applyCspHeaders,
   createCspResolveOptions,
-} from "@decodelabs/underlay/server";
+} from "@inflatable-cookie/underlay/server";
 import { env as privateEnv } from "$env/dynamic/private";
 import { resolvePublicApiConfig } from "$lib/config/public-api";
 

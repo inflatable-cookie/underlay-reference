@@ -1,10 +1,10 @@
-import type { SchemaDefinition } from "@decodelabs/underlay/nightfire/editor-registry";
+import type { SchemaDefinition } from "@inflatable-cookie/underlay/nightfire/editor-registry";
 import {
   registerNightfireBlocks,
   type NightfireBlockRegistration,
-} from "@decodelabs/underlay/nightfire/editor";
-import { registerBlockRenderer } from "@decodelabs/underlay/nightfire/render-registry";
-import { registerBlockValidator } from "@decodelabs/underlay/nightfire/validation";
+} from "@inflatable-cookie/underlay/nightfire/editor";
+import { registerBlockRenderer } from "@inflatable-cookie/underlay/nightfire/render-registry";
+import { registerBlockValidator } from "@inflatable-cookie/underlay/nightfire/validation";
 
 import TaskChecklistEditor from "./TaskChecklistEditor.svelte";
 import TaskChecklistRenderer from "./TaskChecklistRenderer.svelte";

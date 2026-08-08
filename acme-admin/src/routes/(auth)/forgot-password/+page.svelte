@@ -1,7 +1,7 @@
 <script lang="ts">
 import {
   ForgotPasswordFlow
-} from "@decodelabs/underlay/patterns";
+} from "@inflatable-cookie/underlay/patterns";
 import {
   authCommands } from "@api-client";
   

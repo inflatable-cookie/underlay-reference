@@ -11,7 +11,7 @@
     "outDir": "dist",
     "baseUrl": "src",
     "paths": {
-      "@decodelabs/underlay/*": ["../../../underlay/ts/src/*"]
+      "@inflatable-cookie/underlay/*": ["../../../underlay/ts/src/*"]
     },
     "declaration": true,
     "declarationMap": true
