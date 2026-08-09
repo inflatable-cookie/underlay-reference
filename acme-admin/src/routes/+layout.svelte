@@ -2,6 +2,8 @@
 	import { page } from '$app/stores';
 	import favicon from '$lib/assets/favicon.svg';
 	import { resolveAdminPageTitle } from '$lib/utils/page-title';
+	import { IconProvider } from "@inflatable-cookie/poodle-svelte";
+	import { icons } from "$lib/icons.generated";
 	import "@inflatable-cookie/poodle-core/tokens/styles.css";
 	import "@inflatable-cookie/poodle-core/tokens/theme-eclipse.css";
 	import "@inflatable-cookie/poodle-core/tokens/density-compact.css";
@@ -19,6 +21,7 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
+<IconProvider {icons}>
 <div
 	class="admin-theme-shell"
 	data-theme="eclipse"
@@ -27,6 +30,7 @@
 >
 	{@render children()}
 </div>
+</IconProvider>
 
 <style>
 	:global(.admin-theme-shell) {
