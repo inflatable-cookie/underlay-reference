@@ -35,9 +35,6 @@
   },
   "dependencies": {
     "@inflatable-cookie/underlay": "file:../../underlay",
-    "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components"
-  },
-  "overrides": {
-    "@inflatable-cookie/poodle-core": "file:../../poodle/packages/core"
+    "@inflatable-cookie/poodle-svelte": "^0.1.0"
   }
 }
