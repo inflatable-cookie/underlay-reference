@@ -8,8 +8,6 @@ description: >
   release/CI footguns. Use when the user mentions effigy, effigy.toml, or
   needs tests, dev, QA, repo navigation, deployment, or validation in an
   Effigy-adopting repo.
-metadata:
-  internal: true
 ---
 
 # Effigy Skill
@@ -32,7 +30,8 @@ overrides it. Prefer `effigy <selector>` over raw `cargo` / `npm` /
 - **Never re-tag a failed release.** Fix lands in next PATCH.
 - **Never run release mutations** (`release prepare/execute`) without explicit human ask.
 - **Don't add `package.json` scripts** that re-export Effigy tasks.
-- **Don't add `--repo .`** when already inside the target repo.
+- **Don't add a current-directory repo override** when already inside the
+  target repo.
 
 Full rationale: `references/footguns.md`.
 
@@ -44,9 +43,11 @@ Pick the first Effigy command that matches the job.
 | Job | Use when | First command |
 |-----|----------|---------------|
 | Understand code | Ownership, behavior, implementation, impact | `effigy graph explore "<question>" --json` |
+| Review graph-backed risk | Boundaries, likely isolation, or validation risk | `effigy scan <graph-aware-subcommand> --json` |
 | Find runnable selectors | You need repo tasks or QA surfaces | `effigy tasks` |
 | Inspect test shape | You need to know what `effigy test` will actually do | `effigy test --plan` |
 | Diagnose routing or repo health | Selector resolution is unclear, or health/drift is the task | `effigy doctor` |
+| Inspect local dependency links | Cargo/Bun desired state, drift, or lock/peer hygiene is the task | `effigy --json deps status` |
 | Execute work | A task or built-in already covers the operation | `effigy <selector>` |
 | Narrow validation | You changed code and want likely tests/files first | `git diff --name-only | effigy graph affected --stdin --json` |
 | Parse results | Another tool/agent will consume the output | `effigy --json <command>` |
@@ -80,6 +81,15 @@ Stay with `rg` first when the job is:
 
 Full built-in lookup: `references/built-in-surfaces.md`.
 
+Use graph-aware scans when the question is risk, not navigation:
+
+- `effigy scan boundary-violations --json`
+- `effigy scan dead-code --json`
+- `git diff --name-only | effigy scan validation-gaps --stdin --json`
+
+Do not run these as a greeting. They are for bounded review questions, not
+for generic repo orientation.
+
 ## Common workflows
 
 | Goal | Command |
@@ -91,6 +101,8 @@ Full built-in lookup: `references/built-in-surfaces.md`.
 | Fast pre-push check | `effigy qa:ci:fast` (if defined) |
 | Full local QA | `effigy qa` or `effigy qa:ci:local` |
 | Repo health scan | `effigy doctor --verbose` |
+| Local dependency link health | `effigy --json deps status` |
+| Inventory project papercuts | `effigy --json papercuts` or `effigy --json papercuts --scope <PROJECTS_DIR>` |
 | Scaffold manifest | `effigy init` then `effigy tasks migrate` |
 | Check repo setup | `effigy init --check --json` or `effigy init --checklist --json` |
 | Apply repo setup | `effigy init` or `effigy init --apply --json` |
@@ -154,6 +166,11 @@ Guide: `docs/guides/073-state-stack-guide.md`.
 **Deployment** — `effigy deploy plan`, `apply`, `status` (human-gated apply).
 Guide: `docs/guides/074-deployment-guide.md`.
 
+**Local dependencies** — `effigy deps link <cargo|bun> <PATH> --dry-run`,
+`link`, `status`, then `unlink`. Status and doctor are read-only; never edit
+committed manifests or restore linked locks through Git.
+Guide: `docs/guides/077-local-dependency-linking.md`.
+
 **Release** — never mutate without explicit human instruction.
 Sequence: `references/release-protocol.md`.
 
@@ -169,6 +186,8 @@ Sequence: `references/release-protocol.md`.
 | JSON contracts | `docs/guides/017-json-output-contracts.md` |
 | Quick start | `docs/guides/021-quick-start-and-command-cookbook.md` |
 | Command reference | `docs/guides/025-command-reference-matrix.md` |
+| Local dependency linking | `docs/guides/077-local-dependency-linking.md` |
+| Papercuts discovery | `docs/guides/078-papercuts-discovery-and-capture.md` |
 | Distribution evidence | `docs/guides/062-distribution-system-guide.md` |
 | Containers / dev | `docs/guides/063-container-system-guide.md` |
 | Release | `docs/guides/051-release-orchestration.md` |

@@ -1,5 +1,5 @@
 [manifest]
-minimum_effigy_version = "0.7.0"
+minimum_effigy_version = "0.10.0"
 
 [catalog]
 alias = "underlay-reference"
@@ -20,7 +20,7 @@ front = "acme-front"
 admin = "acme-admin"
 
 [systems.dev]
-mounts = ["../underlay", "../poodle"]
+mounts = [{ member = "underlay" }, { member = "poodle" }]
 
 [tasks."qa:security"]
 run = "../underlay/scripts/check-consumer-conformance.sh ."
