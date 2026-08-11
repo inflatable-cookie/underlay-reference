@@ -31,16 +31,16 @@ qa = [
 ]
 
 "qa:docs" = [
-  { task = "docs check-links README.md vision/README.md roadmaps/README.md logs/README.md" },
-  { task = "docs check-forbidden AGENTS.md README.md --forbid '--repo .'" },
-  { task = "docs check-forbidden AGENTS.md README.md ../package.json --forbid '--repo .'" },
+  { task = "docs check links README.md vision/README.md roadmaps/README.md logs/README.md" },
+  { task = "docs check forbidden AGENTS.md README.md --forbid '--repo .'" },
+  { task = "docs check forbidden AGENTS.md README.md ../package.json --forbid '--repo .'" },
   { task = "qa:northstar" },
 ]
 
 "qa:northstar" = [
-  { task = "docs check-headings vision/README.md --require-heading '## Vision Artifacts' --require-heading '## Next Task'" },
-  { task = "docs check-headings roadmaps/README.md --require-heading '## Rules' --require-heading '## Current generation' --require-heading '## Next Task'" },
-  { task = "docs check-headings roadmaps/g01/README.md --require-heading '## Sequence' --require-heading '## Next roadmap' --require-heading '## Next Task'" },
+  { task = "docs check headings vision/README.md --require-heading '## Vision Artifacts' --require-heading '## Next Task'" },
+  { task = "docs check headings roadmaps/README.md --require-heading '## Rules' --require-heading '## Current generation' --require-heading '## Next Task'" },
+  { task = "docs check headings roadmaps/g01/README.md --require-heading '## Sequence' --require-heading '## Next roadmap' --require-heading '## Next Task'" },
 ]
 
 "check:rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]
