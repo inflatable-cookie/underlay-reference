@@ -23,7 +23,8 @@ test = "cd {repo} && cargo test --workspace {args}"
 clippy = "cd {repo} && cargo clippy --workspace --all-targets -- -D warnings"
 fmt = "cd {repo} && cargo fmt --all --check"
 
-health = [{ task = "build" }]
+# Cheap orientation for `effigy doctor`. Build stays in validate.
+health = [{ task = "fmt" }]
 validate = [
   { task = "build" },
   { task = "test" },
