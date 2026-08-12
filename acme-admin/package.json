@@ -31,6 +31,9 @@
     "vitest": "^4.1.10"
   },
   "overrides": {
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "@inflatable-cookie/poodle-bridge-underlay": "file:../../poodle/packages/bridges/underlay",
+    "@inflatable-cookie/poodle-core": "file:../../poodle/packages/core",
+    "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components"
   }
 }

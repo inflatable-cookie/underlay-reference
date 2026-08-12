@@ -15,6 +15,11 @@
       },
     },
   },
+  "overrides": {
+    "@inflatable-cookie/poodle-bridge-underlay": "file:../../poodle/packages/bridges/underlay",
+    "@inflatable-cookie/poodle-core": "file:../../poodle/packages/core",
+    "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components",
+  },
   "packages": {
     "@adobe/css-tools": ["@adobe/css-tools@4.5.0", "", {}, "sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q=="],
 
@@ -116,9 +121,7 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
 
-    "@inflatable-cookie/poodle-core": ["@inflatable-cookie/poodle-core@0.1.0", "", { "bin": { "poodle-icons": "src/icons/build.mjs" } }, "sha512-b6K5UJw97dHtO43B/lGDB/6GF7qgc37Zh3MQ9HB3Wb31+VRALjaPef3IjWg4Ig5NdFVrGDssflbZMwTKd9HtYA=="],
-
-    "@inflatable-cookie/poodle-svelte": ["@inflatable-cookie/poodle-svelte@0.1.0", "", { "dependencies": { "@inflatable-cookie/poodle-core": "0.1.0", "marked": "^18.0.9" }, "peerDependencies": { "svelte": ">=5.38.6 <6" } }, "sha512-hMVPw0qv/l+Lgpk/ga2lb7K/yiLx+LMgPkYbQMwIVWvMQ8vT1E6Nxpnxl0cUxji6G3LK3FYpcPlGcrQ35LJcJQ=="],
+    "@inflatable-cookie/poodle-svelte": ["@inflatable-cookie/poodle-svelte@file:../../poodle/packages/svelte/components", { "dependencies": { "@inflatable-cookie/poodle-core": "0.1.0", "marked": "^18.0.9" }, "peerDependencies": { "svelte": ">=5.38.6 <6" } }],
 
     "@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@file:../../underlay", { "dependencies": { "@inflatable-cookie/poodle-bridge-underlay": "file:../poodle/packages/bridges/underlay", "@inflatable-cookie/poodle-svelte": "^0.1.0", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "devDependencies": { "@storybook/addon-a11y": "^10.3.3", "@storybook/addon-docs": "^10.3.3", "@storybook/addon-svelte-csf": "^5.1.1", "@storybook/svelte-vite": "^10.3.3", "@sveltejs/vite-plugin-svelte": "^7.2.0", "@testing-library/dom": "^10.4.1", "@testing-library/svelte": "^5.3.1", "@types/node": "^25.3.0", "@vitest/coverage-v8": "^4.1.0", "@vitest/ui": "^4.1.0", "bits-ui": "^2.16.2", "jsdom": "^30.0.1", "lucide-static": "^1.31.0", "lucide-svelte": "^1.0.1", "storybook": "^10.3.3", "svelte": "^5.53.3", "svelte-check": "^4.4.3", "tsx": "^4.21.0", "typescript": "^5.9.3", "vite": "^8.2.0", "vitest": "^4.1.0", "zod": "^4.4.3" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"] }],
 
@@ -684,7 +687,11 @@
 
     "zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 
+    "@inflatable-cookie/poodle-svelte/@inflatable-cookie/poodle-core": ["@inflatable-cookie/poodle-core@file:../../poodle/packages/core", {}],
+
     "@inflatable-cookie/underlay/@inflatable-cookie/poodle-bridge-underlay": ["@inflatable-cookie/poodle-bridge-underlay@file:../../poodle/packages/bridges/underlay", {}],
+
+    "@inflatable-cookie/underlay/@inflatable-cookie/poodle-svelte": ["@inflatable-cookie/poodle-svelte@file:../../poodle/packages/svelte/components", {}],
 
     "@inflatable-cookie/underlay/marked": ["marked@17.0.6", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA=="],
 
