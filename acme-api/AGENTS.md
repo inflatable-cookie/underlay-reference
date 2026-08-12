@@ -24,6 +24,8 @@ Default flow inside `acme-api/`:
 
 Repo notes:
 - `health` and `validate` currently use `build` as the stable Rust baseline
+- the built-in `rust` test suite intentionally pins `cargo test --workspace`;
+  the checked-in Nextest profiles remain available for explicit direct use
 - `db:*` stays owned here and resolves from the workspace root through child-catalog routing
 - raw `cargo` commands are fallback for work Effigy does not yet model directly
 

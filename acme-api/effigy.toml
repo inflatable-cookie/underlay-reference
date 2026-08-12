@@ -1,11 +1,14 @@
 [manifest]
-minimum_effigy_version = "0.7.0"
+minimum_effigy_version = "0.11.0"
 
 [catalog]
 alias = "acme-api"
 
 [task_defaults]
 run_in = "host"
+
+[test.suites]
+rust = "cargo test --workspace"
 
 [tasks]
 api = "cd {repo} && cargo run -p acme-api {args}"
@@ -19,7 +22,6 @@ build = "cd {repo} && cargo build {args}"
   { task = "db:migrate" }
 ]
 
-test = "cd {repo} && cargo test --workspace {args}"
 clippy = "cd {repo} && cargo clippy --workspace --all-targets -- -D warnings"
 fmt = "cd {repo} && cargo fmt --all --check"
 
