@@ -126,6 +126,7 @@ pub struct LabelResponse {
     pub color: String,
     pub weight: i32,
     pub created_at: String,
+    pub updated_at: String,
 }
 
 impl From<tasks::LabelRow> for LabelResponse {
@@ -137,6 +138,7 @@ impl From<tasks::LabelRow> for LabelResponse {
             color: row.color,
             weight: row.weight,
             created_at: row.created_at.to_rfc3339(),
+            updated_at: row.updated_at.to_rfc3339(),
         }
     }
 }
@@ -179,6 +181,22 @@ pub struct UpdateTaskRequest {
 pub struct CreateLabelRequest {
     pub name: String,
     pub color: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct UpdateLabelRequest {
+    pub name: Option<String>,
+    pub color: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ListLabelsQuery {
+    #[serde(flatten)]
+    pub query: QueryParams,
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -718,19 +736,33 @@ mod tests;
 // Label Handlers
 // ============================================================================
 
-/// List labels for a project.
+/// List labels for a project (admin).
+///
+/// Supports filtering and sorting via query parameters:
+/// - `sort=weight:asc,name:asc`
+/// - `filter[name][like]=%search%`
 pub async fn list_labels(
     AdminUser(_user): AdminUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
+    Query(params): Query<ListLabelsQuery>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let project_id = project_id.into_inner();
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(20).clamp(1, 100);
+    let offset = (page.saturating_sub(1) * limit) as i64;
 
-    match tasks::list_labels_for_project(pool, project_id).await {
-        Ok(labels) => {
-            let response: Vec<LabelResponse> = labels.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+    match tasks::list_labels_admin(pool, project_id, &params.query, limit as i64, offset).await {
+        Ok(label_list) => {
+            let response: Vec<LabelResponse> =
+                label_list.data.into_iter().map(Into::into).collect();
+            Ok(Json(underlay_http::PageList {
+                data: response,
+                total: label_list.total as u64,
+                has_more: label_list.has_more,
+            })
+            .into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list labels: {}", e);
@@ -742,6 +774,200 @@ pub async fn list_labels(
             .with_context(serde_json::json!({
                 "operation": "labels.list",
                 "project_id": project_id
+            })))
+        }
+    }
+}
+
+/// Get a single label.
+pub async fn get_label(
+    AdminUser(_user): AdminUser,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path((_project_id, label_id)): Path<(Uuid, Uuid)>,
+) -> Result<Response, ApiError> {
+    let pool = state.local_auth.pool();
+    let label_id = label_id.into_inner();
+
+    match tasks::get_label(pool, label_id).await {
+        Ok(Some(label)) => {
+            let etag = detail_etag(
+                "label",
+                &label.id.to_string(),
+                &label.updated_at.to_rfc3339(),
+            );
+            if let Some(not_modified) = maybe_not_modified(&headers, &etag) {
+                return Ok(not_modified);
+            }
+            let response: LabelResponse = label.into();
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((
+                response_headers,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response())
+        }
+        Ok(None) => Err(
+            ApiError::not_found("labels.not_found", "Label not found").with_context(
+                serde_json::json!({
+                    "operation": "labels.get",
+                    "label_id": label_id
+                }),
+            ),
+        ),
+        Err(e) => {
+            tracing::error!("Failed to get label: {}", e);
+            Err(crate::db_errors::internal_with_diagnostics(
+                "labels.get_failed",
+                "Failed to get label",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "labels.get",
+                "label_id": label_id
+            })))
+        }
+    }
+}
+
+/// Update a label.
+pub async fn update_label(
+    AdminUser(_user): AdminUser,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path((project_id, label_id)): Path<(Uuid, Uuid)>,
+    Json(req): Json<UpdateLabelRequest>,
+) -> Result<Response, ApiError> {
+    let pool = state.local_auth.pool();
+    let project_id = project_id.into_inner();
+    let lid = label_id.into_inner();
+
+    let current =
+        match tasks::get_label(pool, lid).await {
+            Ok(Some(label)) => label,
+            Ok(None) => {
+                return Err(ApiError::not_found("labels.not_found", "Label not found")
+                    .with_context(serde_json::json!({
+                        "operation": "labels.update",
+                        "label_id": lid
+                    })));
+            }
+            Err(e) => {
+                tracing::error!("Failed to load current label before update: {}", e);
+                return Err(crate::db_errors::internal_with_diagnostics(
+                    "labels.update_failed",
+                    "Failed to update label",
+                    &e,
+                )
+                .with_context(serde_json::json!({
+                    "operation": "labels.update",
+                    "label_id": lid
+                })));
+            }
+        };
+
+    let current_etag = detail_etag(
+        "label",
+        &current.id.to_string(),
+        &current.updated_at.to_rfc3339(),
+    );
+    if if_match_mismatch(&headers, &current_etag) {
+        return Err(precondition_failed_error().with_context(serde_json::json!({
+            "operation": "labels.update",
+            "label_id": lid
+        })));
+    }
+
+    match tasks::update_label(
+        pool,
+        lid,
+        project_id,
+        req.name.as_deref(),
+        req.color.as_deref(),
+    )
+    .await
+    {
+        Ok(Some(label)) => {
+            let response: LabelResponse = label.into();
+            let etag = detail_etag("label", &response.id, &response.updated_at);
+            let response_headers = build_etag_cache_headers(&etag);
+            Ok((
+                response_headers,
+                Json(serde_json::json!({ "data": response })),
+            )
+                .into_response())
+        }
+        Ok(None) => Err(
+            ApiError::not_found("labels.not_found", "Label not found").with_context(
+                serde_json::json!({
+                    "operation": "labels.update",
+                    "label_id": lid
+                }),
+            ),
+        ),
+        Err(e) => {
+            tracing::error!("Failed to update label: {}", e);
+
+            // Check for unique constraint violation
+            if let Some(db_err) = e.as_database_error() {
+                if db_err.code().as_deref() == Some("23505") {
+                    return Err(ApiError::conflict(
+                        "label.name_exists",
+                        "A label with this name already exists in this project",
+                    )
+                    .with_context(serde_json::json!({
+                        "operation": "labels.update",
+                        "project_id": project_id,
+                        "label_id": lid
+                    })));
+                }
+            }
+
+            Err(crate::db_errors::internal_with_diagnostics(
+                "labels.update_failed",
+                "Failed to update label",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "labels.update",
+                "project_id": project_id,
+                "label_id": lid
+            })))
+        }
+    }
+}
+
+/// Soft delete a label.
+pub async fn soft_delete_label(
+    AdminUser(_user): AdminUser,
+    State(state): State<AppState>,
+    Path((_project_id, label_id)): Path<(Uuid, Uuid)>,
+) -> Result<Response, ApiError> {
+    let pool = state.local_auth.pool();
+    let batch_id = Uuid::new_v7().into_inner();
+    let lid = label_id.into_inner();
+
+    match tasks::soft_delete_label(pool, lid, batch_id).await {
+        Ok(true) => Ok(StatusCode::NO_CONTENT.into_response()),
+        Ok(false) => Err(
+            ApiError::not_found("labels.not_found", "Label not found").with_context(
+                serde_json::json!({
+                    "operation": "labels.soft_delete",
+                    "label_id": lid
+                }),
+            ),
+        ),
+        Err(e) => {
+            tracing::error!("Failed to soft delete label: {}", e);
+            Err(crate::db_errors::internal_with_diagnostics(
+                "labels.soft_delete_failed",
+                "Failed to delete label",
+                &e,
+            )
+            .with_context(serde_json::json!({
+                "operation": "labels.soft_delete",
+                "label_id": lid,
+                "batch_id": batch_id
             })))
         }
     }

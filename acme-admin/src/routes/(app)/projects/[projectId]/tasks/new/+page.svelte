@@ -59,8 +59,8 @@
     if (!project) return;
     const token = auth.getToken();
     if (!token) return;
-    adminCommands.listLabels(data.projectId, fetch, token).then((result) => {
-      labels = result;
+    adminCommands.listLabels(data.projectId, fetch, token, { limit: 100 }).then((result) => {
+      labels = result.data;
     });
   });
 

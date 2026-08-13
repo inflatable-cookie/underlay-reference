@@ -6,7 +6,7 @@
 export { listCategories, listCategoriesForSuggestions, getCategory, getCategoryWithEtag, createCategory, updateCategory, updateCategoryWithEtag, softDeleteCategory, reorderCategories, batchDeleteCategories } from "./admin/category-commands.js";
 export { listProjects, getProject, getProjectWithEtag, createProject, updateProject, updateProjectWithEtag, softDeleteProject, reorderProjects, batchDeleteProjects } from "./admin/project-commands.js";
 export { listTasks, getTask, getTaskWithEtag, createTask, updateTask, updateTaskWithEtag, softDeleteTask, reorderTasks, batchDeleteTasks, batchUpdateTaskStatus } from "./admin/task-commands.js";
-export { listLabels, createLabel, getTaskLabels, setTaskLabels } from "./admin/label-commands.js";
+export { listLabels, getLabel, getLabelWithEtag, createLabel, updateLabel, updateLabelWithEtag, softDeleteLabel, getTaskLabels, setTaskLabels } from "./admin/label-commands.js";
 export { validateField } from "./admin/validation-commands.js";
 export { getDashboardStats } from "./admin/dashboard-commands.js";
 export { createUser, listUsers, getUser, getUserWithEtag, updateUser, updateUserWithEtag, updateUserRole, suspendUser, unsuspendUser, listUserSessions, revokeUserSession } from "./admin/user-commands.js";

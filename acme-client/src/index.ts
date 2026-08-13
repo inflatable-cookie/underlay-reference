@@ -59,6 +59,7 @@ export type {
   UpdateTaskPayload,
   Label,
   CreateLabelPayload,
+  UpdateLabelPayload,
   SetLabelsPayload,
   ReorderPayload,
   ReorderResult,

@@ -299,6 +299,12 @@ pub fn build_router_with_options(include_docs: bool) -> Router<AppState> {
             "/v1/admin/projects/{project_id}/labels",
             get(admin::tasks::list_labels).post(admin::tasks::create_label),
         )
+        .route(
+            "/v1/admin/projects/{project_id}/labels/{label_id}",
+            get(admin::tasks::get_label)
+                .patch(admin::tasks::update_label)
+                .delete(admin::tasks::soft_delete_label),
+        )
         // ====================================================================
         // Media Library admin routes
         // ====================================================================

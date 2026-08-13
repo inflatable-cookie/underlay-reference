@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
-  import { buildQueryString, parseQueryParams, type QueryParams } from "@inflatable-cookie/underlay/client/query";
+  import { createEntityListState } from "@inflatable-cookie/underlay/patterns";
   import {
     ErrorLogListPage,
     type ErrorLogDetailLoader,
@@ -11,13 +9,10 @@
   } from "@inflatable-cookie/underlay/templates";
   import { adminCommands } from "@api-client";
 
-  const currentQuery = $derived(parseQueryParams($page.url.searchParams));
-
-  function updateUrl(nextQuery: QueryParams) {
-    const url = new URL($page.url);
-    url.search = buildQueryString(nextQuery);
-    goto(url.toString(), { replaceState: true, keepFocus: true });
-  }
+  const listState = createEntityListState({
+    queryMode: () => "url",
+    title: () => "Error log"
+  });
 
   const loadList: ErrorLogListLoader = async (fetchFn, token, request) => {
     const response = await adminCommands.listErrorLogs(fetchFn, token, {
@@ -39,8 +34,8 @@
 </script>
 
 <ErrorLogListPage
-  query={currentQuery}
-  onQueryChange={updateUrl}
+  query={listState.query}
+  onQueryChange={listState.setQuery}
   {loadList}
   {loadDetail}
   {loadStats}

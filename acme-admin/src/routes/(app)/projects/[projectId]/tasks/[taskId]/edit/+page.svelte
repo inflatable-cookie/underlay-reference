@@ -97,10 +97,10 @@
     const token = auth.getToken();
     if (!token) return;
     Promise.all([
-      adminCommands.listLabels(data.projectId, fetch, token),
+      adminCommands.listLabels(data.projectId, fetch, token, { limit: 100 }),
       adminCommands.getTaskLabels(data.projectId, data.taskId, fetch, token)
     ]).then(([allLabels, taskLabels]) => {
-      labels = allLabels;
+      labels = allLabels.data;
       if (!labelsInitialized) {
         selectedLabelIds = taskLabels.map((label) => label.id);
         labelsInitialized = true;

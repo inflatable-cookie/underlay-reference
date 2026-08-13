@@ -137,10 +137,16 @@ export interface Label {
   color: string;
   weight: number;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateLabelPayload {
   name: string;
+  color?: string;
+}
+
+export interface UpdateLabelPayload {
+  name?: string;
   color?: string;
 }
 

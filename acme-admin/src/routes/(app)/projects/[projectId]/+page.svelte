@@ -10,6 +10,7 @@
   import { NightfireRenderer } from "@inflatable-cookie/underlay/nightfire/renderer";
   import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
   import TasksListPage from "$lib/lists/TasksListPage.svelte";
+  import { LabelsList } from "$lib/lists";
   import {
     Code,
     Pill,
@@ -114,6 +115,11 @@
       id: "tasks",
       label: "Tasks",
       content: tasksTabSnippet
+    },
+    {
+      id: "labels",
+      label: "Labels",
+      content: labelsTabSnippet
     }
   ]);
 </script>
@@ -206,6 +212,17 @@
     hideTitle
     subtitle={`Tasks in ${project?.name ?? "project"}`}
     headerLevel={3}
+  />
+{/snippet}
+
+{#snippet labelsTabSnippet(_project: Project)}
+  <LabelsList
+    projectId={data.projectId}
+    title="Labels"
+    hideTitle
+    subtitle={`Labels in ${project?.name ?? "project"}`}
+    headerLevel={3}
+    queryMode="local"
   />
 {/snippet}
 

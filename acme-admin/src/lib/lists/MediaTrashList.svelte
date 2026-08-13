@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
-  import { buildQueryString, parseQueryParams, type QueryParams } from "@inflatable-cookie/underlay/client/query";
+  import { createEntityListState } from "@inflatable-cookie/underlay/patterns";
+  import type { QueryParams } from "@inflatable-cookie/underlay/client/query";
   import { SystemMediaTrashListPage } from "@inflatable-cookie/underlay/templates";
   import { mediaCommands } from "@api-client";
   import type { SystemMediaTrashItem } from "@inflatable-cookie/underlay/templates";
@@ -17,13 +16,11 @@
     backHref = "/media",
     backLabel = "Back to media"
   }: Props = $props();
-  const currentQuery = $derived(parseQueryParams($page.url.searchParams));
 
-  function updateUrl(nextQuery: QueryParams) {
-    const url = new URL($page.url);
-    url.search = buildQueryString(nextQuery);
-    goto(url.toString(), { replaceState: true, keepFocus: true });
-  }
+  const listState = createEntityListState({
+    queryMode: () => "url",
+    title: () => title
+  });
 
   async function dataLoader(fetch: typeof globalThis.fetch, token: string, query: QueryParams) {
     return await mediaCommands.listMediaTrash(fetch, token, query);
@@ -43,8 +40,8 @@
   {backHref}
   {backLabel}
   {dataLoader}
-  query={currentQuery}
-  onQueryChange={updateUrl}
+  query={listState.query}
+  onQueryChange={listState.setQuery}
   {restoreAction}
   {purgeAction}
 />
