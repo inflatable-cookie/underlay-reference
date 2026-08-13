@@ -1,0 +1,9 @@
+# Template conformance exceptions for acme-admin.
+# Format: <CHECK_ID> <path-glob> # reason
+#
+# Account section: auth/profile settings surfaces, not entity CRUD.
+# Contract 110 lists "billing, ops, or account utility pages" as valid
+# non-template exceptions; the layout is a route-driven tab shell over the
+# account sub-pages, so Entity*/System* page shells do not apply.
+TPL01 src/routes/(app)/account/+layout.svelte # account settings tab shell — auth/profile utility section, not an entity browse page
+TPL01 src/routes/(app)/system/poodle-gap-review/+page.svelte # internal dev review tool for Poodle component gaps — one-off utility surface, not an admin browse page

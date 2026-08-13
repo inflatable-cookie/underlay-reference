@@ -17,6 +17,7 @@ const SEGMENT_LABELS: Record<string, { list: string; item: string }> = {
 	categories: { list: "Categories", item: "Category" },
 	projects: { list: "Projects", item: "Project" },
 	tasks: { list: "Tasks", item: "Task" },
+	labels: { list: "Labels", item: "Label" },
 	media: { list: "Media", item: "Media" },
 	trash: { list: "Media Trash", item: "Media Trash" },
 	system: { list: "System", item: "System" },

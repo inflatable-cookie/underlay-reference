@@ -28,3 +28,7 @@ exclude_catalogs = ["poodle", "underlay"]
 [tasks."qa:security"]
 run = "../underlay/scripts/check-consumer-conformance.sh ."
 run_in = "host"
+
+[tasks."qa:templates"]
+run = "../underlay/scripts/check-template-conformance.sh acme-admin"
+run_in = "host"
