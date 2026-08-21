@@ -38,7 +38,6 @@
     "@inflatable-cookie/poodle-svelte": "^0.1.0"
   },
   "overrides": {
-    "@inflatable-cookie/poodle-bridge-underlay": "file:../../poodle/packages/bridges/underlay",
     "@inflatable-cookie/poodle-core": "file:../../poodle/packages/core",
     "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components"
   }
