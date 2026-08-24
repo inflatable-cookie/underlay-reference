@@ -438,7 +438,7 @@ pub async fn update_user(
         .display_name
         .as_deref()
         .map(str::trim)
-        .and_then(|s| if s.is_empty() { None } else { Some(s) });
+        .filter(|s| !s.is_empty());
 
     let pool = state.local_auth.pool();
     let current = match users::get_user_admin(pool, user_id).await {

@@ -94,7 +94,7 @@ import {
   let descriptionValue = $state<NightfireDraftValue>(untrack(() => (
     isNightfireValue(values.description)
       ? values.description
-      : { schema: PROJECT_DESCRIPTION_SCHEMA }
+      : { schema: PROJECT_DESCRIPTION_SCHEMA, blocks: [] }
   )));
   let categoryId = $state<string | null>(untrack(() => values.categoryId ?? null));
   let statusValue = $state(untrack(() => values.status ?? "active"));

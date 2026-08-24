@@ -54,12 +54,12 @@ import {
   // Create project dialog state
   let showCreateDialog = $state(false);
   let newProjectName = $state("");
-  let newProjectDescription = $state<NightfireDraftValue>({ schema: "acme:project/description@1" });
+  let newProjectDescription = $state<NightfireDraftValue>({ schema: "acme:project/description@1", blocks: [] });
   let creating = $state(false);
 
   function openCreateDialog() {
     newProjectName = "";
-    newProjectDescription = { schema: "acme:project/description@1" };
+    newProjectDescription = { schema: "acme:project/description@1", blocks: [] };
     showCreateDialog = true;
   }
 

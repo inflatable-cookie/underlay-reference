@@ -14,7 +14,10 @@ impl AcmeLocalAuthService {
     ) -> AuthResult<AuthSession> {
         let outcome = self
             .sessions
-            .refresh(refresh_token, current_fingerprint.map(to_canonical_fingerprint))
+            .refresh(
+                refresh_token,
+                current_fingerprint.map(to_canonical_fingerprint),
+            )
             .await?;
 
         let user = self

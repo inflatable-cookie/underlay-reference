@@ -55,11 +55,11 @@ pub fn notes_gallery_media_registration() -> NightfireBlockMediaRegistration {
 pub fn notes_gallery_block_registration(
 ) -> BlockRegistration<NotesBlockCategory, NightfireBlockMediaRegistration> {
     BlockRegistration::new(
-        BlockDescriptor {
-            type_name: "notes.gallery",
-            label: "Image Gallery",
-            category: NotesBlockCategory::Content,
-        },
+        BlockDescriptor::new(
+            "notes.gallery",
+            "Image Gallery",
+            NotesBlockCategory::Content,
+        ),
         notes_gallery_media_registration(),
     )
 }
