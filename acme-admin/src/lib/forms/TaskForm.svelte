@@ -38,7 +38,7 @@
     mode = "edit",
     title = $bindable(""),
     description = $bindable(""),
-    notes = $bindable({ schema: "acme:task/notes@1" } as NightfireDraftValue),
+    notes = $bindable({ schema: "acme:task/notes@1", blocks: [] } as NightfireDraftValue),
     status = $bindable("pending"),
     priority = $bindable("medium"),
     dueDate = $bindable(""),

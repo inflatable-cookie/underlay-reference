@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { extractReorderConflict } from "../../../underlay/ts/src/patterns/reorder-conflict";
+import { extractReorderConflict } from "@inflatable-cookie/underlay/runtime/reorder";
 import { HttpClient } from "../../src/utils/http-client";
 
-const requestMock = vi.fn();
+const { requestMock, MockUnderlayHttpError } = vi.hoisted(() => {
+  const requestMock = vi.fn();
 
-vi.mock("@inflatable-cookie/underlay/client", () => {
   class MockUnderlayHttpError extends Error {
     readonly status: number;
     readonly envelope?: unknown;
@@ -17,22 +17,25 @@ vi.mock("@inflatable-cookie/underlay/client", () => {
     }
   }
 
-  return {
-    UnderlayHttpError: MockUnderlayHttpError,
-    createHttpClient: vi.fn(() => ({
-      request: requestMock,
-      requestWithMeta: requestMock,
-      get: requestMock,
-      getWithMeta: requestMock,
-      post: requestMock,
-      put: requestMock,
-      patch: requestMock,
-      delete: requestMock
-    }))
-  };
+  return { requestMock, MockUnderlayHttpError };
 });
 
-const { UnderlayHttpError } = await import("@inflatable-cookie/underlay/client");
+vi.mock("@inflatable-cookie/underlay/client/http", () => ({
+  createHttpClient: vi.fn(() => ({
+    request: requestMock,
+    requestWithMeta: requestMock,
+    get: requestMock,
+    getWithMeta: requestMock,
+    post: requestMock,
+    put: requestMock,
+    patch: requestMock,
+    delete: requestMock
+  }))
+}));
+
+vi.mock("@inflatable-cookie/underlay/client/errors", () => ({
+  UnderlayHttpError: MockUnderlayHttpError
+}));
 
 describe("HttpClient reorder conflict envelope passthrough", () => {
   beforeEach(() => {
@@ -41,7 +44,7 @@ describe("HttpClient reorder conflict envelope passthrough", () => {
 
   it("preserves raw.context for reorder conflict extraction", async () => {
     requestMock.mockRejectedValueOnce(
-      new UnderlayHttpError(409, "Items have changed since you started reordering.", {
+      new MockUnderlayHttpError(409, "Items have changed since you started reordering.", {
         error: {
           code: "projects.reorder_conflict",
           message: "Items have changed since you started reordering."

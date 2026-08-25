@@ -192,7 +192,8 @@ pub async fn list_tasks_admin(
         where_clause
     );
 
-    let mut count_query = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(count_sql)).bind(project_id);
+    let mut count_query =
+        sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(count_sql)).bind(project_id);
     for value in &filter_values {
         count_query = count_query.bind(value);
     }
@@ -334,8 +335,7 @@ pub async fn reorder_tasks(
     project_id: Uuid,
     task_ids: &[Uuid],
 ) -> Result<ReorderTasksResult, sqlx::Error> {
-    let table = underlay_db::QualifiedTableName::parse("acme.tasks")
-        .expect("valid table name");
+    let table = underlay_db::QualifiedTableName::parse("acme.tasks").expect("valid table name");
     let id_col = underlay_db::SqlIdentifier::parse("id").expect("valid column");
     let weight_col = underlay_db::SqlIdentifier::parse("position").expect("valid column");
     let parent_col = underlay_db::SqlIdentifier::parse("project_id").expect("valid column");
@@ -346,8 +346,7 @@ pub async fn reorder_tasks(
         &table,
         &id_col,
         &weight_col,
-        underlay_db::ReorderScope::parent(&parent_col, project_id)
-            .exclude_deleted(&deleted_col),
+        underlay_db::ReorderScope::parent(&parent_col, project_id).exclude_deleted(&deleted_col),
         task_ids,
     )
     .await

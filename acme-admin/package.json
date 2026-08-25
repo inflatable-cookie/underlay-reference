@@ -8,10 +8,10 @@
   },
   "dependencies": {
     "@acme/ui": "file:../acme-ui",
-    "@inflatable-cookie/poodle-core": "^0.1.0",
-    "@inflatable-cookie/poodle-svelte": "^0.1.0",
-    "acme-client": "file:../acme-client",
+    "@inflatable-cookie/poodle-core": "0.2.2",
+    "@inflatable-cookie/poodle-svelte": "0.2.2",
     "@inflatable-cookie/underlay": "file:../../underlay",
+    "acme-client": "file:../acme-client",
     "bits-ui": "^2.18.1",
     "lucide-svelte": "^1.0.1"
   },
@@ -31,8 +31,6 @@
     "vitest": "^4.1.10"
   },
   "overrides": {
-    "vite": "^8.2.0",
-    "@inflatable-cookie/poodle-core": "file:../../poodle/packages/core",
-    "@inflatable-cookie/poodle-svelte": "file:../../poodle/packages/svelte/components"
+    "vite": "^8.2.0"
   }
 }

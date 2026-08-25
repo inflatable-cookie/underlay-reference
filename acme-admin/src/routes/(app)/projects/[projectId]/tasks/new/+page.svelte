@@ -20,7 +20,7 @@
 
   let title = $state("");
   let description = $state("");
-  let notes = $state<NightfireDraftValue>({ schema: "acme:task/notes@1" });
+  let notes = $state<NightfireDraftValue>({ schema: "acme:task/notes@1", blocks: [] });
   let priority = $state<string>(TaskPriority.Medium);
   let dueDate = $state("");
   let selectedLabelIds = $state<string[]>([]);

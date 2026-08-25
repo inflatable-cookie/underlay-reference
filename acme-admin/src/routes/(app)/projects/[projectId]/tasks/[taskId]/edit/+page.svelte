@@ -28,7 +28,7 @@
 
   let title = $state("");
   let description = $state("");
-  let notes = $state<NightfireDraftValue>({ schema: "acme:task/notes@1" });
+  let notes = $state<NightfireDraftValue>({ schema: "acme:task/notes@1", blocks: [] });
   let status = $state<string>(TaskStatus.Pending);
   let priority = $state<string>(TaskPriority.Medium);
   let dueDate = $state("");
@@ -69,7 +69,7 @@
     if (!task || initialized) return;
     title = task.title;
     description = task.description ?? "";
-    notes = task.notes ?? { schema: "acme:task/notes@1" };
+    notes = task.notes ?? { schema: "acme:task/notes@1", blocks: [] };
     status = task.status;
     priority = task.priority;
     dueDate = task.dueDate?.split("T")[0] ?? "";
@@ -170,7 +170,7 @@
         currentEtag = latest.etag;
         title = latest.data.title;
         description = latest.data.description ?? "";
-        notes = latest.data.notes ?? { schema: "acme:task/notes@1" };
+        notes = latest.data.notes ?? { schema: "acme:task/notes@1", blocks: [] };
         status = latest.data.status;
         priority = latest.data.priority;
         dueDate = latest.data.dueDate?.split("T")[0] ?? "";

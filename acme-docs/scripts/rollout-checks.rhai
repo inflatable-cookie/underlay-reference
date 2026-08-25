@@ -101,7 +101,7 @@ checks["reorder-conflict"] = #{
         ["projects reorder returns conflict context keys", search_check("projects\\.reorder_conflict|added_ids|removed_ids", ["../acme-api/crates/api/src/routes/admin/projects.rs"])],
         ["categories reorder returns conflict context keys", search_check("categories\\.reorder_conflict|added_ids|removed_ids", ["../acme-api/crates/api/src/routes/admin/categories.rs"])],
         ["tasks reorder returns conflict context keys", search_check("tasks\\.reorder_conflict|added_ids|removed_ids", ["../acme-api/crates/api/src/routes/admin/tasks.rs"])],
-        ["admin has reorder conflict adapter", exists_check("../acme-admin/src/lib/lists/reorder-conflicts.ts")],
+        ["admin has reorder conflict adapter", exists_check("../../underlay/ts/src/patterns/reorder-conflict.ts")],
         ["projects list uses reorder error adapter", search_check("onReorderError=\\{handleReorderError\\}|recoverReorderConflict", ["../acme-admin/src/lib/lists/ProjectsListPage.svelte"])],
         ["categories list uses reorder error adapter", search_check("onReorderError=\\{handleReorderError\\}|recoverReorderConflict", ["../acme-admin/src/lib/lists/CategoriesList.svelte"])],
         ["project tasks list uses reorder error adapter", search_check("onReorderError=\\{|recoverReorderConflict", ["../acme-admin/src/lib/lists/TasksListPage.svelte"])],

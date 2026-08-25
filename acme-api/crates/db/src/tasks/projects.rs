@@ -338,8 +338,7 @@ pub async fn reorder_projects(
     pool: &DbPool,
     project_ids: &[Uuid],
 ) -> Result<ReorderProjectsResult, sqlx::Error> {
-    let table = underlay_db::QualifiedTableName::parse("acme.projects")
-        .expect("valid table name");
+    let table = underlay_db::QualifiedTableName::parse("acme.projects").expect("valid table name");
     let id_col = underlay_db::SqlIdentifier::parse("id").expect("valid column");
     let weight_col = underlay_db::SqlIdentifier::parse("weight").expect("valid column");
     let deleted_col = underlay_db::SqlIdentifier::parse("deleted_at").expect("valid column");

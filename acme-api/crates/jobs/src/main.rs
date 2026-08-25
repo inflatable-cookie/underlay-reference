@@ -84,7 +84,9 @@ async fn main() {
         info!(%bucket, "S3 blob adapter initialised");
         Arc::new(adapter)
     } else if std::env::var("ACME_ALLOW_NOOP_BLOB").as_deref() == Ok("1") {
-        tracing::warn!("ACME_ALLOW_NOOP_BLOB=1 set — media job outputs are discarded (NoopAdapter)");
+        tracing::warn!(
+            "ACME_ALLOW_NOOP_BLOB=1 set — media job outputs are discarded (NoopAdapter)"
+        );
         Arc::new(NoopAdapter::new())
     } else {
         error!(

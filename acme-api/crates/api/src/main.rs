@@ -32,8 +32,7 @@ async fn main() -> anyhow::Result<()> {
     // Run dev seeds only in local dev/test environments against local
     // databases. Dev seeds contain well-known credentials and must never
     // reach a deployed instance.
-    let seed_allowed =
-        app_config.env.is_local_dev() && underlay_db::is_local_database_url(&db_url);
+    let seed_allowed = app_config.env.is_local_dev() && underlay_db::is_local_database_url(&db_url);
 
     if seed_allowed {
         if let Err(err) = run_dev_seeds(&pool).await {
