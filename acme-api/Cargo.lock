@@ -4561,7 +4561,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
@@ -4960,7 +4960,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-audit"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "chrono",
  "serde",
@@ -4975,7 +4975,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -4994,7 +4994,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-email-totp"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5006,7 +5006,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-jwt"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5025,7 +5025,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-oauth"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -5042,7 +5042,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-password"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5057,7 +5057,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-session"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5071,7 +5071,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-state-postgres"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "chrono",
  "serde",
@@ -5083,7 +5083,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-totp"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "base32",
  "hex",
@@ -5100,7 +5100,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-webauthn"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "base64urlsafedata",
  "serde",
@@ -5115,7 +5115,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-aws"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "aws-config",
  "aws-credential-types",
@@ -5124,7 +5124,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-blob"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "aws-sdk-s3",
@@ -5141,7 +5141,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-config"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "serde",
  "thiserror 2.0.19",
@@ -5150,7 +5150,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-core"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "serde",
  "uuid",
@@ -5158,7 +5158,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-db"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -5172,7 +5172,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-devtools"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -5192,7 +5192,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-email"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5207,7 +5207,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-http"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "axum",
  "chrono",
@@ -5231,7 +5231,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-jobs"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5244,7 +5244,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-jobs-postgres"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5261,7 +5261,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-media"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5277,7 +5277,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-migration-core"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5291,7 +5291,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-nightfire"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "blake3",
  "serde",
@@ -5302,7 +5302,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-observability"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "http 1.5.0",
  "pin-project-lite",
@@ -5315,14 +5315,14 @@ dependencies = [
 
 [[package]]
 name = "underlay-query"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "underlay-ratelimit"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "async-trait",
  "dashmap",
@@ -5333,7 +5333,7 @@ dependencies = [
 
 [[package]]
 name = "underlay-security-alerts"
-version = "0.9.1"
+version = "0.9.4"
 dependencies = [
  "chrono",
  "serde",
