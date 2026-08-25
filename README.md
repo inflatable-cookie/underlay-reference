@@ -11,8 +11,10 @@ underlay-reference/
 ├── acme-admin/        # SvelteKit admin frontend
 ├── acme-front/        # SvelteKit public frontend
 ├── acme-ui/           # Shared UI components
-└── underlay -> ...    # Symlink to underlay library
 ```
+
+Committed application dependencies resolve Underlay from the released Git tag
+(`v0.9.4` at time of writing), not from sibling source paths.
 
 ## Documentation Authority
 
@@ -74,20 +76,30 @@ effigy db:migrate
 
 Bootstrap notes:
 - `effigy bootstrap ...` clones the reference workspace and runs `bootstrap:deps`
-- setup expects sibling `../underlay` and `../poodle` repos, starts the workspace container, and installs dependencies inside it
+- setup starts the workspace container and installs dependencies inside it
+- the Effigy bundle may mount sibling `../underlay` and `../poodle` for local
+  framework development, cross-repo QA scripts, and docs — those mounts are not
+  the committed application dependency source
 - add `--start` when you want it to launch the root `dev` stack after setup
 
 ## Development Setup
 
-This repository expects sibling `underlay` and `poodle` repos mounted into the workspace container:
+The reference template consumes Underlay from the released Git repository:
 
-```bash
-../underlay
-../poodle
+```json
+"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.4"
 ```
 
-All `package.json` files reference `@inflatable-cookie/underlay` via `file:../../underlay`.
-The `Cargo.toml` uses path dependencies like `../../underlay/rust/crates/...`.
+```toml
+underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.4" }
+```
+
+Poodle core/Svelte packages resolve from the public npm registry at `0.2.2`.
+
+For lockstep Underlay framework development inside this workspace, Effigy may
+still mount a sibling `../underlay` checkout. Use `effigy deps link` when you
+need to temporarily point Cargo or Bun back at that checkout; restore the tagged
+dependencies before opening a consumer adoption PR.
 
 ## What's Included
 
@@ -230,10 +242,6 @@ cp -r /path/to/underlay-reference/acme-api ./api
 cp -r /path/to/underlay-reference/acme-client ./api-client
 cp -r /path/to/underlay-reference/acme-admin ./admin
 cp -r /path/to/underlay-reference/acme-front ./front
-
-# Place sibling repos next to the workspace
-git clone <underlay-repo> ../underlay
-git clone <poodle-repo> ../poodle
 ```
 
 ### 2. Rename Everything
@@ -259,17 +267,9 @@ Keep the workspace-level bootstrap assumptions aligned when you rename the refer
 - root `effigy.toml` `ready_message`
 - child `effigy.toml` aliases where package names change
 
-If your `underlay` checkout is at a different relative path, update `package.json` files:
-
-```json
-"@inflatable-cookie/underlay": "file:../../underlay"
-```
-
-And `Cargo.toml` workspace dependencies:
-
-```toml
-underlay-core = { path = "../../underlay/rust/crates/underlay-core" }
-```
+When you need a different Underlay release, update the tag in every web manifest
+and `acme-api/Cargo.toml` workspace dependency, then regenerate the Bun and
+Cargo locks narrowly.
 
 ## Environment Variables
 

@@ -4,15 +4,9 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vitest/config";
 import type { PluginOption } from "vite";
 import { fileURLToPath } from "node:url";
-import { generatePublicApiConfig } from "./scripts/generate-public-config";
-
-generatePublicApiConfig();
 
 const apiClientSrc = fileURLToPath(
   new URL("../acme-client/src", import.meta.url),
-);
-const underlaySrc = fileURLToPath(
-  new URL("../../underlay/ts/src", import.meta.url),
 );
 
 export default defineConfig({
@@ -50,7 +44,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@api-client": apiClientSrc,
-      "@inflatable-cookie/underlay": underlaySrc,
     },
     dedupe: ["@inflatable-cookie/underlay"],
   },

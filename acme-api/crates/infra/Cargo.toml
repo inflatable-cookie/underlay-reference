@@ -11,6 +11,6 @@ http = "1"
 rand = { workspace = true }
 thiserror = "2"
 tracing = { workspace = true }
-underlay-config = { path = "../../../../underlay/rust/crates/underlay-config" }
+underlay-config = { workspace = true }
 underlay-email = { workspace = true, features = ["smtp", "templates"] }
 underlay-observability = { workspace = true }

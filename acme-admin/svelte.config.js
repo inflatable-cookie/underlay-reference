@@ -20,7 +20,6 @@ const config = {
 			"@app": "src",
 			"@api-client": "../acme-client/src",
 			"acme-client": "../acme-client/src",
-			"@inflatable-cookie/underlay": "../../underlay/ts/src"
 		},
 		prerender: {
 			// Ignore dynamic routes during prerendering - they're handled client-side
