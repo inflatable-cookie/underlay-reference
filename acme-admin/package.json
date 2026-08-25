@@ -10,7 +10,7 @@
     "@acme/ui": "file:../acme-ui",
     "@inflatable-cookie/poodle-core": "0.2.2",
     "@inflatable-cookie/poodle-svelte": "0.2.2",
-    "@inflatable-cookie/underlay": "file:../../underlay",
+    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.4",
     "acme-client": "file:../acme-client",
     "bits-ui": "^2.18.1",
     "lucide-svelte": "^1.0.1"

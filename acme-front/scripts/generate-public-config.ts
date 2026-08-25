@@ -6,7 +6,7 @@ import {
   loadConfigStack,
   readDottedValue,
   type ConfigTable,
-} from "../../../underlay/ts/src/server/config-stack.ts";
+} from "@inflatable-cookie/underlay/server/config-stack";
 
 const appRoot = fileURLToPath(new URL("..", import.meta.url));
 const configRoot = fileURLToPath(new URL("../..", import.meta.url));

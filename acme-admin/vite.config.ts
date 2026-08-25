@@ -5,15 +5,9 @@ import { defineConfig } from "vitest/config";
 import type { PluginOption } from "vite";
 import { fileURLToPath } from "node:url";
 import devtoolsJson from "vite-plugin-devtools-json";
-import { generatePublicApiConfig } from "./scripts/generate-public-config";
-
-generatePublicApiConfig();
 
 const apiClientSrc = fileURLToPath(
   new URL("../acme-client/src", import.meta.url),
-);
-const underlaySrc = fileURLToPath(
-  new URL("../../underlay/ts/src", import.meta.url),
 );
 
 export default defineConfig({
@@ -31,12 +25,10 @@ export default defineConfig({
     alias: {
       "@api-client": apiClientSrc,
       "acme-client": apiClientSrc,
-      "@inflatable-cookie/underlay": underlaySrc,
     },
     dedupe: ["@inflatable-cookie/underlay"],
   },
   optimizeDeps: {
-    // Underlay is a local `file:` dependency and changes frequently.
     exclude: [
       "@inflatable-cookie/underlay",
       "@inflatable-cookie/underlay/runtime",
