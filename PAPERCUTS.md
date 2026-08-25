@@ -28,3 +28,9 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 - **Impact:** Locks can look sibling-controlled despite registry top-level installs.
 - **Plausible fix:** Document `bun update <file-dep>` after override removal, or fix Bun file: snapshot refresh.
 - **Surface:** acme-*/bun.lock adoption
+
+### Effigy auto-routes vitest into empty/misaimed package suites
+- **Friction:** `effigy validate`/`qa` auto-detects vitest for `acme-front` and `acme-ui`. Front includes `src/**/*` while tests live under `tests/` (exit 1). UI has no tests but inherits `node_modules/.bin/vitest` transitively (exit 1).
+- **Impact:** Aggregate board fails unless an app-local `passWithNoTests` exception is added; g16.013 forbids that exception.
+- **Plausible fix:** Effigy should not select vitest from a transitive binary alone, and/or honor package-owned include roots; separately authorize front include=`tests/**` and UI suite exclusion/real tests.
+- **Surface:** `effigy test --plan` auto-detection for acme-front/acme-ui
