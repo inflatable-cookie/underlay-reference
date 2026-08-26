@@ -1,0 +1,28 @@
+{
+  "name": "acme-front",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "check": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.70.2",
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
+    "@types/node": "^25.3.0",
+    "svelte": "^5.56.8",
+    "svelte-check": "^4.7.4",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@acme/ui": "workspace:*",
+    "@inflatable-cookie/poodle-core": "0.2.2",
+    "@inflatable-cookie/poodle-svelte": "0.2.2",
+    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.4",
+    "acme-client": "workspace:*",
+    "lucide-svelte": "^1.0.1"
+  }
+}

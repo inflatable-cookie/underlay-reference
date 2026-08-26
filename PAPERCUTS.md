@@ -7,15 +7,40 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 <!-- Keep entries short. Append newest entries at the top. Do not include secrets. -->
 
+### [ ] Underlay Effigy bundle reuses `bundle.dirs` as a task-selector prefix — 2026-08-26
+- Friction: the bundle renders root `health`, `validate`, `qa`, and `dev` steps
+  as `{{ inputs.dirs.<role> }}/<task>`. Under the `apps/*` / `packages/*`
+  contract the physical dir (`apps/acme-admin`) is no longer the catalog alias
+  (`acme-admin`), so the generated selectors fail with
+  `task catalog prefix ... not found`. `bundle.dirs` cannot be set to the alias
+  instead, because the same input also feeds `catalog.members`, which must be a
+  real path.
+- Impact: every bundle-backed consumer that adopts the monorepo shape has to
+  restate the bundle's root sequences in its own `effigy.toml`. This repo now
+  carries that override.
+- Possible fix: give the bundle a separate `catalogs.<role>` (alias) input, or
+  render selectors from the child catalog alias rather than the dir.
+- Surface: `underlay-effigy-bundle` `export.toml` / root `effigy.toml`
+
+### [ ] Bundle container `isolated_dirs` assume per-package `node_modules` — 2026-08-26
+- Friction: `containers.stack.services.workspace.isolated_dirs` is derived as
+  `<dir>/node_modules` per package. A root Bun workspace hoists dependencies to
+  root `node_modules`, which is not isolated.
+- Impact: the container dev stack and the host can share one hoisted
+  `node_modules` tree instead of isolating it.
+- Possible fix: add a root-`node_modules` isolation entry for workspace-shaped
+  consumers.
+- Surface: `underlay-effigy-bundle` container defaults
+
 ### [ ] Doctor rejects built-in `docs` steps as unresolved task references — 2026-08-25
 - Friction: `effigy doctor` reports every `docs check ...` step in
-  `acme-docs/effigy.toml` as an unresolved `docs` task even though `docs` is a
+  `docs/effigy.toml` as an unresolved `docs` task even though `docs` is a
   callable Effigy built-in.
 - Impact: workspace health orientation cannot distinguish valid docs QA routing
   from a genuinely missing selector during the monorepo docs move.
 - Possible fix: teach Doctor's task-reference resolver to accept built-ins in
   sequence steps, then remove any migration-only workaround after verification.
-- Surface: Effigy Doctor task-reference resolution / `acme-docs/effigy.toml`
+- Surface: Effigy Doctor task-reference resolution / `docs/effigy.toml`
 
 ## Closed
 

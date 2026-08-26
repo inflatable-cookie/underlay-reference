@@ -11,13 +11,16 @@ project_name = "underlay-reference-dev"
 workspace_subdir = "underlay-reference"
 databases = ["acme"]
 
+# Physical ownership paths for the monorepo workspace shape (Underlay contract
+# 024). These feed catalog members, container isolated dirs, deploy source
+# roots, and bootstrap dependency sync.
 [bundle.dirs]
-docs = "acme-docs"
-api = "acme-api"
-client = "acme-client"
-ui = "acme-ui"
-front = "acme-front"
-admin = "acme-admin"
+docs = "docs"
+api = "apps/acme-api"
+client = "packages/acme-client"
+ui = "packages/acme-ui"
+front = "apps/acme-front"
+admin = "apps/acme-admin"
 
 [systems.dev]
 mounts = [{ member = "underlay" }, { member = "poodle" }]
@@ -25,10 +28,71 @@ mounts = [{ member = "underlay" }, { member = "poodle" }]
 [test]
 exclude_catalogs = ["poodle", "underlay"]
 
+# Root workspace lifecycle.
+#
+# The shared bundle reuses `bundle.dirs` as both the physical directory and the
+# task-selector prefix. Under `apps/*` / `packages/*` those two are no longer
+# the same string, so the bundle's generated root sequences would address
+# `apps/acme-admin/health` instead of the `acme-admin` catalog alias. These
+# repo-owned overrides restate the same sequences against catalog aliases.
+# Remove them once the bundle can express selectors separately from dirs.
+[tasks.health]
+run = [
+  { task = "acme-docs/health" },
+  { task = "acme-api/health" },
+  { task = "acme-client/health" },
+  { task = "acme-ui/health" },
+  { task = "acme-admin/health" },
+  { task = "acme-front/health" },
+]
+
+[tasks.validate]
+run = [
+  { task = "underlay/validate" },
+  { task = "acme-docs/validate" },
+  { task = "acme-api/validate" },
+  { task = "acme-client/validate" },
+  { task = "acme-ui/validate" },
+  { task = "acme-admin/validate" },
+  { task = "acme-front/validate" },
+]
+
+[tasks.qa]
+run = [
+  { task = "health" },
+  { task = "validate" },
+  { task = "acme-docs/qa:docs" },
+  { task = "acme-docs/qa:northstar" },
+]
+
+[tasks.dev]
+mode = "tui"
+container_lifecycle = true
+secrets = "required"
+gateway = true
+health_wait = true
+concurrent = [
+  { name = "front", task = "acme-front/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 6, tab = 1 },
+  { name = "admin", task = "acme-admin/dev", setup = [{ rhai = "{{ bundle.root }}/scripts/dev/ui-setup.rhai" }], start = 5, tab = 2 },
+  { name = "api", task = "acme-api/api", start = 4, tab = 3 },
+  { name = "jobs", task = "acme-api/jobs", start = 3, tab = 4, start_after_ms = 1500 },
+  { role = "shell", service = "workspace", start = 2, tab = 5 },
+  { role = "lifecycle", start = 1, tab = 6 },
+]
+
+# One frozen root install for the whole JavaScript workspace (contract 024).
+[tasks."workspace:js:prepare"]
+run = "cd {repo} && bun install --frozen-lockfile"
+run_in = "host"
+
 [tasks."qa:security"]
 run = "../underlay/scripts/check-consumer-conformance.sh ."
 run_in = "host"
 
 [tasks."qa:templates"]
-run = "../underlay/scripts/check-template-conformance.sh acme-admin"
+run = "../underlay/scripts/check-template-conformance.sh apps/acme-admin"
+run_in = "host"
+
+[tasks."qa:workspace-shape"]
+run = "bun ../underlay/ts/bin/underlay-workspace-shape.ts ."
 run_in = "host"
