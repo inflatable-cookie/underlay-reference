@@ -15,7 +15,5 @@ async fn main() {
         std::process::exit(1);
     }
 
-    println!(
-        "Dev database schema dropped. Run `cargo run -p acme-db --bin migrate_dev_db` or `bun db:migrate` to apply migrations and seeds."
-    );
+    println!("Dev database schema dropped. Replay with `effigy acme-api/migration:reset`.");
 }

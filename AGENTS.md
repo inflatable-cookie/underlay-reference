@@ -52,7 +52,7 @@ For first-time local bring-up from outside this repo:
 
 Workspace notes:
 - use root Effigy tasks for cross-repo orchestration (`health`, `validate`, `qa`, `qa:docs`, `qa:northstar`, `dev`)
-- use child-owned tasks from the workspace root when they resolve uniquely (`db:*`)
+- use child-owned tasks from the workspace root when they resolve uniquely (`migration:*`)
 - when modifying a specific repo, follow that repo's local `AGENTS.md`
 - do not treat `cargo build`, `bun check`, or ad hoc shell commands as the default entrypoint when an Effigy task exists
 - sibling `underlay` and `poodle` repos are mounted from `../underlay` and `../poodle`; do not recreate the old symlink/bootstrap pattern

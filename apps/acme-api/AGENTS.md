@@ -23,10 +23,10 @@ Default flow inside `apps/acme-api/`:
 4. Prefer `effigy <task>` for repo-owned work instead of raw Cargo commands where Effigy already covers the path
 
 Repo notes:
-- `health` and `validate` currently use `build` as the stable Rust baseline
+- `health` uses `fmt` plus a cheap `cargo check` baseline; `validate` still runs `build`
 - the built-in `rust` test suite intentionally pins `cargo test --workspace`;
   the checked-in Nextest profiles remain available for explicit direct use
-- `db:*` stays owned here and resolves from the workspace root through child-catalog routing
+- `migration:*` stays owned here and resolves from the workspace root through child-catalog routing
 - raw `cargo` commands are fallback for work Effigy does not yet model directly
 
 ## Validation

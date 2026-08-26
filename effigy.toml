@@ -50,3 +50,34 @@ run_in = "host"
 [tasks."qa:workspace-shape"]
 run = "bun ../underlay/ts/bin/underlay-workspace-shape.ts ."
 run_in = "host"
+
+[state]
+default = "local"
+
+[state.local]
+schema = "effigy.state-stack.v1"
+name = "underlay-reference-local"
+environment = "dev"
+
+[[state.local.layers]]
+key = "reset"
+role = "structure"
+source = "acme-api/migration:reset:schema"
+apply_mode = "task"
+environment_policy = "all"
+
+[[state.local.layers]]
+key = "structure"
+role = "structure"
+source = "acme-api/migration:apply"
+apply_mode = "task"
+environment_policy = "all"
+depends_on = ["reset"]
+
+[[state.local.layers]]
+key = "dev-overlay"
+role = "dev-overlay"
+source = "acme-api/migration:apply:overlay"
+apply_mode = "task"
+environment_policy = "dev-only"
+depends_on = ["structure"]
