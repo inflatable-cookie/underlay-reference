@@ -10,6 +10,12 @@ js = "bun"
 [task_defaults]
 run_in = "host"
 
+# Front keeps the accepted check/build minimum. Vitest is on-demand so the
+# empty suite does not fail root `effigy test` / `validate` / `qa`.
+[test.suites.vitest]
+run = "bun x vitest run"
+default = false
+
 [tasks]
 dev = [
   { task = "config:generate" },

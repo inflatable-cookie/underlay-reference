@@ -13,49 +13,28 @@
 mod health_tests {
     //! Health endpoint tests - simplest integration test example.
 
-    use axum::{
-        body::Body,
-        http::{Request, StatusCode},
-        routing::get,
-        Router,
-    };
-    use tower::util::ServiceExt;
+    use axum::{routing::get, Router};
+    use underlay_testing::TestServer;
 
-    // Minimal health handler for demonstration
     async fn health() -> &'static str {
         "OK"
     }
 
-    fn test_router() -> Router {
-        Router::new().route("/v1/health", get(health))
+    fn test_server() -> TestServer {
+        TestServer::new(Router::new().route("/v1/health", get(health)))
     }
 
     #[tokio::test]
     async fn health_returns_ok() {
-        let app = test_router();
-
-        let request = Request::builder()
-            .uri("/v1/health")
-            .body(Body::empty())
-            .unwrap();
-
-        let response = app.oneshot(request).await.unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
+        let response = test_server().get("/v1/health").send().await;
+        response.assert_ok();
+        assert_eq!(response.text(), "OK");
     }
 
     #[tokio::test]
     async fn unknown_route_returns_not_found() {
-        let app = test_router();
-
-        let request = Request::builder()
-            .uri("/v1/unknown")
-            .body(Body::empty())
-            .unwrap();
-
-        let response = app.oneshot(request).await.unwrap();
-
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let response = test_server().get("/v1/unknown").send().await;
+        response.assert_not_found();
     }
 }
 

@@ -15,18 +15,22 @@ api = "cd {repo} && cargo run -p acme-api {args}"
 jobs = "cd {repo} && cargo run -p acme-jobs {args}"
 build = "cd {repo} && cargo build {args}"
 
-"db:drop" = "cd {repo} && cargo run -p acme-db --bin reset_dev_db {args}"
-"db:migrate" = "cd {repo} && cargo run -p acme-db --bin migrate_dev_db {args}"
-"db:reset" = [
-  { task = "db:drop" },
-  { task = "db:migrate" }
+check = "cd {repo} && cargo check --workspace --all-features {args}"
+
+"migration:reset:schema" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin reset_dev_db {args}", run_in = "container" }
+"migration:apply" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin migrate_dev_db -- schema {args}", run_in = "container" }
+"migration:apply:overlay" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin migrate_dev_db -- overlay {args}", run_in = "container" }
+"migration:reset" = [
+  { task = "migration:reset:schema" },
+  { task = "migration:apply" },
+  { task = "migration:apply:overlay" }
 ]
 
 clippy = "cd {repo} && cargo clippy --workspace --all-targets -- -D warnings"
 fmt = "cd {repo} && cargo fmt --all --check"
 
-# Cheap orientation for `effigy doctor`. Build stays in validate.
-health = [{ task = "fmt" }]
+# Cheap orientation for `effigy doctor`. Full build stays in validate.
+health = [{ task = "fmt" }, { task = "check" }]
 validate = [
   { task = "build" },
   { task = "test" },

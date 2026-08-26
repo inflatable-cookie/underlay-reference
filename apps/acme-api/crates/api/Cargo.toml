@@ -49,6 +49,7 @@ uuid = { workspace = true }
 acme-test-utils = { path = "../test-utils" }
 # LocalAdapter (dev-only seam) for exercising the validated upload helpers.
 underlay-blob = { workspace = true, features = ["local"] }
+underlay-testing = { workspace = true, features = ["server"] }
 axum-test = "20"
 tower = "0.5"
 http-body-util = "0.1"

@@ -7,6 +7,18 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 <!-- Keep entries short. Append newest entries at the top. Do not include secrets. -->
 
+### [ ] `bun x tsc` in acme-client health resolves TypeScript 7 and rejects `baseUrl` — 2026-08-26
+- Friction: `packages/acme-client/effigy.toml` runs `bun x tsc`, which currently fetches TypeScript 7.0.2 instead of the package-pinned `typescript@^5.9.3`. TS 7 removes `baseUrl` and fails `acme-client/health`.
+- Impact: root `effigy health` fails on an unrelated client typecheck while this lane only changed API migration/test surfaces.
+- Possible fix: run the package-local `tsc` (`bun run check`) or pin `bun x typescript@5.9.3 tsc`.
+- Surface: `packages/acme-client/effigy.toml` health/check / TypeScript 7
+
+### [ ] T3 worker launch used the Underlay worktree for an Underlay Reference handoff — 2026-08-26
+- Friction: the `g09.038` worker handoff lives in Underlay Reference, but T3 started this thread in a clean Underlay worktree. `.agents.local.env` / `AGENTS_WORKTREE_CONTAINER_DIR` is also absent, so the worker had to create a second registered worktree under the existing T3 Underlay Reference container.
+- Impact: the first preflight is spent proving the current root is the wrong repo instead of starting the lane.
+- Possible fix: launch consumer-repo worker threads from the owning repo, and seed `.agents.local.env` with the T3 worktree container.
+- Surface: T3 worker dispatch / Underlay Reference `.agents.local.env`
+
 ### [ ] Doctor rejects built-in `docs` steps as unresolved task references — 2026-08-25
 - Friction: `effigy doctor` reports every `docs check ...` step in
   `docs/effigy.toml` as an unresolved `docs` task even though `docs` is a
