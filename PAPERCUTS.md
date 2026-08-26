@@ -7,32 +7,6 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 <!-- Keep entries short. Append newest entries at the top. Do not include secrets. -->
 
-### [ ] Underlay Effigy bundle reuses `bundle.dirs` as a task-selector prefix — 2026-08-26
-- Friction: the bundle renders root `health`, `validate`, `qa`, and `dev` steps
-  as `{{ inputs.dirs.<role> }}/<task>`. Under the `apps/*` / `packages/*`
-  contract the physical dir (`apps/acme-admin`) is no longer the catalog alias
-  (`acme-admin`), so the generated selectors fail with
-  `task catalog prefix ... not found`. `bundle.dirs` cannot be set to the alias
-  instead, because the same input also feeds `catalog.members`, which must be a
-  real path.
-- Impact: every bundle-backed consumer that adopts the monorepo shape has to
-  restate the bundle's root sequences in its own `effigy.toml`. This repo now
-  carries that override.
-- Fix in review: `underlay-effigy-bundle#1` adds `catalogs.<role>` selector
-  inputs that fall back to `dirs.<role>`. Remove this repo's root sequence
-  overrides once it merges.
-- Surface: `underlay-effigy-bundle` `export.toml` / root `effigy.toml`
-
-### [ ] Bundle container `isolated_dirs` assume per-package `node_modules` — 2026-08-26
-- Friction: `containers.stack.services.workspace.isolated_dirs` is derived as
-  `<dir>/node_modules` per package. A root Bun workspace hoists dependencies to
-  root `node_modules`, which is not isolated.
-- Impact: the container dev stack and the host can share one hoisted
-  `node_modules` tree instead of isolating it.
-- Fix in review: `underlay-effigy-bundle#1` isolates root `node_modules` when
-  `[bundle.workspace] js_root` is set.
-- Surface: `underlay-effigy-bundle` container defaults
-
 ### [ ] Doctor rejects built-in `docs` steps as unresolved task references — 2026-08-25
 - Friction: `effigy doctor` reports every `docs check ...` step in
   `docs/effigy.toml` as an unresolved `docs` task even though `docs` is a
@@ -44,6 +18,22 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 - Surface: Effigy Doctor task-reference resolution / `docs/effigy.toml`
 
 ## Closed
+
+### [x] Underlay Effigy bundle reuses `bundle.dirs` as a task-selector prefix — 2026-08-26
+- Friction: the bundle rendered root lifecycle selectors from physical package
+  paths, which fail under the `apps/*` / `packages/*` monorepo shape.
+- Impact: bundle-backed consumers needed local root lifecycle overrides.
+- Fix: `underlay-effigy-bundle#1` merged as `e680157e`; this repo now supplies
+  `[bundle.catalogs]` aliases and carries no local lifecycle overrides.
+- Surface: `underlay-effigy-bundle` `export.toml` / root `effigy.toml`
+
+### [x] Bundle container `isolated_dirs` assume per-package `node_modules` — 2026-08-26
+- Friction: per-package `node_modules` isolation did not cover a root Bun
+  workspace's hoisted dependency tree.
+- Impact: the container dev stack could share root `node_modules` with the host.
+- Fix: `underlay-effigy-bundle#1` merged as `e680157e`; setting
+  `[bundle.workspace] js_root = true` isolates root `node_modules`.
+- Surface: `underlay-effigy-bundle` container defaults
 
 ### [x] Update the bundle docs-link selector — 2026-08-11
 - Friction: `effigy qa:docs` and `effigy acme-docs/qa:docs` call the removed `check-links` argument.

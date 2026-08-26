@@ -62,7 +62,7 @@ Lock evidence:
   `0.2.2`
 - no sibling application source paths appear in the lock
 
-`workspace:js:prepare` is the new repo-owned root install task
+`workspace:js:prepare` is the bundle-owned root install task
 (`bun install --frozen-lockfile`). The initial lock was generated through that
 same task, then the frozen form replayed clean.
 
@@ -117,8 +117,8 @@ Review verdict was changes-requested on three points. Response:
    single frozen root install. Verified against a path-bundle checkout: this
    repo then needs zero root sequence overrides and all validation still
    passes. Flat consumers render byte-identically to the previous bundle
-   revision. This repo keeps its temporary overrides, marked with the exact
-   replacement block, until that PR merges.
+   revision. The bundle PR merged as `e680157e`, and this repo now consumes the
+   shared inputs directly.
 2. **One root install for bootstrap/dev.** Covered by the bundle change above.
    Repo side: `packages/acme-ui` no longer owns a `refresh:deps` install task,
    and its README states that dependencies come from the root install.
@@ -129,33 +129,22 @@ Review verdict was changes-requested on three points. Response:
    page's test guidance is Effigy-first (`effigy test --plan`, `effigy test`,
    `effigy <catalog>/test`) instead of `cd acme-api && cargo test`.
 
-## Repo-owned root task override (bundle limitation)
+## Shared bundle integration
 
-The shared Underlay Effigy bundle renders the root `health`, `validate`, `qa`,
-and `dev` sequences as `{{ inputs.dirs.<role> }}/<task>`, reusing `bundle.dirs`
-as both the physical directory and the task-selector prefix. Under `apps/*` and
-`packages/*` those are no longer the same string, so the generated selectors
-resolved to `apps/acme-admin/health` and failed with `task catalog prefix
-'docs' not found`. Setting `bundle.dirs` to the alias instead is not possible:
-the same input feeds `catalog.members`, which must be a real path (verified —
-removing `[bundle.dirs]` fails with `invalid catalog member declared at
-catalog.members.admin`).
+`underlay-effigy-bundle#1` merged as `e680157e` and is now consumed directly.
+The repo declares physical ownership paths in `[bundle.dirs]`, task-selector
+aliases in `[bundle.catalogs]`, and root JavaScript workspace ownership through
+`[bundle.workspace] js_root = true`.
 
-This repo therefore restates those four sequences in its own `effigy.toml`
-against catalog aliases, with a comment marking the override as removable once
-the bundle can express selectors separately from dirs. Two `PAPERCUTS.md`
-entries record the bundle defect and a related one: bundle container
-`isolated_dirs` still assume per-package `node_modules`, which a hoisting root
-workspace no longer produces.
-
-**Resolved in review round 1** by `underlay-effigy-bundle#1`. Until that merges
-this repo keeps the overrides, annotated with the replacement block. Acowtancy
-never hit this because it owns `infra/*.toml` fragments instead of using the
-shared bundle.
+The bundle now owns root `health`, `validate`, `qa`, `dev`, and
+`workspace:js:prepare`. Bootstrap performs one frozen root install, and the
+container stack isolates root `node_modules`. This repo carries zero local
+lifecycle overrides. The two related papercuts are closed.
 
 ## Validation
 
-Run from the worker worktree after one frozen root install:
+Run from the worker worktree after syncing the merged shared bundle and one
+frozen root install:
 
 - `effigy workspace:js:prepare` — frozen install clean, no lock drift
 - `effigy tasks` — nine catalogs resolve to their new physical roots
@@ -171,11 +160,15 @@ Run from the worker worktree after one frozen root install:
   `auth-security-alerting`, `reorder-conflict` — pass
 - `effigy qa:templates`, `effigy qa:security` — pass
 - `effigy qa:workspace-shape` — all checks passed (was seven violations)
+- `effigy validate` — Underlay's full gate and the Admin, API, and Client test
+  targets pass; the aggregate exits 1 on the known Front Vitest routing
+  baseline (`src/**/*.{test,spec}.ts` finds no tests because they live under
+  `tests/`), already recorded in `PAPERCUTS.md`
 - `git diff --check` — clean
 
-Full root `validate`/`qa` were **not** run and are not claimed green: the
-bundle composes `underlay/validate` (the sibling framework's own full gate) into
-this repo's root `validate`.
+Full root `qa` was not run because it repeats the measured `validate` failure
+before its docs steps. The targeted health, validation, docs, security,
+template, rollout, and workspace-shape surfaces above are current.
 
 ## Baseline notes carried forward, not fixed here
 
@@ -212,6 +205,5 @@ this repo's root `validate`.
 
 ## Next Task
 
-Return the PR to the orchestrator for review. Before dispatching
-`g10.006`–`g10.009`, decide how bundle-backed consumers should express root task
-selectors under the monorepo shape.
+Return the PR to the orchestrator for final review. After merge, continue the
+parallel `g10.006`–`g10.009` consumer rollout.
