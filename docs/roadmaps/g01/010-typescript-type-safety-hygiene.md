@@ -4,7 +4,7 @@ Status: done (2026-07-19)
 Owner: repo maintainers
 Updated: 2026-07-19
 Governing refs: underlay `docs/contracts/090` (TS runtime), underlay `docs/roadmaps/g08/024-strict-type-and-dependency-hygiene.md`, underlay `docs/logs/2026-07/18-100000-consumer-audit-underlay-reference.md`
-Planning state: ready
+Planning state: complete
 
 ## Goal
 

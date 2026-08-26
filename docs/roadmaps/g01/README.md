@@ -24,10 +24,8 @@
 
 The 2026-07-18 foundation consumer audit fixed the clear-cut security/quality
 items in-place (open-redirect, stored XSS, login-timing, blob fail-closed,
-`noImplicitAny`, non-compiling infra tests). `g01.008`-`g01.011` are the
-remaining, larger follow-ups it deferred. `g01.008` (the auth-service adoption)
-is the highest priority — it closes refresh-replay revocation, 2FA throttling,
-and spoofable-IP findings.
+`noImplicitAny`, non-compiling infra tests). `g01.008`-`g01.011` carried the
+larger follow-ups it deferred and completed on 2026-07-19.
 
 ## Historical language boundary
 

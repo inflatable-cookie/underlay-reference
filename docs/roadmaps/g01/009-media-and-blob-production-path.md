@@ -4,7 +4,7 @@ Status: done (2026-07-19)
 Owner: repo maintainers
 Updated: 2026-07-19
 Governing refs: underlay `docs/contracts/040` (media and upload enforcement), underlay `docs/logs/2026-07/18-100000-consumer-audit-underlay-reference.md`
-Planning state: ready
+Planning state: complete
 
 ## Goal
 

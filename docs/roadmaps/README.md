@@ -16,9 +16,8 @@ Roadmaps hold executable work for the reference implementation.
 
 - Active generation: `g01`
 - Next roadmap ID: `g01.012`
-- Open ready cards from the g08 consumer audit: `g01.008` (auth service adoption
-  and hardening), `g01.009` (media/blob production path), `g01.010` (TypeScript
-  type-safety hygiene), `g01.011` (gate hardening and lint cleanup)
+- `g01.007` is the active retained-surface milestone with one ready strict card
+- `g01.008`–`g01.011`, the g08 consumer-audit tranche, are complete
 
 ## Index
 

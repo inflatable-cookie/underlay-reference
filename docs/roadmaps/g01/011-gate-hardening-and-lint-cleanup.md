@@ -4,7 +4,7 @@ Status: done (2026-07-19)
 Owner: repo maintainers
 Updated: 2026-07-19
 Governing refs: `acme-docs/policy/001-working-rules.md`, underlay `docs/logs/2026-07/18-100000-consumer-audit-underlay-reference.md`
-Planning state: ready
+Planning state: complete
 
 ## Goal
 

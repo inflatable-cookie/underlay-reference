@@ -5,8 +5,8 @@
   - Range: `001`-`011`
   - Notes: initial reference-app roadmap sequence and Northstar alignment
     tranche; `g01.007` is the active retained-surface formalization owner;
-    `g01.008`-`g01.011` are the g08 consumer-audit follow-up tranche (auth
-    adoption, media/blob prod path, TS type-safety, gate hardening)
+    `g01.008`-`g01.011`, the g08 consumer-audit follow-up tranche, completed on
+    2026-07-19
 
 ## Rollover Rule
 
@@ -18,6 +18,5 @@ strict-lane material has been purged from `specs/`.
 
 ## Next Task
 
-Keep `g01` active. Two live tranches: `g01.007` (retained-surface owner) and the
-g08 consumer-audit follow-ups `g01.008`-`g01.011`. Start the audit tranche with
-`g01.008` (auth service adoption and hardening).
+Keep `g01` active. Execute the ready strict card for `g01.007`; open `g01.012`
+only when the next real milestone is scoped.

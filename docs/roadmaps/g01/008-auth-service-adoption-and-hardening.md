@@ -4,7 +4,7 @@ Status: done (2026-07-19)
 Owner: repo maintainers
 Updated: 2026-07-19
 Governing refs: `acme-docs/roadmaps/g01/002-security-audit.md`, `acme-docs/architecture/product-guardrails.md`, underlay `docs/contracts/030` (auth session and token boundary), underlay `docs/logs/2026-07/18-100000-consumer-audit-underlay-reference.md`
-Planning state: ready
+Planning state: complete
 
 ## Goal
 
