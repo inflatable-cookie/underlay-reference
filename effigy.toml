@@ -28,14 +28,28 @@ mounts = [{ member = "underlay" }, { member = "poodle" }]
 [test]
 exclude_catalogs = ["poodle", "underlay"]
 
-# Root workspace lifecycle.
+# Root workspace lifecycle. TEMPORARY — remove this whole block.
 #
-# The shared bundle reuses `bundle.dirs` as both the physical directory and the
-# task-selector prefix. Under `apps/*` / `packages/*` those two are no longer
+# The released bundle reuses `bundle.dirs` as both the physical directory and
+# the task-selector prefix. Under `apps/*` / `packages/*` those are no longer
 # the same string, so the bundle's generated root sequences would address
-# `apps/acme-admin/health` instead of the `acme-admin` catalog alias. These
-# repo-owned overrides restate the same sequences against catalog aliases.
-# Remove them once the bundle can express selectors separately from dirs.
+# `apps/acme-admin/health` instead of the `acme-admin` catalog alias.
+#
+# The shared fix is underlay-effigy-bundle#1, which adds `[bundle.catalogs]`
+# selector aliases and a `[bundle.workspace] js_root` root-install mode. Once
+# that merges, delete this block plus the `workspace:js:prepare` task below and
+# replace them with:
+#
+#   [bundle.catalogs]
+#   docs = "acme-docs"
+#   api = "acme-api"
+#   client = "acme-client"
+#   ui = "acme-ui"
+#   front = "acme-front"
+#   admin = "acme-admin"
+#
+#   [bundle.workspace]
+#   js_root = true
 [tasks.health]
 run = [
   { task = "acme-docs/health" },
@@ -81,6 +95,7 @@ concurrent = [
 ]
 
 # One frozen root install for the whole JavaScript workspace (contract 024).
+# TEMPORARY — the bundle owns this task once underlay-effigy-bundle#1 merges.
 [tasks."workspace:js:prepare"]
 run = "cd {repo} && bun install --frozen-lockfile"
 run_in = "host"

@@ -103,6 +103,32 @@ resolution explicit. No Underlay or Poodle version moved.
   catalog aliases (`acme-docs/qa:docs`, `acme-admin/check`, …) are semantic names
   and stayed as they were.
 
+## Review round 1 (2026-08-26)
+
+Review verdict was changes-requested on three points. Response:
+
+1. **Repair the shared bundle rather than override it locally.** Done as
+   `underlay-effigy-bundle#1`. It adds optional `catalogs.<role>` selector
+   inputs that fall back to `dirs.<role>`, and a `workspace.js_root` mode that
+   swaps bootstrap's per-package dependency sync for one
+   `workspace:js:prepare` frozen root install and isolates the hoisted root
+   `node_modules` instead of per-package trees. `scripts/dev/ui-setup.rhai`
+   detects a root workspace from the filesystem and collapses hydration to a
+   single frozen root install. Verified against a path-bundle checkout: this
+   repo then needs zero root sequence overrides and all validation still
+   passes. Flat consumers render byte-identically to the previous bundle
+   revision. This repo keeps its temporary overrides, marked with the exact
+   replacement block, until that PR merges.
+2. **One root install for bootstrap/dev.** Covered by the bundle change above.
+   Repo side: `packages/acme-ui` no longer owns a `refresh:deps` install task,
+   and its README states that dependencies come from the root install.
+3. **Active setup/test docs.** `effigy bootstrap:deps` does not resolve to a
+   root task (it is ambiguous across the sibling Underlay and Poodle catalogs).
+   Root `README.md` and `docs/architecture/000-overview.md` now document
+   `effigy workspace:js:prepare` for an existing clone, and the architecture
+   page's test guidance is Effigy-first (`effigy test --plan`, `effigy test`,
+   `effigy <catalog>/test`) instead of `cd acme-api && cargo test`.
+
 ## Repo-owned root task override (bundle limitation)
 
 The shared Underlay Effigy bundle renders the root `health`, `validate`, `qa`,
@@ -122,9 +148,10 @@ entries record the bundle defect and a related one: bundle container
 `isolated_dirs` still assume per-package `node_modules`, which a hoisting root
 workspace no longer produces.
 
-**This needs an orchestrator decision before `g10.006`–`g10.009`.** Every other
-bundle-backed consumer will hit the same wall. Acowtancy sidesteps it by owning
-`infra/*.toml` fragments instead of using the shared bundle.
+**Resolved in review round 1** by `underlay-effigy-bundle#1`. Until that merges
+this repo keeps the overrides, annotated with the replacement block. Acowtancy
+never hit this because it owns `infra/*.toml` fragments instead of using the
+shared bundle.
 
 ## Validation
 

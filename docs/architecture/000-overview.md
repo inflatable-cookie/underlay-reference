@@ -185,21 +185,29 @@ See [003-domain-patterns.md](./003-domain-patterns.md) for CRUD patterns.
 ### Starting Development
 
 ```bash
-effigy bootstrap:deps
+effigy workspace:js:prepare
 effigy health
 effigy validate
 effigy dev
 ```
 
+`workspace:js:prepare` runs one frozen root workspace install
+(`bun install --frozen-lockfile`). There is no per-package install step.
+
 ### Running Tests
 
 ```bash
-# Backend tests
-cd acme-api && cargo test
+# Inspect the resolved plan first
+effigy test --plan
 
-# Frontend tests
-cd acme-admin && bun test
-cd acme-front && bun test
+# Whole workspace
+effigy test
+
+# One target
+effigy acme-api/test
+effigy acme-admin/test
+effigy acme-front/test
+effigy acme-client/test
 ```
 
 ### Database Migrations

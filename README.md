@@ -97,8 +97,10 @@ effigy db:migrate
   secrets vault, not committed or ad hoc `.env` files
 
 Bootstrap notes:
-- `effigy bootstrap ...` clones the reference workspace and runs `bootstrap:deps`
-- setup starts the workspace container and installs dependencies inside it
+- `effigy bootstrap ...` clones the reference workspace and applies the
+  repo-owned `[bootstrap]` contract
+- setup starts the workspace container and runs one frozen root workspace
+  install; there is no per-package install step
 - the Effigy bundle may mount sibling `../underlay` and `../poodle` for local
   framework development, cross-repo QA scripts, and docs — those mounts are not
   the committed application dependency source
@@ -190,11 +192,14 @@ Add `--start` if you want the dev stack to launch after setup.
 ### If the repo is already cloned
 
 ```bash
-effigy bootstrap:deps
+effigy workspace:js:prepare
 effigy health
 effigy validate
 effigy dev
 ```
+
+`workspace:js:prepare` is the single frozen root workspace install. There is no
+per-package install step.
 
 ### Running the Application
 

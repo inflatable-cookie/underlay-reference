@@ -15,5 +15,3 @@ health = [{ task = "check" }]
 validate = [{ task = "check" }]
 qa = [{ task = "validate" }]
 check = "cd {repo} && bun x svelte-check --tsconfig ./tsconfig.json"
-
-"refresh:deps" = "cd {repo} && bun install"

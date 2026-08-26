@@ -17,7 +17,9 @@ Common repo commands:
 ```bash
 effigy check
 effigy qa
-effigy refresh:deps
 ```
+
+Dependencies come from the single frozen root workspace install
+(`effigy workspace:js:prepare`). This package owns no install task.
 
 `health` and `validate` both use the package typecheck baseline here because there is no separate production build task yet.
