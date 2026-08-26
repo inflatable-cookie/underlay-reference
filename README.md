@@ -75,11 +75,12 @@ effigy dev
 effigy qa
 effigy qa:docs
 effigy qa:northstar
-effigy db:reset
-effigy db:migrate
+effigy state plan
+effigy state apply local --yes
+effigy acme-api/migration:reset
 ```
 
-`db:*` stays owned by `apps/acme-api/` and resolves through child-catalog routing from the workspace root. Root tasks should own cross-repo orchestration rather than duplicating uniquely owned child tasks.
+Root `effigy state plan` / `effigy state apply local --yes` orchestrate the local schema and dev-overlay stack. Package-owned `migration:*` tasks stay in `apps/acme-api/` and resolve through child-catalog routing from the workspace root.
 
 ## Config And Secrets Policy
 
@@ -225,8 +226,8 @@ Notes:
 - The managed shell tab opens at the workspace root inside that running `workspace` container.
 - The local shape is domain-first through the Effigy gateway: HTTPS for front/admin/API/pgweb/Mailpit/MinIO Console, plus `https://s3.acme.test` for browser-facing S3 uploads.
 - Use the same `.test` aliases inside the workspace container too: `db.acme.test`, `smtp.acme.test`, `s3.acme.test`.
-- Postgres and MinIO persist repo-local state under `.effigy/runtime/data/postgres` and `.effigy/runtime/data/minio`.
-- Existing data in older Docker named volumes is not migrated automatically into those `.effigy/runtime/data/...` paths.
+- Postgres persists in the repo-scoped named volume `underlay-reference-dev-postgres-data`; MinIO uses `underlay-reference-dev-minio-data`.
+- Older host bind-mount paths under `.effigy/runtime/data/` are not migrated automatically into those named volumes.
 
 ### Error Logging Smoke Test
 

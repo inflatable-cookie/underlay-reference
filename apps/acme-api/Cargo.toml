@@ -66,3 +66,4 @@ underlay-media = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", 
 underlay-nightfire = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.4" }
 underlay-ratelimit = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.4" }
 underlay-security-alerts = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.4" }
+underlay-testing = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.4" }

@@ -213,8 +213,13 @@ effigy acme-client/test
 ### Database Migrations
 
 ```bash
-effigy db:migrate
+effigy state plan
+effigy state apply local --yes
+effigy acme-api/migration:apply
+effigy acme-api/migration:reset
 ```
+
+Root state plan/apply owns the local schema plus dev-overlay order. The API package owns the concrete `migration:*` apply and reset/replay tasks.
 
 ## Configuration
 

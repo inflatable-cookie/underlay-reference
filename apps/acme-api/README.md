@@ -17,8 +17,8 @@ Common repo commands:
 ```bash
 effigy dev
 effigy jobs
-effigy db:reset
-effigy db:migrate
+effigy migration:apply
+effigy migration:reset
 ```
 
-`health` and `validate` currently use the Rust build as the stable backend baseline. Workspace-level `db:*` commands resolve here through child-catalog routing rather than duplicated root wrappers.
+`health` uses `fmt` plus a cheap `cargo check` baseline; `validate` still runs the Rust build. Workspace-level `migration:*` commands resolve here through child-catalog routing rather than duplicated root wrappers. From the workspace root, use `effigy state plan` and `effigy state apply local --yes` for the local stack.
