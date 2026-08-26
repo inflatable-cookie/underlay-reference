@@ -14,12 +14,17 @@ This repository is a **reference template** for bootstrapping Underlay-based app
 4. Links to detailed docs
 
 Detailed implementation notes are documented in:
-- `acme-docs/processes/210-reference-implementation-notes.md`
+- `docs/processes/210-reference-implementation-notes.md`
 - `README.md`
 
 ## Hard Rules
 
 - For bootstrap work, copy and rename from the reference packages; avoid inventing alternate structure without a clear reason.
+- Keep the single-repository workspace shape: runtime apps under `apps/*`,
+  reusable libraries under `packages/*`, docs authority at root `docs/`.
+- Keep one root `package.json` workspace declaration and one root `bun.lock`.
+  Never add a child lockfile, a per-package install, or a `file:` edge between
+  internal packages — use `workspace:*`.
 - Use `bun` for TypeScript/Svelte tasks.
 - Keep wire JSON naming and API conventions aligned with Underlay guides.
 - Keep changes scoped; avoid unrelated refactors.
@@ -28,10 +33,11 @@ Detailed implementation notes are documented in:
 
 Default flow from the workspace root:
 1. Run `effigy tasks`
-2. Run `effigy health`
-3. Run `effigy validate`
-4. Prefer `effigy <task>` for supported workspace and child-repo work
-5. Fall back to raw package-local commands only when Effigy does not yet cover the path
+2. Run `effigy workspace:js:prepare` (one frozen root install)
+3. Run `effigy health`
+4. Run `effigy validate`
+5. Prefer `effigy <task>` for supported workspace and child-repo work
+6. Fall back to raw package-local commands only when Effigy does not yet cover the path
 
 ## Runtime Stance
 
@@ -54,15 +60,17 @@ Workspace notes:
 
 ## Validation
 
+- `effigy workspace:js:prepare`
 - `effigy health`
 - `effigy validate`
 - `effigy qa:docs`
+- `effigy qa:workspace-shape`
 
 ## Source of Truth
 
-For reference-app planning and architecture, prefer `acme-docs/`. In the
+For reference-app planning and architecture, prefer `docs/`. In the
 active strict lane, a bare `continue` should resolve through the previous
-`Next Task` into the current ready card under `acme-docs/specs/` or back into
+`Next Task` into the current ready card under `docs/specs/` or back into
 planning if no ready card exists. For shared framework conventions, prefer
 Underlay docs in `underlay/docs/guides/`. Do not create parallel roadmap or
 report docs elsewhere in this repo.
@@ -71,7 +79,7 @@ report docs elsewhere in this repo.
 
 Use the repo-local style reference for internal work and normal replies:
 
-- `acme-docs/policy/internal-writing-style.md`
+- `docs/policy/internal-writing-style.md`
 
 <!-- BEGIN EFFIGY AGENT CONTRACT -->
 ## Effigy Agent Contract

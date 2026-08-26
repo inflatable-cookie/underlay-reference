@@ -6,26 +6,43 @@ A complete, working reference implementation for bootstrapping new Underlay-base
 
 ```
 underlay-reference/
-├── acme-api/          # Rust backend (API server + background jobs)
-├── acme-client/       # TypeScript API client library
-├── acme-admin/        # SvelteKit admin frontend
-├── acme-front/        # SvelteKit public frontend
-├── acme-ui/           # Shared UI components
+├── apps/
+│   ├── acme-api/      # Rust backend (API server + background jobs)
+│   ├── acme-admin/    # SvelteKit admin frontend
+│   └── acme-front/    # SvelteKit public frontend
+├── packages/
+│   ├── acme-client/   # TypeScript API client library
+│   └── acme-ui/       # Shared UI components
+├── docs/              # Documentation authority
+├── config/            # Workspace-root config stack
+├── package.json       # Root Bun workspace manifest
+├── bun.lock           # One root lockfile
+└── effigy.toml        # Root Effigy catalog
 ```
+
+One Git repository owns the whole workspace. Runtime applications live under
+`apps/*`, reusable internal libraries under `packages/*`, and docs authority is
+root `docs/`. Names stay product-specific; the role map above is the contract.
+
+The JavaScript workspace is declared once in the root `package.json`
+(`apps/acme-admin`, `apps/acme-front`, `packages/acme-client`,
+`packages/acme-ui`) with one root `bun.lock` and no child lockfiles. Internal
+package edges use `workspace:*`. `apps/acme-api` is Rust-only and keeps its own
+app-local Cargo workspace, so it is not a JavaScript workspace member.
 
 Committed application dependencies resolve Underlay from the released Git tag
 (`v0.9.4` at time of writing), not from sibling source paths.
 
 ## Documentation Authority
 
-Reference-app planning and architecture live in `acme-docs/`.
+Reference-app planning and architecture live in `docs/`.
 
-- Start with `acme-docs/README.md`
-- Use `acme-docs/vision/001-acme-reference-implementation-vision.md` for the long-term role of the repo
-- Use `acme-docs/architecture/000-overview.md` for the package map and system layout
-- Use `acme-docs/architecture/product-guardrails.md` for the active retained-surface guardrails
-- Use `acme-docs/policy/001-working-rules.md` for the active strict execution rules
-- Use `acme-docs/processes/210-reference-implementation-notes.md` for implementation notes and validation commands
+- Start with `docs/README.md`
+- Use `docs/vision/001-acme-reference-implementation-vision.md` for the long-term role of the repo
+- Use `docs/architecture/000-overview.md` for the package map and system layout
+- Use `docs/architecture/product-guardrails.md` for the active retained-surface guardrails
+- Use `docs/policy/001-working-rules.md` for the active strict execution rules
+- Use `docs/processes/210-reference-implementation-notes.md` for implementation notes and validation commands
 
 `AGENTS.md` files in this repository are intentionally kept lean and point back to that docs authority.
 
@@ -35,9 +52,14 @@ Use Effigy as the default command surface from the workspace root:
 
 ```bash
 effigy tasks
+effigy workspace:js:prepare
 effigy health
 effigy validate
 ```
+
+`workspace:js:prepare` is the one frozen root install
+(`bun install --frozen-lockfile`) for the whole JavaScript workspace. Do not run
+per-package installs.
 
 First-time bring-up from another directory:
 
@@ -57,7 +79,7 @@ effigy db:reset
 effigy db:migrate
 ```
 
-`db:*` stays owned by `acme-api/` and resolves through child-catalog routing from the workspace root. Root tasks should own cross-repo orchestration rather than duplicating uniquely owned child tasks.
+`db:*` stays owned by `apps/acme-api/` and resolves through child-catalog routing from the workspace root. Root tasks should own cross-repo orchestration rather than duplicating uniquely owned child tasks.
 
 ## Config And Secrets Policy
 
@@ -69,14 +91,16 @@ effigy db:migrate
   machine. After pulling the config convergence (2026-08), strip existing
   `local.toml` files back to personal tweaks; the shared dev-stack config now
   lives in the committed `config/effigy.toml`
-- `acme-admin/` and `acme-front/` generate public runtime config from the root
+- `apps/acme-admin/` and `apps/acme-front/` generate public runtime config from the root
   stack rather than reading `.env` files
 - true secrets should move through Effigy-managed runtime injection or the local
   secrets vault, not committed or ad hoc `.env` files
 
 Bootstrap notes:
-- `effigy bootstrap ...` clones the reference workspace and runs `bootstrap:deps`
-- setup starts the workspace container and installs dependencies inside it
+- `effigy bootstrap ...` clones the reference workspace and applies the
+  repo-owned `[bootstrap]` contract
+- setup starts the workspace container and runs one frozen root workspace
+  install; there is no per-package install step
 - the Effigy bundle may mount sibling `../underlay` and `../poodle` for local
   framework development, cross-repo QA scripts, and docs — those mounts are not
   the committed application dependency source
@@ -168,11 +192,14 @@ Add `--start` if you want the dev stack to launch after setup.
 ### If the repo is already cloned
 
 ```bash
-effigy bootstrap:deps
+effigy workspace:js:prepare
 effigy health
 effigy validate
 effigy dev
 ```
+
+`workspace:js:prepare` is the single frozen root workspace install. There is no
+per-package install step.
 
 ### Running the Application
 
@@ -238,11 +265,18 @@ To create a new project from this reference:
 ```bash
 mkdir my-project && cd my-project
 
-cp -r /path/to/underlay-reference/acme-api ./api
-cp -r /path/to/underlay-reference/acme-client ./api-client
-cp -r /path/to/underlay-reference/acme-admin ./admin
-cp -r /path/to/underlay-reference/acme-front ./front
+mkdir -p apps packages
+
+cp -r /path/to/underlay-reference/apps/acme-api ./apps/api
+cp -r /path/to/underlay-reference/apps/acme-admin ./apps/admin
+cp -r /path/to/underlay-reference/apps/acme-front ./apps/front
+cp -r /path/to/underlay-reference/packages/acme-client ./packages/api-client
+cp -r /path/to/underlay-reference/packages/acme-ui ./packages/ui
+cp /path/to/underlay-reference/package.json ./package.json
 ```
+
+Keep the `apps/*` and `packages/*` split. Do not flatten packages back to the
+repository root.
 
 ### 2. Rename Everything
 
@@ -262,13 +296,16 @@ Replace `acme` with your project name throughout:
 
 Keep the workspace-level bootstrap assumptions aligned when you rename the reference:
 
+- root `package.json` `workspaces` paths and `packageManager` pin
 - root `effigy.toml` `catalog.alias`
+- root `effigy.toml` `[bundle.dirs]` physical package paths
 - root `effigy.toml` `[containers.stack]` `profile`, `project_name`, and `dns.domain`
 - root `effigy.toml` `ready_message`
 - child `effigy.toml` aliases where package names change
+- regenerate the single root `bun.lock`; do not add child lockfiles
 
 When you need a different Underlay release, update the tag in every web manifest
-and `acme-api/Cargo.toml` workspace dependency, then regenerate the Bun and
+and `apps/acme-api/Cargo.toml` workspace dependency, then regenerate the Bun and
 Cargo locks narrowly.
 
 ## Environment Variables
@@ -287,9 +324,9 @@ contract.
 
 For the current `underlay-reference` local shape:
 
-- keep app-owned runtime wiring in `acme-api/.env`
-- keep typed app behavior overrides in `acme-api/config/local.toml`
-- keep `acme-api/effigy.toml` as plain task orchestration (`cargo run ...`), not an env dump
+- keep app-owned runtime wiring in `apps/acme-api/.env`
+- keep typed app behavior overrides in `apps/acme-api/config/local.toml`
+- keep `apps/acme-api/effigy.toml` as plain task orchestration (`cargo run ...`), not an env dump
 
 ### Required for API
 
@@ -323,12 +360,12 @@ BLOB_S3_PRESIGN_URL_BASE=https://s3.acme.test
 
 ## Adding Your Domain
 
-1. **Define entities** in `api/crates/domain/src/`
-2. **Add database tables** in `api/migrations/`
-3. **Create query functions** in `api/crates/db/src/`
-4. **Add API routes** in `api/crates/api/src/routes/`
-5. **Add client commands** in `api-client/src/commands/`
-6. **Build UI** in `admin/` and `front/`
+1. **Define entities** in `apps/api/crates/domain/src/`
+2. **Add database tables** in `apps/api/migrations/`
+3. **Create query functions** in `apps/api/crates/db/src/`
+4. **Add API routes** in `apps/api/crates/api/src/routes/`
+5. **Add client commands** in `packages/api-client/src/commands/`
+6. **Build UI** in `apps/admin/` and `apps/front/`
 
 ## Documentation
 

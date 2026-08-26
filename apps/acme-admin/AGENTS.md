@@ -1,0 +1,43 @@
+# Agents Guide: acme-admin
+
+## Scope
+
+`acme-admin` is the SvelteKit admin reference app. Prefer shared Underlay components and standard admin patterns.
+
+## Hard Rules
+
+- Use `bun` for JS/TS tasks.
+- Prefer Underlay components/patterns over custom one-off UI structures.
+- Keep route behavior and data loading close to route boundaries.
+- Keep admin behavior consistent with shared patterns documented in Underlay guides.
+
+## Effigy-First Execution
+
+- Let Effigy choose host vs container for normal work. Do not touch host-side `node_modules`, `vendor`, `target`, `.pnpm-store`, or `.svelte-kit` expecting it to affect the live runtime.
+- Use `effigy <task>`, `effigy prep`, or `effigy container shell` when you need to change runtime dependencies or inspect the live environment.
+
+Default flow inside `apps/acme-admin/`:
+1. Run `effigy tasks`
+2. Run `effigy health`
+3. Run `effigy validate`
+4. Prefer `effigy <task>` for repo-owned work instead of raw package commands where Effigy already covers the path
+
+## Validation
+
+- `effigy health`
+- `effigy validate`
+
+## Reference Docs
+
+Use `../../docs/` as the reference-app docs authority. Do not create package-local roadmap or report docs.
+
+- `../../docs/processes/210-reference-implementation-notes.md`
+- `../underlay/docs/guides/090-ui-kit.md`
+- `../underlay/docs/guides/098-shared-admin-patterns.md`
+- `../underlay/docs/guides/110-admin.md`
+
+## Internal Writing Style
+
+Use the repo-local style reference for internal work and normal replies:
+
+- `../../docs/policy/internal-writing-style.md`

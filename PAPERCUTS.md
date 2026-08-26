@@ -9,15 +9,31 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 ### [ ] Doctor rejects built-in `docs` steps as unresolved task references — 2026-08-25
 - Friction: `effigy doctor` reports every `docs check ...` step in
-  `acme-docs/effigy.toml` as an unresolved `docs` task even though `docs` is a
+  `docs/effigy.toml` as an unresolved `docs` task even though `docs` is a
   callable Effigy built-in.
 - Impact: workspace health orientation cannot distinguish valid docs QA routing
   from a genuinely missing selector during the monorepo docs move.
 - Possible fix: teach Doctor's task-reference resolver to accept built-ins in
   sequence steps, then remove any migration-only workaround after verification.
-- Surface: Effigy Doctor task-reference resolution / `acme-docs/effigy.toml`
+- Surface: Effigy Doctor task-reference resolution / `docs/effigy.toml`
 
 ## Closed
+
+### [x] Underlay Effigy bundle reuses `bundle.dirs` as a task-selector prefix — 2026-08-26
+- Friction: the bundle rendered root lifecycle selectors from physical package
+  paths, which fail under the `apps/*` / `packages/*` monorepo shape.
+- Impact: bundle-backed consumers needed local root lifecycle overrides.
+- Fix: `underlay-effigy-bundle#1` merged as `e680157e`; this repo now supplies
+  `[bundle.catalogs]` aliases and carries no local lifecycle overrides.
+- Surface: `underlay-effigy-bundle` `export.toml` / root `effigy.toml`
+
+### [x] Bundle container `isolated_dirs` assume per-package `node_modules` — 2026-08-26
+- Friction: per-package `node_modules` isolation did not cover a root Bun
+  workspace's hoisted dependency tree.
+- Impact: the container dev stack could share root `node_modules` with the host.
+- Fix: `underlay-effigy-bundle#1` merged as `e680157e`; setting
+  `[bundle.workspace] js_root = true` isolates root `node_modules`.
+- Surface: `underlay-effigy-bundle` container defaults
 
 ### [x] Update the bundle docs-link selector — 2026-08-11
 - Friction: `effigy qa:docs` and `effigy acme-docs/qa:docs` call the removed `check-links` argument.

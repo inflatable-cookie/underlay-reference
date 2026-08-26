@@ -11,13 +11,27 @@ project_name = "underlay-reference-dev"
 workspace_subdir = "underlay-reference"
 databases = ["acme"]
 
+# Physical ownership paths for the monorepo workspace shape (Underlay contract
+# 024). These feed catalog members, container isolated dirs, deploy source
+# roots, and bootstrap dependency sync.
 [bundle.dirs]
+docs = "docs"
+api = "apps/acme-api"
+client = "packages/acme-client"
+ui = "packages/acme-ui"
+front = "apps/acme-front"
+admin = "apps/acme-admin"
+
+[bundle.catalogs]
 docs = "acme-docs"
 api = "acme-api"
 client = "acme-client"
 ui = "acme-ui"
 front = "acme-front"
 admin = "acme-admin"
+
+[bundle.workspace]
+js_root = true
 
 [systems.dev]
 mounts = [{ member = "underlay" }, { member = "poodle" }]
@@ -30,5 +44,9 @@ run = "../underlay/scripts/check-consumer-conformance.sh ."
 run_in = "host"
 
 [tasks."qa:templates"]
-run = "../underlay/scripts/check-template-conformance.sh acme-admin"
+run = "../underlay/scripts/check-template-conformance.sh apps/acme-admin"
+run_in = "host"
+
+[tasks."qa:workspace-shape"]
+run = "bun ../underlay/ts/bin/underlay-workspace-shape.ts ."
 run_in = "host"

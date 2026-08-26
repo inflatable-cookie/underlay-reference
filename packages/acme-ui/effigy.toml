@@ -1,0 +1,17 @@
+[manifest]
+minimum_effigy_version = "0.7.0"
+
+[catalog]
+alias = "acme-ui"
+
+[package_manager]
+js = "bun"
+
+[task_defaults]
+run_in = "host"
+
+[tasks]
+health = [{ task = "check" }]
+validate = [{ task = "check" }]
+qa = [{ task = "validate" }]
+check = "cd {repo} && bun x svelte-check --tsconfig ./tsconfig.json"
