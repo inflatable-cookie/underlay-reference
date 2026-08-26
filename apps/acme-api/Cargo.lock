@@ -97,6 +97,7 @@ dependencies = [
 name = "acme-db"
 version = "0.1.0"
 dependencies = [
+ "acme-infra",
  "async-trait",
  "chrono",
  "dotenvy",

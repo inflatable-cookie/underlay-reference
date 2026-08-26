@@ -1,11 +1,6 @@
 #[tokio::main]
 async fn main() {
-    // Prefer standard Underlay env vars; accept ACME_* as legacy fallbacks.
-    if std::env::var("DATABASE_URL").is_err() {
-        if let Ok(v) = std::env::var("ACME_DATABASE_URL") {
-            std::env::set_var("DATABASE_URL", v);
-        }
-    }
+    acme_db::ensure_database_url();
 
     if let Err(err) =
         underlay_devtools::reset_from_env("DATABASE_URL", acme_db::DEV_RESET_SCHEMAS, true, true)

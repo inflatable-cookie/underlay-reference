@@ -42,16 +42,19 @@ No database contents or credentials are recorded here.
 `effigy state plan` names `reset` (structure), `structure` (structure), and
 `dev-overlay` (dev-overlay, `dev-only`) in application order.
 
-`effigy state apply local --yes` executed all three layers. Package
-`acme-api/migration:reset` then replayed the same drop + schema + overlay
-sequence. Schema list, table list, and `_sqlx_migrations` versions matched:
+`effigy state apply local --yes` executed all three layers with no host
+`DATABASE_URL`. Package `acme-api/migration:reset` then replayed the same
+drop + schema + overlay sequence. Schema list, table list, and
+`_sqlx_migrations` versions matched:
 
 - 6 schemas (`account`, `acme`, `auth`, `media`, `platform`, `public`)
 - 31 tables
 - 8 structural migrations
 
-Overlay remains a separate package task. Seed failure exits non-zero, so both
-state apply and reset stop instead of continuing.
+Migration tasks run in the Effigy workspace container and load
+`DATABASE_URL` from the app config stack when it is unset. Overlay remains a
+separate package task. Seed failure exits non-zero, so both state apply and
+reset stop instead of continuing.
 
 ## Changed Surfaces
 
@@ -62,38 +65,36 @@ state apply and reset stop instead of continuing.
 - API `health` now includes `cargo check --workspace --all-features`
 - `migrate_dev_db` takes `schema|overlay`
 - `health_tests` uses `underlay_testing::TestServer` (`v0.9.4`, `server` feature)
+- `acme-front` Vitest suite is configured `default = false` so the empty
+  suite stays off the root test board
 - active README / architecture / agent notes; postgres named-volume wording
 
 ## Validation
 
 - `effigy tasks` — `migration:*` present, no `db:*`
 - `effigy state plan` — passed
-- `effigy state apply local --yes` — passed against the proved local target
-- `effigy acme-api/migration:apply` and `effigy acme-api/migration:reset` — passed
+- `effigy state apply local --yes` — passed with no host `DATABASE_URL`
+- `effigy acme-api/migration:reset` — passed with no host `DATABASE_URL`
 - `effigy acme-api/health` — passed
 - targeted `api_tests` `health_tests` — passed
 - `effigy workspace:js:prepare` then `effigy health` — passed
+- `effigy validate` — passed
+- `effigy qa` — passed
 - `effigy acme-docs/qa:docs` — passed
 - `effigy acme-docs/qa:northstar` — passed
 - retired-selector search — no active `db:migrate` / `db:reset` / `db:drop`
 - `git diff --check` — passed
 
-`effigy validate` and `effigy qa` ran the API, admin, and client suites
-successfully, then failed on `acme-front` because Vitest exits 1 when no test
-files exist. That empty front suite is the accepted minimum posture and was
-left unchanged.
+Review round 2 also re-ran from-empty apply and package reset without
+undocumented shell state.
 
 ## Residual Risk
 
-- root built-in test auto-detects `acme-front` Vitest and fails on an empty
-  suite
 - unprepared host `bun x tsc` can fetch TypeScript 7 and reject `baseUrl`;
   `workspace:js:prepare` restores the pinned 5.9.3 path
-- host `migration:*` tasks need `DATABASE_URL` pointing at
-  `127.0.0.1:19932/acme`; the binaries do not invent that URL
 
 ## Next Task
 
-Open the reviewable PR for this worker branch. Do not merge. After an
-authorised merge, the orchestrator closes Underlay `g09.038` and promotes
+PR4 is updated for orchestrator re-review. Do not merge. After an authorised
+merge, the orchestrator closes Underlay `g09.038` and promotes
 `g09.039`–`g09.043`.

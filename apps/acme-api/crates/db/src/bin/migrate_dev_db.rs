@@ -1,18 +1,10 @@
 use tracing::{error, info};
 
-use acme_db::{run_dev_seeds, run_migrations};
+use acme_db::{ensure_database_url, run_dev_seeds, run_migrations};
 
 enum Mode {
     Schema,
     Overlay,
-}
-
-fn load_database_url() {
-    if std::env::var("DATABASE_URL").is_err() {
-        if let Ok(v) = std::env::var("ACME_DATABASE_URL") {
-            std::env::set_var("DATABASE_URL", v);
-        }
-    }
 }
 
 fn parse_mode() -> Mode {
@@ -38,7 +30,7 @@ fn fail(err: impl std::fmt::Display, context: &str) -> ! {
 
 #[tokio::main]
 async fn main() {
-    load_database_url();
+    ensure_database_url();
     match parse_mode() {
         Mode::Schema => apply_schema().await,
         Mode::Overlay => apply_overlay().await,

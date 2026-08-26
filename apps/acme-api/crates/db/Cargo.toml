@@ -21,6 +21,8 @@ underlay-media = { workspace = true, features = ["nightfire"] }
 underlay-nightfire = { workspace = true }
 uuid = { workspace = true }
 
+acme-infra = { path = "../infra" }
+
 [[bin]]
 name = "migrate_dev_db"
 path = "src/bin/migrate_dev_db.rs"

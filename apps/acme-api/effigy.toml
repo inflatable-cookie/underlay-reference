@@ -17,9 +17,9 @@ build = "cd {repo} && cargo build {args}"
 
 check = "cd {repo} && cargo check --workspace --all-features {args}"
 
-"migration:reset:schema" = "cd {repo} && cargo run -p acme-db --bin reset_dev_db {args}"
-"migration:apply" = "cd {repo} && cargo run -p acme-db --bin migrate_dev_db -- schema {args}"
-"migration:apply:overlay" = "cd {repo} && cargo run -p acme-db --bin migrate_dev_db -- overlay {args}"
+"migration:reset:schema" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin reset_dev_db {args}", run_in = "container" }
+"migration:apply" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin migrate_dev_db -- schema {args}", run_in = "container" }
+"migration:apply:overlay" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin migrate_dev_db -- overlay {args}", run_in = "container" }
 "migration:reset" = [
   { task = "migration:reset:schema" },
   { task = "migration:apply" },

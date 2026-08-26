@@ -16,6 +16,23 @@ use underlay_db::DbConfig;
 /// Convenience type alias for the shared database pool.
 pub type DbPool = underlay_db::DbPool;
 
+/// Resolve `DATABASE_URL` for local migration binaries.
+///
+/// Process env wins. Otherwise use the same app config stack the Effigy
+/// runtime loads (`ENVIRONMENT=effigy` -> `config/effigy.toml`).
+pub fn ensure_database_url() {
+    if std::env::var("DATABASE_URL").is_ok() {
+        return;
+    }
+    if let Ok(url) = std::env::var("ACME_DATABASE_URL") {
+        std::env::set_var("DATABASE_URL", url);
+        return;
+    }
+    if let Some(url) = acme_infra::AppBehaviorConfig::load().database_url {
+        std::env::set_var("DATABASE_URL", url);
+    }
+}
+
 // Main schema migrations live at `api/migrations` (repo root).
 // This path is relative to `crates/db/src`.
 static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("../../migrations");
