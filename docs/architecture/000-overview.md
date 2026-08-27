@@ -237,10 +237,14 @@ condition recorded inline. `config/required-secrets.txt` is the
 startup-critical subset. There is no `.env` or `.env.example`: `.env` files are
 not part of the runtime contract, and nothing in this workspace reads one.
 
-Startup-critical:
-- `DATABASE_URL` - PostgreSQL connection string
+Startup-critical, required in every environment:
 - `AUTH_JWT_PRIVATE_KEY` - JWT signing key
 - `AUTH_JWT_PUBLIC_KEY` - JWT verification key
+
+Startup-critical, but conditional:
+- `DATABASE_URL` - PostgreSQL connection string. Required as an injected
+  secret in deployed environments; `local` and `effigy` resolve it from the
+  committed non-secret `config/effigy.toml` overlay instead
 - `ENCRYPTION_KEY` - required in deployed environments; may be absent with an
   explicit warning in `local`, `effigy`, and `test`
 

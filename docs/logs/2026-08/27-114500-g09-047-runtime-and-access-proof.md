@@ -79,12 +79,13 @@ only cross-file rule is that every required secret appears in the manifest. It
 cannot express conditionality.
 
 Rather than invent a format or claim unused providers are mandatory,
-`required-secrets.txt` lists only `DATABASE_URL` and the JWT keypair
-unconditionally, plus `ENCRYPTION_KEY` with its deployed-only condition stated
-in a comment. Redis, SMTP, SES/AWS, Google OAuth, and object-store credentials
-stay out of it, with their activating condition recorded against each key in
-the manifest. This is honest under the shipped checker and needs no format
-change.
+`required-secrets.txt` lists only the JWT keypair as unconditionally required,
+and gives `DATABASE_URL` and `ENCRYPTION_KEY` their own blocks stating the
+condition and the local exception. Redis, SMTP, SES/AWS, Google OAuth, and
+object-store credentials stay out of it, with their activating condition
+recorded against each key in the manifest. This is honest under the shipped
+checker and needs no format change. (The `DATABASE_URL` block was corrected in
+Review Round 2 below.)
 
 ## Settled Policy Implementation
 
@@ -324,6 +325,46 @@ default = false` so its empty suite does not fail root sequences.
 
 README and this log now state the real plan and name the reason. The existing
 front-test debt is left as-is, per the review.
+
+## Review Round 2
+
+Orchestrator re-review of `375340e8`: the three code and test gaps were
+accepted, with one narrow authority contradiction left.
+
+`config/required-secrets.txt` still listed `DATABASE_URL` under "Required in
+every environment." That contradicted `effigy.toml`
+(`database_url required = false`, local exception) and the README table
+(deployed injection only). The Round 1 PR comment also claimed the exception
+was stated in `required-secrets.txt`; it was not. The claim was wrong, not the
+file's absence — the file simply had not been updated to match the policy the
+other two views already carried.
+
+`DATABASE_URL` now has its own block stating the deployed-secret requirement,
+the local/effigy typed-config exception, and why the Effigy declaration is
+therefore not `required = true`. Only the JWT pair remains under "Required in
+every environment", where it is correct and matches `required = true` in
+`effigy.toml`.
+
+The same contradiction existed in two views the review did not name, and both
+are repaired in the same pass:
+
+- `docs/architecture/000-overview.md` listed `DATABASE_URL` in one flat
+  "Startup-critical" list beside the JWT pair. It now splits
+  unconditional from conditional.
+- the README "Startup-critical" block listed all four keys with a condition
+  noted only on `ENCRYPTION_KEY`. It now annotates `DATABASE_URL` too and
+  states plainly that only the JWT pair is required everywhere.
+
+`ENCRYPTION_KEY`'s block also now names why its Effigy declaration is
+`required = false`, so every conditional key explains its own flag rather than
+leaving the reader to reconcile two files.
+
+Four views of one policy — `config/required-secrets.txt`,
+`config/env-manifest.txt`, root `effigy.toml` `[secrets.keys]`, and the README
+secrets table — now agree, with `docs/architecture/000-overview.md` as a fifth
+summary that no longer contradicts them.
+
+No code changed in this round.
 
 ## Residual Risk
 
