@@ -34,6 +34,8 @@ logs and completed roadmaps left intact.
 
 ## Validation
 
+Initial worker head (`773ba3e3`) on pre-PR8 `main`:
+
 - `cargo test -p acme-api nested_task_batch_delete_uses_colon_not_slash`
 - `bun x vitest run tests/commands/admin/task-commands.test.ts` in
   `packages/acme-client` after `effigy workspace:js:prepare`
@@ -44,17 +46,26 @@ logs and completed roadmaps left intact.
 - root `effigy validate` — passed after rustfmt on the grammar test
 - `git diff --check`
 
+Post-review rebase onto current `main` (`8ea8a899`, PR #8 merged). Route
+and client cutover unchanged. On the combined head:
+
+- focused API grammar test 1/1
+- focused Acme Client path tests 2/2
+- root `effigy validate` passed
+- `git diff --check` clean
+
 ## Residual Risk
 
 - `tasks/batch-update` remains slash-mounted while its handler comment
   already shows colon; out of scope for this lane
-- parallel papercuts PR (#8) may still race root Vitest via `bun x vitest`;
-  not absorbed here
+- PR #8 Vitest package-local routing is on `main` and included in this
+  branch tip; the prior parallel `bun x vitest` race is no longer an
+  open sequencing risk for this PR
 - external `g09.059` stays open until both target PRs merge and fleet
   closeout records tips
 
 ## Next Task
 
-Orchestrator exact-head review of this PR. Merge only with explicit
-operator authorisation. Do not mark Underlay `g09.059` complete from this
-lane alone.
+Orchestrator exact-head review of the rebased PR tip. Merge only with
+explicit operator authorisation. Do not mark Underlay `g09.059` complete
+from this lane alone.
