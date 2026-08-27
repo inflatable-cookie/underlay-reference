@@ -33,7 +33,8 @@ pub mod runtime;
 pub mod shared;
 
 pub use middleware::{
-    api_version_middleware, csrf_protection_middleware, is_versioned_business_path, CsrfState,
+    api_version_middleware, csrf_protection_middleware, is_versioned_business_path,
+    ApiVersionState, CsrfState,
 };
 
 /// Build the API router with OpenAPI exposed.

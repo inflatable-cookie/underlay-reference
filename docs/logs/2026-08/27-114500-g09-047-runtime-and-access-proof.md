@@ -51,10 +51,15 @@ cut over within this roadmap's scope. Recorded, not hidden.
 
 ## Env And Secret Authority
 
-`config/env-manifest.txt` (50 keys) is now the complete environment surface
+`config/env-manifest.txt` (44 keys) is now the complete environment surface
 every runtime process may read, grouped by concern with each key's condition
 stated inline. `config/required-secrets.txt` (4 keys) is the startup-critical
-subset.
+subset. App behavior is deliberately absent: it lives in typed config. See
+Review Round 1 below.
+
+Root `effigy.toml` carries repo-owned `[secrets.keys]` declarations so the
+unconditional startup keys are actually required and targeted through Effigy,
+not only documented.
 
 `apps/acme-api/.env.example` is removed and the contradictory docs are
 repaired. The root README previously rejected `.env` files in one section and
@@ -182,11 +187,13 @@ runtime behavior changes. The manifest records the new keys.
 
 ## Focused Proof
 
-39 new tests, all direct-router or pure-policy.
+45 new tests, all direct-router or pure-policy.
 
-- **11 config policy** (`crates/infra`): all six environment names plus an
+- **17 config policy** (`crates/infra`): all six environment names plus an
   unrecognised one; cookie and CSRF policy in both directions; malformed
-  config fatal when deployed and warn-and-continue in local.
+  config fatal when deployed and warn-and-continue in local; the six migrated
+  behavior keys declared legacy and proved inert; typed API-version and cookie
+  overlays applied; an unserviceable default version falling back.
 - **11 CSRF** (`crates/api`, direct router with the real middleware): passkey
   registration start and finish rejected without a token, on a mismatched
   token, and on a header without a cookie; accepted with a matching token;
@@ -211,9 +218,14 @@ All run from the worker worktree; all green.
 - `effigy workspace:js:prepare` — one frozen root install, no changes
 - `effigy qa:workspace-shape` — released binary, passed
 - `effigy qa:env-authority` — released binary, passed
-- `cargo test --workspace` — 127 passed, 0 failed, 2 ignored (DB-gated)
+- `effigy secrets list` — `auth_jwt_private_key` and `auth_jwt_public_key`
+  now `required: true`; `database_url` declared and targeted
+- `cargo test --workspace` — 133 passed, 0 failed, 2 ignored (DB-gated)
 - `effigy acme-api/health`, `acme-api/clippy -D warnings`, `acme-api/fmt`
-- `effigy test --plan` — 4 targets, `acme-api` on the configured `rust` suite
+- `effigy test --plan` — `targets: 3` (`acme-admin`, `acme-api`,
+  `acme-client`); `acme-front` is listed with `available-suites: vitest` but
+  no default suite and `command: <none>`, because
+  `apps/acme-front/effigy.toml` sets `[test.suites.vitest] default = false`
 - `effigy health` — exit 0
 - `effigy validate` — exit 0
 - `effigy qa` — exit 0
@@ -223,6 +235,96 @@ All run from the worker worktree; all green.
   the contract
 - `git diff --check` — clean
 
+## Review Round 1
+
+Orchestrator requested changes on `9e582db8`. Three contract gaps, all
+repaired on this branch.
+
+### 1. Secret authority was static, not runnable
+
+`config/required-secrets.txt` declared `DATABASE_URL` and the JWT keypair as
+unconditional startup authority, but `effigy --json secrets list` omitted
+`database_url` entirely and resolved both JWT keys `required: false` — the
+bundle's shared declarations, never narrowed by this repo. The README removed
+`.env` and pointed at the vault without giving a bootstrap path.
+
+Root `effigy.toml` now carries repo-owned `[secrets.keys]` declarations.
+Repo-local entries merge additively with the bundle's and override by name,
+verified against `effigy --json secrets list`:
+
+| Key | Before | After |
+|-----|--------|-------|
+| `auth_jwt_private_key` | `required: false` (bundle) | `required: true` |
+| `auth_jwt_public_key` | `required: false` (bundle) | `required: true` |
+| `encryption_key` | `required: false`, no condition stated | `required: false`, deployed condition in the description |
+| `database_url` | absent | declared and targeted, local exception stated |
+
+The JWT keys are safe to mark required because the bundle's
+`generate-dev-secrets.rhai` hook produces both on first secrets-required task
+startup, so `effigy dev` still works from a clean clone.
+
+`database_url` stays `required: false` for the stated local exception: local
+and effigy resolve it from the committed non-secret `config/effigy.toml`
+overlay, and the generate hook does not produce it. Marking it required would
+block the dev loop for a value the committed overlay already supplies.
+Deployed injection remains required, recorded in the declaration description,
+in `config/env-manifest.txt`, and in `config/required-secrets.txt`.
+
+Effigy's `required` flag is one boolean and cannot express "required when
+deployed" or "required when this adapter is selected", so those conditions
+live in each declaration's `description`. The README gains a Secrets Bootstrap
+section with the `init` / `list` / `doctor` / `set` path and a table of which
+keys are not required and why.
+
+### 2. Bootstrap-only env boundary was incomplete
+
+The PR added the hard rule "read env in bootstrap only" and then left three
+violations on the surfaces it changed.
+
+`SUPPORTED_API_VERSIONS` and `DEFAULT_API_VERSION` were still read lazily by
+two `OnceLock`s in `routes/middleware.rs`, so the effective version vocabulary
+depended on whichever request arrived first. They are now typed config
+(`[acme_api.api]`), resolved once at bootstrap into `ApiVersionState` and
+passed to the middleware as typed state.
+
+`AcmeLocalAuthService::from_env` re-resolved `ENVIRONMENT` and reloaded the
+whole config stack, giving the auth service its own view of authority that
+could diverge from the posture `main` had already validated. It now takes the
+loaded `AppConfig` via `from_config`, and `allows_degraded_startup` takes the
+resolved environment as an argument rather than re-reading it — that check
+gates a secret, so two independent resolutions disagreeing is the failure mode
+worth removing. `from_env` remains for test harnesses and operator tooling
+that hold no `AppConfig`.
+
+`SESSION_MAX_ABSOLUTE_DAYS` bypassed the existing typed
+`absolute_session_timeout_days` field. The env read is gone.
+
+The same treatment applies to the three cookie knobs on the policy surface
+this PR already changed — `COOKIE_PREFIX`, `COOKIE_SAMESITE_STRICT`, and
+`REFRESH_TOKEN_MAX_AGE` — which are now `[acme_api.cors]` fields with
+committed defaults.
+
+All six migrated keys join `LEGACY_BEHAVIOR_ENV_KEYS`, the repo's existing
+warn-on-migrated-key mechanism, and are removed from
+`config/env-manifest.txt` (50 keys to 44). `COOKIE_SECURE`, `COOKIE_DOMAIN`,
+and `CORS_ORIGINS` stay in env: contract 031 explicitly allows env as the
+allowlisted override path for cookie and CORS deployment wiring.
+
+Scope held: no provider or adapter refactor. `RATE_LIMIT_BACKEND`, `REDIS_URL`,
+`EMAIL_ADAPTER`, and the S3 keys are adapter selection, genuinely per-deploy,
+and unchanged.
+
+### 3. Test-plan claims were wrong
+
+The README said four targets run and that `acme-front` runs Vitest. The plan
+reports `targets: 3`. `acme-front` appears in the summary with
+`available-suites: vitest` but `default-suites:` empty and `command: <none>`,
+because `apps/acme-front/effigy.toml` sets `[test.suites.vitest]
+default = false` so its empty suite does not fail root sequences.
+
+README and this log now state the real plan and name the reason. The existing
+front-test debt is left as-is, per the review.
+
 ## Residual Risk
 
 - **Proxy env rename.** Any operator setting `TRUST_PROXY_HEADERS` or
@@ -231,9 +333,16 @@ All run from the worker worktree; all green.
   a real deployment note for anyone who has copied this reference.
 - **`qa:security` and `qa:templates`** still execute sibling Underlay shell
   scripts. Publishing them is an Underlay decision, out of scope here.
-- **Conditional secrets** are expressed in comments, not enforced. The static
-  checker cannot verify that a selected backend has its credentials; that
-  stays a runtime and operator concern by design.
+- **Conditional secrets** are expressed in descriptions and manifest comments,
+  not enforced. Neither the static checker nor Effigy's single `required`
+  boolean can express "required when deployed" or "required when this adapter
+  is selected"; that stays a runtime and operator concern by design.
+- **Migrated behavior keys.** Anyone who set `SUPPORTED_API_VERSIONS`,
+  `DEFAULT_API_VERSION`, `SESSION_MAX_ABSOLUTE_DAYS`, `COOKIE_PREFIX`,
+  `COOKIE_SAMESITE_STRICT`, or `REFRESH_TOKEN_MAX_AGE` in a deployed
+  environment now gets a startup warning and the committed typed default. No
+  environment in this workspace set any of them. The replacement field is
+  named in the warning.
 - **`config/default.toml` has no `[acme_api.cors] cookie_secure`**, so the
   code default (`false`) applies. A deployed environment must set it in its
   overlay or startup now fails — louder than before, and intentionally so.

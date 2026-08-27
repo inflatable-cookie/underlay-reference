@@ -41,8 +41,10 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    // Initialize auth service
-    let local_auth = match acme_auth::AcmeLocalAuthService::from_env(pool.clone()) {
+    // Initialize auth service from the already-resolved config authority. It
+    // must not re-resolve ENVIRONMENT or reload the config stack: a second
+    // load could disagree with the posture this binary already enforced.
+    let local_auth = match acme_auth::AcmeLocalAuthService::from_config(pool.clone(), &app_config) {
         Ok(service) => Arc::new(service),
         Err(err) => {
             tracing::error!(code = err.code(), message = %err.message(), "failed to configure local auth");
@@ -68,12 +70,11 @@ async fn main() -> anyhow::Result<()> {
         acme_infra::csrf_protection_requested(),
     )?;
 
-    // SameSite cookie policy for CSRF protection
-    // Default to Strict in production, Lax in development
-    let same_site = if std::env::var("COOKIE_SAMESITE_STRICT")
-        .map(|v| v == "true" || v == "1")
-        .unwrap_or(!app_config.env.is_development())
-    {
+    // Cookie shape comes from typed config. These are behavior knobs, not
+    // deployment wiring, so they carry committed defaults rather than living
+    // in env; `AppConfig::from_env` warns if the migrated legacy keys are set.
+    let cookies = &app_config.behavior.cors;
+    let same_site = if cookies.cookie_same_site_strict {
         underlay_http::cookies::SameSite::Strict
     } else {
         underlay_http::cookies::SameSite::Lax
@@ -81,22 +82,15 @@ async fn main() -> anyhow::Result<()> {
 
     let mut cookie_config = underlay_http::AuthCookieConfig::new()
         .with_secure(cookie_secure)
-        .with_same_site(same_site);
+        .with_same_site(same_site)
+        .with_refresh_token_max_age(cookies.refresh_token_max_age_secs);
 
     if let Some(domain) = app_config.cors.cookie_domain.clone() {
         cookie_config = cookie_config.try_with_domain(domain)?;
     }
 
-    // Allow customizing cookie prefix (e.g., "acme_" for "acme_refresh_token")
-    if let Ok(prefix) = std::env::var("COOKIE_PREFIX") {
-        cookie_config = cookie_config.try_with_cookie_prefix(prefix)?;
-    }
-
-    // Allow customizing refresh token max age (in seconds)
-    if let Ok(max_age) = std::env::var("REFRESH_TOKEN_MAX_AGE")
-        .and_then(|v| v.parse::<u64>().map_err(|_| std::env::VarError::NotPresent))
-    {
-        cookie_config = cookie_config.with_refresh_token_max_age(max_age);
+    if !cookies.cookie_prefix.is_empty() {
+        cookie_config = cookie_config.try_with_cookie_prefix(cookies.cookie_prefix.clone())?;
     }
 
     let email_config = app_config.email.clone();
@@ -222,7 +216,10 @@ async fn main() -> anyhow::Result<()> {
     let app = routes::build_router_with_options(app_config.env.is_development())
         .with_state(state.clone())
         .layer(axum::Extension(trusted_proxy))
-        .layer(axum::middleware::from_fn(routes::api_version_middleware))
+        .layer(axum::middleware::from_fn_with_state(
+            routes::ApiVersionState::from_behavior(&app_config.behavior.api),
+            routes::api_version_middleware,
+        ))
         .layer(axum::middleware::from_fn_with_state(
             routes::CsrfState::new(csrf_protection_enabled, state.cookie_config.clone()),
             routes::csrf_protection_middleware,

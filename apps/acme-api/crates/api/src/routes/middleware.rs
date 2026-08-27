@@ -14,7 +14,7 @@ use axum::extract::State;
 use axum::http::{header::HeaderName, HeaderValue, Method, Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
-use std::sync::OnceLock;
+use std::sync::Arc;
 use underlay_http::{ApiError, AuthCookieConfig};
 
 use crate::routes::shared::auth::extract_csrf_token;
@@ -42,47 +42,40 @@ impl CsrfState {
     }
 }
 
-fn supported_api_versions() -> &'static Vec<String> {
-    static SUPPORTED: OnceLock<Vec<String>> = OnceLock::new();
-    SUPPORTED.get_or_init(|| {
-        let configured = std::env::var("SUPPORTED_API_VERSIONS").unwrap_or_default();
-        let parsed: Vec<String> = configured
-            .split(',')
-            .map(str::trim)
-            .filter(|v| !v.is_empty())
-            .map(ToString::to_string)
-            .collect();
-
-        if parsed.is_empty() {
-            vec!["2025-01-01".to_string()]
-        } else {
-            parsed
-        }
-    })
+/// The declared API-version vocabulary, resolved once at bootstrap from typed
+/// config.
+///
+/// Previously two `OnceLock`s read `SUPPORTED_API_VERSIONS` and
+/// `DEFAULT_API_VERSION` lazily from process env on first request. That put a
+/// policy input outside the config/bootstrap boundary and made the effective
+/// version set depend on whichever request arrived first.
+#[derive(Clone)]
+pub struct ApiVersionState {
+    supported: Arc<Vec<String>>,
+    default: Arc<String>,
 }
 
-fn default_api_version() -> &'static String {
-    static DEFAULT: OnceLock<String> = OnceLock::new();
-    DEFAULT.get_or_init(|| {
-        let supported = supported_api_versions();
-        let fallback = supported
-            .first()
-            .cloned()
-            .unwrap_or_else(|| "2025-01-01".to_string());
-
-        match std::env::var("DEFAULT_API_VERSION") {
-            Ok(version) if supported.contains(&version) => version,
-            Ok(version) => {
-                tracing::warn!(
-                    default_api_version = %version,
-                    supported_versions = ?supported,
-                    "DEFAULT_API_VERSION is not in SUPPORTED_API_VERSIONS; falling back"
-                );
-                fallback
-            }
-            Err(_) => fallback,
+impl ApiVersionState {
+    /// Build from the loaded typed config. `AppBehaviorConfig::load` has
+    /// already guaranteed the default is one of the supported versions.
+    pub fn from_behavior(api: &acme_infra::ApiBehaviorDefaults) -> Self {
+        Self {
+            supported: Arc::new(api.supported_versions.clone()),
+            default: Arc::new(api.default_version.clone()),
         }
-    })
+    }
+
+    pub fn supports(&self, version: &str) -> bool {
+        self.supported.iter().any(|v| v == version)
+    }
+
+    pub fn default_version(&self) -> &str {
+        &self.default
+    }
+
+    pub fn supported_versions(&self) -> &[String] {
+        &self.supported
+    }
 }
 
 /// True when a request is a business-family surface subject to the declared
@@ -98,30 +91,33 @@ pub fn is_versioned_business_path(path: &str) -> bool {
     path.starts_with("/v1/") && !crate::routes::runtime::is_runtime_path(path)
 }
 
-pub async fn api_version_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
+pub async fn api_version_middleware(
+    State(versions): State<ApiVersionState>,
+    req: Request<axum::body::Body>,
+    next: Next,
+) -> Response {
     if !is_versioned_business_path(req.uri().path()) {
         return next.run(req).await;
     }
 
-    let supported = supported_api_versions();
     let requested = req
         .headers()
         .get("x-api-version")
         .and_then(|v| v.to_str().ok())
         .map(str::trim)
         .filter(|v| !v.is_empty())
-        .unwrap_or(default_api_version().as_str())
+        .unwrap_or_else(|| versions.default_version())
         .to_string();
 
-    if !supported.iter().any(|v| v == &requested) {
+    if !versions.supports(&requested) {
         return ApiError::bad_request(
             "api.unsupported_version",
             "Unsupported API version. Set X-Api-Version to a supported version.",
         )
         .with_context(serde_json::json!({
             "requested_version": requested,
-            "supported_versions": supported,
-            "default_version": default_api_version(),
+            "supported_versions": versions.supported_versions(),
+            "default_version": versions.default_version(),
         }))
         .into_response();
     }

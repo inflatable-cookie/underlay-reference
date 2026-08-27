@@ -73,9 +73,18 @@ effigy test
 effigy test acme-api
 ```
 
-The workspace resolves to four targets. `acme-api` runs the configured `rust`
-suite (`cargo test --workspace`); `acme-admin`, `acme-front`, and `acme-client`
-run `vitest`. Sibling `underlay` and `poodle` are excluded from the root plan.
+`effigy test` runs three targets: `acme-api` on the configured `rust` suite
+(`cargo test --workspace`), and `acme-admin` and `acme-client` on `vitest`.
+
+`acme-front` appears in the plan's target summary with `available-suites:
+vitest` but no default suite and `command: <none>`. That is deliberate —
+`apps/acme-front/effigy.toml` sets `[test.suites.vitest] default = false`, so
+its currently empty suite does not fail the root `test` / `validate` / `qa`
+sequences. Run it explicitly with `effigy acme-front/test` once it has tests.
+The plan header reports `targets: 3` for that reason; read it rather than
+counting summary rows.
+
+Sibling `underlay` and `poodle` are excluded from the root plan.
 Database-backed Rust tests skip themselves unless `DATABASE_URL` or
 `TEST_DATABASE_URL` is set, so a plain `effigy test` stays useful without a
 running stack.
@@ -123,8 +132,43 @@ Root `effigy state plan` / `effigy state apply local --yes` orchestrate the loca
   lives in the committed `config/effigy.toml`
 - `apps/acme-admin/` and `apps/acme-front/` generate public runtime config from the root
   stack rather than reading `.env` files
-- true secrets should move through Effigy-managed runtime injection or the local
+- true secrets move through Effigy-managed runtime injection or the local
   secrets vault, not committed or ad hoc `.env` files
+
+### Secrets Bootstrap
+
+`config/required-secrets.txt` is the human-readable authority; root
+`effigy.toml` makes it executable. `effigy secrets list` shows which keys are
+unconditional and where each is injected:
+
+```bash
+effigy secrets init          # create the encrypted local vault (once per clone)
+effigy secrets list          # declared keys, targets, and required flags
+effigy secrets doctor        # declaration/backend check; never reads values
+effigy secrets set <name>    # store one value; prompts, never echoes
+```
+
+The vault lives at `.effigy/secrets/local.vault` and is gitignored. Values are
+never printed and never committed.
+
+`auth_jwt_private_key` and `auth_jwt_public_key` are `required = true`: the API
+refuses to start without them in every environment. You do not normally set
+them by hand — the Effigy bundle's generate hook fills the generatable dev keys
+on first secrets-required task startup, so `effigy dev` works from a clean
+clone.
+
+Three keys are deliberately not `required = true`, each for a stated reason:
+
+| Key | Why not required | What is required |
+|-----|------------------|------------------|
+| `database_url` | local and effigy resolve it from the committed non-secret `config/effigy.toml` overlay, so the dev loop needs no vault value | deployed environments must inject it as a real secret |
+| `encryption_key` | may be absent with an explicit warning in local, effigy, and test | required in deployed environments; startup fails without it |
+| provider credentials | SMTP, SES/AWS, Google OAuth, and object-store keys are conditional | required only once the matching backend or adapter is selected |
+
+Effigy's `required` flag is a single boolean and cannot express those
+conditions, so the condition is recorded in each declaration's `description`
+and in `config/env-manifest.txt`. Marking them required would block the local
+loop and claim unused providers are mandatory.
 
 Bootstrap notes:
 - `effigy bootstrap ...` clones the reference workspace and applies the

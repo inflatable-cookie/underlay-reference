@@ -321,3 +321,181 @@ fn malformed_config_stack_falls_back_to_defaults_in_local() {
         AppBehaviorConfig::default().runtime.port
     );
 }
+
+// ============================================================================
+// Bootstrap-only env boundary (g09.047 review)
+// ============================================================================
+//
+// Behavior knobs live in typed config with committed defaults. The migrated
+// env keys are read only to warn, never to configure, and are absent from
+// config/env-manifest.txt.
+
+#[test]
+fn migrated_behavior_keys_are_declared_legacy() {
+    for key in [
+        "SESSION_MAX_ABSOLUTE_DAYS",
+        "SUPPORTED_API_VERSIONS",
+        "DEFAULT_API_VERSION",
+        "COOKIE_PREFIX",
+        "COOKIE_SAMESITE_STRICT",
+        "REFRESH_TOKEN_MAX_AGE",
+    ] {
+        assert!(
+            LEGACY_BEHAVIOR_ENV_KEYS.iter().any(|(k, _)| *k == key),
+            "{key} moved to typed config and must warn when still set"
+        );
+    }
+}
+
+#[test]
+fn api_version_defaults_are_self_consistent() {
+    let behavior = AppBehaviorConfig::default();
+    assert!(
+        !behavior.api.supported_versions.is_empty(),
+        "an empty supported set would reject every business request"
+    );
+    assert!(
+        behavior
+            .api
+            .supported_versions
+            .contains(&behavior.api.default_version),
+        "the default version must be one the server accepts"
+    );
+}
+
+#[test]
+fn cookie_defaults_are_the_safe_ones() {
+    let behavior = AppBehaviorConfig::default();
+    assert!(
+        behavior.cors.cookie_same_site_strict,
+        "SameSite=Strict is the default; Lax is an explicit local opt-out"
+    );
+    assert!(behavior.cors.refresh_token_max_age_secs > 0);
+}
+
+#[test]
+fn typed_api_and_cookie_config_override_the_defaults() {
+    let _lock = ENV_LOCK.lock().unwrap();
+
+    let test_dir = unique_temp_dir();
+    write_default_toml(
+        &test_dir,
+        r#"
+[api]
+supported_versions = ["2025-01-01", "2026-01-01"]
+default_version = "2026-01-01"
+
+[cors]
+cookie_prefix = "acme_"
+cookie_same_site_strict = false
+refresh_token_max_age_secs = 900
+"#,
+    );
+
+    let original_cwd = std::env::current_dir().expect("failed to read cwd");
+    std::env::set_current_dir(&test_dir).expect("failed to enter temp dir");
+    let previous_env = with_env_var("ENVIRONMENT", Some("local"));
+    let previous_legacy = with_env_var("ACME_ENV", None);
+
+    let result = AppBehaviorConfig::load();
+
+    restore_env_var("ACME_ENV", previous_legacy);
+    restore_env_var("ENVIRONMENT", previous_env);
+    std::env::set_current_dir(original_cwd).expect("failed to restore cwd");
+    std::fs::remove_dir_all(test_dir).expect("failed to remove temp dir");
+
+    let behavior = result.expect("valid config stack");
+    assert_eq!(
+        behavior.api.supported_versions,
+        vec!["2025-01-01".to_string(), "2026-01-01".to_string()]
+    );
+    assert_eq!(behavior.api.default_version, "2026-01-01");
+    assert_eq!(behavior.cors.cookie_prefix, "acme_");
+    assert!(!behavior.cors.cookie_same_site_strict);
+    assert_eq!(behavior.cors.refresh_token_max_age_secs, 900);
+}
+
+#[test]
+fn a_default_version_outside_the_supported_set_falls_back() {
+    let _lock = ENV_LOCK.lock().unwrap();
+
+    let test_dir = unique_temp_dir();
+    write_default_toml(
+        &test_dir,
+        r#"
+[api]
+supported_versions = ["2025-01-01"]
+default_version = "2030-01-01"
+"#,
+    );
+
+    let original_cwd = std::env::current_dir().expect("failed to read cwd");
+    std::env::set_current_dir(&test_dir).expect("failed to enter temp dir");
+    let previous_env = with_env_var("ENVIRONMENT", Some("local"));
+    let previous_legacy = with_env_var("ACME_ENV", None);
+
+    let result = AppBehaviorConfig::load();
+
+    restore_env_var("ACME_ENV", previous_legacy);
+    restore_env_var("ENVIRONMENT", previous_env);
+    std::env::set_current_dir(original_cwd).expect("failed to restore cwd");
+    std::fs::remove_dir_all(test_dir).expect("failed to remove temp dir");
+
+    let behavior = result.expect("valid config stack");
+    assert_eq!(
+        behavior.api.default_version, "2025-01-01",
+        "an unserviceable default must fall back rather than reject every request"
+    );
+}
+
+#[test]
+fn migrated_env_keys_no_longer_configure_anything() {
+    let _lock = ENV_LOCK.lock().unwrap();
+
+    let test_dir = unique_temp_dir();
+    write_default_toml(&test_dir, "[api]\nsupported_versions = [\"2025-01-01\"]\n");
+
+    let original_cwd = std::env::current_dir().expect("failed to read cwd");
+    std::env::set_current_dir(&test_dir).expect("failed to enter temp dir");
+    let previous = [
+        ("ENVIRONMENT", with_env_var("ENVIRONMENT", Some("local"))),
+        ("ACME_ENV", with_env_var("ACME_ENV", None)),
+        (
+            "SUPPORTED_API_VERSIONS",
+            with_env_var("SUPPORTED_API_VERSIONS", Some("1999-01-01")),
+        ),
+        (
+            "DEFAULT_API_VERSION",
+            with_env_var("DEFAULT_API_VERSION", Some("1999-01-01")),
+        ),
+        (
+            "COOKIE_PREFIX",
+            with_env_var("COOKIE_PREFIX", Some("evil_")),
+        ),
+        (
+            "SESSION_MAX_ABSOLUTE_DAYS",
+            with_env_var("SESSION_MAX_ABSOLUTE_DAYS", Some("9999")),
+        ),
+    ];
+
+    let result = AppBehaviorConfig::load();
+
+    for (key, value) in previous {
+        restore_env_var(key, value);
+    }
+    std::env::set_current_dir(original_cwd).expect("failed to restore cwd");
+    std::fs::remove_dir_all(test_dir).expect("failed to remove temp dir");
+
+    let behavior = result.expect("valid config stack");
+    let defaults = AppBehaviorConfig::default();
+    assert_eq!(
+        behavior.api.supported_versions,
+        vec!["2025-01-01".to_string()]
+    );
+    assert_eq!(behavior.api.default_version, "2025-01-01");
+    assert_eq!(behavior.cors.cookie_prefix, defaults.cors.cookie_prefix);
+    assert_eq!(
+        behavior.auth.absolute_session_timeout_days,
+        defaults.auth.absolute_session_timeout_days,
+    );
+}

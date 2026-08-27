@@ -268,9 +268,22 @@ pub struct EmailConfig {
 pub struct AppBehaviorConfig {
     pub runtime: RuntimeBehaviorDefaults,
     pub database_url: Option<String>,
+    pub api: ApiBehaviorDefaults,
     pub cors: CorsBehaviorDefaults,
     pub email: EmailBehaviorDefaults,
     pub auth: AuthBehaviorDefaults,
+}
+
+/// Declared API-version vocabulary.
+///
+/// Behavior, not deployment wiring: the set of versions this build speaks is a
+/// property of the code, so it belongs in committed typed config rather than
+/// in env. Keep `default_version` in step with `[public_api] api_version` in
+/// the same config stack — that is the value the TypeScript client sends.
+#[derive(Debug, Clone)]
+pub struct ApiBehaviorDefaults {
+    pub supported_versions: Vec<String>,
+    pub default_version: String,
 }
 
 #[derive(Debug, Clone)]
@@ -285,6 +298,12 @@ pub struct CorsBehaviorDefaults {
     pub allowed_origins: Vec<String>,
     pub cookie_domain: Option<String>,
     pub cookie_secure: bool,
+    /// Cookie name prefix, e.g. `acme_` for `acme_refresh_token`.
+    pub cookie_prefix: String,
+    /// `SameSite=Strict` rather than `Lax`. Strict is the safer default; Lax
+    /// exists because some local cross-port dev flows need it.
+    pub cookie_same_site_strict: bool,
+    pub refresh_token_max_age_secs: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -351,10 +370,17 @@ impl Default for AppBehaviorConfig {
                 public_host: "localhost".to_string(),
             },
             database_url: None,
+            api: ApiBehaviorDefaults {
+                supported_versions: vec!["2025-01-01".to_string()],
+                default_version: "2025-01-01".to_string(),
+            },
             cors: CorsBehaviorDefaults {
                 allowed_origins: Vec::new(),
                 cookie_domain: None,
                 cookie_secure: false,
+                cookie_prefix: String::new(),
+                cookie_same_site_strict: true,
+                refresh_token_max_age_secs: 30 * 24 * 60 * 60,
             },
             email: EmailBehaviorDefaults {
                 default_from: "noreply@acme.example.com".to_string(),
@@ -412,9 +438,16 @@ impl Default for AppBehaviorConfig {
 struct FileBehaviorConfig {
     runtime: Option<FileRuntimeBehaviorDefaults>,
     database: Option<FileDatabaseConfig>,
+    api: Option<FileApiBehaviorDefaults>,
     cors: Option<FileCorsBehaviorDefaults>,
     email: Option<FileEmailBehaviorDefaults>,
     auth: Option<FileAuthBehaviorDefaults>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileApiBehaviorDefaults {
+    supported_versions: Option<Vec<String>>,
+    default_version: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -434,6 +467,9 @@ struct FileCorsBehaviorDefaults {
     allowed_origins: Option<Vec<String>>,
     cookie_domain: Option<String>,
     cookie_secure: Option<bool>,
+    cookie_prefix: Option<String>,
+    cookie_same_site_strict: Option<bool>,
+    refresh_token_max_age_secs: Option<u64>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -546,6 +582,40 @@ impl AppBehaviorConfig {
             }
         }
 
+        if let Some(api) = parsed.api {
+            if let Some(versions) = api.supported_versions {
+                let versions: Vec<String> = versions
+                    .into_iter()
+                    .map(|v| v.trim().to_string())
+                    .filter(|v| !v.is_empty())
+                    .collect();
+                if !versions.is_empty() {
+                    behavior.api.supported_versions = versions;
+                }
+            }
+            if let Some(v) = normalize_optional_string(api.default_version) {
+                behavior.api.default_version = v;
+            }
+        }
+
+        // A default outside the supported set is a repo config bug, not an
+        // operator mistake. Warn and fall back to the first supported version
+        // rather than refusing to serve.
+        if !behavior
+            .api
+            .supported_versions
+            .contains(&behavior.api.default_version)
+        {
+            let fallback = behavior.api.supported_versions[0].clone();
+            tracing::warn!(
+                default_version = %behavior.api.default_version,
+                supported_versions = ?behavior.api.supported_versions,
+                %fallback,
+                "acme_api.api.default_version is not in supported_versions; falling back"
+            );
+            behavior.api.default_version = fallback;
+        }
+
         if let Some(cors) = parsed.cors {
             if let Some(v) = cors.allowed_origins {
                 behavior.cors.allowed_origins = v
@@ -559,6 +629,15 @@ impl AppBehaviorConfig {
             }
             if let Some(v) = cors.cookie_secure {
                 behavior.cors.cookie_secure = v;
+            }
+            if let Some(v) = cors.cookie_prefix {
+                behavior.cors.cookie_prefix = v.trim().to_string();
+            }
+            if let Some(v) = cors.cookie_same_site_strict {
+                behavior.cors.cookie_same_site_strict = v;
+            }
+            if let Some(v) = cors.refresh_token_max_age_secs {
+                behavior.cors.refresh_token_max_age_secs = v;
             }
         }
 
@@ -727,7 +806,13 @@ pub struct AppConfig {
     pub behavior: AppBehaviorConfig,
 }
 
-const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 16] = [
+/// Env keys whose behavior now lives in typed config.
+///
+/// Contract 031: behavior knobs belong in typed config with committed
+/// defaults, and a migrated key gets a warning window rather than a silent
+/// fallback. These are read only to warn — never to configure anything — and
+/// are deliberately absent from `config/env-manifest.txt`.
+const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 22] = [
     ("EMAIL_DEFAULT_FROM", "behavior.email.default_from"),
     ("EMAIL_APP_NAME", "behavior.email.app_name"),
     ("EMAIL_APP_URL", "behavior.email.app_url"),
@@ -753,6 +838,21 @@ const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 16] = [
     ("ARGON2_MEMORY_KB", "behavior.auth.argon2_memory_kb"),
     ("ARGON2_ITERATIONS", "behavior.auth.argon2_iterations"),
     ("ARGON2_PARALLELISM", "behavior.auth.argon2_parallelism"),
+    (
+        "SESSION_MAX_ABSOLUTE_DAYS",
+        "behavior.auth.absolute_session_timeout_days",
+    ),
+    ("SUPPORTED_API_VERSIONS", "behavior.api.supported_versions"),
+    ("DEFAULT_API_VERSION", "behavior.api.default_version"),
+    ("COOKIE_PREFIX", "behavior.cors.cookie_prefix"),
+    (
+        "COOKIE_SAMESITE_STRICT",
+        "behavior.cors.cookie_same_site_strict",
+    ),
+    (
+        "REFRESH_TOKEN_MAX_AGE",
+        "behavior.cors.refresh_token_max_age_secs",
+    ),
 ];
 
 fn collect_set_legacy_behavior_env_keys() -> Vec<(&'static str, &'static str)> {

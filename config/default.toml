@@ -4,6 +4,14 @@ api_version = "2025-01-01"
 front_url = "https://acme.test"
 admin_url = "https://admin.acme.test"
 
+# Declared API-version vocabulary. `default_version` must stay in step with
+# `[public_api] api_version` above: that is the value the TypeScript client
+# sends on every request, and the server rejects anything outside
+# `supported_versions`. Runtime endpoints are exempt from the header entirely.
+[acme_api.api]
+supported_versions = ["2025-01-01"]
+default_version = "2025-01-01"
+
 [acme_api.database]
 
 [acme_api.runtime]
@@ -13,6 +21,12 @@ public_host = "localhost"
 
 [acme_api.cors]
 allowed_origins = []
+# Cookie name prefix, e.g. "acme_" for "acme_refresh_token". Empty means none.
+cookie_prefix = ""
+# SameSite=Strict for auth cookies. Lax only where a local cross-port dev flow
+# genuinely needs it.
+cookie_same_site_strict = true
+refresh_token_max_age_secs = 2592000
 
 [acme_api.email]
 default_from = "noreply@acme.example.com"

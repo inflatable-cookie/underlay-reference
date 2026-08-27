@@ -10,6 +10,12 @@
 # Everything else is optional: the app boots without it, using typed config or
 # a documented default.
 #
+# App behavior is NOT here. Session lifetimes, cookie shape, the API-version
+# vocabulary, auth tuning, and email branding are typed config
+# ([acme_api.*] in the root config stack), not env. Keys migrated out of env
+# are listed in LEGACY_BEHAVIOR_ENV_KEYS in crates/infra/src/config.rs and
+# warn at startup if still set; do not add them back here.
+#
 # Static conformance: `effigy qa:env-authority`.
 # Live value presence stays an operator concern and is never a CI gate.
 
@@ -65,9 +71,6 @@ PUBLIC_SCHEME
 CORS_ORIGINS
 COOKIE_DOMAIN
 COOKIE_SECURE
-COOKIE_PREFIX
-COOKIE_SAMESITE_STRICT
-REFRESH_TOKEN_MAX_AGE
 # Cookie-backed browser mutation protection. May be disabled only in
 # local/effigy/test; a deployed or unknown environment rejects an attempted
 # disablement at startup.
@@ -82,14 +85,7 @@ CSRF_PROTECTION
 TRUSTED_PROXY
 TRUSTED_PROXY_HOPS
 
-# --- API versioning --------------------------------------------------------
-# Business route families accept and echo X-Api-Version. Runtime endpoints are
-# exempt. Defaults to a single supported version when unset.
-SUPPORTED_API_VERSIONS
-DEFAULT_API_VERSION
-
-# --- Sessions and rate limiting --------------------------------------------
-SESSION_MAX_ABSOLUTE_DAYS
+# --- Rate limiting ---------------------------------------------------------
 # in_memory (default) or redis.
 RATE_LIMIT_BACKEND
 # Conditional: required when RATE_LIMIT_BACKEND=redis.
