@@ -50,7 +50,7 @@ async fn build_test_state(pool: sqlx::PgPool) -> AppState {
     let auth_provider: Arc<dyn AuthProvider> =
         Arc::new(AcmeLocalAuthProvider::new(local_auth.clone()));
 
-    let app_cfg = acme_infra::AppConfig::from_env();
+    let app_cfg = acme_infra::AppConfig::from_env().expect("should load app config");
     let email_manager = Arc::new(
         acme_infra::create_email_manager(&app_cfg.email).expect("should create email manager"),
     );

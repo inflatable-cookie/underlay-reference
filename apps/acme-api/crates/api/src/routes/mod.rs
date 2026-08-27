@@ -5,14 +5,9 @@
 //! - `tasks` - User-facing project/task routes
 //! - `admin/` - Admin-only routes with enhanced features
 
-use axum::extract::State;
-use axum::http::{header::HeaderName, HeaderValue, Method, Request, StatusCode};
-use axum::middleware::Next;
-use axum::response::{IntoResponse, Response};
+use axum::http::StatusCode;
 use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
-use std::sync::OnceLock;
-use underlay_http::ApiError;
 use underlay_observability::Environment;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -21,9 +16,12 @@ use crate::openapi::ApiDoc;
 use crate::state::AppState;
 
 mod admin;
+pub mod middleware;
 mod project_description;
 pub mod shared;
 mod tasks;
+
+pub use middleware::{api_version_middleware, csrf_protection_middleware, CsrfState};
 
 /// Build the main API router with all routes configured.
 pub fn build_router() -> Router<AppState> {
@@ -413,154 +411,4 @@ pub fn build_router_with_options(include_docs: bool) -> Router<AppState> {
     let router = router.route("/v1/dev/error-smoke", post(shared::health::error_smoke));
 
     router
-}
-
-fn supported_api_versions() -> &'static Vec<String> {
-    static SUPPORTED: OnceLock<Vec<String>> = OnceLock::new();
-    SUPPORTED.get_or_init(|| {
-        let configured = std::env::var("SUPPORTED_API_VERSIONS").unwrap_or_default();
-        let parsed: Vec<String> = configured
-            .split(',')
-            .map(str::trim)
-            .filter(|v| !v.is_empty())
-            .map(ToString::to_string)
-            .collect();
-
-        if parsed.is_empty() {
-            vec!["2025-01-01".to_string()]
-        } else {
-            parsed
-        }
-    })
-}
-
-fn default_api_version() -> &'static String {
-    static DEFAULT: OnceLock<String> = OnceLock::new();
-    DEFAULT.get_or_init(|| {
-        let supported = supported_api_versions();
-        let fallback = supported
-            .first()
-            .cloned()
-            .unwrap_or_else(|| "2025-01-01".to_string());
-
-        match std::env::var("DEFAULT_API_VERSION") {
-            Ok(version) if supported.contains(&version) => version,
-            Ok(version) => {
-                tracing::warn!(
-                    default_api_version = %version,
-                    supported_versions = ?supported,
-                    "DEFAULT_API_VERSION is not in SUPPORTED_API_VERSIONS; falling back"
-                );
-                fallback
-            }
-            Err(_) => fallback,
-        }
-    })
-}
-
-pub async fn api_version_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
-    if !req.uri().path().starts_with("/v1/") {
-        return next.run(req).await;
-    }
-
-    let supported = supported_api_versions();
-    let requested = req
-        .headers()
-        .get("x-api-version")
-        .and_then(|v| v.to_str().ok())
-        .map(str::trim)
-        .filter(|v| !v.is_empty())
-        .unwrap_or(default_api_version().as_str())
-        .to_string();
-
-    if !supported.iter().any(|v| v == &requested) {
-        return ApiError::bad_request(
-            "api.unsupported_version",
-            "Unsupported API version. Set X-Api-Version to a supported version.",
-        )
-        .with_context(serde_json::json!({
-            "requested_version": requested,
-            "supported_versions": supported,
-            "default_version": default_api_version(),
-        }))
-        .into_response();
-    }
-
-    let mut response = next.run(req).await;
-    if let Ok(version_header) = HeaderValue::from_str(&requested) {
-        response
-            .headers_mut()
-            .insert(HeaderName::from_static("x-api-version"), version_header);
-    }
-    response
-}
-
-pub async fn csrf_protection_middleware(
-    State(state): State<AppState>,
-    req: Request<axum::body::Body>,
-    next: Next,
-) -> Response {
-    let csrf_protection_enabled = std::env::var("CSRF_PROTECTION")
-        .map(|v| v == "true" || v == "1")
-        .unwrap_or(true);
-
-    if !csrf_protection_enabled {
-        return next.run(req).await;
-    }
-
-    let method = req.method();
-    if !matches!(
-        method,
-        &Method::POST | &Method::PUT | &Method::PATCH | &Method::DELETE
-    ) {
-        return next.run(req).await;
-    }
-
-    // Skip CSRF for authentication endpoints that don't have cookies yet
-    let path = req.uri().path();
-    let is_auth_endpoint_without_cookie = matches!(
-        path,
-        "/v1/auth/register"
-            | "/v1/auth/login"
-            | "/v1/auth/login/start"
-            | "/v1/auth/login/finish"
-            | "/v1/auth/csrf-token"
-            | "/v1/auth/password/reset/request"
-            | "/v1/auth/password/reset/verify"
-            | "/v1/auth/password/reset/complete"
-            | "/v1/auth/passkeys/login/start"
-            | "/v1/auth/passkeys/login/finish"
-            | "/v1/auth/passkeys/register/start"
-            | "/v1/auth/passkeys/register/finish"
-    );
-
-    if is_auth_endpoint_without_cookie {
-        return next.run(req).await;
-    }
-
-    // Only enforce for browser-style cookie flows.
-    // Mobile/native clients can keep using bearer tokens without CSRF.
-    let headers = req.headers();
-    let has_refresh_cookie =
-        underlay_http::extract_refresh_token(headers, &state.cookie_config).is_some();
-    if !has_refresh_cookie {
-        return next.run(req).await;
-    }
-
-    let cookie_token = shared::auth::extract_csrf_token(headers, &state.cookie_config);
-    let header_token = headers
-        .get("x-csrf-token")
-        .and_then(|v| v.to_str().ok())
-        .map(|s| s.to_string());
-
-    if cookie_token.is_none() || header_token.is_none() || cookie_token != header_token {
-        return underlay_http::ApiError::new(
-            StatusCode::FORBIDDEN,
-            "auth.csrf.invalid",
-            "CSRF validation failed",
-        )
-        .into_response();
-    }
-
-    next.run(req).await
 }

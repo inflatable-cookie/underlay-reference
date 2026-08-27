@@ -13,8 +13,9 @@ use acme_api::state::{AppState, DB_POOL};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Load config first (includes env vars and .env file)
-    let app_config = AppConfig::from_env();
+    // Load config first. A malformed layered config stack is fatal outside
+    // local/effigy/test rather than silently degrading to code defaults.
+    let app_config = AppConfig::from_env()?;
 
     // Initialize tracing with environment-appropriate format
     acme_infra::init_tracing(&app_config);
@@ -53,14 +54,19 @@ async fn main() -> anyhow::Result<()> {
     let auth_provider: Arc<dyn underlay_auth::AuthProvider> =
         Arc::new(acme_auth::AcmeLocalAuthProvider::new(local_auth.clone()));
 
-    // Configure auth cookies
+    // Configure auth cookies. Insecure cookies are fatal outside the bounded
+    // non-deployed set: a deployed runtime must never put a session cookie on
+    // the wire in plaintext.
     let cookie_secure = app_config.cors.cookie_secure;
+    acme_infra::enforce_cookie_secure(app_config.env, cookie_secure)?;
 
-    if !cookie_secure && !app_config.env.is_development() {
-        tracing::warn!(
-            "COOKIE_SECURE=false in non-development environment; auth cookies may be sent over HTTP"
-        );
-    }
+    // Resolve cookie-backed browser mutation protection once, here. The
+    // middleware consumes the decision; it never re-reads the environment per
+    // request, so a later env change cannot weaken a running deployment.
+    let csrf_protection_enabled = acme_infra::resolve_csrf_protection(
+        app_config.env,
+        acme_infra::csrf_protection_requested(),
+    )?;
 
     // SameSite cookie policy for CSRF protection
     // Default to Strict in production, Lax in development
@@ -234,7 +240,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(axum::Extension(underlay_proxy))
         .layer(axum::middleware::from_fn(routes::api_version_middleware))
         .layer(axum::middleware::from_fn_with_state(
-            state.clone(),
+            routes::CsrfState::new(csrf_protection_enabled, state.cookie_config.clone()),
             routes::csrf_protection_middleware,
         ))
         .layer(axum::middleware::from_fn_with_state(

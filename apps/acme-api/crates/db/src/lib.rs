@@ -28,8 +28,15 @@ pub fn ensure_database_url() {
         std::env::set_var("DATABASE_URL", url);
         return;
     }
-    if let Some(url) = acme_infra::AppBehaviorConfig::load().database_url {
-        std::env::set_var("DATABASE_URL", url);
+    match acme_infra::AppBehaviorConfig::load() {
+        Ok(behavior) => {
+            if let Some(url) = behavior.database_url {
+                std::env::set_var("DATABASE_URL", url);
+            }
+        }
+        // Migration binaries are operator tooling: report the malformed stack
+        // and let the caller fail on the missing URL rather than masking it.
+        Err(err) => eprintln!("warning: could not resolve DATABASE_URL from config: {err}"),
     }
 }
 

@@ -6,9 +6,10 @@ pub mod encryption;
 pub mod network;
 
 pub use config::{
-    log_effective_config, AppBehaviorConfig, AppConfig, AuthBehaviorDefaults, CorsConfig,
-    DatabaseConfig, EmailAdapterType, EmailConfig, Environment, HttpConfig, LoggingConfig,
-    SesEmailConfig, SmtpEmailConfig,
+    csrf_protection_requested, enforce_cookie_secure, log_effective_config,
+    resolve_csrf_protection, startup_posture, AppBehaviorConfig, AppConfig, AuthBehaviorDefaults,
+    ConfigError, CorsConfig, DatabaseConfig, EmailAdapterType, EmailConfig, Environment,
+    HttpConfig, LoggingConfig, SesEmailConfig, SmtpEmailConfig, StartupPosture,
 };
 pub use email::{
     create_email_context, create_email_manager, create_template_engine, EmailInitError,

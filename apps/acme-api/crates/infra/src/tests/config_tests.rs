@@ -94,7 +94,7 @@ argon2_parallelism = 13
         previous.push((key, with_env_var(key, Some(value))));
     }
 
-    let config = AppConfig::from_env();
+    let config = AppConfig::from_env().expect("valid config stack");
     assert_eq!(config.email.default_from, "typed@example.com");
     assert_eq!(config.email.app_name, "Typed App");
     assert_eq!(config.email.app_url, "https://typed.example.com");
@@ -150,4 +150,174 @@ fn legacy_behavior_key_collection_detects_set_env_keys() {
     restore_env_var("EMAIL_DEFAULT_FROM", prev_a);
     restore_env_var("AUTH_JWT_ISSUER", prev_b);
     restore_env_var("ARGON2_ITERATIONS", prev_c);
+}
+
+// ============================================================================
+// Settled startup-failure policy (g09.047)
+// ============================================================================
+//
+// `local`, `effigy`, and `test` are the bounded non-deployed set. Everything
+// else — including `dev`, and including any unrecognised name, which
+// `Environment::parse` resolves to production — fails closed.
+
+#[test]
+fn only_local_effigy_and_test_may_warn_and_continue() {
+    for environment in [Environment::Local, Environment::Effigy, Environment::Test] {
+        assert_eq!(
+            startup_posture(environment),
+            StartupPosture::WarnAndContinue,
+            "{environment:?} is a bounded non-deployed environment and may warn"
+        );
+    }
+}
+
+#[test]
+fn deployed_environments_are_fatal() {
+    for environment in [Environment::Dev, Environment::Staging, Environment::Prod] {
+        assert_eq!(
+            startup_posture(environment),
+            StartupPosture::Fatal,
+            "{environment:?} is deployed and must fail closed"
+        );
+    }
+}
+
+#[test]
+fn dev_is_deployed_not_a_developer_environment() {
+    // Regression guard: `is_development()` returns true for Dev, so deriving
+    // the boundary from it would let a deployed `dev` runtime boot on code
+    // defaults with insecure cookies.
+    assert!(Environment::Dev.is_development());
+    assert!(startup_posture(Environment::Dev).is_fatal());
+}
+
+#[test]
+fn unrecognised_environment_name_fails_closed() {
+    let parsed = Environment::parse("staging-2");
+    assert_eq!(parsed, Environment::Prod);
+    assert!(startup_posture(parsed).is_fatal());
+}
+
+#[test]
+fn insecure_cookies_are_fatal_only_outside_the_non_deployed_set() {
+    for environment in [Environment::Local, Environment::Effigy, Environment::Test] {
+        assert!(
+            enforce_cookie_secure(environment, false).is_ok(),
+            "{environment:?} may serve a plaintext loopback stack"
+        );
+    }
+
+    for environment in [Environment::Dev, Environment::Staging, Environment::Prod] {
+        let err = enforce_cookie_secure(environment, false)
+            .expect_err("COOKIE_SECURE=false must be fatal in a deployed environment");
+        assert!(matches!(err, ConfigError::InsecureAuthCookies { .. }));
+    }
+}
+
+#[test]
+fn secure_cookies_are_always_accepted() {
+    for environment in [
+        Environment::Local,
+        Environment::Effigy,
+        Environment::Test,
+        Environment::Dev,
+        Environment::Staging,
+        Environment::Prod,
+    ] {
+        assert!(enforce_cookie_secure(environment, true).is_ok());
+    }
+}
+
+#[test]
+fn csrf_disablement_is_rejected_by_every_deployed_environment() {
+    for environment in [Environment::Local, Environment::Effigy, Environment::Test] {
+        assert!(
+            !resolve_csrf_protection(environment, false).expect("allowed in the non-deployed set"),
+            "{environment:?} may disable CSRF"
+        );
+    }
+
+    for environment in [Environment::Dev, Environment::Staging, Environment::Prod] {
+        let err = resolve_csrf_protection(environment, false)
+            .expect_err("CSRF disablement must be rejected in a deployed environment");
+        assert!(matches!(err, ConfigError::CsrfDisabled { .. }));
+    }
+}
+
+#[test]
+fn csrf_stays_enabled_when_not_disabled() {
+    for environment in [Environment::Local, Environment::Prod] {
+        assert!(resolve_csrf_protection(environment, true).expect("enabled is always valid"));
+    }
+}
+
+#[test]
+fn csrf_protection_defaults_to_enabled_when_unset() {
+    let _lock = ENV_LOCK.lock().unwrap();
+
+    let previous = with_env_var("CSRF_PROTECTION", None);
+    assert!(csrf_protection_requested(), "unset must mean protected");
+
+    with_env_var("CSRF_PROTECTION", Some("nonsense"));
+    assert!(
+        !csrf_protection_requested(),
+        "an explicit non-truthy value is a disablement request, resolved by policy"
+    );
+
+    with_env_var("CSRF_PROTECTION", Some(" TRUE "));
+    assert!(
+        csrf_protection_requested(),
+        "value is trimmed and case-folded"
+    );
+
+    restore_env_var("CSRF_PROTECTION", previous);
+}
+
+#[test]
+fn malformed_config_stack_is_fatal_in_a_deployed_environment() {
+    let _lock = ENV_LOCK.lock().unwrap();
+
+    let test_dir = unique_temp_dir();
+    write_default_toml(&test_dir, "this is not = valid toml [[[");
+
+    let original_cwd = std::env::current_dir().expect("failed to read cwd");
+    std::env::set_current_dir(&test_dir).expect("failed to enter temp dir");
+    let previous_env = with_env_var("ENVIRONMENT", Some("production"));
+    let previous_legacy = with_env_var("ACME_ENV", None);
+
+    let result = AppBehaviorConfig::load();
+
+    restore_env_var("ACME_ENV", previous_legacy);
+    restore_env_var("ENVIRONMENT", previous_env);
+    std::env::set_current_dir(original_cwd).expect("failed to restore cwd");
+    std::fs::remove_dir_all(test_dir).expect("failed to remove temp dir");
+
+    let err = result.expect_err("a malformed stack must not degrade to defaults when deployed");
+    assert!(matches!(err, ConfigError::ConfigStack { .. }));
+}
+
+#[test]
+fn malformed_config_stack_falls_back_to_defaults_in_local() {
+    let _lock = ENV_LOCK.lock().unwrap();
+
+    let test_dir = unique_temp_dir();
+    write_default_toml(&test_dir, "this is not = valid toml [[[");
+
+    let original_cwd = std::env::current_dir().expect("failed to read cwd");
+    std::env::set_current_dir(&test_dir).expect("failed to enter temp dir");
+    let previous_env = with_env_var("ENVIRONMENT", Some("local"));
+    let previous_legacy = with_env_var("ACME_ENV", None);
+
+    let result = AppBehaviorConfig::load();
+
+    restore_env_var("ACME_ENV", previous_legacy);
+    restore_env_var("ENVIRONMENT", previous_env);
+    std::env::set_current_dir(original_cwd).expect("failed to restore cwd");
+    std::fs::remove_dir_all(test_dir).expect("failed to remove temp dir");
+
+    let behavior = result.expect("local dev keeps booting on committed defaults");
+    assert_eq!(
+        behavior.runtime.port,
+        AppBehaviorConfig::default().runtime.port
+    );
 }

@@ -88,10 +88,14 @@ fn map_auth_state_error(err: AuthStateError) -> AuthError {
     }
 }
 
-fn is_local_or_dev_environment() -> bool {
-    // Fail closed: unset ENVIRONMENT is not a development environment.
+/// True only inside the bounded non-deployed set (local, effigy, test), where
+/// a missing startup secret may warn instead of failing.
+///
+/// `dev` is a deployed environment and is deliberately excluded. Fail closed:
+/// an unset or unrecognised ENVIRONMENT resolves to production.
+fn allows_degraded_startup() -> bool {
     let env = acme_infra::Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
-    env.is_development() || env.is_local_dev()
+    !acme_infra::startup_posture(env).is_fatal()
 }
 
 #[derive(Debug, Clone)]
@@ -232,7 +236,8 @@ impl AcmeLocalAuthService {
     }
 
     pub fn from_env(pool: sqlx::PgPool) -> AuthResult<Self> {
-        let behavior = AppBehaviorConfig::load();
+        let behavior = AppBehaviorConfig::load()
+            .map_err(|err| AuthError::Internal(format!("failed to load app config: {err}")))?;
         let private_key_b64 = std::env::var("AUTH_JWT_PRIVATE_KEY")
             .map_err(|_| AuthError::Internal("AUTH_JWT_PRIVATE_KEY not set".to_string()))?;
         let public_key_b64 = std::env::var("AUTH_JWT_PUBLIC_KEY")
@@ -373,13 +378,14 @@ impl AcmeLocalAuthService {
         let totp_cipher = SecretCipher::from_env_var_optional("ENCRYPTION_KEY")?;
         let encryption = acme_infra::EncryptionService::from_env();
         if totp_cipher.is_none() {
-            if is_local_or_dev_environment() {
+            if allows_degraded_startup() {
                 tracing::warn!(
-                    "ENCRYPTION_KEY not set - TOTP secrets will be stored in plaintext in local/dev"
+                    "ENCRYPTION_KEY not set - TOTP secrets will be stored in plaintext. \
+                     Allowed only because this is a bounded non-deployed environment"
                 );
             } else {
                 return Err(AuthError::Internal(
-                    "ENCRYPTION_KEY must be set outside local/dev/test environments".into(),
+                    "ENCRYPTION_KEY must be set outside local/effigy/test environments".into(),
                 ));
             }
         }
