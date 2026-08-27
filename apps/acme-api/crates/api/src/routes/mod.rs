@@ -1,414 +1,66 @@
-//! Route handlers for the Acme API.
+//! HTTP route assembly for the Acme API.
 //!
-//! This module organizes routes into:
-//! - `shared/` - Auth, health, account routes (used by all clients)
-//! - `tasks` - User-facing project/task routes
-//! - `admin/` - Admin-only routes with enhanced features
+//! One root builder merges four explicit families, each owning its own module
+//! so route placement is visible in the source layout rather than inferred
+//! from path strings:
+//!
+//! - [`runtime`] — health, favicon, OpenAPI/Swagger. Operational, unauthenticated,
+//!   exempt from the business version header.
+//! - [`shared`] — auth and account. Used by more than one client surface.
+//! - [`front`] — authenticated product-user project and task routes.
+//! - [`admin`] — `AdminUser`-gated operator routes under `/v1/admin/*`.
+//!
+//! Public paths are unchanged by this layout. A family is expressed by which
+//! builder registers a route, not by rewriting its URL to match a file name.
+//!
+//! Cross-cutting policy (version header, CSRF) lives in [`middleware`] and is
+//! layered above the merged router by `main.rs`, so it applies uniformly
+//! rather than per family.
+//!
+//! `project_description` is shared handler support used by both the front and
+//! admin families. It registers no routes and so belongs to no family.
 
-use axum::http::StatusCode;
-use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 use underlay_observability::Environment;
-use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
 
-use crate::openapi::ApiDoc;
 use crate::state::AppState;
 
 mod admin;
+mod front;
 pub mod middleware;
 mod project_description;
+pub mod runtime;
 pub mod shared;
-mod tasks;
 
-pub use middleware::{api_version_middleware, csrf_protection_middleware, CsrfState};
+pub use middleware::{
+    api_version_middleware, csrf_protection_middleware, is_versioned_business_path, CsrfState,
+};
 
-/// Build the main API router with all routes configured.
+/// Build the API router with OpenAPI exposed.
+///
+/// Convenience for tests and tooling. `main.rs` uses
+/// [`build_router_with_options`] so exposure follows the environment.
 pub fn build_router() -> Router<AppState> {
     build_router_with_options(true)
 }
 
-/// Build the main API router, optionally exposing Swagger UI / OpenAPI JSON.
-/// Production deployments should pass `include_docs = false`.
+/// Build the API router, optionally exposing Swagger UI and the OpenAPI JSON.
+///
+/// Pass `include_docs = false` outside development.
 pub fn build_router_with_options(include_docs: bool) -> Router<AppState> {
-    // Underlay CORS policy (matches guide patterns):
-    // - Use `CORS_ORIGINS` in production.
-    // - In local dev, if `CORS_ORIGINS` is unset, mirror the request origin.
-    // - Allow credentials so cookie-based auth can be enabled without reworking CORS.
+    // Underlay CORS policy:
+    // - `CORS_ORIGINS` supplies the explicit allowlist in deployed environments
+    // - in local dev an empty list mirrors the request origin
+    // - credentials are allowed so cookie auth works without reworking CORS
     let cors = underlay_http::admin_cors_layer_from_env(Environment::resolve(
         "ENVIRONMENT",
         Some("ACME_ENV"),
     ));
 
-    let router = Router::new();
-    let router = if include_docs {
-        router.merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
-    } else {
-        router
-    };
-
-    let router = router
-        // Favicon (return 204 to stop browser 404s)
-        .route("/favicon.ico", get(|| async { StatusCode::NO_CONTENT }))
-        // Health
-        .route("/v1/health", get(shared::health::health))
-        // Auth routes
-        .route("/v1/auth/register", post(shared::auth::register))
-        .route("/v1/auth/login", post(shared::auth::login))
-        .route("/v1/auth/login/start", post(shared::auth::login_start))
-        .route("/v1/auth/login/finish", post(shared::auth::login_finish))
-        .route("/v1/auth/csrf-token", get(shared::auth::csrf_token))
-        .route("/v1/auth/refresh", post(shared::auth::refresh))
-        .route("/v1/auth/logout", post(shared::auth::logout))
-        .route("/v1/auth/me", get(shared::auth::me))
-        .route(
-            "/v1/auth/password/change",
-            post(shared::auth::change_password),
-        )
-        .route(
-            "/v1/auth/password/requirements",
-            get(shared::auth::password_requirements),
-        )
-        .route(
-            "/v1/auth/password/change-2fa",
-            post(shared::auth::change_password_with_verification),
-        )
-        // Password reset (forgot password) routes
-        .route(
-            "/v1/auth/password/reset/request",
-            post(shared::auth::password_reset_request),
-        )
-        .route(
-            "/v1/auth/password/reset/verify",
-            post(shared::auth::password_reset_verify),
-        )
-        .route(
-            "/v1/auth/password/reset/complete",
-            post(shared::auth::password_reset_complete),
-        )
-        // TOTP routes
-        .route("/v1/auth/totp/status", get(shared::auth::totp_status))
-        .route("/v1/auth/totp/setup", post(shared::auth::totp_setup))
-        .route("/v1/auth/totp/enable", post(shared::auth::totp_enable))
-        .route("/v1/auth/totp/disable", post(shared::auth::totp_disable))
-        .route("/v1/auth/totp/verify", post(shared::auth::totp_verify))
-        // 2FA status route
-        .route("/v1/auth/2fa-status", get(shared::auth::two_factor_status))
-        // Email TOTP routes
-        .route(
-            "/v1/auth/email-totp/request",
-            post(shared::auth::email_totp_request),
-        )
-        .route(
-            "/v1/auth/email-totp/verify",
-            post(shared::auth::email_totp_verify),
-        )
-        // Passkey routes
-        .route("/v1/auth/passkeys", get(shared::auth::list_passkeys))
-        .route(
-            "/v1/auth/passkeys/{credential_id}",
-            patch(shared::auth::rename_passkey).delete(shared::auth::delete_passkey),
-        )
-        .route(
-            "/v1/auth/passkeys/register/start",
-            post(shared::auth::passkey_register_start),
-        )
-        .route(
-            "/v1/auth/passkeys/register/finish",
-            post(shared::auth::passkey_register_finish),
-        )
-        .route(
-            "/v1/auth/passkeys/login/start",
-            post(shared::auth::passkey_login_start),
-        )
-        .route(
-            "/v1/auth/passkeys/login/finish",
-            post(shared::auth::passkey_login_finish),
-        )
-        .route(
-            "/v1/auth/passkeys/verify/start",
-            post(shared::auth::passkey_verify_start),
-        )
-        .route(
-            "/v1/auth/passkeys/verify/finish",
-            post(shared::auth::passkey_verify_finish),
-        )
-        // Session routes
-        .route("/v1/auth/sessions", get(shared::auth::list_sessions))
-        .route(
-            "/v1/auth/sessions/{session_id}/revoke",
-            post(shared::auth::revoke_session),
-        )
-        // Account routes
-        .route(
-            "/v1/account/profile",
-            get(shared::account::get_profile).patch(shared::account::update_profile),
-        )
-        // ====================================================================
-        // User-facing routes (authenticated users)
-        // ====================================================================
-        // Project routes
-        .route(
-            "/v1/projects",
-            get(tasks::list_projects).post(tasks::create_project),
-        )
-        .route(
-            "/v1/projects/{project_id}",
-            get(tasks::get_project)
-                .patch(tasks::update_project)
-                .delete(tasks::delete_project),
-        )
-        // Task routes
-        .route(
-            "/v1/projects/{project_id}/tasks",
-            get(tasks::list_tasks).post(tasks::create_task),
-        )
-        .route(
-            "/v1/projects/{project_id}/tasks/{task_id}",
-            patch(tasks::update_task).delete(tasks::delete_task),
-        )
-        // ====================================================================
-        // Admin routes (require Admin role)
-        // ====================================================================
-        // Dashboard stats
-        .route(
-            "/v1/admin/dashboard/stats",
-            get(admin::dashboard::get_dashboard_stats),
-        )
-        // User management
-        .route(
-            "/v1/admin/users",
-            get(admin::users::list_users).post(admin::users::create_user),
-        )
-        .route(
-            "/v1/admin/users/{user_id}",
-            get(admin::users::get_user).put(admin::users::update_user),
-        )
-        .route(
-            "/v1/admin/users/{user_id}/role",
-            put(admin::users::update_user_role),
-        )
-        .route(
-            "/v1/admin/users/{user_id}/suspend",
-            post(admin::users::suspend_user),
-        )
-        .route(
-            "/v1/admin/users/{user_id}/unsuspend",
-            post(admin::users::unsuspend_user),
-        )
-        .route(
-            "/v1/admin/users/{user_id}/activity",
-            get(admin::activity::list_activity_for_user),
-        )
-        .route(
-            "/v1/admin/users/{user_id}/sessions",
-            get(admin::users::list_user_sessions),
-        )
-        .route(
-            "/v1/admin/users/{user_id}/sessions/{session_id}/revoke",
-            post(admin::users::revoke_user_session),
-        )
-        // Activity/audit log
-        .route("/v1/admin/activity", get(admin::activity::list_activity))
-        .route(
-            "/v1/admin/activity/entity/{entity_type}/{entity_id}",
-            get(admin::activity::list_activity_for_entity),
-        )
-        // Validation endpoint (for async form validation)
-        .route(
-            "/v1/admin/validate-field",
-            post(admin::validation::validate_field),
-        )
-        // Category admin routes
-        .route(
-            "/v1/admin/categories",
-            get(admin::categories::list_categories).post(admin::categories::create_category),
-        )
-        .route(
-            "/v1/admin/categories/reorder",
-            put(admin::categories::reorder_categories),
-        )
-        .route(
-            "/v1/admin/categories:batch-delete",
-            post(admin::categories::batch_delete_categories),
-        )
-        .route(
-            "/v1/admin/categories/{category_id}",
-            get(admin::categories::get_category)
-                .patch(admin::categories::update_category)
-                .delete(admin::categories::soft_delete_category),
-        )
-        .route(
-            "/v1/admin/categories/{category_id}/restore",
-            post(admin::categories::restore_category),
-        )
-        // Project admin routes
-        .route(
-            "/v1/admin/projects",
-            get(admin::projects::list_projects).post(admin::projects::create_project),
-        )
-        .route(
-            "/v1/admin/projects/reorder",
-            put(admin::projects::reorder_projects),
-        )
-        .route(
-            "/v1/admin/projects:batch-delete",
-            post(admin::projects::batch_delete_projects),
-        )
-        .route(
-            "/v1/admin/projects/{project_id}",
-            get(admin::projects::get_project)
-                .patch(admin::projects::update_project)
-                .delete(admin::projects::soft_delete_project),
-        )
-        .route(
-            "/v1/admin/projects/{project_id}/restore",
-            post(admin::projects::restore_project),
-        )
-        // Task admin routes (nested under projects)
-        .route(
-            "/v1/admin/projects/{project_id}/tasks",
-            get(admin::tasks::list_tasks).post(admin::tasks::create_task),
-        )
-        .route(
-            "/v1/admin/projects/{project_id}/tasks/reorder",
-            put(admin::tasks::reorder_tasks),
-        )
-        .route(
-            "/v1/admin/projects/{project_id}/tasks/batch-delete",
-            post(admin::tasks::batch_delete_tasks),
-        )
-        .route(
-            "/v1/admin/projects/{project_id}/tasks/batch-update",
-            post(admin::tasks::batch_update_task_status),
-        )
-        .route(
-            "/v1/admin/projects/{project_id}/tasks/{task_id}",
-            get(admin::tasks::get_task)
-                .patch(admin::tasks::update_task)
-                .delete(admin::tasks::soft_delete_task),
-        )
-        .route(
-            "/v1/admin/projects/{project_id}/tasks/{task_id}/labels",
-            get(admin::tasks::get_task_labels).put(admin::tasks::set_task_labels),
-        )
-        // Label admin routes (nested under projects)
-        .route(
-            "/v1/admin/projects/{project_id}/labels",
-            get(admin::tasks::list_labels).post(admin::tasks::create_label),
-        )
-        .route(
-            "/v1/admin/projects/{project_id}/labels/{label_id}",
-            get(admin::tasks::get_label)
-                .patch(admin::tasks::update_label)
-                .delete(admin::tasks::soft_delete_label),
-        )
-        // ====================================================================
-        // Media Library admin routes
-        // ====================================================================
-        .route(
-            "/v1/admin/media/check-duplicate",
-            post(admin::media::check_duplicate),
-        )
-        .route(
-            "/v1/admin/media:batch-delete",
-            post(admin::media::batch_delete_media),
-        )
-        .route(
-            "/v1/admin/media",
-            get(admin::media::list_media).post(admin::media::create_media),
-        )
-        .route("/v1/admin/media/trash", get(admin::media::list_media_trash))
-        .route(
-            "/v1/admin/media/{media_id}",
-            get(admin::media::get_media)
-                .put(admin::media::update_media)
-                .delete(admin::media::purge_media),
-        )
-        .route(
-            "/v1/admin/media/{media_id}/soft-delete",
-            post(admin::media::soft_delete_media),
-        )
-        .route(
-            "/v1/admin/media/{media_id}/restore",
-            post(admin::media::restore_media),
-        )
-        .route(
-            "/v1/admin/media/{media_id}/versions",
-            get(admin::media::list_versions),
-        )
-        .route(
-            "/v1/admin/media/{media_id}/versions/initiate-upload",
-            post(admin::media::initiate_upload),
-        )
-        .route(
-            "/v1/admin/media/{media_id}/versions/{version_id}/finalise-upload",
-            post(admin::media::finalise_upload),
-        )
-        .route(
-            "/v1/admin/media/{media_id}/versions/{version_id}/activate",
-            post(admin::media::activate_version),
-        )
-        .route(
-            "/v1/admin/media/{media_id}/versions/{version_id}",
-            delete(admin::media::delete_version),
-        )
-        .route(
-            "/v1/admin/media/{media_id}/usage",
-            get(admin::media::list_usage),
-        )
-        // ====================================================================
-        // Background Jobs admin routes
-        // ====================================================================
-        .route("/v1/admin/jobs", get(admin::jobs::list_jobs))
-        .route("/v1/admin/jobs/stats", get(admin::jobs::get_job_stats))
-        .route("/v1/admin/jobs/{job_id}", get(admin::jobs::get_job))
-        .route(
-            "/v1/admin/jobs/{job_id}/cancel",
-            post(admin::jobs::cancel_job),
-        )
-        .route(
-            "/v1/admin/jobs/{job_id}/retry",
-            post(admin::jobs::retry_job),
-        )
-        // ====================================================================
-        // Scheduled Tasks admin routes
-        // ====================================================================
-        .route(
-            "/v1/admin/scheduled-tasks",
-            get(admin::scheduled_tasks::list_scheduled_tasks),
-        )
-        .route(
-            "/v1/admin/scheduled-tasks/{task_id}",
-            get(admin::scheduled_tasks::get_scheduled_task),
-        )
-        .route(
-            "/v1/admin/scheduled-tasks/{task_id}/toggle",
-            post(admin::scheduled_tasks::toggle_scheduled_task),
-        )
-        .route(
-            "/v1/admin/scheduled-tasks/{task_id}/trigger",
-            post(admin::scheduled_tasks::trigger_scheduled_task),
-        )
-        // ====================================================================
-        // Error Logs admin routes
-        // ====================================================================
-        .route(
-            "/v1/admin/error-logs",
-            get(admin::error_logs::list_error_logs_handler),
-        )
-        .route(
-            "/v1/admin/error-logs/stats",
-            get(admin::error_logs::get_error_log_stats),
-        )
-        .route(
-            "/v1/admin/error-logs/{id}",
-            get(admin::error_logs::get_error_log_handler),
-        )
-        .layer(cors);
-
-    #[cfg(debug_assertions)]
-    let router = router.route("/v1/dev/error-smoke", post(shared::health::error_smoke));
-
-    router
+    Router::new()
+        .merge(runtime::build_runtime_router(include_docs))
+        .merge(shared::build_shared_router())
+        .merge(front::build_front_router())
+        .merge(admin::build_admin_router())
+        .layer(cors)
 }

@@ -7,6 +7,10 @@
 //! - Reordering endpoints
 //! - Field validation endpoints
 
+mod router;
+
+pub use router::build_admin_router;
+
 pub mod activity;
 pub mod categories;
 pub mod dashboard;

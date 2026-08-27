@@ -66,7 +66,7 @@ underlay-reference/
 ├── apps/
 │   ├── acme-api/          # Rust backend (app-local Cargo workspace)
 │   │   ├── crates/
-│   │   │   ├── api/       # HTTP handlers, routes, server
+│   │   │   ├── api/       # HTTP handlers, route families, server
 │   │   │   ├── auth/      # Authentication service
 │   │   │   ├── core/      # Domain primitives, errors
 │   │   │   ├── db/        # Database queries, migrations
@@ -253,6 +253,39 @@ production behavior.
 
 Outside the non-deployed set the API fails to start on malformed layered
 config, on `COOKIE_SECURE=false`, and on an attempt to disable CSRF.
+
+### Route Families And Access Model
+
+`crates/api/src/routes/` exposes four explicit family builders merged by one
+root builder. Family ownership is visible in the source layout; public paths
+are unchanged by it.
+
+| Family | Builder | Auth | CSRF | `X-Api-Version` |
+|--------|---------|------|------|-----------------|
+| runtime | `routes/runtime.rs` | none | none | exempt |
+| shared | `routes/shared/router.rs` | bootstrap or `AuthenticatedUser` | on cookie mutations | required |
+| front | `routes/front/router.rs` | `AuthenticatedUser` | on cookie mutations | required |
+| admin | `routes/admin/router.rs` | `AdminUser` | on cookie mutations | required |
+
+Cross-cutting policy lives in `routes/middleware.rs` and is layered above the
+merged router, so it applies uniformly rather than per family.
+
+Path versioning under `/v1/*` is the baseline. This app has additionally
+declared the optional `X-Api-Version` header — the TypeScript client sends it
+on every request — so the server applies it consistently across all three
+business families. Runtime endpoints are exempt by contract even when they sit
+under `/v1`.
+
+### Client IP And Proxy Trust
+
+Client IP used as policy input — auth fingerprints, lockout, rate limiting,
+audit — comes from Underlay's peer-aware `RequestContext`, resolved once per
+request. Handlers never parse forwarding headers.
+
+`TRUSTED_PROXY` declares the deployment topology. Unset or unrecognised trusts
+no forwarding header and uses the socket peer, so a typo cannot widen the trust
+boundary. A header is honoured only because the declared topology says a
+trusted proxy sets it, never because the header is present.
 
 ### Adapter Selection
 

@@ -1,3 +1,5 @@
 pub mod account;
 pub mod auth;
-pub mod health;
+mod router;
+
+pub use router::build_shared_router;

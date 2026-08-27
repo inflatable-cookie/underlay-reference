@@ -85,8 +85,21 @@ fn default_api_version() -> &'static String {
     })
 }
 
+/// True when a request is a business-family surface subject to the declared
+/// `X-Api-Version` header.
+///
+/// Path versioning is the baseline; the header is optional until an app
+/// declares one. This app has declared it — the TypeScript client sends it on
+/// every request — so the server applies it consistently across shared, front,
+/// and admin. Runtime endpoints are exempt by contract even when they sit
+/// under `/v1`: readiness, metrics, and OpenAPI must stay callable by platform
+/// infrastructure that knows nothing about the app's version vocabulary.
+pub fn is_versioned_business_path(path: &str) -> bool {
+    path.starts_with("/v1/") && !crate::routes::runtime::is_runtime_path(path)
+}
+
 pub async fn api_version_middleware(req: Request<axum::body::Body>, next: Next) -> Response {
-    if !req.uri().path().starts_with("/v1/") {
+    if !is_versioned_business_path(req.uri().path()) {
         return next.run(req).await;
     }
 

@@ -187,16 +187,13 @@ async fn main() -> anyhow::Result<()> {
     // Application config - use defaults, override as needed
     let config = AcmeConfig::default();
 
-    // Trusted proxy configuration for secure IP extraction
-    let trusted_proxy_config = acme_infra::TrustedProxyConfig::from_env();
-    if trusted_proxy_config.trust_proxy_headers {
-        tracing::info!(
-            "Proxy headers enabled with {} trusted proxies",
-            trusted_proxy_config.trusted_proxies.len()
-        );
-    } else {
-        tracing::debug!("Proxy headers disabled - using direct connection IPs only");
-    }
+    // Declare the proxy topology that resolves the client IP. This is the one
+    // trust boundary: `RequestContext` honours a forwarding header only
+    // because this says a trusted proxy sets it. Unset or unrecognised
+    // (`TRUSTED_PROXY`) trusts nothing and uses the socket peer, so a
+    // misconfiguration cannot start trusting client-supplied headers.
+    let trusted_proxy = underlay_http::TrustedProxyConfig::from_env();
+    tracing::info!(?trusted_proxy, "client IP trust boundary resolved");
 
     let state = AppState {
         local_auth,
@@ -209,7 +206,6 @@ async fn main() -> anyhow::Result<()> {
         blob_adapter,
         job_repository,
         config,
-        trusted_proxy_config,
     };
 
     // Set global DB pool for middleware
@@ -223,21 +219,9 @@ async fn main() -> anyhow::Result<()> {
         .with_client_errors(true)
         .with_server_errors(true);
 
-    // Map the app trusted-proxy config onto underlay's so `RequestContext`
-    // resolves the client IP correctly. Underlay no longer trusts forwarding
-    // headers unless a `TrustedProxyConfig` extension says so; without this
-    // (and the ConnectInfo below) `ctx.ip_address()` returns None.
-    let underlay_proxy = if state.trusted_proxy_config.trust_proxy_headers {
-        underlay_http::TrustedProxyConfig::ForwardedFor {
-            trusted_hops: state.trusted_proxy_config.trusted_proxies.len().max(1),
-        }
-    } else {
-        underlay_http::TrustedProxyConfig::None
-    };
-
     let app = routes::build_router_with_options(app_config.env.is_development())
         .with_state(state.clone())
-        .layer(axum::Extension(underlay_proxy))
+        .layer(axum::Extension(trusted_proxy))
         .layer(axum::middleware::from_fn(routes::api_version_middleware))
         .layer(axum::middleware::from_fn_with_state(
             routes::CsrfState::new(csrf_protection_enabled, state.cookie_config.clone()),

@@ -75,10 +75,12 @@ CSRF_PROTECTION
 
 # --- Trusted proxy / client IP ---------------------------------------------
 # Declares the proxy topology that resolves the client IP used for auth
-# fingerprints, lockout, rate limiting, and audit. Unset or unrecognised means
-# no forwarding header is trusted and the socket peer is used.
-TRUST_PROXY_HEADERS
-TRUSTED_PROXIES
+# fingerprints, lockout, rate limiting, and audit. TRUSTED_PROXY selects the
+# mode: none (default), cloudflare, real-ip, or forwarded-for. Unset or
+# unrecognised trusts no forwarding header and uses the socket peer.
+# TRUSTED_PROXY_HOPS applies to forwarded-for only (default 1).
+TRUSTED_PROXY
+TRUSTED_PROXY_HOPS
 
 # --- API versioning --------------------------------------------------------
 # Business route families accept and echo X-Api-Version. Runtime endpoints are

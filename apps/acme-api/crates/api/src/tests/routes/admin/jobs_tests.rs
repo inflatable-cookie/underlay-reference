@@ -76,7 +76,6 @@ async fn build_test_state(pool: sqlx::PgPool) -> AppState {
         blob_adapter: Arc::new(NoopAdapter::new()),
         job_repository: Some(Arc::new(JobRepository::new(pool))),
         config: crate::config::AcmeConfig::default(),
-        trusted_proxy_config: acme_infra::TrustedProxyConfig::from_env(),
     }
 }
 
