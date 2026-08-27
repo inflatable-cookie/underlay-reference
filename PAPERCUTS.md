@@ -7,12 +7,6 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 <!-- Keep entries short. Append newest entries at the top. Do not include secrets. -->
 
-### [ ] Parallel `bun x vitest` in `effigy test` races on bun bin linking — 2026-08-27
-- Friction: root `effigy validate`/`qa` run acme-admin and acme-client vitest together. Both invoke `bun x vitest` and collide with `Failed to link rolldown/vitest/why-is-node-running: EEXIST`.
-- Impact: the aggregate board fails even when each suite is green in isolation, so a CSRF-only API change cannot close the required validate/qa gates on the first pass.
-- Possible fix: serialize `bun x` on the test board, or run the workspace-local vitest binary instead of `bun x`.
-- Surface: `effigy test` / acme-admin + acme-client
-
 ### [ ] T3 worker launch used the Underlay worktree for an Underlay Reference handoff — 2026-08-26
 - Friction: the `g09.038` worker handoff lives in Underlay Reference, but T3 started this thread in a clean Underlay worktree. `.agents.local.env` / `AGENTS_WORKTREE_CONTAINER_DIR` is also absent, so the worker had to create a second registered worktree under the existing T3 Underlay Reference container.
 - Impact: the first preflight is spent proving the current root is the wrong repo instead of starting the lane.
@@ -30,6 +24,12 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 - Surface: Effigy Doctor task-reference resolution / `docs/effigy.toml`
 
 ## Closed
+
+### [x] Parallel `bun x vitest` in `effigy test` races on bun bin linking — 2026-08-27
+- Friction: root `effigy validate`/`qa` run acme-admin and acme-client vitest together. Both invoke `bun x vitest` and collide with `Failed to link rolldown/vitest/why-is-node-running: EEXIST`.
+- Impact: the aggregate board fails even when each suite is green in isolation, so a CSRF-only API change cannot close the required validate/qa gates on the first pass.
+- Fix: route vitest through `bun run test` and package-local `[test.suites.vitest]` in `apps/acme-admin/effigy.toml` and `packages/acme-client/effigy.toml` so Effigy uses the workspace-installed binary instead of `bun x`.
+- Surface: `effigy test` / acme-admin + acme-client
 
 ### [x] `bun x tsc` in acme-client health resolves TypeScript 7 and rejects `baseUrl` — 2026-08-26
 - Friction: `packages/acme-client/effigy.toml` ran `bun x tsc`, which fetched TypeScript 7.0.2 instead of the package-pinned `typescript@^5.9.3`. TS 7 removes `baseUrl` and failed `acme-client/health`.

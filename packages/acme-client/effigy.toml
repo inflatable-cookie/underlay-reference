@@ -10,6 +10,9 @@ js = "bun"
 [task_defaults]
 run_in = "host"
 
+[test.suites.vitest]
+run = "bun run test"
+
 [tasks]
 build = "cd {repo} && bun run tsc -p tsconfig.json"
 check = "cd {repo} && bun run check"
