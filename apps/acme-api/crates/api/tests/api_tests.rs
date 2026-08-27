@@ -51,10 +51,18 @@ mod api_version_tests {
         "pong"
     }
 
+    /// The version vocabulary comes from typed config, resolved once at
+    /// bootstrap. Tests build the same state from the committed defaults
+    /// rather than setting env vars.
     fn test_router() -> Router {
+        let versions = acme_api::routes::ApiVersionState::from_behavior(
+            &acme_infra::AppBehaviorConfig::default().api,
+        );
+
         Router::new()
             .route("/v1/ping", get(ping))
-            .layer(axum::middleware::from_fn(
+            .layer(axum::middleware::from_fn_with_state(
+                versions,
                 acme_api::routes::api_version_middleware,
             ))
     }

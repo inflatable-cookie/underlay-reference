@@ -173,6 +173,7 @@ pub async fn passkey_login_start(
 /// Finish passkey login (unauthenticated).
 pub async fn passkey_login_finish(
     headers: HeaderMap,
+    ctx: RequestContext,
     State(state): State<AppState>,
     Json(payload): Json<PasskeyLoginFinishRequest>,
 ) -> impl IntoResponse {
@@ -189,7 +190,7 @@ pub async fn passkey_login_finish(
         }
     };
 
-    let session_fp = extract_session_fingerprint(&headers, &state.trusted_proxy_config);
+    let session_fp = session_fingerprint(&ctx);
 
     match state
         .local_auth

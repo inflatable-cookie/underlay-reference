@@ -2,6 +2,7 @@ use super::*;
 
 pub async fn register(
     headers: HeaderMap,
+    ctx: RequestContext,
     State(state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
 ) -> impl IntoResponse {
@@ -14,7 +15,7 @@ pub async fn register(
     let password = payload.password.trim();
     let display_name = payload.display_name.trim();
 
-    let client_ip = acme_infra::extract_client_ip(&headers, &state.trusted_proxy_config);
+    let client_ip = client_ip(&ctx);
 
     match state
         .local_auth
@@ -62,6 +63,7 @@ pub async fn register(
 
 pub async fn login(
     headers: HeaderMap,
+    ctx: RequestContext,
     State(state): State<AppState>,
     Json(payload): Json<LoginRequest>,
 ) -> impl IntoResponse {
@@ -73,7 +75,7 @@ pub async fn login(
     let email = payload.email.trim();
     let password = payload.password.trim();
 
-    let client_ip = acme_infra::extract_client_ip(&headers, &state.trusted_proxy_config);
+    let client_ip = client_ip(&ctx);
 
     match state
         .local_auth
@@ -117,6 +119,7 @@ pub async fn login(
 
 pub async fn login_start(
     headers: HeaderMap,
+    ctx: RequestContext,
     State(state): State<AppState>,
     Json(payload): Json<LoginStartRequest>,
 ) -> impl IntoResponse {
@@ -128,8 +131,8 @@ pub async fn login_start(
     let email = payload.email.trim();
     let password = payload.password.trim();
 
-    let fingerprint = login_client_fingerprint(&headers, &state.trusted_proxy_config);
-    let client_ip = acme_infra::extract_client_ip(&headers, &state.trusted_proxy_config);
+    let fingerprint = login_client_fingerprint(&ctx);
+    let client_ip = client_ip(&ctx);
 
     // Use the method that supports email fallback
     match state
@@ -215,6 +218,7 @@ pub async fn login_start(
 
 pub async fn login_finish(
     headers: HeaderMap,
+    ctx: RequestContext,
     State(state): State<AppState>,
     Json(payload): Json<LoginFinishRequest>,
 ) -> impl IntoResponse {
@@ -233,8 +237,8 @@ pub async fn login_finish(
         }
     };
 
-    let fingerprint = login_client_fingerprint(&headers, &state.trusted_proxy_config);
-    let session_fp = extract_session_fingerprint(&headers, &state.trusted_proxy_config);
+    let fingerprint = login_client_fingerprint(&ctx);
+    let session_fp = session_fingerprint(&ctx);
 
     // Try TOTP first
     match state
@@ -347,11 +351,12 @@ pub async fn login_finish(
 
 pub async fn refresh(
     headers: HeaderMap,
+    ctx: RequestContext,
     State(state): State<AppState>,
     Json(payload): Json<RefreshRequest>,
 ) -> impl IntoResponse {
     // Extract fingerprint for rate limiting and session validation
-    let fingerprint = extract_session_fingerprint(&headers, &state.trusted_proxy_config);
+    let fingerprint = session_fingerprint(&ctx);
 
     // Check rate limit before processing
     if let Err(err) = state

@@ -10,6 +10,14 @@
 - Keep query and migration changes explicit and minimal.
 - Do not add app-specific hacks that reduce template clarity.
 - Prefer existing shared error/response utilities over custom wrappers.
+- Register routes in the family builder they belong to (`routes/runtime.rs`,
+  `routes/shared/router.rs`, `routes/front/router.rs`, `routes/admin/router.rs`).
+  Never register a route in `main.rs`.
+- Read env in bootstrap only. Handlers and services take typed config or
+  extractors. Every env key must appear in root `config/env-manifest.txt`.
+- Client IP used for auth, lockout, rate limiting, or audit comes from the
+  peer-aware `RequestContext`. Never parse forwarding headers in a handler.
+- There is no `.env` file. Non-secret values live in the root `config/` stack.
 
 ## Effigy-First Execution
 

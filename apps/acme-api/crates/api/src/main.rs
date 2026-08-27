@@ -13,8 +13,9 @@ use acme_api::state::{AppState, DB_POOL};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Load config first (includes env vars and .env file)
-    let app_config = AppConfig::from_env();
+    // Load config first. A malformed layered config stack is fatal outside
+    // local/effigy/test rather than silently degrading to code defaults.
+    let app_config = AppConfig::from_env()?;
 
     // Initialize tracing with environment-appropriate format
     acme_infra::init_tracing(&app_config);
@@ -40,8 +41,10 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    // Initialize auth service
-    let local_auth = match acme_auth::AcmeLocalAuthService::from_env(pool.clone()) {
+    // Initialize auth service from the already-resolved config authority. It
+    // must not re-resolve ENVIRONMENT or reload the config stack: a second
+    // load could disagree with the posture this binary already enforced.
+    let local_auth = match acme_auth::AcmeLocalAuthService::from_config(pool.clone(), &app_config) {
         Ok(service) => Arc::new(service),
         Err(err) => {
             tracing::error!(code = err.code(), message = %err.message(), "failed to configure local auth");
@@ -53,21 +56,25 @@ async fn main() -> anyhow::Result<()> {
     let auth_provider: Arc<dyn underlay_auth::AuthProvider> =
         Arc::new(acme_auth::AcmeLocalAuthProvider::new(local_auth.clone()));
 
-    // Configure auth cookies
+    // Configure auth cookies. Insecure cookies are fatal outside the bounded
+    // non-deployed set: a deployed runtime must never put a session cookie on
+    // the wire in plaintext.
     let cookie_secure = app_config.cors.cookie_secure;
+    acme_infra::enforce_cookie_secure(app_config.env, cookie_secure)?;
 
-    if !cookie_secure && !app_config.env.is_development() {
-        tracing::warn!(
-            "COOKIE_SECURE=false in non-development environment; auth cookies may be sent over HTTP"
-        );
-    }
+    // Resolve cookie-backed browser mutation protection once, here. The
+    // middleware consumes the decision; it never re-reads the environment per
+    // request, so a later env change cannot weaken a running deployment.
+    let csrf_protection_enabled = acme_infra::resolve_csrf_protection(
+        app_config.env,
+        acme_infra::csrf_protection_requested(),
+    )?;
 
-    // SameSite cookie policy for CSRF protection
-    // Default to Strict in production, Lax in development
-    let same_site = if std::env::var("COOKIE_SAMESITE_STRICT")
-        .map(|v| v == "true" || v == "1")
-        .unwrap_or(!app_config.env.is_development())
-    {
+    // Cookie shape comes from typed config. These are behavior knobs, not
+    // deployment wiring, so they carry committed defaults rather than living
+    // in env; `AppConfig::from_env` warns if the migrated legacy keys are set.
+    let cookies = &app_config.behavior.cors;
+    let same_site = if cookies.cookie_same_site_strict {
         underlay_http::cookies::SameSite::Strict
     } else {
         underlay_http::cookies::SameSite::Lax
@@ -75,22 +82,15 @@ async fn main() -> anyhow::Result<()> {
 
     let mut cookie_config = underlay_http::AuthCookieConfig::new()
         .with_secure(cookie_secure)
-        .with_same_site(same_site);
+        .with_same_site(same_site)
+        .with_refresh_token_max_age(cookies.refresh_token_max_age_secs);
 
     if let Some(domain) = app_config.cors.cookie_domain.clone() {
         cookie_config = cookie_config.try_with_domain(domain)?;
     }
 
-    // Allow customizing cookie prefix (e.g., "acme_" for "acme_refresh_token")
-    if let Ok(prefix) = std::env::var("COOKIE_PREFIX") {
-        cookie_config = cookie_config.try_with_cookie_prefix(prefix)?;
-    }
-
-    // Allow customizing refresh token max age (in seconds)
-    if let Ok(max_age) = std::env::var("REFRESH_TOKEN_MAX_AGE")
-        .and_then(|v| v.parse::<u64>().map_err(|_| std::env::VarError::NotPresent))
-    {
-        cookie_config = cookie_config.with_refresh_token_max_age(max_age);
+    if !cookies.cookie_prefix.is_empty() {
+        cookie_config = cookie_config.try_with_cookie_prefix(cookies.cookie_prefix.clone())?;
     }
 
     let email_config = app_config.email.clone();
@@ -181,16 +181,13 @@ async fn main() -> anyhow::Result<()> {
     // Application config - use defaults, override as needed
     let config = AcmeConfig::default();
 
-    // Trusted proxy configuration for secure IP extraction
-    let trusted_proxy_config = acme_infra::TrustedProxyConfig::from_env();
-    if trusted_proxy_config.trust_proxy_headers {
-        tracing::info!(
-            "Proxy headers enabled with {} trusted proxies",
-            trusted_proxy_config.trusted_proxies.len()
-        );
-    } else {
-        tracing::debug!("Proxy headers disabled - using direct connection IPs only");
-    }
+    // Declare the proxy topology that resolves the client IP. This is the one
+    // trust boundary: `RequestContext` honours a forwarding header only
+    // because this says a trusted proxy sets it. Unset or unrecognised
+    // (`TRUSTED_PROXY`) trusts nothing and uses the socket peer, so a
+    // misconfiguration cannot start trusting client-supplied headers.
+    let trusted_proxy = underlay_http::TrustedProxyConfig::from_env();
+    tracing::info!(?trusted_proxy, "client IP trust boundary resolved");
 
     let state = AppState {
         local_auth,
@@ -203,7 +200,6 @@ async fn main() -> anyhow::Result<()> {
         blob_adapter,
         job_repository,
         config,
-        trusted_proxy_config,
     };
 
     // Set global DB pool for middleware
@@ -217,24 +213,15 @@ async fn main() -> anyhow::Result<()> {
         .with_client_errors(true)
         .with_server_errors(true);
 
-    // Map the app trusted-proxy config onto underlay's so `RequestContext`
-    // resolves the client IP correctly. Underlay no longer trusts forwarding
-    // headers unless a `TrustedProxyConfig` extension says so; without this
-    // (and the ConnectInfo below) `ctx.ip_address()` returns None.
-    let underlay_proxy = if state.trusted_proxy_config.trust_proxy_headers {
-        underlay_http::TrustedProxyConfig::ForwardedFor {
-            trusted_hops: state.trusted_proxy_config.trusted_proxies.len().max(1),
-        }
-    } else {
-        underlay_http::TrustedProxyConfig::None
-    };
-
     let app = routes::build_router_with_options(app_config.env.is_development())
         .with_state(state.clone())
-        .layer(axum::Extension(underlay_proxy))
-        .layer(axum::middleware::from_fn(routes::api_version_middleware))
+        .layer(axum::Extension(trusted_proxy))
         .layer(axum::middleware::from_fn_with_state(
-            state.clone(),
+            routes::ApiVersionState::from_behavior(&app_config.behavior.api),
+            routes::api_version_middleware,
+        ))
+        .layer(axum::middleware::from_fn_with_state(
+            routes::CsrfState::new(csrf_protection_enabled, state.cookie_config.clone()),
             routes::csrf_protection_middleware,
         ))
         .layer(axum::middleware::from_fn_with_state(

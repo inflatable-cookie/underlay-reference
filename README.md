@@ -31,7 +31,7 @@ package edges use `workspace:*`. `apps/acme-api` is Rust-only and keeps its own
 app-local Cargo workspace, so it is not a JavaScript workspace member.
 
 Committed application dependencies resolve Underlay from the released Git tag
-(`v0.9.4` at time of writing), not from sibling source paths.
+(`v0.9.5` at time of writing), not from sibling source paths.
 
 ## Documentation Authority
 
@@ -60,6 +60,44 @@ effigy validate
 `workspace:js:prepare` is the one frozen root install
 (`bun install --frozen-lockfile`) for the whole JavaScript workspace. Do not run
 per-package installs.
+
+### Tests
+
+`effigy test --plan` prints the resolved plan before anything runs — the
+targets, the suite chosen per target, and the evidence Effigy used to choose
+it. Read it first when test shape matters:
+
+```bash
+effigy test --plan
+effigy test
+effigy test acme-api
+```
+
+`effigy test` runs three targets: `acme-api` on the configured `rust` suite
+(`cargo test --workspace`), and `acme-admin` and `acme-client` on `vitest`.
+
+`acme-front` appears in the plan's target summary with `available-suites:
+vitest` but no default suite and `command: <none>`. That is deliberate —
+`apps/acme-front/effigy.toml` sets `[test.suites.vitest] default = false`, so
+its currently empty suite does not fail the root `test` / `validate` / `qa`
+sequences. Run it explicitly with `effigy acme-front/test` once it has tests.
+The plan header reports `targets: 3` for that reason; read it rather than
+counting summary rows.
+
+Sibling `underlay` and `poodle` are excluded from the root plan.
+Database-backed Rust tests skip themselves unless `DATABASE_URL` or
+`TEST_DATABASE_URL` is set, so a plain `effigy test` stays useful without a
+running stack.
+
+### Conformance
+
+```bash
+effigy qa:conformance
+```
+
+Runs the two released Underlay checkers — workspace shape and env/secret
+authority — from the installed `@inflatable-cookie/underlay` package. They read
+this repository only; no sibling Underlay checkout is required.
 
 First-time bring-up from another directory:
 
@@ -94,8 +132,43 @@ Root `effigy state plan` / `effigy state apply local --yes` orchestrate the loca
   lives in the committed `config/effigy.toml`
 - `apps/acme-admin/` and `apps/acme-front/` generate public runtime config from the root
   stack rather than reading `.env` files
-- true secrets should move through Effigy-managed runtime injection or the local
+- true secrets move through Effigy-managed runtime injection or the local
   secrets vault, not committed or ad hoc `.env` files
+
+### Secrets Bootstrap
+
+`config/required-secrets.txt` is the human-readable authority; root
+`effigy.toml` makes it executable. `effigy secrets list` shows which keys are
+unconditional and where each is injected:
+
+```bash
+effigy secrets init          # create the encrypted local vault (once per clone)
+effigy secrets list          # declared keys, targets, and required flags
+effigy secrets doctor        # declaration/backend check; never reads values
+effigy secrets set <name>    # store one value; prompts, never echoes
+```
+
+The vault lives at `.effigy/secrets/local.vault` and is gitignored. Values are
+never printed and never committed.
+
+`auth_jwt_private_key` and `auth_jwt_public_key` are `required = true`: the API
+refuses to start without them in every environment. You do not normally set
+them by hand — the Effigy bundle's generate hook fills the generatable dev keys
+on first secrets-required task startup, so `effigy dev` works from a clean
+clone.
+
+Three keys are deliberately not `required = true`, each for a stated reason:
+
+| Key | Why not required | What is required |
+|-----|------------------|------------------|
+| `database_url` | local and effigy resolve it from the committed non-secret `config/effigy.toml` overlay, so the dev loop needs no vault value | deployed environments must inject it as a real secret |
+| `encryption_key` | may be absent with an explicit warning in local, effigy, and test | required in deployed environments; startup fails without it |
+| provider credentials | SMTP, SES/AWS, Google OAuth, and object-store keys are conditional | required only once the matching backend or adapter is selected |
+
+Effigy's `required` flag is a single boolean and cannot express those
+conditions, so the condition is recorded in each declaration's `description`
+and in `config/env-manifest.txt`. Marking them required would block the local
+loop and claim unused providers are mandatory.
 
 Bootstrap notes:
 - `effigy bootstrap ...` clones the reference workspace and applies the
@@ -112,11 +185,11 @@ Bootstrap notes:
 The reference template consumes Underlay from the released Git repository:
 
 ```json
-"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.4"
+"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5"
 ```
 
 ```toml
-underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.4" }
+underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.5" }
 ```
 
 Poodle core/Svelte packages resolve from the public npm registry at `0.2.2`.
@@ -137,7 +210,30 @@ Full-featured API server with:
 - **Background Jobs**: Underlay jobs system integration
 - **Email**: Template-based emails routed through SMTP and Mailpit in local dev
 - **Media Library**: File uploads with versioning, deduplication, and blob storage
-- **API Structure**: Health checks, auth routes, account management
+- **API Structure**: Explicit runtime, shared, front, and admin route families
+
+Route families and their access posture:
+
+| Family | Source | Paths | Posture |
+|--------|--------|-------|---------|
+| runtime | `routes/runtime.rs` | `/v1/health`, `/favicon.ico`, `/api/openapi.json`, `/api/docs` | unauthenticated, no CSRF, never requires `X-Api-Version` |
+| shared | `routes/shared/router.rs` | `/v1/auth/*`, `/v1/account/*` | mixed bootstrap and authenticated; CSRF on cookie-backed mutations |
+| front | `routes/front/router.rs` | `/v1/projects/*` | authenticated product-user routes |
+| admin | `routes/admin/router.rs` | `/v1/admin/*` | `AdminUser` gate |
+
+#### OpenAPI exposure
+
+The OpenAPI document is served at `/api/openapi.json` with Swagger UI at
+`/api/docs`. Both belong to the runtime family and are **exposed only in
+development environments** — `main.rs` passes
+`app_config.env.is_development()` into the router builder, so `staging`,
+`production`, and any unrecognised environment name serve neither. Changing
+that is a deployment policy decision, not a route change.
+
+Business endpoints are path-versioned under `/v1/*`. This app has declared the
+optional `X-Api-Version` header: the TypeScript client sends it on every
+request and the server validates it across all three business families. Runtime
+endpoints are exempt by contract.
 
 Crate organization:
 - `core` - Domain primitives, error types, UUID helpers
@@ -319,28 +415,57 @@ Cargo locks narrowly.
 3. `config/local.toml` (personal overrides, gitignored)
 4. allowlisted environment variables (secrets and runtime wiring)
 
-Use TOML for app behavior defaults, and env vars for secrets/runtime wiring
-and per-environment overrides. `.env` files are not part of the runtime
-contract.
+Use TOML for app behavior defaults, and env vars for secrets and runtime
+wiring. `.env` files are not part of the runtime contract: there is no
+`.env`, `.env.local`, or `.env.example` in the target posture, and nothing in
+this workspace reads one.
+
+Two tracked files are the env authority:
+
+- `config/env-manifest.txt` — the complete environment surface any runtime
+  process may read, with each key's condition recorded inline
+- `config/required-secrets.txt` — the startup-critical subset
+
+Both are static key inventories. They never carry values; secret presence stays
+an operator and runtime concern. `effigy qa:conformance` proves they exist,
+parse, and agree.
 
 For the current `underlay-reference` local shape:
 
-- keep app-owned runtime wiring in `apps/acme-api/.env`
-- keep typed app behavior overrides in `apps/acme-api/config/local.toml`
+- keep non-secret dev values in the committed root `config/` stack
+- keep personal, machine-local overrides in `config/local.toml`
+- keep local secrets in the Effigy vault, injected at task/container runtime
 - keep `apps/acme-api/effigy.toml` as plain task orchestration (`cargo run ...`), not an env dump
 
-### Required for API
+### Environment classes
+
+`ENVIRONMENT` selects both the behavior class and the config overlay. An unset
+or unrecognised name fails closed to deployed production behavior.
+
+| Class | Names | Posture |
+|-------|-------|---------|
+| Non-deployed | `local`, `effigy`, `test` | dev seeds, CORS origin mirroring, and bounded startup warnings are allowed |
+| Deployed | `dev`, `staging`, `production` | fail closed: malformed config, `COOKIE_SECURE=false`, and CSRF disablement are startup errors |
+
+### Startup-critical
 
 ```bash
+AUTH_JWT_PRIVATE_KEY=...  # Required everywhere; generated by generate-jwt-env
+AUTH_JWT_PUBLIC_KEY=...   # Required everywhere; generated by generate-jwt-env
 DATABASE_URL=postgres://postgres:postgres@db.acme.test:5432/acme
-AUTH_JWT_PRIVATE_KEY=...  # Generated by generate-jwt-env
-AUTH_JWT_PUBLIC_KEY=...   # Generated by generate-jwt-env
+                          # Deployed only: local/effigy take it from config/effigy.toml
+ENCRYPTION_KEY=...        # Deployed only: warns in local/effigy/test
 ```
 
-### Optional
+Only the JWT pair is required in every environment. `DATABASE_URL` and
+`ENCRYPTION_KEY` are startup-critical but conditional — see the Secrets
+Bootstrap table above and `config/required-secrets.txt`, which state each
+condition.
+
+### Commonly set
 
 ```bash
-ENVIRONMENT=local|dev|staging|prod
+ENVIRONMENT=local|effigy|test|dev|staging|production
 HOST=0.0.0.0
 PORT=41001
 PUBLIC_HOST=api.acme.test
@@ -352,12 +477,15 @@ EMAIL_ADAPTER=noop|smtp|ses
 SMTP_HOST=smtp.acme.test
 SMTP_PORT=1025
 SMTP_TLS=none
-BLOB_ADAPTER=s3
-BLOB_S3_BUCKET=acme-media
-BLOB_S3_ENDPOINT_URL=http://s3.acme.test:9000
-BLOB_S3_PUBLIC_URL_BASE=https://s3.acme.test/acme-media
-BLOB_S3_PRESIGN_URL_BASE=https://s3.acme.test
+ACME_S3_BUCKET=acme-media
+ACME_S3_ENDPOINT=http://s3.acme.test:9000
+ACME_S3_PUBLIC_URL_BASE=https://s3.acme.test/acme-media
 ```
+
+Everything else, including the conditional Redis, SES/AWS, OAuth, and
+trusted-proxy keys, is listed with its condition in
+`config/env-manifest.txt`. Do not add a runtime env read without adding it
+there.
 
 ## Adding Your Domain
 

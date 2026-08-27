@@ -66,7 +66,7 @@ underlay-reference/
 ├── apps/
 │   ├── acme-api/          # Rust backend (app-local Cargo workspace)
 │   │   ├── crates/
-│   │   │   ├── api/       # HTTP handlers, routes, server
+│   │   │   ├── api/       # HTTP handlers, route families, server
 │   │   │   ├── auth/      # Authentication service
 │   │   │   ├── core/      # Domain primitives, errors
 │   │   │   ├── db/        # Database queries, migrations
@@ -232,22 +232,73 @@ The API reads configuration with the following precedence:
 3. `config/local.toml` (optional personal overrides, gitignored)
 4. environment variables from runtime injection (override layer)
 
-See `apps/acme-api/.env.example` for env options and override keys.
+`config/env-manifest.txt` is the complete env surface, with each key's
+condition recorded inline. `config/required-secrets.txt` is the
+startup-critical subset. There is no `.env` or `.env.example`: `.env` files are
+not part of the runtime contract, and nothing in this workspace reads one.
 
-Required:
-- `DATABASE_URL` - PostgreSQL connection string
+Startup-critical, required in every environment:
 - `AUTH_JWT_PRIVATE_KEY` - JWT signing key
 - `AUTH_JWT_PUBLIC_KEY` - JWT verification key
 
-### Feature Flags
+Startup-critical, but conditional:
+- `DATABASE_URL` - PostgreSQL connection string. Required as an injected
+  secret in deployed environments; `local` and `effigy` resolve it from the
+  committed non-secret `config/effigy.toml` overlay instead
+- `ENCRYPTION_KEY` - required in deployed environments; may be absent with an
+  explicit warning in `local`, `effigy`, and `test`
 
-Features can be enabled/disabled via environment:
+### Environment Classes
+
+`ENVIRONMENT` names both the behavior class and the config overlay. `local`,
+`effigy`, and `test` are the bounded non-deployed set. `dev`, `staging`, and
+`production` are deployed. An unset or unrecognised name fails closed to
+production behavior.
+
+Outside the non-deployed set the API fails to start on malformed layered
+config, on `COOKIE_SECURE=false`, and on an attempt to disable CSRF.
+
+### Route Families And Access Model
+
+`crates/api/src/routes/` exposes four explicit family builders merged by one
+root builder. Family ownership is visible in the source layout; public paths
+are unchanged by it.
+
+| Family | Builder | Auth | CSRF | `X-Api-Version` |
+|--------|---------|------|------|-----------------|
+| runtime | `routes/runtime.rs` | none | none | exempt |
+| shared | `routes/shared/router.rs` | bootstrap or `AuthenticatedUser` | on cookie mutations | required |
+| front | `routes/front/router.rs` | `AuthenticatedUser` | on cookie mutations | required |
+| admin | `routes/admin/router.rs` | `AdminUser` | on cookie mutations | required |
+
+Cross-cutting policy lives in `routes/middleware.rs` and is layered above the
+merged router, so it applies uniformly rather than per family.
+
+Path versioning under `/v1/*` is the baseline. This app has additionally
+declared the optional `X-Api-Version` header — the TypeScript client sends it
+on every request — so the server applies it consistently across all three
+business families. Runtime endpoints are exempt by contract even when they sit
+under `/v1`.
+
+### Client IP And Proxy Trust
+
+Client IP used as policy input — auth fingerprints, lockout, rate limiting,
+audit — comes from Underlay's peer-aware `RequestContext`, resolved once per
+request. Handlers never parse forwarding headers.
+
+`TRUSTED_PROXY` declares the deployment topology. Unset or unrecognised trusts
+no forwarding header and uses the socket peer, so a typo cannot widen the trust
+boundary. A header is honoured only because the declared topology says a
+trusted proxy sets it, never because the header is present.
+
+### Adapter Selection
 
 | Variable | Description |
 |----------|-------------|
-| `BLOB_ADAPTER` | `s3` or `noop` for blob storage |
+| `ACME_S3_BUCKET` | selects the real S3 blob adapter outside local/effigy; `ACME_ALLOW_NOOP_BLOB=1` is the explicit storage-less opt-in |
 | `EMAIL_ADAPTER` | `noop`, `smtp`, or `ses` |
-| `ENVIRONMENT` | `local`, `dev`, `staging`, `prod` |
+| `RATE_LIMIT_BACKEND` | `in_memory` or `redis` |
+| `ENVIRONMENT` | `local`, `effigy`, `test`, `dev`, `staging`, `production` |
 
 ## Deployment
 

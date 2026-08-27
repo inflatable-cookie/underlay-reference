@@ -88,10 +88,14 @@ fn map_auth_state_error(err: AuthStateError) -> AuthError {
     }
 }
 
-fn is_local_or_dev_environment() -> bool {
-    // Fail closed: unset ENVIRONMENT is not a development environment.
-    let env = acme_infra::Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
-    env.is_development() || env.is_local_dev()
+/// True only inside the bounded non-deployed set (local, effigy, test), where
+/// a missing startup secret may warn instead of failing.
+///
+/// `dev` is a deployed environment and is deliberately excluded. Takes the
+/// environment the caller already resolved rather than re-reading it: two
+/// independent resolutions could disagree, and this one gates a secret.
+fn allows_degraded_startup(environment: acme_infra::Environment) -> bool {
+    !acme_infra::startup_posture(environment).is_fatal()
 }
 
 #[derive(Debug, Clone)]
@@ -231,8 +235,31 @@ impl AcmeLocalAuthService {
         &self.webauthn_rp_origin
     }
 
+    /// Build from the config the binary already loaded.
+    ///
+    /// Bootstrap owns config resolution. Reloading the stack here would give
+    /// the auth service its own view of the environment and behavior
+    /// defaults, which could silently diverge from the posture `main` already
+    /// validated and enforced.
+    pub fn from_config(pool: sqlx::PgPool, config: &acme_infra::AppConfig) -> AuthResult<Self> {
+        Self::build(pool, &config.behavior, config.env)
+    }
+
+    /// Load config and build. For test harnesses and operator tooling that
+    /// have no `AppConfig` in hand; the API and jobs binaries use
+    /// [`from_config`](Self::from_config).
     pub fn from_env(pool: sqlx::PgPool) -> AuthResult<Self> {
-        let behavior = AppBehaviorConfig::load();
+        let behavior = AppBehaviorConfig::load()
+            .map_err(|err| AuthError::Internal(format!("failed to load app config: {err}")))?;
+        let environment = acme_infra::Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
+        Self::build(pool, &behavior, environment)
+    }
+
+    fn build(
+        pool: sqlx::PgPool,
+        behavior: &AppBehaviorConfig,
+        environment: acme_infra::Environment,
+    ) -> AuthResult<Self> {
         let private_key_b64 = std::env::var("AUTH_JWT_PRIVATE_KEY")
             .map_err(|_| AuthError::Internal("AUTH_JWT_PRIVATE_KEY not set".to_string()))?;
         let public_key_b64 = std::env::var("AUTH_JWT_PUBLIC_KEY")
@@ -257,11 +284,9 @@ impl AcmeLocalAuthService {
         let redis_url =
             std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
 
-        // Absolute session timeout (default comes from layered config)
-        let absolute_session_timeout_days: u64 = std::env::var("SESSION_MAX_ABSOLUTE_DAYS")
-            .ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(behavior.auth.absolute_session_timeout_days);
+        // Behavior, so it comes from typed config only. The old
+        // SESSION_MAX_ABSOLUTE_DAYS override is a warned legacy key.
+        let absolute_session_timeout_days: u64 = behavior.auth.absolute_session_timeout_days;
         let absolute_session_timeout =
             std::time::Duration::from_secs(absolute_session_timeout_days * 24 * 60 * 60);
 
@@ -373,13 +398,14 @@ impl AcmeLocalAuthService {
         let totp_cipher = SecretCipher::from_env_var_optional("ENCRYPTION_KEY")?;
         let encryption = acme_infra::EncryptionService::from_env();
         if totp_cipher.is_none() {
-            if is_local_or_dev_environment() {
+            if allows_degraded_startup(environment) {
                 tracing::warn!(
-                    "ENCRYPTION_KEY not set - TOTP secrets will be stored in plaintext in local/dev"
+                    "ENCRYPTION_KEY not set - TOTP secrets will be stored in plaintext. \
+                     Allowed only because this is a bounded non-deployed environment"
                 );
             } else {
                 return Err(AuthError::Internal(
-                    "ENCRYPTION_KEY must be set outside local/dev/test environments".into(),
+                    "ENCRYPTION_KEY must be set outside local/effigy/test environments".into(),
                 ));
             }
         }

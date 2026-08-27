@@ -1,10 +1,133 @@
 use std::env;
 
 use serde::Deserialize;
+use thiserror::Error;
 
 // Re-export Environment from underlay-observability.
 // This provides consistent environment handling across all Underlay apps.
 pub use underlay_observability::Environment;
+
+/// What a startup safety violation means in a given environment.
+///
+/// `local`, `effigy`, and `test` are the bounded non-deployed set: a developer
+/// with a half-written `config/local.toml` or a plaintext-HTTP loopback stack
+/// still gets a running app, loudly. Every other name — `dev`, `staging`,
+/// `production`, and anything unrecognised, which
+/// [`Environment::parse`] resolves to production — fails closed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StartupPosture {
+    /// Log the violation and continue on committed defaults.
+    WarnAndContinue,
+    /// Refuse to start.
+    Fatal,
+}
+
+impl StartupPosture {
+    pub fn is_fatal(self) -> bool {
+        matches!(self, StartupPosture::Fatal)
+    }
+}
+
+/// Resolve the startup posture for an environment.
+///
+/// This is the single place the deployed/non-deployed boundary is decided.
+/// Do not re-derive it from `is_development()`: that includes `dev`, which is
+/// a deployed environment.
+pub fn startup_posture(environment: Environment) -> StartupPosture {
+    if environment.is_local_dev() {
+        StartupPosture::WarnAndContinue
+    } else {
+        StartupPosture::Fatal
+    }
+}
+
+/// A startup safety violation that is fatal in the current environment.
+#[derive(Debug, Error)]
+pub enum ConfigError {
+    #[error(
+        "layered config failed to load in a deployed environment ({environment:?}): {detail}. \
+         Fix config/default.toml, config/<environment>.toml, or config/local.toml; \
+         silently falling back to code defaults would hide the real runtime posture"
+    )]
+    ConfigStack {
+        environment: Environment,
+        detail: String,
+    },
+    #[error(
+        "COOKIE_SECURE=false is not allowed in a deployed environment ({environment:?}): \
+         auth cookies would be sent over plaintext HTTP. Set cookie_secure = true in the \
+         config overlay, or run under local/effigy/test"
+    )]
+    InsecureAuthCookies { environment: Environment },
+    #[error(
+        "CSRF_PROTECTION cannot be disabled in a deployed environment ({environment:?}): \
+         cookie-backed browser mutations would be unprotected. Disablement is allowed only \
+         in local/effigy/test"
+    )]
+    CsrfDisabled { environment: Environment },
+}
+
+/// Apply the settled auth-cookie policy.
+///
+/// `COOKIE_SECURE=false` is fatal outside local/effigy/test. Inside that set it
+/// warns: a loopback dev stack legitimately serves plaintext HTTP.
+pub fn enforce_cookie_secure(
+    environment: Environment,
+    cookie_secure: bool,
+) -> Result<(), ConfigError> {
+    if cookie_secure {
+        return Ok(());
+    }
+
+    if startup_posture(environment).is_fatal() {
+        return Err(ConfigError::InsecureAuthCookies { environment });
+    }
+
+    tracing::warn!(
+        ?environment,
+        "COOKIE_SECURE=false — auth cookies may be sent over plaintext HTTP. \
+         Allowed only because this is a bounded non-deployed environment"
+    );
+    Ok(())
+}
+
+/// Resolve cookie-backed browser mutation protection once, at bootstrap.
+///
+/// `requested_enabled` is the operator's request (`CSRF_PROTECTION`, default
+/// on). A deployed environment rejects an attempted disablement rather than
+/// quietly serving unprotected cookie mutations. Resolving here — not per
+/// request — means a later env change cannot weaken a running deployment.
+pub fn resolve_csrf_protection(
+    environment: Environment,
+    requested_enabled: bool,
+) -> Result<bool, ConfigError> {
+    if requested_enabled {
+        return Ok(true);
+    }
+
+    if startup_posture(environment).is_fatal() {
+        return Err(ConfigError::CsrfDisabled { environment });
+    }
+
+    tracing::warn!(
+        ?environment,
+        "CSRF_PROTECTION disabled — cookie-backed browser mutations are unprotected. \
+         Allowed only because this is a bounded non-deployed environment"
+    );
+    Ok(false)
+}
+
+/// Read the operator's `CSRF_PROTECTION` request. Defaults to enabled.
+///
+/// Bootstrap-only: the middleware consumes the resolved decision, never this.
+pub fn csrf_protection_requested() -> bool {
+    env::var("CSRF_PROTECTION")
+        .map(|v| {
+            let v = v.trim().to_ascii_lowercase();
+            v == "true" || v == "1"
+        })
+        .unwrap_or(true)
+}
 
 /// HTTP server configuration.
 #[derive(Debug, Clone)]
@@ -145,9 +268,22 @@ pub struct EmailConfig {
 pub struct AppBehaviorConfig {
     pub runtime: RuntimeBehaviorDefaults,
     pub database_url: Option<String>,
+    pub api: ApiBehaviorDefaults,
     pub cors: CorsBehaviorDefaults,
     pub email: EmailBehaviorDefaults,
     pub auth: AuthBehaviorDefaults,
+}
+
+/// Declared API-version vocabulary.
+///
+/// Behavior, not deployment wiring: the set of versions this build speaks is a
+/// property of the code, so it belongs in committed typed config rather than
+/// in env. Keep `default_version` in step with `[public_api] api_version` in
+/// the same config stack — that is the value the TypeScript client sends.
+#[derive(Debug, Clone)]
+pub struct ApiBehaviorDefaults {
+    pub supported_versions: Vec<String>,
+    pub default_version: String,
 }
 
 #[derive(Debug, Clone)]
@@ -162,6 +298,12 @@ pub struct CorsBehaviorDefaults {
     pub allowed_origins: Vec<String>,
     pub cookie_domain: Option<String>,
     pub cookie_secure: bool,
+    /// Cookie name prefix, e.g. `acme_` for `acme_refresh_token`.
+    pub cookie_prefix: String,
+    /// `SameSite=Strict` rather than `Lax`. Strict is the safer default; Lax
+    /// exists because some local cross-port dev flows need it.
+    pub cookie_same_site_strict: bool,
+    pub refresh_token_max_age_secs: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -228,10 +370,17 @@ impl Default for AppBehaviorConfig {
                 public_host: "localhost".to_string(),
             },
             database_url: None,
+            api: ApiBehaviorDefaults {
+                supported_versions: vec!["2025-01-01".to_string()],
+                default_version: "2025-01-01".to_string(),
+            },
             cors: CorsBehaviorDefaults {
                 allowed_origins: Vec::new(),
                 cookie_domain: None,
                 cookie_secure: false,
+                cookie_prefix: String::new(),
+                cookie_same_site_strict: true,
+                refresh_token_max_age_secs: 30 * 24 * 60 * 60,
             },
             email: EmailBehaviorDefaults {
                 default_from: "noreply@acme.example.com".to_string(),
@@ -289,9 +438,16 @@ impl Default for AppBehaviorConfig {
 struct FileBehaviorConfig {
     runtime: Option<FileRuntimeBehaviorDefaults>,
     database: Option<FileDatabaseConfig>,
+    api: Option<FileApiBehaviorDefaults>,
     cors: Option<FileCorsBehaviorDefaults>,
     email: Option<FileEmailBehaviorDefaults>,
     auth: Option<FileAuthBehaviorDefaults>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct FileApiBehaviorDefaults {
+    supported_versions: Option<Vec<String>>,
+    default_version: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -311,6 +467,9 @@ struct FileCorsBehaviorDefaults {
     allowed_origins: Option<Vec<String>>,
     cookie_domain: Option<String>,
     cookie_secure: Option<bool>,
+    cookie_prefix: Option<String>,
+    cookie_same_site_strict: Option<bool>,
+    refresh_token_max_age_secs: Option<u64>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -366,27 +525,42 @@ struct FileAuthBehaviorDefaults {
 }
 
 impl AppBehaviorConfig {
-    pub fn load() -> Self {
+    /// Load the layered config stack.
+    ///
+    /// A malformed stack is fatal outside local/effigy/test. Silently falling
+    /// back to code defaults in a deployed environment would hide the real
+    /// runtime posture — the app would boot with permissive defaults that no
+    /// operator chose. Inside the bounded non-deployed set it warns and
+    /// continues, so a half-written personal `config/local.toml` does not
+    /// block a dev loop.
+    pub fn load() -> Result<Self, ConfigError> {
         let mut behavior = Self::default();
         // Resolve the environment first: it also names the config overlay
         // (config/<name>.toml — e.g. effigy.toml for the dev stack).
         // ENVIRONMENT is primary, ACME_ENV the deprecated fallback. Raw name,
         // not the enum: overlay names are arbitrary strings. Behavior
         // resolves via Environment::resolve.
-        let environment = Environment::resolve_name("ENVIRONMENT", Some("ACME_ENV"))
+        let overlay_name = Environment::resolve_name("ENVIRONMENT", Some("ACME_ENV"))
             .unwrap_or_else(|| "dev".to_string());
+        let environment = Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
         let parsed = underlay_config::ConfigStack::new(underlay_config::discover_config_dir(None))
-            .with_environment(environment)
+            .with_environment(overlay_name)
             .with_optional_local_overlay("local")
             .load_namespaced_or_legacy::<FileBehaviorConfig>("acme_api");
         let parsed = match parsed {
             Ok(parsed) => parsed,
             Err(err) => {
+                if startup_posture(environment).is_fatal() {
+                    return Err(ConfigError::ConfigStack {
+                        environment,
+                        detail: err.to_string(),
+                    });
+                }
                 eprintln!(
                     "warning: failed to load Acme config stack: {}. Falling back to code defaults.",
                     err
                 );
-                return behavior;
+                return Ok(behavior);
             }
         };
 
@@ -408,6 +582,40 @@ impl AppBehaviorConfig {
             }
         }
 
+        if let Some(api) = parsed.api {
+            if let Some(versions) = api.supported_versions {
+                let versions: Vec<String> = versions
+                    .into_iter()
+                    .map(|v| v.trim().to_string())
+                    .filter(|v| !v.is_empty())
+                    .collect();
+                if !versions.is_empty() {
+                    behavior.api.supported_versions = versions;
+                }
+            }
+            if let Some(v) = normalize_optional_string(api.default_version) {
+                behavior.api.default_version = v;
+            }
+        }
+
+        // A default outside the supported set is a repo config bug, not an
+        // operator mistake. Warn and fall back to the first supported version
+        // rather than refusing to serve.
+        if !behavior
+            .api
+            .supported_versions
+            .contains(&behavior.api.default_version)
+        {
+            let fallback = behavior.api.supported_versions[0].clone();
+            tracing::warn!(
+                default_version = %behavior.api.default_version,
+                supported_versions = ?behavior.api.supported_versions,
+                %fallback,
+                "acme_api.api.default_version is not in supported_versions; falling back"
+            );
+            behavior.api.default_version = fallback;
+        }
+
         if let Some(cors) = parsed.cors {
             if let Some(v) = cors.allowed_origins {
                 behavior.cors.allowed_origins = v
@@ -421,6 +629,15 @@ impl AppBehaviorConfig {
             }
             if let Some(v) = cors.cookie_secure {
                 behavior.cors.cookie_secure = v;
+            }
+            if let Some(v) = cors.cookie_prefix {
+                behavior.cors.cookie_prefix = v.trim().to_string();
+            }
+            if let Some(v) = cors.cookie_same_site_strict {
+                behavior.cors.cookie_same_site_strict = v;
+            }
+            if let Some(v) = cors.refresh_token_max_age_secs {
+                behavior.cors.refresh_token_max_age_secs = v;
             }
         }
 
@@ -562,7 +779,7 @@ impl AppBehaviorConfig {
             }
         }
 
-        behavior
+        Ok(behavior)
     }
 }
 
@@ -589,7 +806,13 @@ pub struct AppConfig {
     pub behavior: AppBehaviorConfig,
 }
 
-const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 16] = [
+/// Env keys whose behavior now lives in typed config.
+///
+/// Contract 031: behavior knobs belong in typed config with committed
+/// defaults, and a migrated key gets a warning window rather than a silent
+/// fallback. These are read only to warn — never to configure anything — and
+/// are deliberately absent from `config/env-manifest.txt`.
+const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 22] = [
     ("EMAIL_DEFAULT_FROM", "behavior.email.default_from"),
     ("EMAIL_APP_NAME", "behavior.email.app_name"),
     ("EMAIL_APP_URL", "behavior.email.app_url"),
@@ -615,6 +838,21 @@ const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 16] = [
     ("ARGON2_MEMORY_KB", "behavior.auth.argon2_memory_kb"),
     ("ARGON2_ITERATIONS", "behavior.auth.argon2_iterations"),
     ("ARGON2_PARALLELISM", "behavior.auth.argon2_parallelism"),
+    (
+        "SESSION_MAX_ABSOLUTE_DAYS",
+        "behavior.auth.absolute_session_timeout_days",
+    ),
+    ("SUPPORTED_API_VERSIONS", "behavior.api.supported_versions"),
+    ("DEFAULT_API_VERSION", "behavior.api.default_version"),
+    ("COOKIE_PREFIX", "behavior.cors.cookie_prefix"),
+    (
+        "COOKIE_SAMESITE_STRICT",
+        "behavior.cors.cookie_same_site_strict",
+    ),
+    (
+        "REFRESH_TOKEN_MAX_AGE",
+        "behavior.cors.refresh_token_max_age_secs",
+    ),
 ];
 
 fn collect_set_legacy_behavior_env_keys() -> Vec<(&'static str, &'static str)> {
@@ -642,10 +880,13 @@ fn warn_legacy_behavior_env_keys() {
 
 impl AppConfig {
     /// Load configuration from the environment, applying sensible defaults.
-    pub fn from_env() -> Self {
+    ///
+    /// Fails rather than degrading when the layered config stack is malformed
+    /// in a deployed environment. See [`AppBehaviorConfig::load`].
+    pub fn from_env() -> Result<Self, ConfigError> {
         warn_legacy_behavior_env_keys();
 
-        let behavior = AppBehaviorConfig::load();
+        let behavior = AppBehaviorConfig::load()?;
 
         // Environment. Fail closed: an unset ENVIRONMENT must not boot with
         // development behavior (dev seeds, insecure cookies, permissive CORS).
@@ -762,7 +1003,7 @@ impl AppConfig {
             ses: ses_config,
         };
 
-        AppConfig {
+        Ok(AppConfig {
             env,
             http: HttpConfig {
                 bind_addr,
@@ -782,7 +1023,7 @@ impl AppConfig {
             },
             email,
             behavior,
-        }
+        })
     }
 }
 

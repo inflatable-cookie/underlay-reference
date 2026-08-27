@@ -47,9 +47,53 @@ run_in = "host"
 run = "../underlay/scripts/check-template-conformance.sh apps/acme-admin"
 run_in = "host"
 
+# Released-package conformance. These run the binaries published by the
+# @inflatable-cookie/underlay dependency, not sibling Underlay source, so the
+# proof holds without an ../underlay checkout. Requires one prior
+# `effigy workspace:js:prepare`.
 [tasks."qa:workspace-shape"]
-run = "bun ../underlay/ts/bin/underlay-workspace-shape.ts ."
+run = "./node_modules/.bin/underlay-workspace-shape ."
 run_in = "host"
+
+[tasks."qa:env-authority"]
+run = "./node_modules/.bin/underlay-env-authority ."
+run_in = "host"
+
+[tasks."qa:conformance"]
+run = [
+  { task = "qa:workspace-shape" },
+  { task = "qa:env-authority" },
+]
+
+# Repo-owned secret authority. The Effigy bundle declares the shared consumer
+# key set; these entries make this app's settled startup requirements
+# executable rather than only documented. They mirror
+# config/required-secrets.txt, which stays the human-readable authority.
+#
+# Values live in the local Effigy vault, never in a committed file. The
+# bundle's generate hook fills the generatable dev keys on first
+# secrets-required task startup, so `effigy dev` still works from a clean
+# clone.
+
+[secrets.keys.auth_jwt_private_key]
+required = true
+targets = ["tasks", "containers", "rhai"]
+description = "Ed25519 JWT signing key. Unconditional startup authority: the API refuses to start without it in every environment."
+
+[secrets.keys.auth_jwt_public_key]
+required = true
+targets = ["tasks", "containers", "rhai"]
+description = "Ed25519 JWT verification key. Not confidential, but unconditional startup authority: the API refuses to start without it in every environment."
+
+[secrets.keys.encryption_key]
+required = false
+targets = ["tasks", "containers", "rhai"]
+description = "Encrypts stored TOTP secrets. Required in deployed environments; may be absent with an explicit warning in local, effigy, and test, which is why this is not marked required."
+
+[secrets.keys.database_url]
+required = false
+targets = ["tasks", "containers"]
+description = "Application database URL. Local exception: local and effigy resolve it from the committed non-secret config/effigy.toml overlay, so no vault value is needed for the dev loop. Deployed environments must inject it as a real secret."
 
 [state]
 default = "local"

@@ -15,8 +15,15 @@ use underlay_media::renditions::RenditionConfig;
 
 #[tokio::main]
 async fn main() {
-    // Load config first (includes dotenvy loading)
-    let app_config = AppConfig::from_env();
+    // Load config first. A malformed layered config stack is fatal outside
+    // local/effigy/test; the worker must not run on defaults nobody chose.
+    let app_config = match AppConfig::from_env() {
+        Ok(config) => config,
+        Err(err) => {
+            eprintln!("failed to load configuration; job worker exiting: {err}");
+            std::process::exit(1);
+        }
+    };
     init_tracing(&app_config);
     log_effective_config(&app_config);
 
