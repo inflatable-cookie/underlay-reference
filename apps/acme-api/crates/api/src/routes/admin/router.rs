@@ -121,7 +121,7 @@ pub fn build_admin_router() -> Router<AppState> {
             put(tasks::reorder_tasks),
         )
         .route(
-            "/v1/admin/projects/{project_id}/tasks/batch-delete",
+            "/v1/admin/projects/{project_id}/tasks:batch-delete",
             post(tasks::batch_delete_tasks),
         )
         .route(
@@ -242,4 +242,22 @@ pub fn build_admin_router() -> Router<AppState> {
             "/v1/admin/error-logs/{id}",
             get(error_logs::get_error_log_handler),
         )
+}
+
+#[cfg(test)]
+mod task_batch_delete_grammar_tests {
+    #[test]
+    fn nested_task_batch_delete_uses_colon_not_slash() {
+        let router_src = include_str!("router.rs");
+        let colon = format!("/v1/admin/projects/{{project_id}}/tasks{}batch-delete", ":");
+        let slash = format!("/v1/admin/projects/{{project_id}}/tasks{}batch-delete", "/");
+        assert!(
+            router_src.contains(&colon),
+            "canonical colon batch-delete route must be mounted"
+        );
+        assert!(
+            !router_src.contains(&slash),
+            "retired slash batch-delete route must be absent"
+        );
+    }
 }

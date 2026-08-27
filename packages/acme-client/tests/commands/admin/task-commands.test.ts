@@ -18,7 +18,7 @@ describe("admin task command endpoints", () => {
     postMock.mockReset();
   });
 
-  it("uses /tasks/batch-delete path for batch deletion", async () => {
+  it("uses /tasks:batch-delete path for batch deletion", async () => {
     postMock.mockResolvedValue({ ok: true, deleted: 2 });
 
     const result = await batchDeleteTasks(
@@ -29,9 +29,10 @@ describe("admin task command endpoints", () => {
     );
 
     expect(postMock).toHaveBeenCalledWith(
-      "/v1/admin/projects/proj%20123/tasks/batch-delete",
+      "/v1/admin/projects/proj%20123/tasks:batch-delete",
       { ids: ["task_1", "task_2"] }
     );
+    expect(postMock.mock.calls[0]?.[0]).not.toContain("/tasks/batch-delete");
     expect(result).toEqual({ ok: true, deleted: 2 });
   });
 
