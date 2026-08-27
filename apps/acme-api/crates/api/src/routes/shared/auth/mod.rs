@@ -129,6 +129,17 @@ pub(crate) fn extract_csrf_token(
     None
 }
 
+/// Token to put in the CSRF cookie and JSON body for this request.
+///
+/// Reuses a non-empty CSRF cookie so a second tab cannot rotate the
+/// browser-wide cookie out from under the first tab's cached header.
+pub(crate) fn csrf_token_to_issue(
+    headers: &HeaderMap,
+    config: &underlay_http::AuthCookieConfig,
+) -> String {
+    extract_csrf_token(headers, config).unwrap_or_else(|| Uuid::new_v7().to_string())
+}
+
 pub(crate) fn set_csrf_cookie(
     headers: &mut HeaderMap,
     csrf_token: &str,
@@ -162,11 +173,14 @@ pub(crate) fn set_csrf_cookie(
     Ok(())
 }
 
-pub async fn csrf_token(State(state): State<AppState>) -> impl IntoResponse {
-    let csrf_token = Uuid::new_v7().to_string();
+pub async fn csrf_token(
+    headers: HeaderMap,
+    State(cookie_config): State<underlay_http::AuthCookieConfig>,
+) -> impl IntoResponse {
+    let csrf_token = csrf_token_to_issue(&headers, &cookie_config);
 
     let mut response_headers = HeaderMap::new();
-    if let Err(e) = set_csrf_cookie(&mut response_headers, &csrf_token, &state.cookie_config) {
+    if let Err(e) = set_csrf_cookie(&mut response_headers, &csrf_token, &cookie_config) {
         tracing::warn!("Failed to set CSRF cookie: {}", e);
     }
 
@@ -269,3 +283,7 @@ pub(super) fn include_refresh_token_in_body(headers: &HeaderMap) -> bool {
 #[cfg(test)]
 #[path = "../../../tests/routes/client_ip_tests.rs"]
 mod client_ip_tests;
+
+#[cfg(test)]
+#[path = "../../../tests/routes/csrf_tests.rs"]
+mod csrf_tests;

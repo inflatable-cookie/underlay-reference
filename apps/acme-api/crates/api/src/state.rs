@@ -4,7 +4,7 @@ use acme_auth::{user_principal_from_underlay, EmailTotpService, UserPrincipal, U
 use acme_db::DbPool;
 use acme_infra::EmailConfig;
 use axum::{
-    extract::FromRequestParts,
+    extract::{FromRef, FromRequestParts},
     http::{request::Parts, StatusCode},
     response::{IntoResponse, Response},
     Json,
@@ -42,6 +42,12 @@ pub struct AppState {
 impl underlay_auth::HasAuthProvider for AppState {
     fn auth_provider(&self) -> &dyn underlay_auth::AuthProvider {
         self.auth_provider.as_ref()
+    }
+}
+
+impl FromRef<AppState> for AuthCookieConfig {
+    fn from_ref(state: &AppState) -> Self {
+        state.cookie_config.clone()
     }
 }
 
