@@ -13,12 +13,6 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 - Possible fix: serialize `bun x` on the test board, or run the workspace-local vitest binary instead of `bun x`.
 - Surface: `effigy test` / acme-admin + acme-client
 
-### [ ] `bun x tsc` in acme-client health resolves TypeScript 7 and rejects `baseUrl` — 2026-08-26
-- Friction: `packages/acme-client/effigy.toml` runs `bun x tsc`, which currently fetches TypeScript 7.0.2 instead of the package-pinned `typescript@^5.9.3`. TS 7 removes `baseUrl` and fails `acme-client/health`.
-- Impact: root `effigy health` fails on an unrelated client typecheck while this lane only changed API migration/test surfaces.
-- Possible fix: run the package-local `tsc` (`bun run check`) or pin `bun x typescript@5.9.3 tsc`.
-- Surface: `packages/acme-client/effigy.toml` health/check / TypeScript 7
-
 ### [ ] T3 worker launch used the Underlay worktree for an Underlay Reference handoff — 2026-08-26
 - Friction: the `g09.038` worker handoff lives in Underlay Reference, but T3 started this thread in a clean Underlay worktree. `.agents.local.env` / `AGENTS_WORKTREE_CONTAINER_DIR` is also absent, so the worker had to create a second registered worktree under the existing T3 Underlay Reference container.
 - Impact: the first preflight is spent proving the current root is the wrong repo instead of starting the lane.
@@ -36,6 +30,12 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 - Surface: Effigy Doctor task-reference resolution / `docs/effigy.toml`
 
 ## Closed
+
+### [x] `bun x tsc` in acme-client health resolves TypeScript 7 and rejects `baseUrl` — 2026-08-26
+- Friction: `packages/acme-client/effigy.toml` ran `bun x tsc`, which fetched TypeScript 7.0.2 instead of the package-pinned `typescript@^5.9.3`. TS 7 removes `baseUrl` and failed `acme-client/health`.
+- Impact: root `effigy health` failed on an unrelated client typecheck while other lanes only changed API migration/test surfaces.
+- Fix: route `check` through `bun run check` and `build` through `bun run tsc` so Effigy uses the workspace-local TypeScript 5.9.x compiler.
+- Surface: `packages/acme-client/effigy.toml` health/check / TypeScript 7
 
 ### [x] Underlay Effigy bundle reuses `bundle.dirs` as a task-selector prefix — 2026-08-26
 - Friction: the bundle rendered root lifecycle selectors from physical package

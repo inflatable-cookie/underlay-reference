@@ -11,8 +11,8 @@ js = "bun"
 run_in = "host"
 
 [tasks]
-build = "cd {repo} && bun x tsc -p tsconfig.json"
-check = "cd {repo} && bun x tsc -p tsconfig.json --noEmit"
+build = "cd {repo} && bun run tsc -p tsconfig.json"
+check = "cd {repo} && bun run check"
 
 qa = [{ task = "validate" }]
 health = [{ task = "check" }]
