@@ -31,7 +31,7 @@ package edges use `workspace:*`. `apps/acme-api` is Rust-only and keeps its own
 app-local Cargo workspace, so it is not a JavaScript workspace member.
 
 Committed application dependencies resolve Underlay from the released Git tag
-(`v0.9.4` at time of writing), not from sibling source paths.
+(`v0.9.5` at time of writing), not from sibling source paths.
 
 ## Documentation Authority
 
@@ -60,6 +60,35 @@ effigy validate
 `workspace:js:prepare` is the one frozen root install
 (`bun install --frozen-lockfile`) for the whole JavaScript workspace. Do not run
 per-package installs.
+
+### Tests
+
+`effigy test --plan` prints the resolved plan before anything runs — the
+targets, the suite chosen per target, and the evidence Effigy used to choose
+it. Read it first when test shape matters:
+
+```bash
+effigy test --plan
+effigy test
+effigy test acme-api
+```
+
+The workspace resolves to four targets. `acme-api` runs the configured `rust`
+suite (`cargo test --workspace`); `acme-admin`, `acme-front`, and `acme-client`
+run `vitest`. Sibling `underlay` and `poodle` are excluded from the root plan.
+Database-backed Rust tests skip themselves unless `DATABASE_URL` or
+`TEST_DATABASE_URL` is set, so a plain `effigy test` stays useful without a
+running stack.
+
+### Conformance
+
+```bash
+effigy qa:conformance
+```
+
+Runs the two released Underlay checkers — workspace shape and env/secret
+authority — from the installed `@inflatable-cookie/underlay` package. They read
+this repository only; no sibling Underlay checkout is required.
 
 First-time bring-up from another directory:
 
@@ -112,11 +141,11 @@ Bootstrap notes:
 The reference template consumes Underlay from the released Git repository:
 
 ```json
-"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.4"
+"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5"
 ```
 
 ```toml
-underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.4" }
+underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.5" }
 ```
 
 Poodle core/Svelte packages resolve from the public npm registry at `0.2.2`.
@@ -137,7 +166,30 @@ Full-featured API server with:
 - **Background Jobs**: Underlay jobs system integration
 - **Email**: Template-based emails routed through SMTP and Mailpit in local dev
 - **Media Library**: File uploads with versioning, deduplication, and blob storage
-- **API Structure**: Health checks, auth routes, account management
+- **API Structure**: Explicit runtime, shared, front, and admin route families
+
+Route families and their access posture:
+
+| Family | Source | Paths | Posture |
+|--------|--------|-------|---------|
+| runtime | `routes/runtime.rs` | `/v1/health`, `/favicon.ico`, `/api/openapi.json`, `/api/docs` | unauthenticated, no CSRF, never requires `X-Api-Version` |
+| shared | `routes/shared/router.rs` | `/v1/auth/*`, `/v1/account/*` | mixed bootstrap and authenticated; CSRF on cookie-backed mutations |
+| front | `routes/front/router.rs` | `/v1/projects/*` | authenticated product-user routes |
+| admin | `routes/admin/router.rs` | `/v1/admin/*` | `AdminUser` gate |
+
+#### OpenAPI exposure
+
+The OpenAPI document is served at `/api/openapi.json` with Swagger UI at
+`/api/docs`. Both belong to the runtime family and are **exposed only in
+development environments** — `main.rs` passes
+`app_config.env.is_development()` into the router builder, so `staging`,
+`production`, and any unrecognised environment name serve neither. Changing
+that is a deployment policy decision, not a route change.
+
+Business endpoints are path-versioned under `/v1/*`. This app has declared the
+optional `X-Api-Version` header: the TypeScript client sends it on every
+request and the server validates it across all three business families. Runtime
+endpoints are exempt by contract.
 
 Crate organization:
 - `core` - Domain primitives, error types, UUID helpers
@@ -319,28 +371,51 @@ Cargo locks narrowly.
 3. `config/local.toml` (personal overrides, gitignored)
 4. allowlisted environment variables (secrets and runtime wiring)
 
-Use TOML for app behavior defaults, and env vars for secrets/runtime wiring
-and per-environment overrides. `.env` files are not part of the runtime
-contract.
+Use TOML for app behavior defaults, and env vars for secrets and runtime
+wiring. `.env` files are not part of the runtime contract: there is no
+`.env`, `.env.local`, or `.env.example` in the target posture, and nothing in
+this workspace reads one.
+
+Two tracked files are the env authority:
+
+- `config/env-manifest.txt` — the complete environment surface any runtime
+  process may read, with each key's condition recorded inline
+- `config/required-secrets.txt` — the startup-critical subset
+
+Both are static key inventories. They never carry values; secret presence stays
+an operator and runtime concern. `effigy qa:conformance` proves they exist,
+parse, and agree.
 
 For the current `underlay-reference` local shape:
 
-- keep app-owned runtime wiring in `apps/acme-api/.env`
-- keep typed app behavior overrides in `apps/acme-api/config/local.toml`
+- keep non-secret dev values in the committed root `config/` stack
+- keep personal, machine-local overrides in `config/local.toml`
+- keep local secrets in the Effigy vault, injected at task/container runtime
 - keep `apps/acme-api/effigy.toml` as plain task orchestration (`cargo run ...`), not an env dump
 
-### Required for API
+### Environment classes
+
+`ENVIRONMENT` selects both the behavior class and the config overlay. An unset
+or unrecognised name fails closed to deployed production behavior.
+
+| Class | Names | Posture |
+|-------|-------|---------|
+| Non-deployed | `local`, `effigy`, `test` | dev seeds, CORS origin mirroring, and bounded startup warnings are allowed |
+| Deployed | `dev`, `staging`, `production` | fail closed: malformed config, `COOKIE_SECURE=false`, and CSRF disablement are startup errors |
+
+### Startup-critical
 
 ```bash
 DATABASE_URL=postgres://postgres:postgres@db.acme.test:5432/acme
 AUTH_JWT_PRIVATE_KEY=...  # Generated by generate-jwt-env
 AUTH_JWT_PUBLIC_KEY=...   # Generated by generate-jwt-env
+ENCRYPTION_KEY=...        # Required in deployed environments; warns in local/effigy/test
 ```
 
-### Optional
+### Commonly set
 
 ```bash
-ENVIRONMENT=local|dev|staging|prod
+ENVIRONMENT=local|effigy|test|dev|staging|production
 HOST=0.0.0.0
 PORT=41001
 PUBLIC_HOST=api.acme.test
@@ -352,12 +427,15 @@ EMAIL_ADAPTER=noop|smtp|ses
 SMTP_HOST=smtp.acme.test
 SMTP_PORT=1025
 SMTP_TLS=none
-BLOB_ADAPTER=s3
-BLOB_S3_BUCKET=acme-media
-BLOB_S3_ENDPOINT_URL=http://s3.acme.test:9000
-BLOB_S3_PUBLIC_URL_BASE=https://s3.acme.test/acme-media
-BLOB_S3_PRESIGN_URL_BASE=https://s3.acme.test
+ACME_S3_BUCKET=acme-media
+ACME_S3_ENDPOINT=http://s3.acme.test:9000
+ACME_S3_PUBLIC_URL_BASE=https://s3.acme.test/acme-media
 ```
+
+Everything else, including the conditional Redis, SES/AWS, OAuth, and
+trusted-proxy keys, is listed with its condition in
+`config/env-manifest.txt`. Do not add a runtime env read without adding it
+there.
 
 ## Adding Your Domain
 

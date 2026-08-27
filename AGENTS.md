@@ -64,7 +64,17 @@ Workspace notes:
 - `effigy health`
 - `effigy validate`
 - `effigy qa:docs`
-- `effigy qa:workspace-shape`
+- `effigy qa:conformance` (released workspace-shape + env-authority checkers)
+
+## Env And Secret Authority
+
+- `config/env-manifest.txt` is the complete env surface; `config/required-secrets.txt`
+  is the startup-critical subset. Adding a runtime env read without adding it to
+  the manifest is drift.
+- `.env`, `.env.local`, and `.env.example` are not part of the runtime contract.
+  Non-secret values go in the root `config/` stack; secrets go through Effigy
+  runtime injection or the local vault.
+- Never commit a secret value. The authority files carry keys only.
 
 ## Source of Truth
 

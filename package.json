@@ -8,5 +8,8 @@
     "apps/acme-front",
     "packages/acme-client",
     "packages/acme-ui"
-  ]
+  ],
+  "devDependencies": {
+    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5"
+  }
 }

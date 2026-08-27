@@ -232,22 +232,36 @@ The API reads configuration with the following precedence:
 3. `config/local.toml` (optional personal overrides, gitignored)
 4. environment variables from runtime injection (override layer)
 
-See `apps/acme-api/.env.example` for env options and override keys.
+`config/env-manifest.txt` is the complete env surface, with each key's
+condition recorded inline. `config/required-secrets.txt` is the
+startup-critical subset. There is no `.env` or `.env.example`: `.env` files are
+not part of the runtime contract, and nothing in this workspace reads one.
 
-Required:
+Startup-critical:
 - `DATABASE_URL` - PostgreSQL connection string
 - `AUTH_JWT_PRIVATE_KEY` - JWT signing key
 - `AUTH_JWT_PUBLIC_KEY` - JWT verification key
+- `ENCRYPTION_KEY` - required in deployed environments; may be absent with an
+  explicit warning in `local`, `effigy`, and `test`
 
-### Feature Flags
+### Environment Classes
 
-Features can be enabled/disabled via environment:
+`ENVIRONMENT` names both the behavior class and the config overlay. `local`,
+`effigy`, and `test` are the bounded non-deployed set. `dev`, `staging`, and
+`production` are deployed. An unset or unrecognised name fails closed to
+production behavior.
+
+Outside the non-deployed set the API fails to start on malformed layered
+config, on `COOKIE_SECURE=false`, and on an attempt to disable CSRF.
+
+### Adapter Selection
 
 | Variable | Description |
 |----------|-------------|
-| `BLOB_ADAPTER` | `s3` or `noop` for blob storage |
+| `ACME_S3_BUCKET` | selects the real S3 blob adapter outside local/effigy; `ACME_ALLOW_NOOP_BLOB=1` is the explicit storage-less opt-in |
 | `EMAIL_ADAPTER` | `noop`, `smtp`, or `ses` |
-| `ENVIRONMENT` | `local`, `dev`, `staging`, `prod` |
+| `RATE_LIMIT_BACKEND` | `in_memory` or `redis` |
+| `ENVIRONMENT` | `local`, `effigy`, `test`, `dev`, `staging`, `production` |
 
 ## Deployment
 

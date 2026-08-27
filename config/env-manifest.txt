@@ -1,0 +1,127 @@
+# Underlay Reference env manifest (contracts 024 and 031).
+#
+# The complete environment surface every runtime process in this workspace may
+# read. One KEY per line; values never appear here. Stable app behavior belongs
+# in the root config stack (config/default.toml -> config/<environment>.toml ->
+# config/local.toml), not in this file. `.env` files are not part of the
+# runtime contract.
+#
+# Startup-critical keys are additionally listed in config/required-secrets.txt.
+# Everything else is optional: the app boots without it, using typed config or
+# a documented default.
+#
+# Static conformance: `effigy qa:env-authority`.
+# Live value presence stays an operator concern and is never a CI gate.
+
+# --- Environment selection -------------------------------------------------
+# ENVIRONMENT names both the behavior class and the config overlay
+# (config/<ENVIRONMENT>.toml). local, effigy, and test are the bounded
+# non-deployed set; dev, staging, and production are deployed. An unset or
+# unrecognised name fails closed to production behavior.
+ENVIRONMENT
+# Deprecated alias for ENVIRONMENT; warns once at startup.
+ACME_ENV
+
+# --- Database --------------------------------------------------------------
+# Startup-critical. In local/effigy the non-secret dev URL may come from the
+# committed config overlay instead; deployed environments must inject it.
+DATABASE_URL
+# Deprecated alias for DATABASE_URL.
+ACME_DATABASE_URL
+# Used by the Rust test harness only (crates/test-utils); never read by the
+# API or jobs runtime.
+TEST_DATABASE_URL
+
+# --- Auth secrets ----------------------------------------------------------
+# Startup-critical Ed25519 JWT keypair (base64). Generate with
+# `cargo run -p acme-auth --bin generate-jwt-env`. The public key is not
+# confidential, but it is startup-critical authority.
+AUTH_JWT_PRIVATE_KEY
+AUTH_JWT_PUBLIC_KEY
+# Startup-critical outside local/effigy/test: encrypts stored TOTP secrets.
+# Absent inside that bounded set, startup continues with an explicit warning
+# and plaintext TOTP secrets.
+ENCRYPTION_KEY
+# Conditional: required only when Google login is enabled. All three must be
+# set together; the provider stays disabled when any is missing.
+AUTH_GOOGLE_CLIENT_ID
+AUTH_GOOGLE_CLIENT_SECRET
+AUTH_GOOGLE_REDIRECT_URI
+# Conditional: encrypts stored OAuth refresh tokens. Required once a federated
+# provider is enabled.
+AUTH_OAUTH_SECRET_KEY
+
+# --- HTTP runtime ----------------------------------------------------------
+# Deployment-specific overrides for the typed [acme_api.runtime] defaults.
+HOST
+PORT
+PUBLIC_HOST
+PUBLIC_PORT
+PUBLIC_SCHEME
+
+# --- Browser access posture ------------------------------------------------
+# Overrides for the typed [acme_api.cors] defaults. COOKIE_SECURE=false is a
+# fatal startup error outside local/effigy/test.
+CORS_ORIGINS
+COOKIE_DOMAIN
+COOKIE_SECURE
+COOKIE_PREFIX
+COOKIE_SAMESITE_STRICT
+REFRESH_TOKEN_MAX_AGE
+# Cookie-backed browser mutation protection. May be disabled only in
+# local/effigy/test; a deployed or unknown environment rejects an attempted
+# disablement at startup.
+CSRF_PROTECTION
+
+# --- Trusted proxy / client IP ---------------------------------------------
+# Declares the proxy topology that resolves the client IP used for auth
+# fingerprints, lockout, rate limiting, and audit. Unset or unrecognised means
+# no forwarding header is trusted and the socket peer is used.
+TRUST_PROXY_HEADERS
+TRUSTED_PROXIES
+
+# --- API versioning --------------------------------------------------------
+# Business route families accept and echo X-Api-Version. Runtime endpoints are
+# exempt. Defaults to a single supported version when unset.
+SUPPORTED_API_VERSIONS
+DEFAULT_API_VERSION
+
+# --- Sessions and rate limiting --------------------------------------------
+SESSION_MAX_ABSOLUTE_DAYS
+# in_memory (default) or redis.
+RATE_LIMIT_BACKEND
+# Conditional: required when RATE_LIMIT_BACKEND=redis.
+REDIS_URL
+
+# --- Email -----------------------------------------------------------------
+# noop (default), smtp, or ses. The keys below apply only to the selected
+# adapter.
+EMAIL_ADAPTER
+SMTP_HOST
+SMTP_PORT
+SMTP_USERNAME
+SMTP_PASSWORD
+SMTP_TLS
+SES_REGION
+SES_CONFIGURATION_SET
+
+# --- Blob storage ----------------------------------------------------------
+# Local/effigy uses the bundled MinIO shape automatically. Outside it, either
+# ACME_S3_BUCKET or ACME_ALLOW_NOOP_BLOB=1 is required or startup fails.
+ACME_S3_BUCKET
+ACME_S3_REGION
+ACME_S3_ENDPOINT
+ACME_S3_PUBLIC_URL_BASE
+ACME_S3_PATH_STYLE
+ACME_ALLOW_NOOP_BLOB
+# Conditional: S3 credentials resolve through the standard AWS chain, so these
+# are read by the AWS SDK rather than by app code. Not needed when an
+# instance/task role or shared config supplies them.
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
+
+# --- Observability ---------------------------------------------------------
+# RUST_LOG wins over LOG_LEVEL when both are set.
+LOG_LEVEL
+RUST_LOG
