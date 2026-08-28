@@ -13,17 +13,34 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 - Possible fix: launch consumer-repo worker threads from the owning repo, and seed `.agents.local.env` with the T3 worktree container.
 - Surface: T3 worker dispatch / Underlay Reference `.agents.local.env`
 
-### [ ] Doctor rejects built-in `docs` steps as unresolved task references — 2026-08-25
-- Friction: `effigy doctor` reports every `docs check ...` step in
+## Closed
+
+### [x] Doctor rejects built-in `docs` steps as unresolved task references — 2026-08-25
+- Friction: `effigy doctor` reported every `docs check ...` step in
   `docs/effigy.toml` as an unresolved `docs` task even though `docs` is a
   callable Effigy built-in.
-- Impact: workspace health orientation cannot distinguish valid docs QA routing
-  from a genuinely missing selector during the monorepo docs move.
-- Possible fix: teach Doctor's task-reference resolver to accept built-ins in
-  sequence steps, then remove any migration-only workaround after verification.
+- Impact: workspace health orientation could not distinguish valid docs QA
+  routing from a genuinely missing selector during the monorepo docs move.
+- Fix: proved clean against Effigy `v0.12.1+local.834a4bd`. Full
+  `effigy doctor` no longer emits task-reference findings for the
+  `docs/effigy.toml` `docs check ...` steps; no migration-only workaround
+  was present to remove. Remaining doctor errors are unrelated (vault/health,
+  unsupported keys, scan markers).
 - Surface: Effigy Doctor task-reference resolution / `docs/effigy.toml`
 
-## Closed
+### [x] Reference runtime docs misstate database storage shape — 2026-08-26
+- Friction: earlier wording said PostgreSQL persists under repo-local
+  `.effigy/runtime/data/postgres`, while the live store is the named
+  `underlay-reference-dev-postgres-data` volume.
+- Impact: agents could misidentify the destructive boundary when preparing
+  local state or reset proof.
+- Fix: active runtime wording in README already names
+  `underlay-reference-dev-postgres-data` and states older
+  `.effigy/runtime/data/` bind-mounts are not migrated. Hunt of active
+  usage/runtime guides found no remaining live claim of the bind-mount path;
+  historical handoff/log wording left untouched. Original filing lived in
+  Underlay; closed here on consumer proof.
+- Surface: Underlay Reference README runtime notes / named volumes
 
 ### [x] Parallel `bun x vitest` in `effigy test` races on bun bin linking — 2026-08-27
 - Friction: root `effigy validate`/`qa` run acme-admin and acme-client vitest together. Both invoke `bun x vitest` and collide with `Failed to link rolldown/vitest/why-is-node-running: EEXIST`.
