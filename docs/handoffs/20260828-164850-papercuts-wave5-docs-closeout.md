@@ -5,7 +5,7 @@ handoff_mode: worker-pr-loop
 worker_mode: implementation
 dispatch_authority: orchestrator
 handoff: single-file-path-only
-status: ready-to-launch
+status: ready-for-review
 owner: Tom / papercuts orchestrator
 created: 2026-08-28
 updated: 2026-08-28
@@ -43,30 +43,28 @@ live runtime wording lagged the named volume.
   to that SHA before this handoff was created.
 - **Planning checkout:** clean before this handoff file was created.
 - **Worker mode:** implementation worker dispatched by the orchestrator.
-- **Worker branch:** `worker/papercuts-wave5-docs-closeout`
-- **Worker worktree:** launcher worktree first. `.agents.local.env` was
-  absent; ask before creating a manual fallback. Never use `/tmp`.
+- **Worker branch:** `t3code/papercuts-wave5-docs-closeout`
+- **Worker worktree:** `/Users/tom/.t3/worktrees/underlay-reference/t3code-3b5034b1`
+  (launcher worktree). `.agents.local.env` absent; no manual fallback created.
 - **Ready work items, in order:**
   1. Doctor rejects built-in `docs` steps as unresolved task references
-     — close if current Effigy no longer reports those
-     `docs/effigy.toml` steps as missing tasks. Remove any
-     migration-only workaround only after that proof. If it still fails,
-     keep the copy open and pointed at Effigy; do not re-implement
-     Doctor
-  2. Active runtime docs vs named postgres volume — confirm README (and
-     any other live usage/runtime guide) names
-     `underlay-reference-dev-postgres-data`. Align remaining *active*
-     wording if you find it. Log and close here even though the original
-     filing lives in Underlay
+     — **closed.** Effigy `v0.12.1+local.834a4bd` doctor run emits no
+     task-reference findings for `docs/effigy.toml` `docs check ...`
+     steps. No migration-only workaround was present.
+  2. Active runtime docs vs named postgres volume — **closed.** Canonical
+     live wording is README: Postgres persists in
+     `underlay-reference-dev-postgres-data`; older `.effigy/runtime/data/`
+     bind-mounts are not migrated. No other active usage/runtime guide
+     still claims the bind-mount path.
 - **Out of scope:** T3 launching an Underlay worktree for this handoff;
   rewriting historical `docs/handoffs/` or `docs/logs/` entries;
   editing Underlay or Effigy.
 - **Canonical refs:** `PAPERCUTS.md`; `docs/effigy.toml`; README runtime
   notes around the named volumes; sibling Effigy closed Doctor `docs`
   built-in (2026-08-27).
-- **Required validation:** `effigy doctor` on this checkout. Cite the
-  Effigy version/SHA. Quote the live runtime wording you treated as
-  canonical.
+- **Required validation:** `effigy doctor` on this checkout against
+  Effigy `v0.12.1+local.834a4bd`. Remaining doctor errors are unrelated
+  (vault/health TTY, unsupported keys, scan markers/god-files).
 - **PR URL:** pending
 - **Merge authorisation:** absent; do not merge
 
