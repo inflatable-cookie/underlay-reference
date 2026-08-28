@@ -65,7 +65,7 @@ live runtime wording lagged the named volume.
 - **Required validation:** `effigy doctor` on this checkout against
   Effigy `v0.12.1+local.834a4bd`. Remaining doctor errors are unrelated
   (vault/health TTY, unsupported keys, scan markers/god-files).
-- **PR URL:** pending
+- **PR URL:** https://github.com/inflatable-cookie/underlay-reference/pull/10
 - **Merge authorisation:** absent; do not merge
 
 ## Boundaries
