@@ -6,6 +6,7 @@
 **/.env
 **/.env.local
 **/.env.*.local
+.agents.local.env
 
 # Local config overrides (keep the .example tracked)
 config/local.toml

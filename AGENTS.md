@@ -28,6 +28,11 @@ Detailed implementation notes are documented in:
 - Use `bun` for TypeScript/Svelte tasks.
 - Keep wire JSON naming and API conventions aligned with Underlay guides.
 - Keep changes scoped; avoid unrelated refactors.
+- Worker mode is active only when an orchestrator-dispatched handoff under
+  `docs/handoffs/` declares worker mode; read that handoff instead of inferring
+  worker mode from a path, branch, or harness. The operator-facing dispatch
+  path is absolute and names this owning repo. Do not treat an Underlay-relative
+  `docs/handoffs/…` lookup as the dispatch artifact.
 
 ## Effigy-First Execution
 

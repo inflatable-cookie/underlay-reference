@@ -7,13 +7,14 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 <!-- Keep entries short. Append newest entries at the top. Do not include secrets. -->
 
-### [ ] T3 worker launch used the Underlay worktree for an Underlay Reference handoff — 2026-08-26
+## Closed
+
+### [x] T3 worker launch used the Underlay worktree for an Underlay Reference handoff — 2026-08-26
 - Friction: the `g09.038` worker handoff lives in Underlay Reference, but T3 started this thread in a clean Underlay worktree. `.agents.local.env` / `AGENTS_WORKTREE_CONTAINER_DIR` is also absent, so the worker had to create a second registered worktree under the existing T3 Underlay Reference container.
 - Impact: the first preflight is spent proving the current root is the wrong repo instead of starting the lane.
-- Possible fix: launch consumer-repo worker threads from the owning repo, and seed `.agents.local.env` with the T3 worktree container.
+- Fix: Northstar PR 8 (`1840c9f6d4f7127240622a09e462b06adc094971`) requires the owning repo's absolute handoff path for operator-facing dispatch. `AGENTS.md` states that rule; do not start Underlay Reference lanes from an Underlay-relative `docs/handoffs/…` lookup. `.agents.local.env` is gitignored; seed `AGENTS_WORKTREE_CONTAINER_DIR` only after asking, never commit the env file.
 - Surface: T3 worker dispatch / Underlay Reference `.agents.local.env`
-
-## Closed
+- Closed: 2026-08-30 (papercuts wave 19).
 
 ### [x] Doctor rejects built-in `docs` steps as unresolved task references — 2026-08-25
 - Friction: `effigy doctor` reported every `docs check ...` step in
