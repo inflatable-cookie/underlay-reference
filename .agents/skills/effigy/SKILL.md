@@ -8,6 +8,8 @@ description: >
   release/CI footguns. Use when the user mentions effigy, effigy.toml, or
   needs tests, dev, QA, repo navigation, deployment, or validation in an
   Effigy-adopting repo.
+metadata:
+  internal: true
 ---
 
 # Effigy Skill
@@ -19,9 +21,13 @@ repo's task surface. **Selectors** (`dev`, `api/test`, `qa:ci:fast`) route to
 manifest tasks or **built-ins** (`test`, `doctor`, `scan`, `graph`, …).
 
 **`dev`** is almost always a **repo task name**, not a built-in verb.
-**`test`** is usually the built-in test orchestrator unless `tasks.test`
-overrides it. Prefer `effigy <selector>` over raw `cargo` / `npm` /
+**`test`** is always the built-in test orchestrator. Repos configure explicit
+test routes under `[test.suites]`. Prefer `effigy <selector>` over raw `cargo` / `npm` /
 `docker compose` when Effigy covers the path.
+
+Use `test.suites.<name>.default = false` for focused suites that should run only
+when named. Use root `test.exclude_catalogs` when a parent workspace already
+owns a child catalog's tests; direct `catalog/test` selection still works.
 
 ## Footguns (read first)
 
@@ -29,9 +35,16 @@ overrides it. Prefer `effigy <selector>` over raw `cargo` / `npm` /
 - **Never bypass release gates.** Fix the underlying issue.
 - **Never re-tag a failed release.** Fix lands in next PATCH.
 - **Never run release mutations** (`release prepare/execute`) without explicit human ask.
+- **Never use `release verify-install` for a library or service repo.** It is
+  Effigy's fixed self-hosting binary verifier; other repos need a repo-owned
+  consumer smoke.
 - **Don't add `package.json` scripts** that re-export Effigy tasks.
 - **Don't add a current-directory repo override** when already inside the
   target repo.
+- **Never map `health` to `qa`.** Keep `health` seconds-scale, `validate`
+  mid-cost, and `qa` the full board.
+- **Never define `tasks.test`.** It was removed in v0.11. Use named
+  `[test.suites]` entries for Rust, TypeScript, and other repo test routes.
 
 Full rationale: `references/footguns.md`.
 
@@ -52,9 +65,10 @@ Pick the first Effigy command that matches the job.
 | Narrow validation | You changed code and want likely tests/files first | `git diff --name-only | effigy graph affected --stdin --json` |
 | Parse results | Another tool/agent will consume the output | `effigy --json <command>` |
 
-If `graph status --json` reports `refresh-recommended`, `degraded`, or
-`missing-index`, run `effigy graph index --json` before trusting
-explore/affected. Use `rg` for exact tokens and final pre-edit proof.
+Graph data queries refresh stale or missing indexes on demand, so start with
+`explore` or `affected` directly. Use `graph status` only when you need the
+report-only pre-refresh state; use explicit `graph index` for pre-warming or
+cache recovery. Use `rg` for exact tokens and final pre-edit proof.
 
 Details: `references/agent-operating-loop.md`, `references/graph-assist.md`.
 
@@ -127,13 +141,15 @@ Details: `references/selector-routing.md`.
 effigy --json <command>
 ```
 
-Returns `effigy.command.v1` with command payload in `result` (or `error.details`).
+Returns `effigy.command.v1` with command-specific data in `result` (or
+`error.details` for some failures); graph reports may nest their payload under
+`result.payload`.
 
 **Exception:** `effigy graph watch --json` streams `effigy.graph.watch.event.v1`
 lines — not the one-shot envelope.
 
 ```bash
-effigy --json tasks | jq -r '.result.payload.tasks[].name'
+effigy --json tasks | jq -r '.result.catalog_tasks[].task'
 ```
 
 Details: `references/json-envelope.md`.
@@ -150,6 +166,22 @@ Details: `references/json-envelope.md`.
 
 Read these only when the repo or task needs them.
 
+**Managed task sessions** — a repo task with `mode = "tui"` can run without a
+terminal UI through `effigy <task> --headless` or
+`EFFIGY_MANAGED_HEADLESS=1`. Inspect it from another shell with task-local
+`status`, `logs [process] [--follow]`, and `stop`. Start ranks remain spawn
+order; readiness covers container-owned routes started by the lifecycle entry
+and uses `health_wait_timeout_secs`. Optional container secrets stay optional
+even during forced local-dev unlock. Guide:
+`docs/guides/012-dev-process-manager-tui.md`.
+
+**Workspace identity** — primary-service `effigy exec` and host-routed
+workspace tasks use the declared `workspace_user` and `workspace_home`.
+`effigy exec` from a non-console caller does not request a TTY. Use
+`effigy doctor --verbose` to find
+read-only `container.workspace-ownership` findings for root-owned managed
+volume or Bun-cache paths. Guide: `docs/guides/063-container-system-guide.md`.
+
 **Secrets** — `effigy secrets init`, `set`, `import`, `list`, `doctor` when
 `[secrets]` is declared. Guide: `docs/guides/075-secrets-and-vault-guide.md`.
 
@@ -157,7 +189,8 @@ Read these only when the repo or task needs them.
 `effigy bundle sync`. Guide: `docs/guides/065-external-bundle-adoption.md`.
 
 **Config shapes** — `[tasks]`, `[systems]`, `[containers]`, `[bootstrap]`,
-`[release]`, `[bundle]`, `[secrets]`, `[state]`, `[deploy]`.
+`[release]`, `[bundle]`, `[secrets]`, `[state]`, `[deploy]`, and the optional
+`[docs_policy.graph]` repository-defined Markdown graph profile.
 Details: `references/config-shapes.md`.
 
 **State stacks** — `effigy state plan`, `apply`, `capture`.
@@ -166,9 +199,11 @@ Guide: `docs/guides/073-state-stack-guide.md`.
 **Deployment** — `effigy deploy plan`, `apply`, `status` (human-gated apply).
 Guide: `docs/guides/074-deployment-guide.md`.
 
-**Local dependencies** — `effigy deps link <cargo|bun> <PATH> --dry-run`,
-`link`, `status`, then `unlink`. Status and doctor are read-only; never edit
-committed manifests or restore linked locks through Git.
+**Local dependencies** — use `effigy deps link <cargo|bun> <PATH>` for
+ephemeral machine-local state. Use `effigy deps pin bun <PATH>` for a committed
+root-consumer override, then run `bun install` separately; reverse it with
+`unpin` plus another operator-run install. Status and doctor are read-only;
+never restore linked locks through Git.
 Guide: `docs/guides/077-local-dependency-linking.md`.
 
 **Release** — never mutate without explicit human instruction.
@@ -179,6 +214,7 @@ Sequence: `references/release-protocol.md`.
 | Topic | Guide |
 |-------|-------|
 | Agent + graph workflow | `docs/guides/076-code-graph-and-agent-workflows.md` |
+| Documentation graph profile | `docs/architecture/024-repository-defined-documentation-graph.md`, `docs/contracts/041-documentation-graph-profile-contract.md` |
 | Agent adoption | `docs/guides/047-agent-and-cross-repo-adoption.md` |
 | Rhai script steps | `docs/guides/061-rhai-script-steps-guide.md` |
 | Rhai host surface audit | `docs/guides/068-rhai-host-surface-audit.md` |
@@ -186,6 +222,7 @@ Sequence: `references/release-protocol.md`.
 | JSON contracts | `docs/guides/017-json-output-contracts.md` |
 | Quick start | `docs/guides/021-quick-start-and-command-cookbook.md` |
 | Command reference | `docs/guides/025-command-reference-matrix.md` |
+| Managed task sessions | `docs/guides/012-dev-process-manager-tui.md` |
 | Local dependency linking | `docs/guides/077-local-dependency-linking.md` |
 | Papercuts discovery | `docs/guides/078-papercuts-discovery-and-capture.md` |
 | Distribution evidence | `docs/guides/062-distribution-system-guide.md` |

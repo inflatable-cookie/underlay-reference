@@ -15,12 +15,18 @@ for the live list. Use `effigy <topic> --help` for flags.
 
 Details: `agent-operating-loop.md`, `graph-assist.md`.
 
+## Manifest selector runtime
+
+Managed selectors are repo tasks, not built-ins. A task with `mode = "tui"`
+also supports `--headless` / `EFFIGY_MANAGED_HEADLESS=1` plus task-local
+`status`, `logs [process] [--follow]`, and `stop` companions.
+
 ## Discovery and execution
 
 | Built-in | Purpose |
 |----------|---------|
 | `tasks` | List catalogs/tasks; `tasks --resolve`; `tasks status` |
-| `doctor` | Health checks; `doctor <selector>` explain mode |
+| `doctor` | Health checks; `doctor <selector>` explain mode; running-workspace ownership diagnosis |
 | `test` | Built-in test orchestration (`--plan`, `--tui`) |
 | `defer` | Run `[defer]` fallback explicitly |
 | `watch` | File-triggered task reruns (`--owner` required) |
@@ -56,7 +62,7 @@ Guide: `docs/guides/076-code-graph-and-agent-workflows.md`
 | `workspace` | System up + dev shell |
 | `gateway` | Host DNS/TLS for container routes |
 | `service` | Catalog inspect/extract |
-| `exec` | One-shot command in dev workspace container |
+| `exec` | One-shot command in dev workspace container; primary-service workspace identity; no TTY for non-console callers |
 | `bootstrap` | Clone/bring-up repo from git URL |
 
 ## Data, deploy, and proof
