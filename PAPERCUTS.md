@@ -7,6 +7,24 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 <!-- Keep entries short. Append newest entries at the top. Do not include secrets. -->
 
+### Launcher omitted sibling underlay/poodle mounts
+- **Friction:** Worktree parent lacked `../underlay` and `../poodle`, so `effigy tasks` failed until mounts were added.
+- **Impact:** Blocks Effigy orientation and local `file:../../underlay` installs.
+- **Plausible fix:** Launcher should create the same sibling symlinks Soundcheck gets.
+- **Surface:** underlay-reference t3 worktree bring-up
+
+### Bun keeps stale file: nested Poodle metadata
+- **Friction:** After removing Poodle overrides, incremental `bun install` left `file:../../poodle/...` nests under `file:` underlay/acme-ui snapshots; only `bun update` on those file deps refreshed them.
+- **Impact:** Locks can look sibling-controlled despite registry top-level installs.
+- **Plausible fix:** Document `bun update <file-dep>` after override removal, or fix Bun file: snapshot refresh.
+- **Surface:** acme-*/bun.lock adoption
+
+### Effigy auto-routes vitest into empty/misaimed package suites
+- **Friction:** `effigy validate`/`qa` auto-detects vitest for `acme-front` and `acme-ui`. Front includes `src/**/*` while tests live under `tests/` (exit 1). UI has no tests but inherits `node_modules/.bin/vitest` transitively (exit 1).
+- **Impact:** Aggregate board fails unless an app-local `passWithNoTests` exception is added; g16.013 forbids that exception.
+- **Plausible fix:** Effigy should not select vitest from a transitive binary alone, and/or honor package-owned include roots; separately authorize front include=`tests/**` and UI suite exclusion/real tests.
+- **Surface:** `effigy test --plan` auto-detection for acme-front/acme-ui
+
 ## Closed
 
 ### [x] T3 worker launch used the Underlay worktree for an Underlay Reference handoff — 2026-08-26
@@ -78,21 +96,3 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
   `headings` (space form). Root `qa:docs` is wired to that catalog via the
   Underlay Effigy bundle.
 - Surface: Underlay Effigy bundle docs tasks / `acme-docs/effigy.toml`
-
-### Launcher omitted sibling underlay/poodle mounts
-- **Friction:** Worktree parent lacked `../underlay` and `../poodle`, so `effigy tasks` failed until mounts were added.
-- **Impact:** Blocks Effigy orientation and local `file:../../underlay` installs.
-- **Plausible fix:** Launcher should create the same sibling symlinks Soundcheck gets.
-- **Surface:** underlay-reference t3 worktree bring-up
-
-### Bun keeps stale file: nested Poodle metadata
-- **Friction:** After removing Poodle overrides, incremental `bun install` left `file:../../poodle/...` nests under `file:` underlay/acme-ui snapshots; only `bun update` on those file deps refreshed them.
-- **Impact:** Locks can look sibling-controlled despite registry top-level installs.
-- **Plausible fix:** Document `bun update <file-dep>` after override removal, or fix Bun file: snapshot refresh.
-- **Surface:** acme-*/bun.lock adoption
-
-### Effigy auto-routes vitest into empty/misaimed package suites
-- **Friction:** `effigy validate`/`qa` auto-detects vitest for `acme-front` and `acme-ui`. Front includes `src/**/*` while tests live under `tests/` (exit 1). UI has no tests but inherits `node_modules/.bin/vitest` transitively (exit 1).
-- **Impact:** Aggregate board fails unless an app-local `passWithNoTests` exception is added; g16.013 forbids that exception.
-- **Plausible fix:** Effigy should not select vitest from a transitive binary alone, and/or honor package-owned include roots; separately authorize front include=`tests/**` and UI suite exclusion/real tests.
-- **Surface:** `effigy test --plan` auto-detection for acme-front/acme-ui
