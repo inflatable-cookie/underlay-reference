@@ -8,25 +8,26 @@ code-understanding questions, but not for every Effigy interaction.
 ## Map code before scanning
 
 ```bash
-effigy graph status --json
-effigy graph index --json                    # when stale_paths is non-empty
 effigy graph explore "<question>" --max-files 6 --max-bytes 12288 --json
 git diff --name-only | effigy graph affected --stdin --json
 ```
+
+Both queries refresh a stale or missing index before reading it.
 
 See `graph-assist.md`.
 
 ## Run tests
 
 ```bash
-effigy test                  # built-in test detection or tasks.test override
+effigy test                  # run the built-in test orchestrator
 effigy test --plan           # show plan without running
 effigy test --json           # JSON envelope
 effigy test <selector>       # run tests in a specific workspace
 ```
 
-The built-in `test` prefers `cargo-nextest` when available, falling back to
-`cargo test`. If the repo defines `tasks.test`, that overrides.
+The built-in `test` runs every configured `[test.suites]` entry. Without
+configured suites it detects polyglot runners, preferring `cargo-nextest` over
+`cargo test` for Rust. `effigy test --plan` never executes a suite.
 
 ## Bring local dev up
 
@@ -103,7 +104,7 @@ Do not insert `doctor` into ordinary code-understanding or task-execution work.
 ```bash
 effigy changelog extract --version X.Y.Z         # extract a release section
 effigy changelog extract CHANGELOG.md --version X.Y.Z  # explicit file
-effigy changelog --json extract --version X.Y.Z  # JSON envelope
+effigy --json changelog extract --version X.Y.Z   # JSON envelope
 ```
 
 ## Secrets import
@@ -116,6 +117,10 @@ effigy secrets import infra/local.env --json
 ```
 
 ## Release inspection (read-only)
+
+First prove the clean, pushed candidate commit through a manually dispatched
+`ci.yml` run. Release inspection checks that exact-SHA proof; it does not
+accept a green run from another commit.
 
 ```bash
 effigy release simulate                # dry-run the release flow
