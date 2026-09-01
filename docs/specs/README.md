@@ -31,12 +31,12 @@ reference-app milestone needs tighter execution control.
 
 ## Active spec
 
-- `002-northstar-instruction-and-language-quality-audit.md`
+None. `002-northstar-instruction-and-language-quality-audit.md` is complete with
+its card 002 PR open for orchestrator review.
 
-Paused: `001-retained-underlay-surface-strict-lane.md` until the overlapping
-repository audit closes.
+Paused: `001-retained-underlay-surface-strict-lane.md` until that PR merges.
 
 ## Next Task
 
-Execute card 002 under spec 002 and stop at its PR for orchestrator review.
-Resume spec 001 afterwards.
+Orchestrator: review the card 002 PR at its exact head and merge, then resume
+spec 001.

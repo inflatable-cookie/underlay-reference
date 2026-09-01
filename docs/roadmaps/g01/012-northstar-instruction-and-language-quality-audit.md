@@ -1,13 +1,13 @@
 # g01.012 Northstar Instruction And Language Quality Audit
 
-Status: active
+Status: complete (PR open, awaiting orchestrator review)
 Owner: repo maintainers
 Created: 2026-09-01
 Governing refs: root and nested `AGENTS.md`,
 `docs/policy/001-working-rules.md`,
 `docs/specs/002-northstar-instruction-and-language-quality-audit.md`, installed
 Northstar
-Planning state: card 002 ready; `g01.007` paused during overlapping audit
+Planning state: card 002 complete; `g01.007` still paused, unchanged
 
 ## Problem
 
@@ -74,7 +74,25 @@ maintenance lane runs.
 - the Northstar source changes during the audit;
 - validation changes the plan or requires sibling mutation.
 
+## Outcome
+
+Card 002 ran in the isolated worker `worker/northstar-agents-rust-typescript-audit`
+against Northstar `dbce3856be6ec6093d2e5c071568a6dbe953df49`.
+
+| Acceptance criterion | Result |
+| --- | --- |
+| Every root/nested instruction section has a human disposition and scope precedence remains clear | Met. Seven instruction scopes plus the Claude bridge carry a section-intent map and a disposition; root now scopes its "Keep AGENTS Lean" rule to the nested files it governs, and nested files point at root rather than restating it. |
+| Rust scope covers all eight crates, targets, features, public APIs, unsafe/FFI, async/concurrency, panic/error paths, and exact forwarders | Met. 9 units over 8 crates and 17 target source paths, 0 declared features; unsafe/FFI verified absent workspace-wide; async and panic paths assessed per unit; a total exact-forwarder ledger is recorded in the closeout because the recorder rejects the evaluation-only rule. |
+| Rust evidence records the actual current toolchain without claiming a fixed MSRV | Met. `rustc 1.97.1` recorded as observed; `RUST-MSRV-001` is `degraded` for all nine units and the missing policy stays a limitation. |
+| TypeScript/Svelte scope covers Acme Admin, Acme Front, Acme Client, and Acme UI with package overlays and explicit generated/vendor exclusions | Met. 201 files, 8 units, overlays resolved per package from real version evidence, zero unregistered candidates, exclusions named. |
+| Every changed source file maps to a prior finding and authorized plan | Met. 10 source files, each attributed in the closeout. |
+| Finalized recorders, changed-file attribution, limitations, roadmap, spec, card, log, and front doors agree | Met. |
+| Repository validation records actual results and `g01.007` returns to its paused pre-audit state after closeout | Met. Validation is recorded including the one red result — a pre-existing failure in the sibling Underlay repository — and `g01.007` was never entered. |
+
+Closeout: `docs/logs/2026-09/01-091500-g01-012-northstar-agents-rust-typescript-audit.md`
+
 ## Next Task
 
-Execute ready card 002 in one isolated Underlay Reference worker. Stop at its
-PR for orchestrator exact-head review; do not execute card 001 concurrently.
+Orchestrator: review the card 002 PR at its exact head, then merge. Resume
+`g01.007` and card 001 afterwards; their paused state is unchanged and the
+retained-surface classification remains open.

@@ -128,10 +128,7 @@ impl EncryptionService {
     /// This is a heuristic check - it verifies the string is valid base64
     /// and has the minimum length for our format.
     pub fn is_encrypted(value: &str) -> bool {
-        if BASE64.decode(value).is_err() {
-            return false;
-        }
-        // Check minimum length for nonce + tag
+        // Valid base64 that is at least nonce (12) + tag (16) long.
         match BASE64.decode(value) {
             Ok(bytes) => bytes.len() >= 12 + 16,
             Err(_) => false,

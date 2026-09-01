@@ -15,14 +15,15 @@ Root `docs/` is the documentation authority for the Underlay reference implement
 
 ## Effigy-First Execution
 
-- Let Effigy choose host vs container for normal work. Do not touch host-side `node_modules`, `vendor`, `target`, `.pnpm-store`, or `.svelte-kit` expecting it to affect the live runtime.
-- Use `effigy <task>`, `effigy prep`, or `effigy container shell` when you need to change runtime dependencies or inspect the live environment.
+Root `AGENTS.md` owns the runtime stance; this section only adds what is local
+to this scope.
 
-Default flow from the workspace root:
-1. Run `effigy tasks`
-2. Prefer explicit docs-authority selectors such as `effigy acme-docs/health`, `effigy acme-docs/validate`, `effigy acme-docs/qa:docs`, and `effigy acme-docs/qa:northstar`
-3. Run `effigy validate` when the broader workspace needs validation
-4. Prefer explicit docs-authority tasks for rollout checks instead of calling shell scripts directly
+Docs work is addressed through explicit `acme-docs/...` selectors — `effigy
+acme-docs/health`, `effigy acme-docs/validate`, `effigy acme-docs/qa:docs`,
+`effigy acme-docs/qa:northstar` — so a docs change does not silently trigger
+whole-workspace validation. Run `effigy validate` only when the broader
+workspace genuinely needs it. Prefer the docs-authority rollout tasks over
+calling the shell scripts directly.
 
 Repo notes:
 - `acme-docs/health` is the stable baseline for day-to-day docs validation

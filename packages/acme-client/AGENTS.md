@@ -14,14 +14,12 @@
 
 ## Effigy-First Execution
 
-- Let Effigy choose host vs container for normal work. Do not touch host-side `node_modules`, `vendor`, `target`, `.pnpm-store`, or `.svelte-kit` expecting it to affect the live runtime.
-- Use `effigy <task>`, `effigy prep`, or `effigy container shell` when you need to change runtime dependencies or inspect the live environment.
+Root `AGENTS.md` owns the runtime stance; this section only adds what is local
+to this scope.
 
-Default flow inside `packages/acme-client/`:
-1. Run `effigy tasks`
-2. Run `effigy health`
-3. Run `effigy validate`
-4. Prefer `effigy <task>` for repo-owned work instead of raw package commands where Effigy already covers the path
+Run `effigy tasks` from `packages/acme-client/` to see what this package owns,
+and prefer `effigy <task>` over raw package commands where Effigy already covers
+the path.
 
 ## Validation
 
@@ -33,8 +31,8 @@ Default flow inside `packages/acme-client/`:
 Use `../../docs/` as the reference-app docs authority. Do not create package-local roadmap or report docs.
 
 - `../../docs/processes/210-reference-implementation-notes.md`
-- `../underlay/docs/guides/071-json-naming.md`
-- `../underlay/docs/guides/080-typescript-client.md`
+- `../../../underlay/docs/guides/071-json-naming.md`
+- `../../../underlay/docs/guides/080-typescript-client.md`
 
 ## Internal Writing Style
 

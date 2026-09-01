@@ -95,6 +95,7 @@
           checked={item.checked}
           onchange={() => toggleItemChecked(index)}
           class="checkbox"
+          aria-label={`Mark checklist item ${index + 1} complete`}
         />
         <TextInput
           id={`checklist-item-${index}`}
@@ -110,6 +111,7 @@
             onclick={() => moveItem(index, index - 1)}
             disabled={index === 0}
             title="Move up"
+            aria-label={`Move checklist item ${index + 1} up`}
           >
             ↑
           </button>
@@ -119,6 +121,7 @@
             onclick={() => moveItem(index, index + 1)}
             disabled={index === items.length - 1}
             title="Move down"
+            aria-label={`Move checklist item ${index + 1} down`}
           >
             ↓
           </button>
@@ -127,6 +130,7 @@
             class="remove"
             onclick={() => removeItem(index)}
             title="Remove"
+            aria-label={`Remove checklist item ${index + 1}`}
           >
             ×
           </button>

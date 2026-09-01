@@ -14,5 +14,7 @@ Logs capture meaningful execution batches for the reference implementation.
 The `g01` front doors were reconciled before the external migration/testing
 worker launch
 ([planning repair](./2026-08/26-181224-g01-roadmap-front-door-repair.md)).
-Record card 002's `g01.012` audit closeout under `docs/logs/2026-09/`, then
-resume the paused `g01.007` lane without claiming its classification complete.
+Card 002's `g01.012` audit closeout is recorded at
+[2026-09/01-091500](./2026-09/01-091500-g01-012-northstar-agents-rust-typescript-audit.md).
+Resume the paused `g01.007` lane after that PR merges, without claiming its
+classification complete.
