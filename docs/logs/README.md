@@ -14,5 +14,5 @@ Logs capture meaningful execution batches for the reference implementation.
 The `g01` front doors were reconciled before the external migration/testing
 worker launch
 ([planning repair](./2026-08/26-181224-g01-roadmap-front-door-repair.md)).
-Record the next completed `g01.007` batch under the current month shard and
-tie it back to the active strict card or the closeout that replaces it.
+Record card 002's `g01.012` audit closeout under `docs/logs/2026-09/`, then
+resume the paused `g01.007` lane without claiming its classification complete.

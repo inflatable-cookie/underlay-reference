@@ -15,8 +15,10 @@ Roadmaps hold executable work for the reference implementation.
 ## Current generation
 
 - Active generation: `g01`
-- Next roadmap ID: `g01.012`
-- `g01.007` is the active retained-surface milestone with one ready strict card
+- Next roadmap ID: `g01.013`
+- `g01.012` is the active Northstar instruction and language-quality audit with
+  ready card 002
+- `g01.007` and card 001 are paused during the overlapping audit
 - `g01.008`–`g01.011`, the g08 consumer-audit tranche, are complete
 
 ## Index
@@ -43,5 +45,5 @@ Before opening `gNN+1`:
 
 ## Next Task
 
-Execute `g01.007` from the strict wrapper around the current ready card
-`001-audit-retained-acme-admin-underlay-surface.md`.
+Execute `g01.012` from ready card 002 and stop at its PR for orchestrator
+review. Resume `g01.007` afterwards.

@@ -69,6 +69,6 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 
 ## Next Task
 
-Execute `001-audit-retained-acme-admin-underlay-surface.md` as the active ready
-card for `g01.007`, then keep `effigy acme-docs/qa:docs` and
-`effigy acme-docs/qa:northstar` as the default docs validation baseline.
+Execute card 002, the bounded Northstar instruction and language-quality audit
+under `g01.012`, and stop at its PR for orchestrator review. Resume the paused
+retained-surface card afterwards.

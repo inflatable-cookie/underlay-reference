@@ -31,9 +31,12 @@ reference-app milestone needs tighter execution control.
 
 ## Active spec
 
-- `001-retained-underlay-surface-strict-lane.md`
+- `002-northstar-instruction-and-language-quality-audit.md`
+
+Paused: `001-retained-underlay-surface-strict-lane.md` until the overlapping
+repository audit closes.
 
 ## Next Task
 
-Execute the current ready card under `001-retained-underlay-surface-strict-lane.md`
-and keep the retained Underlay audit bounded to `g01.007`.
+Execute card 002 under spec 002 and stop at its PR for orchestrator review.
+Resume spec 001 afterwards.

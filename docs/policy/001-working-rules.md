@@ -23,7 +23,8 @@ Affects: acme-docs, acme-admin, acme-front, acme-ui, acme-client, acme-api
 ### Strict retained-surface lane rules
 
 - Execute from the current ready card, not from roadmap summary alone.
-- Stay inside the retained-surface owner currently defined by `g01.007`.
+- Card 002 under `g01.012` is the sole ready maintenance lane. The
+  retained-surface owner in `g01.007` and card 001 is paused intact.
 - Treat retained Underlay surfaces as a contract-definition problem, not a
   fresh route-migration sweep.
 - If the retained-surface audit shows a wider migration wave is needed, stop
@@ -49,5 +50,5 @@ Work in the strict lane is not done unless:
 
 ## Next Task
 
-Use this policy contract while executing the strict wrapper around `g01.007`,
-then freeze the approved retained Underlay boundary for `acme-admin`.
+Use this policy contract for `g01.012` card 002 and stop at its PR for review.
+Resume the retained-surface lane only after audit closeout.

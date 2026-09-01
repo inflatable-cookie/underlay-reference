@@ -15,10 +15,11 @@
 - `009` media and blob production path (from the g08 consumer audit)
 - `010` TypeScript type-safety hygiene (from the g08 consumer audit)
 - `011` gate hardening and lint cleanup (from the g08 consumer audit)
+- `012` Northstar instruction and language-quality audit
 
 ## Next roadmap
 
-- Open the next real milestone as `g01.012`.
+- Open the next real milestone as `g01.013`.
 
 ## g08 consumer-audit tranche (`g01.008`-`g01.011`)
 
@@ -35,6 +36,5 @@ larger follow-ups it deferred and completed on 2026-07-19.
 
 ## Next Task
 
-Two independent threads are live: finish `g01.007` (retained-surface owner), and
-the g08 consumer-audit tranche (`g01.008`-`g01.011`) is **complete**
-(2026-07-19). Open `g01.012` when the next real milestone is scoped.
+Execute `g01.012` card 002 as the sole ready lane. `g01.007` and card 001 remain
+paused because both touch Acme Admin; resume them after audit closeout.

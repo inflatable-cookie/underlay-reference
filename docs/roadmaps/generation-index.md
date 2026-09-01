@@ -2,9 +2,10 @@
 
 - `g01`
   - Status: active
-  - Range: `001`-`011`
+  - Range: `001`-`012`
   - Notes: initial reference-app roadmap sequence and Northstar alignment
-    tranche; `g01.007` is the active retained-surface formalization owner;
+    tranche; `g01.012` is the active language-quality audit while `g01.007`
+    remains paused as the retained-surface owner;
     `g01.008`-`g01.011`, the g08 consumer-audit follow-up tranche, completed on
     2026-07-19
 
@@ -18,5 +19,5 @@ strict-lane material has been purged from `specs/`.
 
 ## Next Task
 
-Keep `g01` active. Execute the ready strict card for `g01.007`; open `g01.012`
-only when the next real milestone is scoped.
+Keep `g01` active. Execute `g01.012` card 002 and stop at its PR for review.
+Resume `g01.007` after audit closeout; the next roadmap ID is `g01.013`.

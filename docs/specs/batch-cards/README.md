@@ -13,9 +13,11 @@ the reference implementation.
 
 ## Active batch card
 
-- `001-audit-retained-acme-admin-underlay-surface.md`
+- `002-northstar-agents-rust-typescript-audit.md`
+
+Paused: `001-audit-retained-acme-admin-underlay-surface.md` until card 002
+closes.
 
 ## Next Task
 
-Execute `001-audit-retained-acme-admin-underlay-surface.md` as the active ready
-card for `g01.007`.
+Execute card 002 under `g01.012` and stop at its PR for orchestrator review.
