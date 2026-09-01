@@ -13,11 +13,13 @@ the reference implementation.
 
 ## Active batch card
 
-- `002-northstar-agents-rust-typescript-audit.md`
+None. `002-northstar-agents-rust-typescript-audit.md` is complete with its PR
+open for orchestrator review.
 
-Paused: `001-audit-retained-acme-admin-underlay-surface.md` until card 002
-closes.
+Paused: `001-audit-retained-acme-admin-underlay-surface.md` until that PR
+merges.
 
 ## Next Task
 
-Execute card 002 under `g01.012` and stop at its PR for orchestrator review.
+Orchestrator: review the card 002 PR at its exact head and merge, then resume
+card 001.

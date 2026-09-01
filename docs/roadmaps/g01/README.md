@@ -36,5 +36,6 @@ larger follow-ups it deferred and completed on 2026-07-19.
 
 ## Next Task
 
-Execute `g01.012` card 002 as the sole ready lane. `g01.007` and card 001 remain
-paused because both touch Acme Admin; resume them after audit closeout.
+`g01.012` card 002 is complete; its PR is open for orchestrator exact-head
+review. `g01.007` and card 001 remain paused because both touch Acme Admin;
+resume them once that PR merges.

@@ -6,14 +6,16 @@ This repository is a **reference template** for bootstrapping Underlay-based app
 
 ## Keep AGENTS Lean
 
-`AGENTS.md` files should contain only:
+This root file carries repository-wide authority. The app and package
+`AGENTS.md` files under it should stay to four things:
 
 1. Scope and intent
-2. Hard operational rules
+2. Hard operational rules that are genuinely local to that unit
 3. Minimal validation commands
 4. Links to detailed docs
 
-Detailed implementation notes are documented in:
+A nested file should point at this one rather than restate it. Detailed
+implementation notes are documented in:
 - `docs/processes/210-reference-implementation-notes.md`
 - `README.md`
 
@@ -87,7 +89,7 @@ For reference-app planning and architecture, prefer `docs/`. In the
 active strict lane, a bare `continue` should resolve through the previous
 `Next Task` into the current ready card under `docs/specs/` or back into
 planning if no ready card exists. For shared framework conventions, prefer
-Underlay docs in `underlay/docs/guides/`. Do not create parallel roadmap or
+Underlay docs in `../underlay/docs/guides/`. Do not create parallel roadmap or
 report docs elsewhere in this repo.
 
 ## Internal Writing Style
@@ -127,3 +129,19 @@ Reference docs:
 - Graph workflows: `docs/guides/076-code-graph-and-agent-workflows.md`
 - JSON contracts: `docs/guides/017-json-output-contracts.md`
 <!-- END EFFIGY AGENT CONTRACT -->
+
+<!-- northstar:typescript-quality:start -->
+## Northstar TypeScript/Svelte explicit audit
+
+Use Northstar's TypeScript/Svelte quality pack only when the operator explicitly
+requests a TypeScript or Svelte quality audit, no-slop pass, whole-codebase
+review, or audit-and-fix action. Ordinary TypeScript/Svelte coding does not
+activate it.
+
+For explicit audit intent, load the main Northstar router and select
+`TypeScript/Svelte explicit audit-and-repair`. Resolve package ownership and
+strict profile state before assessment. Record findings before mutation, keep
+repairs inside recorder-authorized files, preserve pre-existing dirty work, and
+use repository-owned compiler, framework, lint, and test evidence without
+installing dependencies or inventing commands.
+<!-- northstar:typescript-quality:end -->

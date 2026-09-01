@@ -9,14 +9,12 @@ import { dev } from "$app/environment";
 import type { Handle, HandleServerError } from "@sveltejs/kit";
 import { env as privateEnv } from "$env/dynamic/private";
 
-import { configureAcmeClient as configureAliasedAcmeClient } from "@api-client";
-import { configureAcmeClient as configurePackageAcmeClient } from "@api-client";
+import { configureAcmeClient } from "@api-client";
 import { resolvePublicApiConfig } from "$lib/config/public-api";
 
 const config = resolvePublicApiConfig();
 
-configureAliasedAcmeClient(config);
-configurePackageAcmeClient(config);
+configureAcmeClient(config);
 
 const cspReportOnly = privateEnv.CSP_REPORT_ONLY
   ? privateEnv.CSP_REPORT_ONLY === "true"

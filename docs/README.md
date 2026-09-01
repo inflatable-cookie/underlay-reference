@@ -69,6 +69,6 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 
 ## Next Task
 
-Execute card 002, the bounded Northstar instruction and language-quality audit
-under `g01.012`, and stop at its PR for orchestrator review. Resume the paused
-retained-surface card afterwards.
+Card 002, the bounded Northstar instruction and language-quality audit under
+`g01.012`, is complete with its PR open for orchestrator exact-head review.
+Resume the paused retained-surface card once that PR merges.

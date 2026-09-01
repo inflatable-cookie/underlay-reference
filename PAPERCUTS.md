@@ -7,6 +7,30 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 <!-- Keep entries short. Append newest entries at the top. Do not include secrets. -->
 
+### Root `effigy validate` fails on the sibling Underlay test suite
+- **Friction:** The bundle-provided root `validate` sequence fans out into the mounted `underlay` catalog and runs Underlay's own vitest suite. One pre-existing failure there (`ts/tests/tools/workspace-shape.test.ts`, 1 of 813) turns this repo's headline validation command red for reasons a consumer worker cannot fix or is forbidden to touch.
+- **Impact:** `effigy validate` is unusable as this repo's own gate; each lane has to fall back to the six per-catalog `validate` tasks and explain the red root result.
+- **Plausible fix:** Extend the existing `[test] exclude_catalogs = ["poodle", "underlay"]` posture to the bundle's root `validate`/`qa` fan-out, so mounted sibling catalogs stay context-only.
+- **Surface:** root `effigy validate` / Underlay Effigy bundle lifecycle fan-out
+
+### Northstar Rust recorder needs audit-unique limitation keys but records are immutable
+- **Friction:** Each unit assessment carries its own limitations, so the natural key for a per-unit condition (e.g. `rust-msrv-unresolved`) repeats across units. `finalize` then rejects the whole audit with `lifecycle.limitation_key_duplicate`, and because `assess` refuses to overwrite an existing `assessment.json`, the only recovery is to delete the audit record and re-run init → assess → collect → complete from scratch.
+- **Impact:** A naming choice that is only visible at the last step costs a full re-run, including re-collecting every evidence record.
+- **Plausible fix:** Validate key uniqueness at `assess` time, or namespace limitation keys by unit the way `finding:<id>` keys already are.
+- **Surface:** `northstar-rust-quality` lifecycle (`assess`/`finalize`)
+
+### `RUST-SLOP-001` has no recorder representation
+- **Friction:** The Rust audit mode requires a *total* exact-forwarder candidate ledger with a recorded disposition per candidate, but the rule is `prototype`/`evaluation_only`, so the recorder rejects it as a verdict rule (`ledger.verdict_rule_invalid`) and as a finding rule (`ledger.finding_rule_invalid`).
+- **Impact:** The ledger the mode mandates cannot live in `result.json`; it has to be carried in free-text attestations and the closeout log, where nothing checks it for completeness.
+- **Plausible fix:** Accept evaluation-only rules as report-only findings, or add an explicit ledger section to the assessment schema.
+- **Surface:** `northstar-rust-quality` ledger validation / `references/modes/rust-quality-audit.md`
+
+### Installed Northstar skill copy silently drifts from source
+- **Friction:** `~/.agents/skills/northstar` was stale against `~/Dev/projects/northstar/skills/northstar` (missing the `dbce3856` Rust evidence-collection repair). Nothing in the installed copy records which source commit it came from; the drift only surfaced because `verify-install` reported a payload hash mismatch.
+- **Impact:** A worker told to pin an exact Northstar hash can silently run older mode files, projections and schemas from the installed copy.
+- **Plausible fix:** Write the source commit into the installed skill directory on install and have the router compare it when a handoff pins a hash.
+- **Surface:** Northstar skill install / `~/.agents/skills/northstar`
+
 ### Launcher omitted sibling underlay/poodle mounts
 - **Friction:** Worktree parent lacked `../underlay` and `../poodle`, so `effigy tasks` failed until mounts were added.
 - **Impact:** Blocks Effigy orientation and local `file:../../underlay` installs.

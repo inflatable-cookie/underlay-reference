@@ -16,9 +16,10 @@ Roadmaps hold executable work for the reference implementation.
 
 - Active generation: `g01`
 - Next roadmap ID: `g01.013`
-- `g01.012` is the active Northstar instruction and language-quality audit with
-  ready card 002
-- `g01.007` and card 001 are paused during the overlapping audit
+- `g01.012`, the Northstar instruction and language-quality audit, is complete;
+  its card 002 PR is open for orchestrator review
+- `g01.007` and card 001 are still paused, unchanged, and resume once that PR
+  merges
 - `g01.008`–`g01.011`, the g08 consumer-audit tranche, are complete
 
 ## Index
@@ -45,5 +46,5 @@ Before opening `gNN+1`:
 
 ## Next Task
 
-Execute `g01.012` from ready card 002 and stop at its PR for orchestrator
-review. Resume `g01.007` afterwards.
+Orchestrator: review the `g01.012` card 002 PR at its exact head and merge,
+then resume `g01.007`.

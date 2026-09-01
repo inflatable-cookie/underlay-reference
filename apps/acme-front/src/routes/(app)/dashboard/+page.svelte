@@ -1,36 +1,32 @@
 <script lang="ts">
-import "@acme/ui/editor";
-import "@acme/ui/validation";
-import {
-  useToasts
-} from "@inflatable-cookie/underlay/runtime/feedback";
-import {
-  useAuthenticatedData
-} from "@inflatable-cookie/underlay/runtime/auth";
-import {
-  goto } from "$app/navigation";
-  import { auth,
-  authLoading,
-  currentUser } from "$lib/stores/auth";
-  import * as userCommands from "@api-client/commands/user-commands.js";
+  import "@acme/ui/editor";
+  import "@acme/ui/validation";
+
+  import { goto } from "$app/navigation";
+  import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
+  import { useAuthenticatedData } from "@inflatable-cookie/underlay/runtime/auth";
   import { NightfireEditor } from "@inflatable-cookie/underlay/nightfire/editor";
   import {
     prepareNightfireForSave,
     type NightfireDraftValue
   } from "@inflatable-cookie/underlay/nightfire/validation";
-  import type { UserProject } from "@api-client/commands/user-commands.js";
-    import {
+  import {
     Button,
     Callout,
     Field,
     FormActions,
+    FormDialog,
     Grid,
     ListCard,
+    PageLoading,
     TextInput
   } from "@inflatable-cookie/poodle-svelte";
-  import { FormDialog, PageLoading } from "@inflatable-cookie/poodle-svelte";
   import Plus from "lucide-svelte/icons/plus";
   import FolderOpen from "lucide-svelte/icons/folder-open";
+
+  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import * as userCommands from "@api-client/commands/user-commands.js";
+  import type { UserProject } from "@api-client/commands/user-commands.js";
 
   const toastStore = useToasts();
 

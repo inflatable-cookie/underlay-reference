@@ -35,6 +35,88 @@ struct ProjectIdRow {
     id: uuid::Uuid,
 }
 
+/// Resolve the project set a report batch should cover.
+///
+/// An explicit `project_ids` list wins; otherwise every live project is
+/// included. Shared by both report handlers so the two cannot drift apart on
+/// what "all projects" means.
+async fn resolve_project_ids(
+    pool: &PgPool,
+    explicit: Option<Vec<uuid::Uuid>>,
+) -> Result<Vec<uuid::Uuid>, JobHandlerError> {
+    if let Some(ids) = explicit {
+        return Ok(ids);
+    }
+
+    let rows: Vec<ProjectIdRow> = sqlx::query_as(
+        r#"
+        SELECT id
+        FROM acme.projects
+        WHERE deleted_at IS NULL
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+
+    Ok(rows.into_iter().map(|row| row.id).collect())
+}
+
+/// Build and log a report for each project, then fail the job if any project
+/// errored.
+///
+/// A per-project failure is counted and logged rather than aborting the batch,
+/// so one bad project does not hide the rest; the job still reports failure at
+/// the end so it retries.
+async fn run_project_report_batch(
+    pool: &PgPool,
+    job_id: &underlay_jobs::JobId,
+    project_ids: &[uuid::Uuid],
+) -> Result<(), JobHandlerError> {
+    let mut reports_generated = 0;
+    let mut projects_missing = 0;
+    let mut errors = 0;
+
+    for project_id in project_ids {
+        match build_project_report(pool, *project_id).await {
+            Ok(Some(report)) => {
+                reports_generated += 1;
+                info!(
+                    job_id = %job_id,
+                    project_id = %project_id,
+                    report = ?report,
+                    "generated project report"
+                );
+            }
+            Ok(None) => {
+                projects_missing += 1;
+                warn!(project_id = %project_id, "project not found, skipping report");
+            }
+            Err(e) => {
+                errors += 1;
+                warn!(project_id = %project_id, error = %e, "failed to generate report");
+            }
+        }
+    }
+
+    info!(
+        job_id = %job_id,
+        projects_found = project_ids.len(),
+        reports_generated = reports_generated,
+        projects_missing = projects_missing,
+        errors = errors,
+        "project report batch completed"
+    );
+
+    if errors > 0 {
+        return Err(JobHandlerError::new(format!(
+            "project report batch had {errors} generation failures"
+        )));
+    }
+
+    Ok(())
+}
+
 #[async_trait]
 impl JobHandler for GenerateProjectReportsHandler {
     fn job_type(&self) -> &'static str {
@@ -49,65 +131,9 @@ impl JobHandler for GenerateProjectReportsHandler {
         let payload: GenerateProjectReportsPayload = serde_json::from_value(job.payload)
             .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
 
-        let project_ids = if let Some(ids) = payload.project_ids {
-            ids
-        } else {
-            let rows: Vec<ProjectIdRow> = sqlx::query_as(
-                r#"
-                SELECT id
-                FROM acme.projects
-                WHERE deleted_at IS NULL
-                "#,
-            )
-            .fetch_all(self.pool.as_ref())
-            .await
-            .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+        let project_ids = resolve_project_ids(self.pool.as_ref(), payload.project_ids).await?;
 
-            rows.into_iter().map(|row| row.id).collect()
-        };
-
-        let mut reports_generated = 0;
-        let mut projects_missing = 0;
-        let mut errors = 0;
-
-        for project_id in &project_ids {
-            match build_project_report(self.pool.as_ref(), *project_id).await {
-                Ok(Some(report)) => {
-                    reports_generated += 1;
-                    info!(
-                        job_id = %job.id,
-                        project_id = %project_id,
-                        report = ?report,
-                        "generated project report"
-                    );
-                }
-                Ok(None) => {
-                    projects_missing += 1;
-                    warn!(project_id = %project_id, "project not found, skipping report");
-                }
-                Err(e) => {
-                    errors += 1;
-                    warn!(project_id = %project_id, error = %e, "failed to generate report");
-                }
-            }
-        }
-
-        info!(
-            job_id = %job.id,
-            projects_found = project_ids.len(),
-            reports_generated = reports_generated,
-            projects_missing = projects_missing,
-            errors = errors,
-            "project report batch completed"
-        );
-
-        if errors > 0 {
-            return Err(JobHandlerError::new(format!(
-                "project report batch had {errors} generation failures"
-            )));
-        }
-
-        Ok(())
+        run_project_report_batch(self.pool.as_ref(), &job.id, &project_ids).await
     }
 }
 
@@ -232,65 +258,11 @@ impl JobHandler for GenerateProjectReportHandler {
             .map_err(|e| JobHandlerError::permanent(format!("invalid payload: {}", e)))?;
 
         let Some(project_id) = payload.project_id else {
-            let project_ids = if let Some(ids) = payload.project_ids {
-                ids
-            } else {
-                let rows: Vec<ProjectIdRow> = sqlx::query_as(
-                    r#"
-                    SELECT id
-                    FROM acme.projects
-                    WHERE deleted_at IS NULL
-                    "#,
-                )
-                .fetch_all(self.pool.as_ref())
-                .await
-                .map_err(|e| JobHandlerError::new(format!("database error: {}", e)))?;
+            // No single project named: fall back to the same batch the plural
+            // handler runs.
+            let project_ids = resolve_project_ids(self.pool.as_ref(), payload.project_ids).await?;
 
-                rows.into_iter().map(|row| row.id).collect()
-            };
-
-            let mut reports_generated = 0;
-            let mut projects_missing = 0;
-            let mut errors = 0;
-
-            for project_id in &project_ids {
-                match build_project_report(self.pool.as_ref(), *project_id).await {
-                    Ok(Some(report)) => {
-                        reports_generated += 1;
-                        info!(
-                            job_id = %job.id,
-                            project_id = %project_id,
-                            report = ?report,
-                            "generated project report"
-                        );
-                    }
-                    Ok(None) => {
-                        projects_missing += 1;
-                        warn!(project_id = %project_id, "project not found, skipping report");
-                    }
-                    Err(e) => {
-                        errors += 1;
-                        warn!(project_id = %project_id, error = %e, "failed to generate report");
-                    }
-                }
-            }
-
-            info!(
-                job_id = %job.id,
-                projects_found = project_ids.len(),
-                reports_generated = reports_generated,
-                projects_missing = projects_missing,
-                errors = errors,
-                "project report batch completed"
-            );
-
-            if errors > 0 {
-                return Err(JobHandlerError::new(format!(
-                    "project report batch had {errors} generation failures"
-                )));
-            }
-
-            return Ok(());
+            return run_project_report_batch(self.pool.as_ref(), &job.id, &project_ids).await;
         };
 
         let Some(report) = build_project_report(self.pool.as_ref(), project_id).await? else {

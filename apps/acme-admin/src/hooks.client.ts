@@ -1,11 +1,9 @@
-import { configureAcmeClient as configureAliasedAcmeClient } from "@api-client";
-import { configureAcmeClient as configurePackageAcmeClient } from "@api-client";
+import { configureAcmeClient } from "@api-client";
 import { resolvePublicApiConfig } from "$lib/config/public-api";
 
 const config = resolvePublicApiConfig();
 
-// `acme-admin` still has a mixed import graph (`@api-client` and `acme-client`).
-// Configure both entrypoints so commands share the same runtime config until the
-// app is fully normalized to one import path.
-configureAliasedAcmeClient(config);
-configurePackageAcmeClient(config);
+// `@api-client` and `acme-client` are both aliased to packages/acme-client/src in
+// svelte.config.js and vite.config.ts, so they resolve to one module with one
+// stored config. Configuring it once here is enough.
+configureAcmeClient(config);
