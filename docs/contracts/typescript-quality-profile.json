@@ -10,7 +10,9 @@
     "build_output": [],
     "documentation": [],
     "fixtures": [],
-    "generated": [],
+    "generated": [
+      "apps/acme-admin/src/lib/icons.generated.ts"
+    ],
     "vendored": []
   },
   "language": "typescript",

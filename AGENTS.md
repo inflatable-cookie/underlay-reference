@@ -38,17 +38,22 @@ implementation notes are documented in:
 
 ## Effigy-First Execution
 
-Default flow from the workspace root:
-1. Run `effigy tasks`
-2. Run `effigy workspace:js:prepare` (one frozen root install)
-3. Run `effigy health`
-4. Run `effigy validate`
-5. Prefer `effigy <task>` for supported workspace and child-repo work
-6. Fall back to raw package-local commands only when Effigy does not yet cover the path
+Effigy is the default command surface. Route by job, not by a startup sequence —
+the Effigy Agent Contract at the end of this file is the routing rule. Two things
+are specific to this workspace and are not in that block:
+
+- JS/Svelte work needs one frozen root install first: `effigy workspace:js:prepare`.
+  That is the only install; never run a per-package `bun install`.
+- Prefer `effigy <task>` over raw package-manager or shell commands wherever a
+  task exists, and fall back to raw commands only where Effigy does not yet
+  cover the path.
+
+Completion gates belong at the end of a change, not the start of a turn. See
+Validation.
 
 ## Runtime Stance
 
-- Treat the live stack as Effigy-owned. Use `effigy dev`, `effigy prep`, package-owned Effigy tasks, or `effigy container shell` when you need to affect the running environment.
+- Treat the live stack as Effigy-owned. Use `effigy dev`, `effigy container shell`, or a package-owned task (`acme-admin/prepare`, `acme-front/prepare`, `acme-api/migration:*`) when you need to affect the running environment.
 - Do not run `bun install`, `npm install`, `pnpm install`, `cargo build`, or similar hydration/build commands on the host expecting them to change the live runtime unless the task is explicitly host-owned.
 - Do not treat host-side `node_modules`, `vendor`, `target`, `.pnpm-store`, `.svelte-kit`, or similar artifact dirs as the source of truth for the running stack. Those may be isolated inside the container runtime.
 - When raw `bun` or `cargo` is genuinely needed, prefer running it through `effigy container shell` when the live runtime matters.
@@ -58,8 +63,10 @@ For first-time local bring-up from outside this repo:
 - add `--start` when you want bootstrap to launch `dev` after dependency setup
 
 Workspace notes:
-- use root Effigy tasks for cross-repo orchestration (`health`, `validate`, `qa`, `qa:docs`, `qa:northstar`, `dev`)
-- use child-owned tasks from the workspace root when they resolve uniquely (`migration:*`)
+- root-owned orchestration tasks are `dev`, `health`, `validate`, `qa`, and the
+  `qa:*` conformance set
+- child-owned tasks resolve from the workspace root when the name is unique:
+  `qa:docs` and `qa:northstar` (acme-docs), `migration:*` (acme-api)
 - when modifying a specific repo, follow that repo's local `AGENTS.md`
 - do not treat `cargo build`, `bun check`, or ad hoc shell commands as the default entrypoint when an Effigy task exists
 - sibling `underlay` and `poodle` repos are mounted from `../underlay` and `../poodle`; do not recreate the old symlink/bootstrap pattern
@@ -67,11 +74,20 @@ Workspace notes:
 
 ## Validation
 
-- `effigy workspace:js:prepare`
-- `effigy health`
-- `effigy validate`
-- `effigy qa:docs`
-- `effigy qa:conformance` (released workspace-shape + env-authority checkers)
+Run `effigy workspace:js:prepare` first if dependencies are not installed. Then,
+fastest-failing first:
+
+- `effigy health` — fmt plus a cheap typecheck/`cargo check` across the workspace
+- `effigy qa:docs` and `effigy qa:northstar` — docs authority checks (acme-docs)
+- `effigy qa:conformance` — released workspace-shape + env-authority checkers
+- `effigy <catalog>/validate` for each catalog you touched — `acme-api`,
+  `acme-admin`, `acme-front`, `acme-client`, `acme-ui`, `acme-docs`. These are
+  the authoritative per-package gates.
+
+Root `effigy validate` and `effigy qa` also run the mounted sibling `underlay`
+and `poodle` catalogs. A failure there can be sibling-owned rather than yours,
+so read which repo the failing task ran in before treating it as a regression
+here. Open instances are tracked in `PAPERCUTS.md`.
 
 ## Env And Secret Authority
 

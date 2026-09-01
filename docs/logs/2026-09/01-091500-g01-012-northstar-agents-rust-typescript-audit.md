@@ -59,7 +59,7 @@ counts.
 
 | Scope | Non-blank before | after | Bytes before | after | Note |
 | --- | --- | --- | --- | --- | --- |
-| `AGENTS.md` | 98 | 113 | 6247 | 7243 | +13 non-blank is the generated `northstar:typescript-quality` activation block; the review's own edits are +2 |
+| `AGENTS.md` | 98 | 125 | 6247 | 8312 | +13 non-blank is the generated `northstar:typescript-quality` activation block; the review's own edits are +14, of which +12 are the `AGENTS-007`..`AGENTS-009` repairs added in revision 2 |
 | `docs/AGENTS.md` | 36 | 37 | 2459 | 2236 | −223 bytes |
 | `apps/acme-api/AGENTS.md` | 44 | 51 | 2674 | 2999 | +10 non-blank is the generated `northstar:rust-quality` block; the review's own edits are −3 |
 | `apps/acme-admin/AGENTS.md` | 28 | 25 | 1541 | 1258 | −283 bytes |
@@ -69,8 +69,11 @@ counts.
 | `CLAUDE.md` | absent | 1 | 0 | 11 | new bridge |
 
 Setting aside the two generated activation blocks, the instruction surface lost
-1371 bytes across the six nested scopes and gained 190 at root. The root file
-remains above Northstar's 100-non-blank-line advisory target at 113; that is
+1371 bytes across the six nested scopes and gained 1259 at root, almost all of
+it in revision 2's `AGENTS-007`..`AGENTS-009` repairs — replacing a four-step
+ritual with routing guidance and a real gate list costs more characters than it
+saves, and buys back a full `health` + `validate` per turn. The root file
+remains above Northstar's 100-non-blank-line advisory target at 125; that is
 retained deliberately rather than met by deleting sections that carry authority
 (env/secret authority, worker-mode activation, workspace shape). The checker's
 own note applies: the goal is a guide an unfamiliar agent can work from, not the
@@ -78,11 +81,15 @@ smallest file.
 
 "Before" is the launch `HEAD` `135fab45`, i.e. prior to Northstar activation
 blocks. Checker leads on the root file before: `placement_leads=9`, `procedure_leads=10`,
-`freshness_leads=2`, plus `missing Claude bridge`. After: `placement_leads=11`,
-`procedure_leads=10`, `freshness_leads=2`, `Claude bridge OK: CLAUDE.md ->
-@AGENTS.md`. The two extra placement leads are the newly correct `../underlay`
-and `docs/contracts/` references the checker counts as scoped paths. These are
-context-cost measurements, not a prose verdict.
+`freshness_leads=2`, plus `missing Claude bridge`. After revision 2:
+`placement_leads=13`, `procedure_leads=11`, `freshness_leads=2`, `Claude bridge
+OK: CLAUDE.md -> @AGENTS.md`. The extra placement leads are the newly correct
+`../underlay` and `docs/contracts/` references plus the per-catalog `validate`
+task names the checker counts as scoped paths; the extra procedure lead is the
+real gate list that replaced the removed startup ritual. These are context-cost
+measurements, not a prose verdict — the counts went up while the actual
+per-turn cost went down, because the ritual the file no longer prescribes was
+`effigy health` plus `effigy validate` on every turn.
 
 ### Section-intent map and dispositions
 
@@ -146,6 +153,9 @@ All five share one shape, so they share dispositions.
 | `AGENTS-004` | repository root | No `CLAUDE.md` bridge exists. | repair |
 | `AGENTS-005` | root `AGENTS.md` | "Keep AGENTS Lean" states a rule the file it lives in does not satisfy. | repair |
 | `AGENTS-006` | root `AGENTS.md` | The managed Effigy Agent Contract block's three reference-doc links do not resolve in this repository. | report only — sync-managed block, out of card authority |
+| `AGENTS-007` | root `AGENTS.md` | "Effigy-First Execution" mandates a four-step startup sequence (`tasks`, `workspace:js:prepare`, `health`, `validate`) run "from the workspace root" before work begins. The managed Effigy Agent Contract block twelve lines below says the opposite: "Route by job, not by startup ritual." An agent reading the file top to bottom meets the ritual first and pays for a full `health` and `validate` on every turn. | repair |
+| `AGENTS-008` | root `AGENTS.md` | "Runtime Stance" tells agents to use `effigy prep`. No such task exists: `effigy prep` returns `task \`prep\` is not defined in effective catalogs` across all nine catalogs. The real names are `effigy workspace:js:prepare` (root) and `acme-admin/prepare` / `acme-front/prepare` (package-owned). "Workspace notes" also lists `qa:docs` and `qa:northstar` as "root Effigy tasks" when both are `acme-docs`-owned and reach the root only through unique child-catalog resolution — the distinction the very next bullet draws. | repair |
+| `AGENTS-009` | root `AGENTS.md` | The "Validation" section lists `effigy validate` as a completion gate, but the bundle's root `validate` and `qa` sequences fan out into the mounted sibling `underlay` catalog and cannot pass from this repository: both exit 1 on Underlay's own `ts/tests/tools/workspace-shape.test.ts`. The section also omits `effigy qa:northstar` and the per-catalog `validate` tasks, which are the gates that actually pass and that this audit used. | repair |
 
 ### Instruction repairs applied
 
@@ -157,6 +167,9 @@ All five share one shape, so they share dispositions.
 | `AGENTS-004` | `CLAUDE.md` created with the single required `@AGENTS.md` reference and nothing else. |
 | `AGENTS-005` | "Keep AGENTS Lean" now scopes its four-item rule to the app and package files it actually governs and adds "A nested file should point at this one rather than restate it", so the rule is no longer contradicted by the file stating it. |
 | `AGENTS-006` | Not repaired. Reported. |
+| `AGENTS-007` | "Effigy-First Execution" no longer prescribes a startup sequence. It now states that Effigy is the default command surface, defers routing to the managed Agent Contract block, and keeps only the two workspace-specific facts: one frozen root install for JS work, and prefer `effigy <task>` over raw commands. Completion gates moved to where they belong, under Validation. |
+| `AGENTS-008` | `effigy prep` replaced with the tasks that exist. "Workspace notes" now separates root-owned orchestration tasks from child-owned tasks that resolve uniquely from the root, and puts `qa:docs`/`qa:northstar` in the second group with their owning catalog named. |
+| `AGENTS-009` | "Validation" now lists the gates that actually pass — `effigy health`, `effigy qa:docs`, `effigy qa:northstar`, `effigy qa:conformance`, and the six per-catalog `effigy <catalog>/validate` tasks — and states that root `validate`/`qa` also run the mounted sibling catalogs, so a red result there may be sibling-owned. |
 
 ## Rust Audit
 
@@ -335,6 +348,44 @@ all non-TypeScript and each carries an excluded disposition.
   `.effigy/typescript-quality/audits/g01012-typescript/`, which `.gitignore`
   excludes, so they are not part of the PR diff.
 
+**Live profile hash change, disclosed.** The sealed manifest's
+`policy_snapshot.profile_sha256` is
+`d837cf5209086ef9e56043f110985d2a009aba85db98e3a1066ee8dab22ec0ff`, which was
+the live `docs/contracts/typescript-quality-profile.json` at initialization.
+Revision 2 edited that live file to close the drift described below, so it is
+now `91ada825c971b7be8f848a915487c6ce9116e4bec8cd0ade489f1d4364311e8a`. The
+sealed record was **not** rewritten and the audit was **not** re-run: the
+finalized manifest, unit records and `result.json` still carry the hash the
+audit actually ran against. A future audit initialized from the corrected
+profile will seal the new hash. The Rust profile is unchanged and its live hash
+still equals the sealed `4a8eea6eaa897ff08b38e39c602922772e19397c6614bdb67c847f6f508f479b`.
+
+### Generated-file exclusion: profile vs recorded scope
+
+The audit manifest and this closeout exclude
+`apps/acme-admin/src/lib/icons.generated.ts` as generated, but the durable
+profile shipped by setup declared `exclusions.generated: []` while listing that
+same file in the acme-admin package's `typescript_evidence.sources`. The two
+disagreed.
+
+The cause is that setup's exclusion lists are seeded empty and never populated:
+`assets/templates/language-quality/typescript/typescript-quality-profile.json`
+ships all five lists empty, and the setup script's `ignored_path` filter matches
+only path *segments* named `generated`, `vendored`, `fixtures`, `dist`, `build`
+and so on. A file named `icons.generated.ts` inside `src/lib/` matches no
+segment, so discovery correctly listed it as a TypeScript source and policy had
+nothing to say about it. The exclusion lists are operator-maintained policy, not
+discovery output.
+
+Revision 2 therefore populates the durable policy rather than editing the
+discovery inventory:
+`exclusions.generated` now contains
+`apps/acme-admin/src/lib/icons.generated.ts`, and the file stays in
+`typescript_evidence.sources` because it genuinely is a TypeScript file in that
+package. The profile now says both true things — the file exists, and it is not
+audited — and matches the recorded scope exactly. The diff is three lines and
+round-trips setup's own formatting (2-space indent, sorted keys).
+
 ### Repairs applied (6 files)
 
 | Unit | Rule | File(s) | Change |
@@ -425,6 +476,16 @@ All commands run from the worker worktree on the head this PR proposes.
 | `effigy validate` (workspace root) | **fails, and not because of this change** — see below |
 | `git diff --check` | clean |
 | `effigy --repo <northstar> northstar/check:agent-instructions .` | Claude bridge OK; measurements above |
+| `effigy prep` | **not a task** — `task \`prep\` is not defined in effective catalogs` (evidence for `AGENTS-008`) |
+| `effigy qa:docs`, `effigy qa:northstar` (bare, from root) | exit 0 each; both resolve to the `acme-docs` catalog (evidence for `AGENTS-008`/`AGENTS-009`) |
+| `effigy qa` (workspace root) | exit 1, same sibling Underlay failure as root `validate` (evidence for `AGENTS-009`) |
+| `effigy health` (workspace root) | exit 0 |
+
+Revision 2 re-ran the docs and instruction gates after its edits:
+`effigy qa:docs`, `effigy qa:northstar` and `effigy acme-docs/validate` all exit
+0, and `northstar/check:agent-instructions` reports the Claude bridge OK. The
+language gates were not re-run because revision 2 changed no file under `apps/`
+or `packages/` — only `AGENTS.md`, the TypeScript profile and this closeout.
 
 **Root `effigy validate` fails in the sibling Underlay checkout.** The
 bundle-provided root sequence fans out into the mounted `underlay` catalog and
@@ -444,11 +505,15 @@ checks over Underlay's own contract rather than validation of this change.
 
 ## Changed-File Attribution
 
-Every changed file maps to a finding recorded before mutation.
+Every changed **source and instruction** file maps to a finding recorded before
+mutation. The remaining changed files are closeout, policy and evidence
+surfaces, which the card and `docs/policy/001-working-rules.md` authorize
+directly rather than through a finding; each is named below with the authority
+it runs under.
 
 | File | Lane | Authority |
 | --- | --- | --- |
-| `AGENTS.md` | instruction | `AGENTS-002`, `AGENTS-005`; plus generated `northstar:typescript-quality` block |
+| `AGENTS.md` | instruction | `AGENTS-002`, `AGENTS-005`, `AGENTS-007`, `AGENTS-008`, `AGENTS-009`; plus generated `northstar:typescript-quality` block |
 | `CLAUDE.md` (new) | instruction | `AGENTS-004` |
 | `docs/AGENTS.md` | instruction | `AGENTS-003` |
 | `apps/acme-api/AGENTS.md` | instruction | `AGENTS-001`, `AGENTS-003`; plus generated `northstar:rust-quality` block |
@@ -470,7 +535,10 @@ Every changed file maps to a finding recorded before mutation.
 | `packages/acme-ui/src/nightfire/notes/TaskChecklistEditor.svelte` | TypeScript | `SVELTE-A11Y-001/name_checklist_item_controls` |
 | `apps/acme-front/src/routes/(app)/dashboard/+page.svelte` | TypeScript | `TS-READ-001/normalize_mangled_import_header` |
 | `apps/acme-front/src/routes/(app)/projects/[projectId]/+page.svelte` | TypeScript | `TS-READ-001/normalize_mangled_import_header` |
-| `docs/logs/2026-09/…` (this file), card, roadmap, spec, front doors | closeout | card 002 |
+| `docs/logs/2026-09/…` (this file) | closeout | card 002 "Evidence Required"; `docs/policy/001-working-rules.md` closeout pattern |
+| `docs/specs/batch-cards/002-…`, `docs/specs/002-…`, `docs/roadmaps/g01/012-…` | closeout | card 002 acceptance criteria; working-rules "update the current batch card first" |
+| `docs/README.md`, `docs/logs/README.md`, `docs/policy/001-working-rules.md`, `docs/roadmaps/README.md`, `docs/roadmaps/g01/README.md`, `docs/roadmaps/generation-index.md`, `docs/specs/README.md`, `docs/specs/batch-cards/README.md` | closeout | working-rules "refresh front-door/currentness surfaces that still name the active lane or ready card" |
+| `PAPERCUTS.md` | papercuts loop | Northstar `SKILL.md` "Papercuts loop (required during execution)": append a terse entry when a small solvable execution hurdle appears. Four entries added, none duplicating an open one. **Not** finding-backed and never claimed to be. |
 
 No file outside the four `apps/*` and `packages/*` roots, root `docs/`, and the
 root instruction surface was touched. Underlay and Poodle were read as context
@@ -508,6 +576,23 @@ this worker issued no write to either path.
 10. **The retained Underlay surface owned by `g01.007` and card 001 was not
     classified.** No file under that lane's authority was touched and its
     paused state is unchanged.
+
+## Review Response (revision 2)
+
+Orchestrator review on PR #13 at `fc6375fe4330788717730cd8651d5960570b81b3`
+required changes. All three findings are addressed; nothing else was touched and
+no source repair was widened.
+
+| Review finding | Response |
+| --- | --- |
+| 1. Root `AGENTS.md` mandates a universal startup ritual contradicting the managed Effigy contract, names the non-existent `effigy prep`, and its validation section does not name the repo's actual completion gates. | Accepted; the original instruction pass missed all three. Recorded as `AGENTS-007`, `AGENTS-008` and `AGENTS-009` above and repaired. Verified against the effective catalog rather than assumed: `effigy prep` returns `task \`prep\` is not defined in effective catalogs`; `effigy qa:docs` and `effigy qa:northstar` resolve to `acme-docs` and exit 0; `effigy health` and `effigy qa:conformance` exit 0; root `effigy validate` and `effigy qa` both exit 1 inside the mounted sibling `underlay` catalog. |
+| 2. The closeout claimed every changed file maps to a prior finding while `PAPERCUTS.md` was changed and absent from the attribution table. | Accepted; the claim was too broad. It is now narrowed to source and instruction files, and the table gains explicit rows for `PAPERCUTS.md` (Northstar's required papercuts loop, not finding-backed and no longer implied to be), for the card/spec/roadmap, and for the eight front-door surfaces, each naming the authority it runs under. |
+| 3. The live TypeScript profile declared `exclusions.generated: []` while its own package evidence named `icons.generated.ts`, which the audit manifest and closeout exclude. | Accepted. The durable profile now lists that file under `exclusions.generated`, so policy and recorded scope agree. The section above explains why setup left it empty (its `ignored_path` filter matches path segments, not filenames) and why the file stays in `typescript_evidence.sources`. The live profile hash change from `d837cf52…` to `91ada825…` is disclosed there. No finalized recorder artifact was rewritten and neither audit was re-run — the sealed Rust `result.json` `fd1d731e…` / `report.md` `5f486abb…` and TypeScript `result.json` `e4d13942…` are byte-identical to revision 1. |
+
+Revision 2 changes four files: `AGENTS.md`,
+`docs/contracts/typescript-quality-profile.json`, this closeout, and nothing
+under `apps/` or `packages/`. The 10 source repairs from revision 1 are
+unchanged.
 
 ## Next Task
 
