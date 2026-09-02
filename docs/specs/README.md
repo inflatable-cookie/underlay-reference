@@ -31,12 +31,12 @@ reference-app milestone needs tighter execution control.
 
 ## Active spec
 
-- `002-northstar-instruction-and-language-quality-audit.md`
+- `003-underlay-v0-9-6-immutable-media-adoption.md`
 
-Paused: `001-retained-underlay-surface-strict-lane.md` until the overlapping
-repository audit closes.
+Paused: spec 002 and audit card 002 during the overlapping rollout. Spec 001
+remains paused behind that audit.
 
 ## Next Task
 
-Execute card 002 under spec 002 and stop at its PR for orchestrator review.
-Resume spec 001 afterwards.
+Execute card 003 under spec 003 and stop at its PR for orchestrator review.
+Resume spec 002 afterwards.

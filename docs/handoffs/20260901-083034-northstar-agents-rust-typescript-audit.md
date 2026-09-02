@@ -5,7 +5,7 @@ handoff_mode: worker-pr-loop
 worker_mode: implementation
 dispatch_authority: orchestrator
 handoff: single-file-path-only
-status: ready-to-launch
+status: paused-before-launch-for-g01.013
 owner: Tom / Northstar orchestrator
 created: 2026-09-01
 updated: 2026-09-01

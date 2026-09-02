@@ -13,11 +13,11 @@ the reference implementation.
 
 ## Active batch card
 
-- `002-northstar-agents-rust-typescript-audit.md`
+- `003-underlay-v0-9-6-immutable-media-adoption.md`
 
-Paused: `001-audit-retained-acme-admin-underlay-surface.md` until card 002
-closes.
+Paused: card 002 during the overlapping rollout; card 001 remains paused behind
+card 002.
 
 ## Next Task
 
-Execute card 002 under `g01.012` and stop at its PR for orchestrator review.
+Execute card 003 under `g01.013` and stop at its PR for orchestrator review.

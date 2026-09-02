@@ -1,6 +1,6 @@
 # 002 - Northstar AGENTS, Rust, And TypeScript Audit
 
-Status: ready
+Status: paused-for-g01.013
 Owner: repo maintainers
 Created: 2026-09-01
 Roadmap: `g01.012`
@@ -75,5 +75,5 @@ public-contract, or retained-surface decision cannot be represented honestly.
 
 ## Next Task
 
-Run this card in the dispatched worker and open a PR. Do not merge or start
+Resume this card after `g01.013` merges and open a PR. Do not merge or start
 card 001.

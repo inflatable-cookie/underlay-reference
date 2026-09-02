@@ -1,13 +1,13 @@
 # g01.012 Northstar Instruction And Language Quality Audit
 
-Status: active
+Status: paused-for-g01.013
 Owner: repo maintainers
 Created: 2026-09-01
 Governing refs: root and nested `AGENTS.md`,
 `docs/policy/001-working-rules.md`,
 `docs/specs/002-northstar-instruction-and-language-quality-audit.md`, installed
 Northstar
-Planning state: card 002 ready; `g01.007` paused during overlapping audit
+Planning state: card 002 preserved but paused during overlapping `g01.013` rollout
 
 ## Problem
 
@@ -76,5 +76,5 @@ maintenance lane runs.
 
 ## Next Task
 
-Execute ready card 002 in one isolated Underlay Reference worker. Stop at its
-PR for orchestrator exact-head review; do not execute card 001 concurrently.
+Resume card 002 after `g01.013` merges. Stop at its PR for orchestrator
+exact-head review; do not execute card 001 concurrently.

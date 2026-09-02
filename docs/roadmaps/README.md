@@ -15,9 +15,10 @@ Roadmaps hold executable work for the reference implementation.
 ## Current generation
 
 - Active generation: `g01`
-- Next roadmap ID: `g01.013`
-- `g01.012` is the active Northstar instruction and language-quality audit with
-  ready card 002
+- Next roadmap ID: `g01.014`
+- `g01.013` is the active Underlay v0.9.6 immutable media adoption with ready
+  card 003
+- `g01.012` card 002 is paused intact during the overlapping rollout
 - `g01.007` and card 001 are paused during the overlapping audit
 - `g01.008`–`g01.011`, the g08 consumer-audit tranche, are complete
 
@@ -45,5 +46,5 @@ Before opening `gNN+1`:
 
 ## Next Task
 
-Execute `g01.012` from ready card 002 and stop at its PR for orchestrator
-review. Resume `g01.007` afterwards.
+Execute `g01.013` card 003 and stop at its PR for orchestrator review. Resume
+`g01.012` afterwards; `g01.007` remains paused behind it.

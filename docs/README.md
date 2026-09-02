@@ -69,6 +69,6 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 
 ## Next Task
 
-Execute card 002, the bounded Northstar instruction and language-quality audit
-under `g01.012`, and stop at its PR for orchestrator review. Resume the paused
-retained-surface card afterwards.
+Execute card 003, the Underlay v0.9.6 immutable media adoption under `g01.013`,
+and stop at its PR for orchestrator review. Resume the paused instruction and
+language-quality audit afterwards.

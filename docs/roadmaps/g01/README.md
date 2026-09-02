@@ -16,10 +16,11 @@
 - `010` TypeScript type-safety hygiene (from the g08 consumer audit)
 - `011` gate hardening and lint cleanup (from the g08 consumer audit)
 - `012` Northstar instruction and language-quality audit
+- `013` Underlay v0.9.6 immutable media adoption
 
 ## Next roadmap
 
-- Open the next real milestone as `g01.013`.
+- Open the next real milestone as `g01.014`.
 
 ## g08 consumer-audit tranche (`g01.008`-`g01.011`)
 
@@ -36,5 +37,6 @@ larger follow-ups it deferred and completed on 2026-07-19.
 
 ## Next Task
 
-Execute `g01.012` card 002 as the sole ready lane. `g01.007` and card 001 remain
-paused because both touch Acme Admin; resume them after audit closeout.
+Execute `g01.013` card 003. `g01.012` card 002 is paused intact because its
+repository-wide audit overlaps this operator-prioritized dependency and media
+rollout; resume it after card 003 merges. `g01.007` remains paused behind it.

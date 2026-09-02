@@ -1,6 +1,6 @@
 # 002 - Northstar Instruction And Language Quality Audit
 
-Status: active
+Status: paused-for-g01.013
 Owner: repo maintainers
 Created: 2026-09-01
 Roadmap refs: `g01.012`
