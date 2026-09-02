@@ -1,6 +1,6 @@
-# 003 - Underlay v0.9.6 Immutable Media Adoption
+# 003 - Underlay v0.9.7 Owned Media Recovery
 
-Status: ready
+Status: revision-ready
 Owner: media worker
 Created: 2026-09-02
 Roadmap: `g01.013`
@@ -9,9 +9,9 @@ Auto-start next card: no
 
 ## Objective
 
-Pin the full workspace to released Underlay `v0.9.6` and make the live Acme
-media finalisation path the canonical consumer proof of immutable verified blob
-promotion.
+Pin the full workspace to released Underlay `v0.9.7` and make the live Acme
+media finalisation path the canonical consumer proof of owned promotion and
+restart recovery.
 
 ## Scope
 
@@ -24,27 +24,32 @@ promotion.
 
 1. Preflight the clean pushed base, applicable instructions, released tag and
    `promote_verified` signature. Reproduce the mutable/client-described path.
-2. Update every Underlay declaration and both locks to exact `v0.9.6`; prove no
+2. Integrate current pushed `main` into the existing PR 14 branch without
+   rewriting history. Update every Underlay declaration and both locks to exact
+   `v0.9.7`; prove no
    mixed, path, branch, or revision source remains.
-3. Capture source bytes once within a limit, validate them, and promote to a
-   distinct immutable destination through `promote_verified`.
-4. Persist only returned/server-derived metadata. Make ready/current activation
-   atomic and preserve exact recovery identity across each failure edge.
-5. Drive every spec oracle row through real composition, run proportional
+3. Add the spec-authorized private migration. Generate and persist a fresh
+   ownership token plus exact provider/bucket/destination authority before create.
+4. Promote through `promote_verified_owned`; on restart recover only through
+   `recover_owned_publication`. Persist returned/server-derived facts and commit
+   ready/current atomically.
+5. Make version delete and media purge remove required staging and destination
+   blobs before deleting the durable row. Propagate cleanup failure for retry.
+6. Drive every spec oracle row through real composition, run proportional
    Effigy validation, add one log, push, and open one PR.
 
 ## Acceptance And Review
 
 Use the governing spec verbatim. Review must inspect the lock sources and try
 source mutation, non-regular/oversized input, occupied destinations, forged
-client metadata, post-promotion DB failure, and successful retry.
+client metadata, post-promotion DB failure, and retry convergence.
 
 ## Stop Conditions
 
-Use the governing spec. Stop rather than choosing a DTO, migration, retention,
-cleanup, adapter, or external-service policy. Never edit Underlay or Poodle.
+Use the governing spec. The narrow private migration is authorized. Stop rather
+than choosing a DTO, broader schema, retention, external-service, or unsupported
+adapter policy. Never edit Underlay or Poodle.
 
 ## Next Task
 
-Orchestrator exact-head review of the card 003 PR. Do not merge from the
-worker. Do not start card 002.
+Resume the existing worker and PR 14. Do not create a replacement lane or merge.
