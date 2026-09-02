@@ -37,4 +37,5 @@ Specs 002 and 003 are archived after merged PRs 13 and 14.
 
 ## Next Task
 
-Execute Card 001 under spec 001 and stop at its PR for orchestrator review.
+Card 001 under spec 001 is executed. Review its PR at the exact head, then
+archive the lane when it closes.

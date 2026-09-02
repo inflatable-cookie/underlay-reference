@@ -20,7 +20,7 @@ boundary contract for downstream app migrations.
 
 ## Ready chain
 
-- `001-audit-retained-acme-admin-underlay-surface.md` — ready
+- `001-audit-retained-acme-admin-underlay-surface.md` — executed; PR pending review
 
 ## Stop Conditions
 
@@ -30,4 +30,5 @@ boundary contract for downstream app migrations.
 
 ## Next Task
 
-Execute Card 001 and stop at its PR for exact-head review.
+Card 001 is executed. Review its PR at the exact head, then close or archive
+this lane; re-enter planning before any new downstream wave.

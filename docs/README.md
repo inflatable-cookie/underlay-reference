@@ -69,5 +69,7 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 
 ## Next Task
 
-Execute `g01.007` Card 001, the retained Underlay surface audit, and stop at its
-PR for exact-head review. `g01.013` completed in merged PR 14.
+`g01.007` Card 001 is executed: the retained Underlay surface contract is
+frozen at
+[architecture/004-retained-underlay-surface-contract.md](architecture/004-retained-underlay-surface-contract.md).
+Review its PR at the exact head. `g01.013` completed in merged PR 14.

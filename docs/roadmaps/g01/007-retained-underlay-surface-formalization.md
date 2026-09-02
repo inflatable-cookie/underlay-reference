@@ -2,9 +2,9 @@
 
 Status: active
 Owner: repo maintainers
-Updated: 2026-04-10
+Updated: 2026-09-03
 Governing refs: `docs/architecture/product-guardrails.md`, `docs/policy/001-working-rules.md`, `docs/specs/001-retained-underlay-surface-strict-lane.md`
-Planning state: Card 001 ready
+Planning state: Card 001 executed — contract frozen at `docs/architecture/004-retained-underlay-surface-contract.md`, PR pending review
 
 ## Goal
 
@@ -16,30 +16,31 @@ Turn the completed Poodle coexistence proof into an explicit retained-Underlay c
 
 ## Scope
 
-- [ ] audit the meaningful retained Underlay surfaces still present in `acme-admin` after `g01.006`
-- [ ] classify each retained surface as one of:
+- [x] audit the meaningful retained Underlay surfaces still present in `acme-admin` after `g01.006`
+- [x] classify each retained surface as one of:
   - intentionally retained structural shell
   - intentionally retained data-heavy or workflow-heavy surface
   - reference-app/domain-specific surface
   - candidate for future Poodle review, but not part of `g01.007`
-- [ ] record the approved retained-surface contract for the reference implementation in a durable doc artifact tied to this roadmap
-- [ ] capture the practical migration rule for downstream apps:
+- [x] record the approved retained-surface contract for the reference implementation in a durable doc artifact tied to this roadmap
+- [x] capture the practical migration rule for downstream apps:
   - use Poodle directly for primitives and simple composites
   - retain Underlay only where the approved contract says it still owns the surface
-- [ ] do not reopen already migrated foundational primitives or widen this milestone back into another route-conversion sweep
+- [x] do not reopen already migrated foundational primitives or widen this milestone back into another route-conversion sweep
 
 ## Deliverables
 
-- [ ] one retained-surface contract artifact for `acme-admin` that names the major surviving Underlay surface groups and why they remain
-- [ ] one roadmap-aligned execution log that records the contract-opening or completion batch
-- [ ] updated roadmap indexes pointing to `g01.007` as the active milestone
+- [x] one retained-surface contract artifact for `acme-admin` that names the major surviving Underlay surface groups and why they remain — `docs/architecture/004-retained-underlay-surface-contract.md`
+- [x] one roadmap-aligned execution log that records the contract-opening or completion batch — `docs/logs/2026-09/03-003654-g01-007-retained-surface-contract.md`
+- [x] updated roadmap indexes pointing to `g01.007` as the active milestone
 
 ## Validation
 
-- [ ] run `effigy docs check-links README.md vision/README.md roadmaps/README.md logs/README.md` from `~/Dev/projects/underlay-reference/docs`
-- [ ] confirm `docs/roadmaps/README.md` and `docs/roadmaps/g01/README.md` both show `g01.007` as the active next milestone
-- [ ] ensure the retained-surface artifact uses absolute path references and stays aligned with the completed `g01.006` outcome
+- [x] run `effigy docs check-links README.md vision/README.md roadmaps/README.md logs/README.md` from `docs/`
+- [x] confirm `docs/roadmaps/README.md` and `docs/roadmaps/g01/README.md` both show `g01.007` as the active milestone
+- [x] ensure the retained-surface artifact uses repo-root path references and stays aligned with the completed `g01.006` outcome
 
 ## Next
 
-Execute Card 001 and stop at its PR for exact-head review.
+Card 001 is executed. Review the retained-surface contract PR at its exact
+head; downstream rollout planning starts only after that review.
