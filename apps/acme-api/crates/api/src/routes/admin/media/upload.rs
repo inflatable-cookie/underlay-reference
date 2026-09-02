@@ -1,9 +1,11 @@
 use super::*;
+use std::collections::HashSet;
+
 use async_trait::async_trait;
-use sha2::{Digest, Sha256};
+use rand::Rng;
 use underlay_blob::{
-    content_matches_declared, BlobAdapter, BlobAdapterObjectKeyExt, BlobAdapterPromotionExt,
-    BlobAdapterUploadExt, BlobError, BlobObjectKey, BlobUploadConfig, StoredObject,
+    BlobAdapter, BlobAdapterObjectKeyExt, BlobAdapterPromotionExt, BlobAdapterUploadExt, BlobError,
+    BlobObjectKey, OwnedDestinationAuthority, OwnershipToken, StoredObject,
     VerifiedPromotionResult,
 };
 
@@ -91,17 +93,52 @@ pub(crate) fn version_blob_keys(
     }
 }
 
-pub(crate) async fn delete_version_blobs(blob: &dyn BlobAdapter, object_key: &BlobObjectKey) {
-    let Ok((staging, destination)) = version_blob_keys(object_key) else {
-        let _ = blob.delete_object_key(object_key).await;
-        return;
-    };
-    if let Err(e) = blob.delete_object_key(&staging).await {
-        tracing::warn!("Failed to delete staging blob {}: {}", staging, e);
+fn push_cleanup_key(keys: &mut Vec<BlobObjectKey>, seen: &mut HashSet<String>, key: BlobObjectKey) {
+    if seen.insert(key.as_str().to_string()) {
+        keys.push(key);
     }
-    if let Err(e) = blob.delete_object_key(&destination).await {
-        tracing::warn!("Failed to delete published blob {}: {}", destination, e);
+}
+
+/// Delete staging and owned destination objects. Tries every known key even
+/// when one delete fails. Caller must retain the row on error.
+pub(crate) async fn delete_version_blobs(
+    blob: &dyn BlobAdapter,
+    version: &acme_db::media::MediaVersionRow,
+) -> Result<(), BlobError> {
+    let mut keys = Vec::new();
+    let mut seen = HashSet::new();
+    for candidate in version
+        .object_key
+        .as_ref()
+        .into_iter()
+        .chain(version.published_object_key.as_ref())
+    {
+        push_cleanup_key(&mut keys, &mut seen, candidate.clone());
+        if let Ok((staging, destination)) = version_blob_keys(candidate) {
+            push_cleanup_key(&mut keys, &mut seen, staging);
+            push_cleanup_key(&mut keys, &mut seen, destination);
+        }
     }
+
+    let mut first_err = None;
+    for key in keys {
+        if let Err(e) = blob.delete_object_key(&key).await {
+            tracing::error!("Failed to delete blob {}: {}", key, e);
+            first_err = first_err.or(Some(e));
+        }
+    }
+    match first_err {
+        Some(err) => Err(err),
+        None => Ok(()),
+    }
+}
+
+#[derive(Clone, Copy)]
+#[cfg_attr(not(test), allow(dead_code))]
+enum FinaliseFault {
+    None,
+    BeforeCreate,
+    AfterCreate,
 }
 
 #[async_trait]
@@ -155,37 +192,24 @@ fn recorded_promotion(
     })
 }
 
-fn publication_intent_recorded(version: &acme_db::media::MediaVersionRow) -> bool {
-    version.storage_provider.is_some() && version.bucket.is_some() && version.sha256.is_none()
+fn owned_destination_authority(
+    version: &acme_db::media::MediaVersionRow,
+) -> Option<(Vec<u8>, BlobObjectKey, OwnedDestinationAuthority)> {
+    let token = version.ownership_token.as_ref().filter(|t| t.len() >= 32)?;
+    let destination = version.published_object_key.clone()?;
+    let provider = version.storage_provider.as_ref()?;
+    let bucket = version.bucket.as_ref()?;
+    let authority =
+        OwnedDestinationAuthority::new(provider.clone(), bucket.clone(), destination.clone())
+            .ok()?;
+    Some((token.clone(), destination, authority))
 }
 
-async fn recover_from_destination(
-    blob: &dyn BlobAdapter,
-    destination: &BlobObjectKey,
-    declared_mime: &str,
-    config: &BlobUploadConfig,
-) -> Result<VerifiedPromotionResult, BlobError> {
-    let bytes = blob
-        .get_bytes_bounded(destination.as_str(), config.max_file_size_bytes_limit())
-        .await?;
-    if !config.is_content_type_allowed(declared_mime) {
-        return Err(BlobError::InvalidContentType(declared_mime.to_string()));
-    }
-    if !content_matches_declared(&bytes, declared_mime) {
-        return Err(BlobError::InvalidContentType(format!(
-            "published bytes do not match declared content type {declared_mime}"
-        )));
-    }
-    Ok(VerifiedPromotionResult {
-        object: StoredObject::new(
-            blob.name(),
-            blob.bucket(),
-            destination.as_str(),
-            bytes.len() as u64,
-            declared_mime,
-        ),
-        sha256: hex::encode(Sha256::digest(&bytes)),
-    })
+fn generate_ownership_token() -> Result<(Vec<u8>, OwnershipToken), BlobError> {
+    let mut bytes = vec![0u8; OwnershipToken::MIN_LEN];
+    rand::rng().fill_bytes(&mut bytes);
+    let token = OwnershipToken::from_bytes(bytes.clone())?;
+    Ok((bytes, token))
 }
 
 fn blob_finalise_error(
@@ -208,6 +232,28 @@ fn blob_finalise_error(
         "media_id": media_id,
         "version_id": version_id
     }))
+}
+
+pub(crate) fn blob_cleanup_error(
+    err: BlobError,
+    operation: &'static str,
+    media_id: Uuid,
+    version_id: Option<Uuid>,
+) -> ApiError {
+    tracing::error!("Failed to delete media blobs: {}", err);
+    let mut context = json!({
+        "operation": operation,
+        "media_id": media_id
+    });
+    if let Some(version_id) = version_id {
+        context["version_id"] = json!(version_id);
+    }
+    crate::db_errors::internal_with_diagnostics(
+        "media.blob_cleanup_failed",
+        "Failed to delete stored objects",
+        &err,
+    )
+    .with_context(context)
 }
 
 /// Initiate an upload for a media item.
@@ -349,7 +395,15 @@ pub async fn finalise_upload(
     Json(req): Json<FinaliseUploadRequest>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
-    finalise_upload_with(&state, PoolStore(pool), media_id, version_id, req, false).await
+    finalise_upload_with(
+        &state,
+        PoolStore(pool),
+        media_id,
+        version_id,
+        req,
+        FinaliseFault::None,
+    )
+    .await
 }
 
 async fn finalise_upload_with<S: ReadyCurrentStore>(
@@ -358,7 +412,7 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
     media_id: Uuid,
     version_id: Uuid,
     req: FinaliseUploadRequest,
-    fail_after_promote: bool,
+    fault: FinaliseFault,
 ) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
         return Err(ApiError::bad_request("validation.failed", e.to_string()));
@@ -435,67 +489,73 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
             "Version has no persisted staging object key",
         )
     })?;
-    let destination_key = published_object_key(&staging_key)
-        .map_err(|e| ApiError::bad_request("media.invalid_object_key", e))?;
-
-    // Client sha256/size/provider/bucket/final key are not authority. Digest,
-    // size, MIME, provider, bucket, and destination key come from the
-    // captured promotion result, recorded facts, or the immutable destination
-    // after a crash that followed exclusive create.
     let declared_mime = version
         .mime_type
         .clone()
         .unwrap_or_else(|| req.content_type.clone());
-    let promoted = if let Some(recorded) = recorded_promotion(&version, &destination_key) {
-        recorded
-    } else if publication_intent_recorded(&version) {
-        match recover_from_destination(
-            state.blob_adapter.as_ref(),
-            &destination_key,
-            &declared_mime,
-            &state.config.media,
-        )
-        .await
-        {
-            Ok(result) => result,
-            Err(BlobError::NotFound(_)) => {
-                match state
-                    .blob_adapter
-                    .promote_verified(
-                        &staging_key,
-                        &destination_key,
-                        &declared_mime,
-                        &state.config.media,
-                    )
-                    .await
-                {
-                    Ok(result) => result,
-                    Err(BlobError::DestinationExists(key)) => {
-                        let _ = media::clear_publication_intent(pool, version_id).await;
-                        return Err(blob_finalise_error(
-                            BlobError::DestinationExists(key),
-                            state,
-                            media_id,
-                            version_id,
-                        ));
-                    }
-                    Err(err) => return Err(blob_finalise_error(err, state, media_id, version_id)),
-                }
-            }
-            Err(err) => return Err(blob_finalise_error(err, state, media_id, version_id)),
+
+    // Client sha256/size/provider/bucket/final key are not authority. Digest,
+    // size, MIME, provider, bucket, and destination key come from owned
+    // promotion or token-bound recovery of the immutable destination.
+    let promoted = if let Some((token_bytes, destination, authority)) =
+        owned_destination_authority(&version)
+    {
+        let token = OwnershipToken::from_bytes(token_bytes).map_err(|e| {
+            crate::db_errors::internal_with_diagnostics(
+                "media.ownership_token_failed",
+                "Failed to finalise upload",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.finalise_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            }))
+        })?;
+        if let Some(recorded) = recorded_promotion(&version, &destination) {
+            recorded
+        } else {
+            recover_or_promote_owned(
+                state,
+                &staging_key,
+                &destination,
+                &declared_mime,
+                &token,
+                &authority,
+                media_id,
+                version_id,
+                fault,
+            )
+            .await?
         }
     } else {
-        if let Err(e) = media::record_publication_intent(
+        let (token_bytes, token) = generate_ownership_token().map_err(|e| {
+            crate::db_errors::internal_with_diagnostics(
+                "media.ownership_token_failed",
+                "Failed to finalise upload",
+                &e,
+            )
+            .with_context(json!({
+                "operation": "media.finalise_upload",
+                "media_id": media_id,
+                "version_id": version_id
+            }))
+        })?;
+        let destination_key = published_object_key(&staging_key)
+            .map_err(|e| ApiError::bad_request("media.invalid_object_key", e))?;
+        if let Err(e) = media::record_owned_publication_authority(
             pool,
             version_id,
+            &token_bytes,
+            destination_key.as_str(),
             state.blob_adapter.name(),
             state.blob_adapter.bucket(),
         )
         .await
         {
-            tracing::error!("Failed to record publication intent: {}", e);
+            tracing::error!("Failed to record owned publication authority: {}", e);
             return Err(crate::db_errors::internal_with_diagnostics(
-                "media.publication_intent_failed",
+                "media.owned_authority_failed",
                 "Failed to finalise upload",
                 &e,
             )
@@ -505,44 +565,26 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
                 "version_id": version_id
             })));
         }
-        match state
-            .blob_adapter
-            .promote_verified(
+        if matches!(fault, FinaliseFault::BeforeCreate) {
+            return Err(injected_crash(
+                "media.persist_crash_injected",
+                media_id,
+                version_id,
                 &staging_key,
                 &destination_key,
-                &declared_mime,
-                &state.config.media,
-            )
-            .await
-        {
-            Ok(result) => {
-                if fail_after_promote {
-                    return Err(crate::db_errors::internal_with_diagnostics(
-                        "media.promote_crash_injected",
-                        "Failed to finalise upload",
-                        &"injected crash after exclusive create",
-                    )
-                    .with_context(json!({
-                        "operation": "media.finalise_upload",
-                        "media_id": media_id,
-                        "version_id": version_id,
-                        "staging_key": staging_key.as_str(),
-                        "destination_key": destination_key.as_str()
-                    })));
-                }
-                result
-            }
-            Err(BlobError::DestinationExists(key)) => {
-                let _ = media::clear_publication_intent(pool, version_id).await;
-                return Err(blob_finalise_error(
-                    BlobError::DestinationExists(key),
-                    state,
-                    media_id,
-                    version_id,
-                ));
-            }
-            Err(err) => return Err(blob_finalise_error(err, state, media_id, version_id)),
+            ));
         }
+        promote_verified_owned(
+            state,
+            &staging_key,
+            &destination_key,
+            &declared_mime,
+            &token,
+            media_id,
+            version_id,
+            fault,
+        )
+        .await?
     };
 
     if let Err(e) = media::record_verified_promotion(
@@ -567,7 +609,7 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
             "media_id": media_id,
             "version_id": version_id,
             "staging_key": staging_key.as_str(),
-            "destination_key": destination_key.as_str()
+            "destination_key": promoted.object.key
         })));
     }
 
@@ -588,7 +630,7 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
                 "media_id": media_id,
                 "version_id": version_id,
                 "staging_key": staging_key.as_str(),
-                "destination_key": destination_key.as_str()
+                "destination_key": promoted.object.key
             })));
         }
     };
@@ -618,6 +660,100 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
     }
 
     finalise_success_response(pool, media_id, finalised_version).await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn recover_or_promote_owned(
+    state: &AppState,
+    staging_key: &BlobObjectKey,
+    destination_key: &BlobObjectKey,
+    declared_mime: &str,
+    token: &OwnershipToken,
+    authority: &OwnedDestinationAuthority,
+    media_id: Uuid,
+    version_id: Uuid,
+    fault: FinaliseFault,
+) -> Result<VerifiedPromotionResult, ApiError> {
+    match state
+        .blob_adapter
+        .recover_owned_publication(token, authority)
+        .await
+    {
+        Ok(result) => Ok(result),
+        Err(BlobError::NotFound(_)) => {
+            promote_verified_owned(
+                state,
+                staging_key,
+                destination_key,
+                declared_mime,
+                token,
+                media_id,
+                version_id,
+                fault,
+            )
+            .await
+        }
+        Err(err) => Err(blob_finalise_error(err, state, media_id, version_id)),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn promote_verified_owned(
+    state: &AppState,
+    staging_key: &BlobObjectKey,
+    destination_key: &BlobObjectKey,
+    declared_mime: &str,
+    token: &OwnershipToken,
+    media_id: Uuid,
+    version_id: Uuid,
+    fault: FinaliseFault,
+) -> Result<VerifiedPromotionResult, ApiError> {
+    match state
+        .blob_adapter
+        .promote_verified_owned(
+            staging_key,
+            destination_key,
+            declared_mime,
+            &state.config.media,
+            token,
+        )
+        .await
+    {
+        Ok(result) => {
+            if matches!(fault, FinaliseFault::AfterCreate) {
+                return Err(injected_crash(
+                    "media.promote_crash_injected",
+                    media_id,
+                    version_id,
+                    staging_key,
+                    destination_key,
+                ));
+            }
+            Ok(result)
+        }
+        Err(err) => Err(blob_finalise_error(err, state, media_id, version_id)),
+    }
+}
+
+fn injected_crash(
+    code: &'static str,
+    media_id: Uuid,
+    version_id: Uuid,
+    staging_key: &BlobObjectKey,
+    destination_key: &BlobObjectKey,
+) -> ApiError {
+    crate::db_errors::internal_with_diagnostics(
+        code,
+        "Failed to finalise upload",
+        &"injected crash",
+    )
+    .with_context(json!({
+        "operation": "media.finalise_upload",
+        "media_id": media_id,
+        "version_id": version_id,
+        "staging_key": staging_key.as_str(),
+        "destination_key": destination_key.as_str()
+    }))
 }
 
 async fn finalise_success_response(

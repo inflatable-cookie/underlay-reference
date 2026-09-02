@@ -3,6 +3,7 @@
 
 use super::*;
 use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use acme_auth::{
@@ -18,12 +19,13 @@ use sha2::{Digest, Sha256};
 use underlay_auth::AuthProvider;
 use underlay_blob::{
     BlobAdapter, BlobError, BlobObjectKey, BlobResult, BlobUploadConfig, DownloadRequest,
-    ObjectInfo, SignedUrl, StoredObject, UploadPlan, UploadRequest,
+    ObjectInfo, OwnedPublicationFacts, SignedUrl, StoredObject, UploadPlan, UploadRequest,
 };
 use underlay_media::storage::version_object_key;
 
 const PNG: &[u8] = &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x01];
 const FORGED_SHA256: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const WRONG_TOKEN: &[u8] = b"other-token-not-the-first-one!!!!";
 
 fn skip_without_db() -> bool {
     std::env::var("DATABASE_URL").is_err() && std::env::var("TEST_DATABASE_URL").is_err()
@@ -52,19 +54,46 @@ fn admin_user() -> AdminUser {
     })
 }
 
-#[derive(Default)]
+struct StoredBlob {
+    bytes: Vec<u8>,
+    content_type: String,
+    metadata: HashMap<String, String>,
+}
+
 struct FakeAdapter {
-    objects: Mutex<HashMap<String, (Vec<u8>, String)>>,
+    objects: Mutex<HashMap<String, StoredBlob>>,
     swap_after_read: Mutex<Option<(String, Vec<u8>)>>,
     unreadable: Mutex<HashSet<String>>,
+    fail_delete: Mutex<HashSet<String>>,
+    bounded_reads: AtomicUsize,
+    name: &'static str,
+    bucket: String,
+}
+
+impl Default for FakeAdapter {
+    fn default() -> Self {
+        Self {
+            objects: Mutex::new(HashMap::new()),
+            swap_after_read: Mutex::new(None),
+            unreadable: Mutex::new(HashSet::new()),
+            fail_delete: Mutex::new(HashSet::new()),
+            bounded_reads: AtomicUsize::new(0),
+            name: "fake",
+            bucket: "fake-bucket".to_string(),
+        }
+    }
 }
 
 impl FakeAdapter {
     fn seed(&self, key: &str, bytes: impl Into<Vec<u8>>, content_type: &str) {
-        self.objects
-            .lock()
-            .expect("fake adapter objects")
-            .insert(key.to_string(), (bytes.into(), content_type.to_string()));
+        self.objects.lock().expect("fake adapter objects").insert(
+            key.to_string(),
+            StoredBlob {
+                bytes: bytes.into(),
+                content_type: content_type.to_string(),
+                metadata: HashMap::new(),
+            },
+        );
     }
 
     fn stored(&self, key: &str) -> Option<Vec<u8>> {
@@ -72,7 +101,15 @@ impl FakeAdapter {
             .lock()
             .expect("fake adapter objects")
             .get(key)
-            .map(|(bytes, _)| bytes.clone())
+            .map(|object| object.bytes.clone())
+    }
+
+    fn stored_metadata(&self, key: &str) -> Option<HashMap<String, String>> {
+        self.objects
+            .lock()
+            .expect("fake adapter objects")
+            .get(key)
+            .map(|object| object.metadata.clone())
     }
 
     fn mark_unreadable(&self, key: &str) {
@@ -82,11 +119,35 @@ impl FakeAdapter {
             .insert(key.to_string());
     }
 
+    fn fail_deletes(&self, key: &str) {
+        self.fail_delete
+            .lock()
+            .expect("fake adapter fail delete")
+            .insert(key.to_string());
+    }
+
+    fn clear_fail_deletes(&self) {
+        self.fail_delete
+            .lock()
+            .expect("fake adapter fail delete")
+            .clear();
+    }
+
     fn remove(&self, key: &str) {
         self.objects
             .lock()
             .expect("fake adapter objects")
             .remove(key);
+    }
+
+    fn stored_object(&self, key: &str, data: &[u8], content_type: &str) -> StoredObject {
+        StoredObject::new(
+            self.name,
+            &self.bucket,
+            key,
+            data.len() as u64,
+            content_type,
+        )
     }
 }
 
@@ -97,7 +158,7 @@ impl BlobAdapter for FakeAdapter {
     }
 
     async fn finalise_upload(&self, _key: &str) -> BlobResult<StoredObject> {
-        unimplemented!("promote_verified must not call mutable finalise_upload")
+        unimplemented!("promote_verified_owned must not call mutable finalise_upload")
     }
 
     fn public_url(&self, key: &str) -> String {
@@ -109,6 +170,16 @@ impl BlobAdapter for FakeAdapter {
     }
 
     async fn delete(&self, key: &str) -> BlobResult<()> {
+        if self
+            .fail_delete
+            .lock()
+            .expect("fake adapter fail delete")
+            .contains(key)
+        {
+            return Err(BlobError::Internal(format!(
+                "injected delete failure for {key}"
+            )));
+        }
         self.objects
             .lock()
             .expect("fake adapter objects")
@@ -118,21 +189,21 @@ impl BlobAdapter for FakeAdapter {
 
     async fn head(&self, key: &str) -> BlobResult<ObjectInfo> {
         let objects = self.objects.lock().expect("fake adapter objects");
-        let (bytes, content_type) = objects
+        let object = objects
             .get(key)
             .ok_or_else(|| BlobError::NotFound(key.to_string()))?;
         Ok(ObjectInfo {
             key: key.to_string(),
-            size: bytes.len() as u64,
-            content_type: content_type.clone(),
+            size: object.bytes.len() as u64,
+            content_type: object.content_type.clone(),
             etag: None,
             last_modified: None,
-            metadata: HashMap::new(),
+            metadata: object.metadata.clone(),
         })
     }
 
     async fn get_bytes(&self, _key: &str) -> BlobResult<Vec<u8>> {
-        unimplemented!("promote_verified must not call unbounded get_bytes")
+        unimplemented!("owned recovery must not call unbounded get_bytes")
     }
 
     async fn put_bytes(
@@ -141,18 +212,19 @@ impl BlobAdapter for FakeAdapter {
         _data: &[u8],
         _content_type: &str,
     ) -> BlobResult<StoredObject> {
-        unimplemented!("promote_verified must not call unconditional put_bytes")
+        unimplemented!("promote_verified_owned must not call unconditional put_bytes")
     }
 
     fn name(&self) -> &'static str {
-        "fake"
+        self.name
     }
 
     fn bucket(&self) -> &str {
-        "fake-bucket"
+        &self.bucket
     }
 
     async fn get_bytes_bounded(&self, key: &str, max_bytes: u64) -> BlobResult<Vec<u8>> {
+        self.bounded_reads.fetch_add(1, Ordering::SeqCst);
         if self
             .unreadable
             .lock()
@@ -168,8 +240,7 @@ impl BlobAdapter for FakeAdapter {
             let objects = self.objects.lock().expect("fake adapter objects");
             objects
                 .get(key)
-                .cloned()
-                .map(|(bytes, _)| bytes)
+                .map(|object| object.bytes.clone())
                 .ok_or_else(|| BlobError::NotFound(key.to_string()))?
         };
 
@@ -186,7 +257,11 @@ impl BlobAdapter for FakeAdapter {
             if swap_key == key {
                 self.objects.lock().expect("fake adapter objects").insert(
                     swap_key,
-                    (swap_bytes, "application/octet-stream".to_string()),
+                    StoredBlob {
+                        bytes: swap_bytes,
+                        content_type: "application/octet-stream".to_string(),
+                        metadata: HashMap::new(),
+                    },
                 );
             }
         }
@@ -204,14 +279,41 @@ impl BlobAdapter for FakeAdapter {
         if objects.contains_key(key) {
             return Err(BlobError::DestinationExists(key.to_string()));
         }
-        objects.insert(key.to_string(), (data.to_vec(), content_type.to_string()));
-        Ok(StoredObject::new(
-            "fake",
-            "fake-bucket",
-            key,
-            data.len() as u64,
-            content_type,
-        ))
+        objects.insert(
+            key.to_string(),
+            StoredBlob {
+                bytes: data.to_vec(),
+                content_type: content_type.to_string(),
+                metadata: HashMap::new(),
+            },
+        );
+        Ok(self.stored_object(key, data, content_type))
+    }
+
+    async fn put_bytes_create_only_owned(
+        &self,
+        key: &str,
+        data: &[u8],
+        content_type: &str,
+        facts: &OwnedPublicationFacts,
+    ) -> BlobResult<StoredObject> {
+        let mut objects = self.objects.lock().expect("fake adapter objects");
+        if objects.contains_key(key) {
+            return Err(BlobError::DestinationExists(key.to_string()));
+        }
+        objects.insert(
+            key.to_string(),
+            StoredBlob {
+                bytes: data.to_vec(),
+                content_type: content_type.to_string(),
+                metadata: facts
+                    .metadata_pairs()
+                    .into_iter()
+                    .map(|(k, v)| (k.to_string(), v))
+                    .collect(),
+            },
+        );
+        Ok(self.stored_object(key, data, content_type))
     }
 }
 
@@ -346,6 +448,23 @@ async fn call_finalise(
     .await
 }
 
+async fn call_finalise_fault(
+    state: &AppState,
+    media_id: Uuid,
+    version_id: Uuid,
+    fault: FinaliseFault,
+) -> Result<axum::response::Response, ApiError> {
+    finalise_upload_with(
+        state,
+        PoolStore(state.local_auth.pool()),
+        media_id,
+        version_id,
+        finalise_req(),
+        fault,
+    )
+    .await
+}
+
 async fn response_json(response: axum::response::Response) -> serde_json::Value {
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
@@ -370,6 +489,17 @@ async fn current_version_id(pool: &sqlx::PgPool, media_id: Uuid) -> Option<Uuid>
         .expect("load media")
         .expect("media exists")
         .current_version_id
+}
+
+fn assert_token_redacted(version: &MediaVersionRow) {
+    let token = version
+        .ownership_token
+        .as_ref()
+        .expect("ownership token must be persisted");
+    let rendered = format!("{version:?}");
+    assert!(rendered.contains("redacted"));
+    assert!(!rendered.contains(&hex::encode(token)));
+    assert!(token.len() >= 32);
 }
 
 #[tokio::test]
@@ -405,6 +535,8 @@ async fn captured_bytes_are_published_when_staging_mutates_after_capture() {
     assert_eq!(body["version"]["sha256"], png_digest());
     assert_eq!(body["version"]["object_key"], prepared.destination.as_str());
     assert_ne!(body["version"]["sha256"], FORGED_SHA256);
+    assert!(body["version"].get("ownership_token").is_none());
+    assert!(body["version"].get("published_object_key").is_none());
 }
 
 #[tokio::test]
@@ -552,6 +684,17 @@ async fn forged_client_metadata_is_ignored_and_persisted_facts_are_server_derive
         body["media"]["current_version_id"],
         prepared.version_id.to_string()
     );
+    assert!(version.get("ownership_token").is_none());
+    let row = version_row(&pool, prepared.version_id).await;
+    assert_token_redacted(&row);
+    assert_eq!(
+        row.published_object_key.as_ref().map(|key| key.as_str()),
+        Some(prepared.destination.as_str())
+    );
+    assert_eq!(
+        blob.stored(prepared.destination.as_str()).as_deref(),
+        Some(PNG)
+    );
 }
 
 #[tokio::test]
@@ -578,7 +721,7 @@ async fn activation_failure_keeps_identities_and_retry_does_not_duplicate() {
         media_id,
         version_id,
         finalise_req(),
-        false,
+        FinaliseFault::None,
     )
     .await
     .expect_err("injected in-transaction activation failure");
@@ -593,6 +736,14 @@ async fn activation_failure_keeps_identities_and_retry_does_not_duplicate() {
         version.object_key.as_ref().map(|key| key.as_str()),
         Some(staging.as_str())
     );
+    assert_eq!(
+        version
+            .published_object_key
+            .as_ref()
+            .map(|key| key.as_str()),
+        Some(destination.as_str())
+    );
+    assert_token_redacted(&version);
     assert_eq!(current_version_id(&pool, media_id).await, None);
 
     db_media::update_media(
@@ -631,7 +782,65 @@ async fn activation_failure_keeps_identities_and_retry_does_not_duplicate() {
 }
 
 #[tokio::test]
-async fn crash_after_promote_recovers_from_destination_and_delete_cleans_it() {
+async fn pre_create_crash_plus_foreign_incumbent_refuses() {
+    if skip_without_db() {
+        eprintln!("Skipping test: DATABASE_URL not set");
+        return;
+    }
+    let db = setup_test_db().await;
+    let pool = db.pool_clone();
+    let blob = Arc::new(FakeAdapter::default());
+    let prepared = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let state = build_test_state(pool.clone(), blob.clone()).await;
+
+    let err = call_finalise_fault(
+        &state,
+        prepared.media_id,
+        prepared.version_id,
+        FinaliseFault::BeforeCreate,
+    )
+    .await
+    .expect_err("injected crash after persisting owned authority");
+    assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
+    assert!(blob.stored(prepared.destination.as_str()).is_none());
+
+    let version = version_row(&pool, prepared.version_id).await;
+    assert_eq!(version.state, "uploading");
+    assert_eq!(version.sha256, None);
+    assert_token_redacted(&version);
+    assert_eq!(
+        version
+            .published_object_key
+            .as_ref()
+            .map(|key| key.as_str()),
+        Some(prepared.destination.as_str())
+    );
+
+    blob.seed(prepared.destination.as_str(), PNG, "image/png");
+    let err = call_finalise(
+        build_test_state(pool.clone(), blob.clone()).await,
+        prepared.media_id,
+        prepared.version_id,
+    )
+    .await
+    .expect_err("foreign incumbent must not be adopted from persisted token");
+    assert_eq!(err.status, StatusCode::CONFLICT);
+    assert_eq!(
+        blob.stored(prepared.destination.as_str()).as_deref(),
+        Some(PNG)
+    );
+    assert!(blob
+        .stored_metadata(prepared.destination.as_str())
+        .expect("foreign metadata")
+        .is_empty());
+    let version = version_row(&pool, prepared.version_id).await;
+    assert_eq!(version.state, "uploading");
+    assert_eq!(version.sha256, None);
+    assert_eq!(current_version_id(&pool, prepared.media_id).await, None);
+}
+
+#[tokio::test]
+async fn post_owned_create_crash_recovers_without_staging() {
     if skip_without_db() {
         eprintln!("Skipping test: DATABASE_URL not set");
         return;
@@ -640,104 +849,304 @@ async fn crash_after_promote_recovers_from_destination_and_delete_cleans_it() {
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
 
-    let recover = prepare_uploading(&pool, &blob, PNG, "image/png").await;
-    let cleanup = prepare_uploading(&pool, &blob, PNG, "image/png").await;
-    let recover_state = build_test_state(pool.clone(), blob.clone()).await;
-    let cleanup_state = build_test_state(pool.clone(), blob.clone()).await;
+    let deleted = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let mutated = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let hostile = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let state = build_test_state(pool.clone(), blob.clone()).await;
 
-    let recover_ids = (recover.media_id, recover.version_id);
-    let recover_staging = recover.staging.clone();
-    let recover_dest = recover.destination.clone();
-    drop(recover);
-    let cleanup_ids = (cleanup.media_id, cleanup.version_id);
-    let cleanup_staging = cleanup.staging.clone();
-    let cleanup_dest = cleanup.destination.clone();
-    drop(cleanup);
-
-    for (state, media_id, version_id) in [
-        (recover_state, recover_ids.0, recover_ids.1),
-        (cleanup_state, cleanup_ids.0, cleanup_ids.1),
-    ] {
-        let err = finalise_upload_with(
+    for prepared in [&deleted, &mutated, &hostile] {
+        let err = call_finalise_fault(
             &state,
-            PoolStore(state.local_auth.pool()),
-            media_id,
-            version_id,
-            finalise_req(),
-            true,
+            prepared.media_id,
+            prepared.version_id,
+            FinaliseFault::AfterCreate,
         )
         .await
-        .expect_err("injected crash after exclusive create");
+        .expect_err("injected crash after exclusive owned create");
         assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
+        let version = version_row(&pool, prepared.version_id).await;
+        assert_eq!(version.state, "uploading");
+        assert_eq!(version.sha256, None);
+        assert_token_redacted(&version);
+        assert!(blob
+            .stored_metadata(prepared.destination.as_str())
+            .expect("owned metadata")
+            .contains_key("underlay-owned-v1-verifier"));
     }
 
-    assert_eq!(blob.stored(recover_dest.as_str()).as_deref(), Some(PNG));
-    assert_eq!(blob.stored(cleanup_dest.as_str()).as_deref(), Some(PNG));
-    let recover_row = version_row(&pool, recover_ids.1).await;
-    assert_eq!(recover_row.state, "uploading");
-    assert_eq!(recover_row.sha256, None);
-    assert!(recover_row.storage_provider.is_some());
-    assert_eq!(current_version_id(&pool, recover_ids.0).await, None);
-
-    blob.remove(recover_staging.as_str());
+    blob.remove(deleted.staging.as_str());
+    blob.mark_unreadable(deleted.destination.as_str());
     blob.seed(
-        cleanup_staging.as_str(),
+        mutated.staging.as_str(),
         b"<html>mutated-staging</html>",
         "text/html",
     );
-    db_media::update_media(
-        &pool,
-        recover_ids.0,
-        "Oracle photo",
-        Some("renamed.png"),
-        "restricted",
-        None,
-    )
-    .await
-    .expect("rename recovered media");
-    db_media::update_media(
-        &pool,
-        cleanup_ids.0,
-        "Oracle photo",
-        Some("renamed.png"),
-        "restricted",
-        None,
-    )
-    .await
-    .expect("rename cleanup media");
-
-    let recovered = call_finalise(
-        build_test_state(pool.clone(), blob.clone()).await,
-        recover_ids.0,
-        recover_ids.1,
-    )
-    .await
-    .expect("retry must recover from immutable destination without staging");
-    assert_eq!(recovered.status(), StatusCode::OK);
-    let body = response_json(recovered).await;
-    assert_eq!(body["version"]["state"], "ready");
-    assert_eq!(body["version"]["sha256"], png_digest());
-    assert_eq!(body["version"]["object_key"], recover_dest.as_str());
-    assert_eq!(
-        body["media"]["current_version_id"],
-        recover_ids.1.to_string()
+    blob.seed(
+        hostile.staging.as_str(),
+        b"<html>hostile-staging</html>",
+        "text/html",
     );
-    assert!(blob.stored(recover_staging.as_str()).is_none());
-    assert_eq!(blob.stored(recover_dest.as_str()).as_deref(), Some(PNG));
 
-    let cleanup_response = super::super::delete_version(
+    let reads_before = blob.bounded_reads.load(Ordering::SeqCst);
+    for prepared in [&deleted, &mutated, &hostile] {
+        db_media::update_media(
+            &pool,
+            prepared.media_id,
+            "Oracle photo",
+            Some("renamed.png"),
+            "restricted",
+            None,
+        )
+        .await
+        .expect("rename media");
+        let recovered = call_finalise(
+            build_test_state(pool.clone(), blob.clone()).await,
+            prepared.media_id,
+            prepared.version_id,
+        )
+        .await
+        .expect("retry must recover from owned destination without staging");
+        assert_eq!(recovered.status(), StatusCode::OK);
+        let body = response_json(recovered).await;
+        assert_eq!(body["version"]["state"], "ready");
+        assert_eq!(body["version"]["sha256"], png_digest());
+        assert_eq!(body["version"]["object_key"], prepared.destination.as_str());
+        assert_eq!(
+            body["media"]["current_version_id"],
+            prepared.version_id.to_string()
+        );
+        assert_eq!(
+            blob.stored(prepared.destination.as_str()).as_deref(),
+            Some(PNG)
+        );
+        assert!(body["version"].get("ownership_token").is_none());
+    }
+    assert_eq!(
+        blob.bounded_reads.load(Ordering::SeqCst),
+        reads_before,
+        "owned recovery must not reread staging or destination bytes"
+    );
+}
+
+#[tokio::test]
+async fn wrong_token_provider_bucket_or_destination_refuses_without_mutation() {
+    if skip_without_db() {
+        eprintln!("Skipping test: DATABASE_URL not set");
+        return;
+    }
+    let db = setup_test_db().await;
+    let pool = db.pool_clone();
+    let blob = Arc::new(FakeAdapter::default());
+    let prepared = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let state = build_test_state(pool.clone(), blob.clone()).await;
+    call_finalise_fault(
+        &state,
+        prepared.media_id,
+        prepared.version_id,
+        FinaliseFault::AfterCreate,
+    )
+    .await
+    .expect_err("owned create crash window");
+
+    let original_meta = blob
+        .stored_metadata(prepared.destination.as_str())
+        .expect("owned metadata");
+    let original_token = version_row(&pool, prepared.version_id)
+        .await
+        .ownership_token
+        .expect("token");
+
+    sqlx::query("UPDATE media.media_version SET ownership_token = $2 WHERE id = $1")
+        .bind(prepared.version_id)
+        .bind(WRONG_TOKEN)
+        .execute(&pool)
+        .await
+        .expect("tamper token");
+    let err = call_finalise(
+        build_test_state(pool.clone(), blob.clone()).await,
+        prepared.media_id,
+        prepared.version_id,
+    )
+    .await
+    .expect_err("wrong token must refuse");
+    assert_eq!(err.status, StatusCode::CONFLICT);
+    let rendered = format!("{err:?}");
+    assert!(!rendered.contains(&hex::encode(WRONG_TOKEN)));
+    assert!(!rendered.contains(std::str::from_utf8(WRONG_TOKEN).unwrap()));
+
+    sqlx::query(
+        "UPDATE media.media_version SET ownership_token = $2, storage_provider = $3 WHERE id = $1",
+    )
+    .bind(prepared.version_id)
+    .bind(&original_token)
+    .bind("s3")
+    .execute(&pool)
+    .await
+    .expect("tamper provider");
+    let err = call_finalise(
+        build_test_state(pool.clone(), blob.clone()).await,
+        prepared.media_id,
+        prepared.version_id,
+    )
+    .await
+    .expect_err("wrong provider must refuse");
+    assert_eq!(err.status, StatusCode::BAD_REQUEST);
+
+    sqlx::query("UPDATE media.media_version SET storage_provider = $2, bucket = $3 WHERE id = $1")
+        .bind(prepared.version_id)
+        .bind("fake")
+        .bind("other-bucket")
+        .execute(&pool)
+        .await
+        .expect("tamper bucket");
+    let err = call_finalise(
+        build_test_state(pool.clone(), blob.clone()).await,
+        prepared.media_id,
+        prepared.version_id,
+    )
+    .await
+    .expect_err("wrong bucket must refuse");
+    assert_eq!(err.status, StatusCode::BAD_REQUEST);
+
+    let foreign = BlobObjectKey::parse("media/foreign/published/photo.png").expect("foreign key");
+    blob.seed(foreign.as_str(), PNG, "image/png");
+    sqlx::query(
+        "UPDATE media.media_version SET bucket = $2, published_object_key = $3 WHERE id = $1",
+    )
+    .bind(prepared.version_id)
+    .bind("fake-bucket")
+    .bind(foreign.as_str())
+    .execute(&pool)
+    .await
+    .expect("tamper destination");
+    let err = call_finalise(
+        build_test_state(pool.clone(), blob.clone()).await,
+        prepared.media_id,
+        prepared.version_id,
+    )
+    .await
+    .expect_err("wrong destination must refuse");
+    assert_eq!(err.status, StatusCode::CONFLICT);
+
+    assert_eq!(
+        blob.stored(prepared.destination.as_str()).as_deref(),
+        Some(PNG)
+    );
+    assert_eq!(
+        blob.stored_metadata(prepared.destination.as_str())
+            .expect("owned metadata"),
+        original_meta
+    );
+    assert_eq!(blob.stored(foreign.as_str()).as_deref(), Some(PNG));
+    let version = version_row(&pool, prepared.version_id).await;
+    assert_eq!(version.state, "uploading");
+    assert_eq!(version.sha256, None);
+    assert_eq!(current_version_id(&pool, prepared.media_id).await, None);
+}
+
+#[tokio::test]
+async fn delete_and_purge_blob_failure_retains_row_and_retry_converges() {
+    if skip_without_db() {
+        eprintln!("Skipping test: DATABASE_URL not set");
+        return;
+    }
+    let db = setup_test_db().await;
+    let pool = db.pool_clone();
+    let blob = Arc::new(FakeAdapter::default());
+    let delete_case = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let purge_case = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let state = build_test_state(pool.clone(), blob.clone()).await;
+
+    call_finalise_fault(
+        &state,
+        delete_case.media_id,
+        delete_case.version_id,
+        FinaliseFault::AfterCreate,
+    )
+    .await
+    .expect_err("crash window for delete");
+    let purged = call_finalise(
+        build_test_state(pool.clone(), blob.clone()).await,
+        purge_case.media_id,
+        purge_case.version_id,
+    )
+    .await
+    .expect("purge case completes");
+    assert_eq!(purged.status(), StatusCode::OK);
+
+    blob.fail_deletes(delete_case.destination.as_str());
+    blob.fail_deletes(purge_case.destination.as_str());
+
+    let err = super::super::delete_version(
         admin_user(),
         State(build_test_state(pool.clone(), blob.clone()).await),
-        Path(cleanup_ids),
+        Path((delete_case.media_id, delete_case.version_id)),
     )
     .await
-    .expect("delete version in the crash window");
-    assert_eq!(cleanup_response.status(), StatusCode::OK);
-    assert!(blob.stored(cleanup_dest.as_str()).is_none());
-    assert!(blob.stored(cleanup_staging.as_str()).is_none());
-    assert!(db_media::get_media_version(&pool, cleanup_ids.1)
+    .expect_err("delete must fail when blob cleanup fails");
+    assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
+    let retained = version_row(&pool, delete_case.version_id).await;
+    assert_token_redacted(&retained);
+    assert_eq!(
+        retained
+            .published_object_key
+            .as_ref()
+            .map(|key| key.as_str()),
+        Some(delete_case.destination.as_str())
+    );
+    assert_eq!(
+        blob.stored(delete_case.destination.as_str()).as_deref(),
+        Some(PNG)
+    );
+
+    let err = super::super::purge_media(
+        admin_user(),
+        State(build_test_state(pool.clone(), blob.clone()).await),
+        Path(purge_case.media_id),
+    )
+    .await
+    .expect_err("purge must fail when blob cleanup fails");
+    assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
+    assert!(db_media::get_media(&pool, purge_case.media_id)
+        .await
+        .expect("load purged media")
+        .is_some());
+    let purge_row = version_row(&pool, purge_case.version_id).await;
+    assert_token_redacted(&purge_row);
+    assert_eq!(
+        blob.stored(purge_case.destination.as_str()).as_deref(),
+        Some(PNG)
+    );
+
+    blob.clear_fail_deletes();
+    let deleted = super::super::delete_version(
+        admin_user(),
+        State(build_test_state(pool.clone(), blob.clone()).await),
+        Path((delete_case.media_id, delete_case.version_id)),
+    )
+    .await
+    .expect("delete retry after blob recovery");
+    assert_eq!(deleted.status(), StatusCode::OK);
+    assert!(blob.stored(delete_case.destination.as_str()).is_none());
+    assert!(blob.stored(delete_case.staging.as_str()).is_none());
+    assert!(db_media::get_media_version(&pool, delete_case.version_id)
         .await
         .expect("load deleted version")
+        .is_none());
+
+    let purged = super::super::purge_media(
+        admin_user(),
+        State(build_test_state(pool.clone(), blob.clone()).await),
+        Path(purge_case.media_id),
+    )
+    .await
+    .expect("purge retry after blob recovery");
+    assert_eq!(purged.status(), StatusCode::OK);
+    assert!(blob.stored(purge_case.destination.as_str()).is_none());
+    assert!(blob.stored(purge_case.staging.as_str()).is_none());
+    assert!(db_media::get_media(&pool, purge_case.media_id)
+        .await
+        .expect("load purged media")
         .is_none());
 }
 

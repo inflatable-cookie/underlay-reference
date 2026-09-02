@@ -31,7 +31,7 @@ package edges use `workspace:*`. `apps/acme-api` is Rust-only and keeps its own
 app-local Cargo workspace, so it is not a JavaScript workspace member.
 
 Committed application dependencies resolve Underlay from the released Git tag
-(`v0.9.6` at time of writing), not from sibling source paths.
+(`v0.9.7` at time of writing), not from sibling source paths.
 
 ## Documentation Authority
 
@@ -185,11 +185,11 @@ Bootstrap notes:
 The reference template consumes Underlay from the released Git repository:
 
 ```json
-"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.6"
+"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.7"
 ```
 
 ```toml
-underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.6" }
+underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.7" }
 ```
 
 Poodle core/Svelte packages resolve from the public npm registry at `0.2.2`.

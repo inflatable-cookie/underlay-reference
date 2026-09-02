@@ -2,7 +2,7 @@
 //!
 //! Initiate still delegates size/MIME enforcement to
 //! `initiate_upload_validated`. Live finalisation is covered by the
-//! `promote_verified` composition tests.
+//! `promote_verified_owned` composition tests.
 
 use crate::config::AcmeConfig;
 use underlay_blob::{

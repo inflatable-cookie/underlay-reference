@@ -15,7 +15,8 @@ pub async fn create_media_version(
         INSERT INTO media.media_version (id, media_id, state, created_by, object_key, mime_type)
         VALUES ($1, $2, 'uploading', $3, $4, $5)
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
-                  storage_provider, bucket, object_key, created_at, created_by
+                  storage_provider, bucket, object_key, ownership_token,
+                  published_object_key, created_at, created_by
         "#,
     )
     .bind(id)
@@ -28,47 +29,40 @@ pub async fn create_media_version(
     .try_into()
 }
 
-/// Record adapter identity for an in-flight finalise. Digest/size stay null
-/// until exclusive create succeeds and facts are recorded.
-pub async fn record_publication_intent(
+/// Persist token plus immutable destination authority before exclusive create.
+#[allow(clippy::too_many_arguments)]
+pub async fn record_owned_publication_authority(
     pool: &DbPool,
     id: Uuid,
+    ownership_token: &[u8],
+    published_object_key: &str,
     storage_provider: &str,
     bucket: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         UPDATE media.media_version
-        SET storage_provider = $2,
-            bucket = $3
-        WHERE id = $1 AND state = 'uploading' AND sha256 IS NULL
+        SET ownership_token = $2,
+            published_object_key = $3,
+            storage_provider = $4,
+            bucket = $5
+        WHERE id = $1
+          AND state = 'uploading'
+          AND ownership_token IS NULL
+          AND published_object_key IS NULL
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
-                  storage_provider, bucket, object_key, created_at, created_by
+                  storage_provider, bucket, object_key, ownership_token,
+                  published_object_key, created_at, created_by
         "#,
     )
     .bind(id)
+    .bind(ownership_token)
+    .bind(published_object_key)
     .bind(storage_provider)
     .bind(bucket)
     .fetch_one(pool)
     .await?
     .try_into()
-}
-
-/// Drop adapter identity after a refused collision so a later attempt does
-/// not treat the incumbent as this version's publication.
-pub async fn clear_publication_intent(pool: &DbPool, id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        r#"
-        UPDATE media.media_version
-        SET storage_provider = NULL,
-            bucket = NULL
-        WHERE id = $1 AND state = 'uploading' AND sha256 IS NULL
-        "#,
-    )
-    .bind(id)
-    .execute(pool)
-    .await?;
-    Ok(())
 }
 
 /// Persist server-derived promotion facts while the version stays uploading
@@ -93,7 +87,8 @@ pub async fn record_verified_promotion(
             bucket = $6
         WHERE id = $1 AND state = 'uploading'
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
-                  storage_provider, bucket, object_key, created_at, created_by
+                  storage_provider, bucket, object_key, ownership_token,
+                  published_object_key, created_at, created_by
         "#,
     )
     .bind(id)
@@ -115,7 +110,8 @@ pub async fn get_media_version(
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         SELECT id, media_id, state, byte_size, mime_type, sha256,
-               storage_provider, bucket, object_key, created_at, created_by
+               storage_provider, bucket, object_key, ownership_token,
+               published_object_key, created_at, created_by
         FROM media.media_version
         WHERE id = $1
         "#,
@@ -135,7 +131,8 @@ pub async fn list_media_versions(
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         SELECT id, media_id, state, byte_size, mime_type, sha256,
-               storage_provider, bucket, object_key, created_at, created_by
+               storage_provider, bucket, object_key, ownership_token,
+               published_object_key, created_at, created_by
         FROM media.media_version
         WHERE media_id = $1
         ORDER BY created_at DESC
@@ -152,7 +149,7 @@ pub async fn list_media_versions(
 /// Atomically mark a version ready and commit `media.current_version_id`.
 ///
 /// Both writes share one transaction. Failure leaves the version uploading
-/// and the current pointer unchanged.
+/// and the current pointer unchanged. Token and published key stay put.
 #[allow(clippy::too_many_arguments)]
 pub async fn activate_ready_current(
     pool: &DbPool,
@@ -236,7 +233,8 @@ async fn activate_ready_current_inner(
             object_key = $7
         WHERE id = $1 AND media_id = $8 AND state = 'uploading'
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
-                  storage_provider, bucket, object_key, created_at, created_by
+                  storage_provider, bucket, object_key, ownership_token,
+                  published_object_key, created_at, created_by
         "#,
     )
     .bind(id)

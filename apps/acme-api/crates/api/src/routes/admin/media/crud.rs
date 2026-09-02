@@ -619,10 +619,21 @@ pub async fn purge_media(
         }
     };
 
+    let mut cleanup_err = None;
     for version in &versions {
-        if let Some(ref object_key) = version.object_key {
-            super::upload::delete_version_blobs(state.blob_adapter.as_ref(), object_key).await;
+        if let Err(e) =
+            super::upload::delete_version_blobs(state.blob_adapter.as_ref(), version).await
+        {
+            cleanup_err = cleanup_err.or(Some(e));
         }
+    }
+    if let Some(e) = cleanup_err {
+        return Err(super::upload::blob_cleanup_error(
+            e,
+            "media.purge",
+            media_id,
+            None,
+        ));
     }
 
     // Purge from database

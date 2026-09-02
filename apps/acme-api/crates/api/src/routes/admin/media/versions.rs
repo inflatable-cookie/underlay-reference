@@ -212,8 +212,14 @@ pub async fn delete_version(
         ));
     }
 
-    if let Some(ref object_key) = version.object_key {
-        super::upload::delete_version_blobs(state.blob_adapter.as_ref(), object_key).await;
+    if let Err(e) = super::upload::delete_version_blobs(state.blob_adapter.as_ref(), &version).await
+    {
+        return Err(super::upload::blob_cleanup_error(
+            e,
+            "media.delete_version",
+            media_id,
+            Some(version_id),
+        ));
     }
 
     match media::delete_media_version(pool, version_id).await {
