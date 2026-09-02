@@ -1,9 +1,8 @@
 use super::*;
 use async_trait::async_trait;
-use sha2::{Digest, Sha256};
 use underlay_blob::{
-    BlobAdapter, BlobAdapterPromotionExt, BlobAdapterUploadExt, BlobError, BlobObjectKey,
-    BlobUploadConfig, StoredObject, VerifiedPromotionResult,
+    BlobAdapterPromotionExt, BlobAdapterUploadExt, BlobError, BlobObjectKey, StoredObject,
+    VerifiedPromotionResult,
 };
 
 fn file_too_large_error(size: u64, state: &AppState) -> ApiError {
@@ -102,60 +101,19 @@ impl ReadyCurrentStore for PoolStore<'_> {
     }
 }
 
-/// Promote staging to a distinct destination, or accept a destination that
-/// already holds exactly the captured staging bytes (convergent retry).
-async fn promote_or_converge(
-    blob: &dyn BlobAdapter,
-    staging: &BlobObjectKey,
+fn recorded_promotion(
+    version: &acme_db::media::MediaVersionRow,
     destination: &BlobObjectKey,
-    declared_content_type: &str,
-    config: &BlobUploadConfig,
-) -> Result<VerifiedPromotionResult, BlobError> {
-    match blob
-        .promote_verified(staging, destination, declared_content_type, config)
-        .await
-    {
-        Ok(result) => Ok(result),
-        Err(BlobError::DestinationExists(_)) => {
-            converge_existing_destination(blob, staging, destination, declared_content_type, config)
-                .await
-        }
-        Err(err) => Err(err),
-    }
-}
-
-async fn converge_existing_destination(
-    blob: &dyn BlobAdapter,
-    staging: &BlobObjectKey,
-    destination: &BlobObjectKey,
-    declared_content_type: &str,
-    config: &BlobUploadConfig,
-) -> Result<VerifiedPromotionResult, BlobError> {
-    let max_bytes = config.max_file_size_bytes_limit();
-    let staging_bytes = blob.get_bytes_bounded(staging.as_str(), max_bytes).await?;
-    let destination_bytes = blob
-        .get_bytes_bounded(destination.as_str(), max_bytes)
-        .await?;
-    if staging_bytes != destination_bytes {
-        return Err(BlobError::DestinationExists(
-            destination.as_str().to_string(),
-        ));
-    }
-    if !config.is_content_type_allowed(declared_content_type) {
-        return Err(BlobError::InvalidContentType(
-            declared_content_type.to_string(),
-        ));
-    }
-
-    Ok(VerifiedPromotionResult {
+) -> Option<VerifiedPromotionResult> {
+    Some(VerifiedPromotionResult {
         object: StoredObject::new(
-            blob.name(),
-            blob.bucket(),
+            version.storage_provider.as_ref()?,
+            version.bucket.as_ref()?,
             destination.as_str(),
-            destination_bytes.len() as u64,
-            declared_content_type,
+            u64::try_from(*version.byte_size.as_ref()?).ok()?,
+            version.mime_type.as_ref()?,
         ),
-        sha256: hex::encode(Sha256::digest(&destination_bytes)),
+        sha256: version.sha256.clone()?,
     })
 }
 
@@ -235,11 +193,22 @@ pub async fn initiate_upload(
 
     // Create version in uploading state
     let version_id = AcmeUuid::new_v7().into_inner();
+    // Staging identity is persisted on the version row before the client
+    // uploads, so later finalise/retry cannot recompute it from mutable
+    // filename or declared MIME.
+    let filename = media_row.original_filename.clone().unwrap_or_else(|| {
+        let ext = underlay_media::storage::mime_to_extension(&req.content_type);
+        format!("file.{}", ext)
+    });
+    let object_key = version_object_key(media_id, version_id, &filename)
+        .map_err(|e| ApiError::bad_request("media.invalid_object_key", e.to_string()))?;
+
     let version = match media::create_media_version(
         pool,
         version_id,
         media_id,
         Some(user.user_id.0.into_inner()),
+        object_key.as_str(),
     )
     .await
     {
@@ -258,15 +227,6 @@ pub async fn initiate_upload(
             })));
         }
     };
-
-    // Generate object key using standardized storage pattern
-    // Use original filename if available, otherwise generate from content type
-    let filename = media_row.original_filename.clone().unwrap_or_else(|| {
-        let ext = underlay_media::storage::mime_to_extension(&req.content_type);
-        format!("file.{}", ext)
-    });
-    let object_key = version_object_key(media_id, version_id, &filename)
-        .map_err(|e| ApiError::bad_request("media.invalid_object_key", e.to_string()))?;
 
     // Request upload URL from the blob adapter through the foundation's
     // validated helper (size cap + MIME allowlist enforced before signing).
@@ -396,32 +356,61 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
         ));
     }
 
-    // Staging key matches initiate. The published destination is distinct so
-    // exclusive create cannot overwrite the client upload object.
-    let filename = media_row.original_filename.clone().unwrap_or_else(|| {
-        let ext = underlay_media::storage::mime_to_extension(&req.content_type);
-        format!("file.{}", ext)
-    });
-    let staging_key = version_object_key(media_id, version_id, &filename)
-        .map_err(|e| ApiError::bad_request("media.invalid_object_key", e.to_string()))?;
+    let staging_key = version.object_key.clone().ok_or_else(|| {
+        ApiError::bad_request(
+            "media.staging_identity_missing",
+            "Version has no persisted staging object key",
+        )
+    })?;
     let destination_key = published_object_key(&staging_key)
         .map_err(|e| ApiError::bad_request("media.invalid_object_key", e))?;
 
     // Client sha256/size/provider/bucket/final key are not authority. Digest,
     // size, MIME, provider, bucket, and destination key come from the
-    // captured promotion result.
-    let promoted = match promote_or_converge(
-        state.blob_adapter.as_ref(),
-        &staging_key,
-        &destination_key,
-        &req.content_type,
-        &state.config.media,
+    // captured promotion result, or from the already-recorded promotion.
+    let promoted = if let Some(recorded) = recorded_promotion(&version, &destination_key) {
+        recorded
+    } else {
+        match state
+            .blob_adapter
+            .promote_verified(
+                &staging_key,
+                &destination_key,
+                &req.content_type,
+                &state.config.media,
+            )
+            .await
+        {
+            Ok(result) => result,
+            Err(err) => return Err(blob_finalise_error(err, state, media_id, version_id)),
+        }
+    };
+
+    if let Err(e) = media::record_verified_promotion(
+        pool,
+        version_id,
+        promoted.object.size as i64,
+        &promoted.object.content_type,
+        &promoted.sha256,
+        &promoted.object.provider,
+        &promoted.object.bucket,
     )
     .await
     {
-        Ok(result) => result,
-        Err(err) => return Err(blob_finalise_error(err, state, media_id, version_id)),
-    };
+        tracing::error!("Failed to record promotion identity: {}", e);
+        return Err(crate::db_errors::internal_with_diagnostics(
+            "media.promotion_record_failed",
+            "Failed to finalise upload",
+            &e,
+        )
+        .with_context(json!({
+            "operation": "media.finalise_upload",
+            "media_id": media_id,
+            "version_id": version_id,
+            "staging_key": staging_key.as_str(),
+            "destination_key": destination_key.as_str()
+        })));
+    }
 
     let finalised_version = match store
         .activate_ready_current(media_id, version_id, &promoted)

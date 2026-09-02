@@ -31,10 +31,11 @@ Live Acme finalisation no longer mutates the client upload key in place or
 persist client `sha256` / hardcoded provider and bucket. It captures staging
 once through `BlobAdapterPromotionExt::promote_verified`, publishes to a
 distinct `…/published/…` destination with exclusive create, and commits
-ready state plus `current_version_id` in one transaction. Destination
-collisions refuse without overwrite; identical-byte collisions converge on
-retry. Post-promotion activation failure leaves staging and destination
-identities in place and the version uploading.
+ready state plus `current_version_id` in one transaction. Every destination
+collision, including identical bytes, is refused. Staging identity is
+persisted at initiate; promotion facts are committed before activation so a
+DB failure cannot strand recovery. Retry reloads that identity from Postgres
+and does not reread mutable staging.
 
 Public `FinaliseUploadRequest` / `FinaliseUploadResponse` are unchanged.
 
@@ -51,8 +52,9 @@ and Postgres:
 | Staging mutates after capture | `captured_bytes_are_published_when_staging_mutates_after_capture` |
 | Oversized / unreadable source | `oversized_or_unreadable_source_refuses_before_publication` |
 | Occupied destination, forged or identical bytes | `occupied_destination_preserves_incumbent_even_with_identical_or_forged_bytes` |
+| Occupied destination plus post-capture staging swap | `occupied_destination_refuses_after_staging_mutates_post_capture` |
 | Forged client digest / identity | `forged_client_metadata_is_ignored_and_persisted_facts_are_server_derived` |
-| DB activation failure + retry | `activation_failure_keeps_identities_and_retry_does_not_duplicate` |
+| In-transaction ready/current rollback + durable retry | `activation_failure_keeps_identities_and_retry_does_not_duplicate` |
 | Declared MIME vs bytes | `mismatched_declared_mime_refuses_before_publication` |
 
 Initiate policy tests remain.
@@ -80,6 +82,19 @@ Initiate policy tests remain.
 Oracle tests used a throwaway `postgres:16` plus host `migrate_dev_db`.
 Root `effigy validate` still fans into sibling Underlay and is not this
 lane's gate (open papercut).
+
+## Review Repair
+
+Exact-head review at `210e954f` required three blockers. This revision:
+
+1. Removed `promote_or_converge` / `converge_existing_destination`. Every
+   `DestinationExists` is a 409; identical-byte incumbents stay unchanged.
+2. Persisted the staging key at version insert and committed server-derived
+   promotion facts before activation. Retry reloads that row after dropping
+   in-memory keys and after a filename rename.
+3. Replaced `FailingStore` with `activate_ready_current_failing_after_version_ready`,
+   which raises `SELECT 1 / 0` inside the real transaction after the version-ready
+   write. Fresh queries still show `uploading` and a null current pointer.
 
 ## Boundaries Held
 

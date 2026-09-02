@@ -1,16 +1,17 @@
 use super::*;
 
-/// Create a new media version (in uploading state).
+/// Create a new media version (in uploading state) with its staging object key.
 pub async fn create_media_version(
     pool: &DbPool,
     id: Uuid,
     media_id: Uuid,
     created_by: Option<Uuid>,
+    object_key: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
-        INSERT INTO media.media_version (id, media_id, state, created_by)
-        VALUES ($1, $2, 'uploading', $3)
+        INSERT INTO media.media_version (id, media_id, state, created_by, object_key)
+        VALUES ($1, $2, 'uploading', $3, $4)
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
                   storage_provider, bucket, object_key, created_at, created_by
         "#,
@@ -18,6 +19,43 @@ pub async fn create_media_version(
     .bind(id)
     .bind(media_id)
     .bind(created_by)
+    .bind(object_key)
+    .fetch_one(pool)
+    .await?
+    .try_into()
+}
+
+/// Persist server-derived promotion facts while the version stays uploading
+/// and `object_key` remains the staging identity.
+#[allow(clippy::too_many_arguments)]
+pub async fn record_verified_promotion(
+    pool: &DbPool,
+    id: Uuid,
+    byte_size: i64,
+    mime_type: &str,
+    sha256: &str,
+    storage_provider: &str,
+    bucket: &str,
+) -> Result<MediaVersionRow, sqlx::Error> {
+    sqlx::query_as::<_, RawMediaVersionRow>(
+        r#"
+        UPDATE media.media_version
+        SET byte_size = $2,
+            mime_type = $3,
+            sha256 = $4,
+            storage_provider = $5,
+            bucket = $6
+        WHERE id = $1 AND state = 'uploading'
+        RETURNING id, media_id, state, byte_size, mime_type, sha256,
+                  storage_provider, bucket, object_key, created_at, created_by
+        "#,
+    )
+    .bind(id)
+    .bind(byte_size)
+    .bind(mime_type)
+    .bind(sha256)
+    .bind(storage_provider)
+    .bind(bucket)
     .fetch_one(pool)
     .await?
     .try_into()
@@ -81,6 +119,64 @@ pub async fn activate_ready_current(
     bucket: &str,
     object_key: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
+    activate_ready_current_inner(
+        pool,
+        id,
+        media_id,
+        byte_size,
+        mime_type,
+        sha256,
+        storage_provider,
+        bucket,
+        object_key,
+        false,
+    )
+    .await
+}
+
+/// Same transaction as [`activate_ready_current`], but raises a Postgres error
+/// after the version-ready write and before the current-pointer write so the
+/// open transaction rolls back both statements.
+#[allow(clippy::too_many_arguments)]
+pub async fn activate_ready_current_failing_after_version_ready(
+    pool: &DbPool,
+    id: Uuid,
+    media_id: Uuid,
+    byte_size: i64,
+    mime_type: &str,
+    sha256: &str,
+    storage_provider: &str,
+    bucket: &str,
+    object_key: &str,
+) -> Result<MediaVersionRow, sqlx::Error> {
+    activate_ready_current_inner(
+        pool,
+        id,
+        media_id,
+        byte_size,
+        mime_type,
+        sha256,
+        storage_provider,
+        bucket,
+        object_key,
+        true,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn activate_ready_current_inner(
+    pool: &DbPool,
+    id: Uuid,
+    media_id: Uuid,
+    byte_size: i64,
+    mime_type: &str,
+    sha256: &str,
+    storage_provider: &str,
+    bucket: &str,
+    object_key: &str,
+    fail_after_version_ready: bool,
+) -> Result<MediaVersionRow, sqlx::Error> {
     let mut tx = pool.begin().await?;
     let version = sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
@@ -107,6 +203,10 @@ pub async fn activate_ready_current(
     .bind(media_id)
     .fetch_one(&mut *tx)
     .await?;
+
+    if fail_after_version_ready {
+        sqlx::query("SELECT 1 / 0").execute(&mut *tx).await?;
+    }
 
     let updated = sqlx::query(
         r#"

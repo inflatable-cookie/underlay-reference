@@ -193,19 +193,28 @@ impl BlobAdapter for FakeAdapter {
     }
 }
 
-struct FailingStore;
+struct FailAfterVersionReadyStore<'a>(&'a sqlx::PgPool);
 
 #[async_trait]
-impl ReadyCurrentStore for FailingStore {
+impl ReadyCurrentStore for FailAfterVersionReadyStore<'_> {
     async fn activate_ready_current(
         &self,
-        _media_id: Uuid,
-        _version_id: Uuid,
-        _promoted: &VerifiedPromotionResult,
+        media_id: Uuid,
+        version_id: Uuid,
+        promoted: &VerifiedPromotionResult,
     ) -> Result<MediaVersionRow, sqlx::Error> {
-        Err(sqlx::Error::Protocol(
-            "injected activation failure".to_string(),
-        ))
+        db_media::activate_ready_current_failing_after_version_ready(
+            self.0,
+            version_id,
+            media_id,
+            promoted.object.size as i64,
+            &promoted.object.content_type,
+            &promoted.sha256,
+            &promoted.object.provider,
+            &promoted.object.bucket,
+            &promoted.object.key,
+        )
+        .await
     }
 }
 
@@ -273,10 +282,10 @@ async fn prepare_uploading(
     )
     .await
     .expect("create media");
-    db_media::create_media_version(pool, version_id, media_id, None)
+    let staging = version_object_key(media_id, version_id, "photo.png").expect("staging key");
+    db_media::create_media_version(pool, version_id, media_id, None, staging.as_str())
         .await
         .expect("create version");
-    let staging = version_object_key(media_id, version_id, "photo.png").expect("staging key");
     let destination = published_object_key(&staging).expect("destination key");
     blob.seed(staging.as_str(), bytes, content_type);
     PreparedUpload {
@@ -438,14 +447,51 @@ async fn occupied_destination_preserves_incumbent_even_with_identical_or_forged_
     let prepared = prepare_uploading(&pool, &identical, PNG, "image/png").await;
     identical.seed(prepared.destination.as_str(), PNG, "image/png");
     let state = build_test_state(pool.clone(), identical.clone()).await;
-    let response = call_finalise(state, prepared.media_id, prepared.version_id)
+    let err = call_finalise(state, prepared.media_id, prepared.version_id)
         .await
-        .expect("identical destination converges on retry");
-    assert_eq!(response.status(), StatusCode::OK);
+        .expect_err("identical destination must refuse");
+    assert_eq!(err.status, StatusCode::CONFLICT);
     assert_eq!(
         identical.stored(prepared.destination.as_str()).as_deref(),
         Some(PNG)
     );
+    let version = version_row(&pool, prepared.version_id).await;
+    assert_eq!(version.state, "uploading");
+    assert_eq!(current_version_id(&pool, prepared.media_id).await, None);
+}
+
+#[tokio::test]
+async fn occupied_destination_refuses_after_staging_mutates_post_capture() {
+    if skip_without_db() {
+        eprintln!("Skipping test: DATABASE_URL not set");
+        return;
+    }
+    let db = setup_test_db().await;
+    let pool = db.pool_clone();
+    let blob = Arc::new(FakeAdapter::default());
+    let prepared = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    blob.seed(
+        prepared.destination.as_str(),
+        b"<html>incumbent</html>",
+        "text/html",
+    );
+    blob.swap_after_read.lock().expect("swap").replace((
+        prepared.staging.as_str().to_string(),
+        b"<html>incumbent</html>".to_vec(),
+    ));
+    let state = build_test_state(pool.clone(), blob.clone()).await;
+    let err = call_finalise(state, prepared.media_id, prepared.version_id)
+        .await
+        .expect_err("collision must refuse even if staging later matches incumbent");
+    assert_eq!(err.status, StatusCode::CONFLICT);
+    assert_eq!(
+        blob.stored(prepared.destination.as_str()).as_deref(),
+        Some(b"<html>incumbent</html>".as_slice())
+    );
+    let version = version_row(&pool, prepared.version_id).await;
+    assert_eq!(version.state, "uploading");
+    assert_eq!(version.sha256, None);
+    assert_eq!(current_version_id(&pool, prepared.media_id).await, None);
 }
 
 #[tokio::test]
@@ -491,44 +537,63 @@ async fn activation_failure_keeps_identities_and_retry_does_not_duplicate() {
     let prepared = prepare_uploading(&pool, &blob, PNG, "image/png").await;
     let state = build_test_state(pool.clone(), blob.clone()).await;
 
+    let media_id = prepared.media_id;
+    let version_id = prepared.version_id;
+    let staging = prepared.staging.clone();
+    let destination = prepared.destination.clone();
+    drop(prepared);
+
     let err = finalise_upload_with(
         &state,
-        FailingStore,
-        prepared.media_id,
-        prepared.version_id,
+        FailAfterVersionReadyStore(&pool),
+        media_id,
+        version_id,
         finalise_req(),
     )
     .await
-    .expect_err("injected activation failure");
+    .expect_err("injected in-transaction activation failure");
     assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
-    assert_eq!(
-        blob.stored(prepared.destination.as_str()).as_deref(),
-        Some(PNG)
-    );
-    assert_eq!(blob.stored(prepared.staging.as_str()).as_deref(), Some(PNG));
-    let version = version_row(&pool, prepared.version_id).await;
-    assert_eq!(version.state, "uploading");
-    assert_eq!(current_version_id(&pool, prepared.media_id).await, None);
+    assert_eq!(blob.stored(destination.as_str()).as_deref(), Some(PNG));
+    assert_eq!(blob.stored(staging.as_str()).as_deref(), Some(PNG));
 
-    let response = call_finalise(state, prepared.media_id, prepared.version_id)
-        .await
-        .expect("retry should converge");
+    let version = version_row(&pool, version_id).await;
+    assert_eq!(version.state, "uploading");
+    assert_eq!(version.sha256.as_deref(), Some(png_digest().as_str()));
+    assert_eq!(
+        version.object_key.as_ref().map(|key| key.as_str()),
+        Some(staging.as_str())
+    );
+    assert_eq!(current_version_id(&pool, media_id).await, None);
+
+    db_media::update_media(
+        &pool,
+        media_id,
+        "Oracle photo",
+        Some("renamed.png"),
+        "restricted",
+        None,
+    )
+    .await
+    .expect("rename media so retry cannot recompute keys from filename");
+
+    let response = call_finalise(
+        build_test_state(pool.clone(), blob.clone()).await,
+        media_id,
+        version_id,
+    )
+    .await
+    .expect("retry should activate from persisted staging identity");
     assert_eq!(response.status(), StatusCode::OK);
     let body = response_json(response).await;
     assert_eq!(body["version"]["state"], "ready");
-    assert_eq!(
-        body["media"]["current_version_id"],
-        prepared.version_id.to_string()
-    );
-    assert_eq!(
-        blob.stored(prepared.destination.as_str()).as_deref(),
-        Some(PNG)
-    );
+    assert_eq!(body["version"]["object_key"], destination.as_str());
+    assert_eq!(body["media"]["current_version_id"], version_id.to_string());
+    assert_eq!(blob.stored(destination.as_str()).as_deref(), Some(PNG));
 
     let again = call_finalise(
         build_test_state(pool.clone(), blob.clone()).await,
-        prepared.media_id,
-        prepared.version_id,
+        media_id,
+        version_id,
     )
     .await
     .expect("idempotent retry of a completed finalise");
