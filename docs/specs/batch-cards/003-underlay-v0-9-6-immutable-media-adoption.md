@@ -46,4 +46,5 @@ cleanup, adapter, or external-service policy. Never edit Underlay or Poodle.
 
 ## Next Task
 
-Run this card in its dispatched worker. Do not merge or start card 002.
+Orchestrator exact-head review of the card 003 PR. Do not merge from the
+worker. Do not start card 002.

@@ -40,4 +40,5 @@ its PR merges.
 
 ## Next Task
 
-Execute card 003 and stop at its PR for orchestrator exact-head review.
+Orchestrator exact-head review of the card 003 PR. Resume `g01.007` after
+merge.

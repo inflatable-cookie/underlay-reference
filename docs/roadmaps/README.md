@@ -46,5 +46,5 @@ Before opening `gNN+1`:
 
 ## Next Task
 
-Execute `g01.013` card 003 and stop at its PR for orchestrator review. Resume
-`g01.007` afterwards.
+Orchestrator exact-head review of the `g01.013` card 003 PR. Resume `g01.007`
+afterwards.

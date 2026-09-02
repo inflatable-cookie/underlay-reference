@@ -1,5 +1,10 @@
 use super::*;
-use underlay_blob::{BlobAdapterUploadExt, BlobError};
+use async_trait::async_trait;
+use sha2::{Digest, Sha256};
+use underlay_blob::{
+    BlobAdapter, BlobAdapterPromotionExt, BlobAdapterUploadExt, BlobError, BlobObjectKey,
+    BlobUploadConfig, StoredObject, VerifiedPromotionResult,
+};
 
 fn file_too_large_error(size: u64, state: &AppState) -> ApiError {
     ApiError::new(
@@ -31,8 +36,149 @@ fn blob_rejection_to_api_error(err: &BlobError, state: &AppState) -> Option<ApiE
             "media.content_type_mismatch",
             format!("Upload rejected: {detail}"),
         )),
+        BlobError::DestinationExists(key) => Some(ApiError::new(
+            StatusCode::CONFLICT,
+            "media.destination_exists",
+            format!("Published object already exists: {key}"),
+        )),
+        BlobError::Unsupported(detail) => Some(ApiError::new(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "media.source_unsupported",
+            format!("Upload source cannot be published: {detail}"),
+        )),
+        BlobError::NotFound(_) => Some(ApiError::bad_request(
+            "media.staging_not_found",
+            "Uploaded object was not found",
+        )),
+        BlobError::InvalidKey(detail) => Some(ApiError::bad_request(
+            "media.invalid_object_key",
+            detail.clone(),
+        )),
         _ => None,
     }
+}
+
+/// Distinct published key derived from the client upload (staging) key.
+fn published_object_key(staging: &BlobObjectKey) -> Result<BlobObjectKey, String> {
+    let staging_key = staging.as_str();
+    let (parent, name) = staging_key
+        .rsplit_once('/')
+        .ok_or_else(|| "staging object key has no parent path".to_string())?;
+    BlobObjectKey::parse(format!("{parent}/published/{name}")).map_err(|e| e.to_string())
+}
+
+#[async_trait]
+trait ReadyCurrentStore: Send + Sync {
+    async fn activate_ready_current(
+        &self,
+        media_id: Uuid,
+        version_id: Uuid,
+        promoted: &VerifiedPromotionResult,
+    ) -> Result<acme_db::media::MediaVersionRow, sqlx::Error>;
+}
+
+struct PoolStore<'a>(&'a acme_db::DbPool);
+
+#[async_trait]
+impl ReadyCurrentStore for PoolStore<'_> {
+    async fn activate_ready_current(
+        &self,
+        media_id: Uuid,
+        version_id: Uuid,
+        promoted: &VerifiedPromotionResult,
+    ) -> Result<acme_db::media::MediaVersionRow, sqlx::Error> {
+        media::activate_ready_current(
+            self.0,
+            version_id,
+            media_id,
+            promoted.object.size as i64,
+            &promoted.object.content_type,
+            &promoted.sha256,
+            &promoted.object.provider,
+            &promoted.object.bucket,
+            &promoted.object.key,
+        )
+        .await
+    }
+}
+
+/// Promote staging to a distinct destination, or accept a destination that
+/// already holds exactly the captured staging bytes (convergent retry).
+async fn promote_or_converge(
+    blob: &dyn BlobAdapter,
+    staging: &BlobObjectKey,
+    destination: &BlobObjectKey,
+    declared_content_type: &str,
+    config: &BlobUploadConfig,
+) -> Result<VerifiedPromotionResult, BlobError> {
+    match blob
+        .promote_verified(staging, destination, declared_content_type, config)
+        .await
+    {
+        Ok(result) => Ok(result),
+        Err(BlobError::DestinationExists(_)) => {
+            converge_existing_destination(blob, staging, destination, declared_content_type, config)
+                .await
+        }
+        Err(err) => Err(err),
+    }
+}
+
+async fn converge_existing_destination(
+    blob: &dyn BlobAdapter,
+    staging: &BlobObjectKey,
+    destination: &BlobObjectKey,
+    declared_content_type: &str,
+    config: &BlobUploadConfig,
+) -> Result<VerifiedPromotionResult, BlobError> {
+    let max_bytes = config.max_file_size_bytes_limit();
+    let staging_bytes = blob.get_bytes_bounded(staging.as_str(), max_bytes).await?;
+    let destination_bytes = blob
+        .get_bytes_bounded(destination.as_str(), max_bytes)
+        .await?;
+    if staging_bytes != destination_bytes {
+        return Err(BlobError::DestinationExists(
+            destination.as_str().to_string(),
+        ));
+    }
+    if !config.is_content_type_allowed(declared_content_type) {
+        return Err(BlobError::InvalidContentType(
+            declared_content_type.to_string(),
+        ));
+    }
+
+    Ok(VerifiedPromotionResult {
+        object: StoredObject::new(
+            blob.name(),
+            blob.bucket(),
+            destination.as_str(),
+            destination_bytes.len() as u64,
+            declared_content_type,
+        ),
+        sha256: hex::encode(Sha256::digest(&destination_bytes)),
+    })
+}
+
+fn blob_finalise_error(
+    err: BlobError,
+    state: &AppState,
+    media_id: Uuid,
+    version_id: Uuid,
+) -> ApiError {
+    if let Some(rejection) = blob_rejection_to_api_error(&err, state) {
+        return rejection;
+    }
+    tracing::error!("Failed to promote upload: {}", err);
+    crate::db_errors::internal_with_diagnostics(
+        "media.upload_finalise_failed",
+        "Failed to finalise upload",
+        &err,
+    )
+    .with_context(json!({
+        "operation": "media.finalise_upload",
+        "media_id": media_id,
+        "version_id": version_id
+    }))
 }
 
 /// Initiate an upload for a media item.
@@ -170,13 +316,23 @@ pub async fn finalise_upload(
     Path((media_id, version_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<FinaliseUploadRequest>,
 ) -> Result<Response, ApiError> {
+    let pool = state.local_auth.pool();
+    finalise_upload_with(&state, PoolStore(pool), media_id, version_id, req).await
+}
+
+async fn finalise_upload_with<S: ReadyCurrentStore>(
+    state: &AppState,
+    store: S,
+    media_id: Uuid,
+    version_id: Uuid,
+    req: FinaliseUploadRequest,
+) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
         return Err(ApiError::bad_request("validation.failed", e.to_string()));
     }
 
     let pool = state.local_auth.pool();
 
-    // Verify version exists and belongs to this media
     let version = match media::get_media_version(pool, version_id).await {
         Ok(Some(v)) if v.media_id == media_id => v,
         Ok(Some(_)) => {
@@ -206,14 +362,6 @@ pub async fn finalise_upload(
         }
     };
 
-    if version.state != "uploading" {
-        return Err(ApiError::bad_request(
-            "version.not_uploading",
-            "Version is not in uploading state",
-        ));
-    }
-
-    // Get media for filename
     let media_row = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
         Ok(None) => {
@@ -237,65 +385,51 @@ pub async fn finalise_upload(
         }
     };
 
-    // Generate object key (same as in initiate) using standardized storage pattern
-    // Use original filename if available, otherwise generate from content type
+    if version.state == "ready" && media_row.current_version_id == Some(version_id) {
+        return finalise_success_response(pool, media_id, version).await;
+    }
+
+    if version.state != "uploading" {
+        return Err(ApiError::bad_request(
+            "version.not_uploading",
+            "Version is not in uploading state",
+        ));
+    }
+
+    // Staging key matches initiate. The published destination is distinct so
+    // exclusive create cannot overwrite the client upload object.
     let filename = media_row.original_filename.clone().unwrap_or_else(|| {
         let ext = underlay_media::storage::mime_to_extension(&req.content_type);
         format!("file.{}", ext)
     });
-    let object_key = version_object_key(media_id, version_id, &filename)
+    let staging_key = version_object_key(media_id, version_id, &filename)
         .map_err(|e| ApiError::bad_request("media.invalid_object_key", e.to_string()))?;
+    let destination_key = published_object_key(&staging_key)
+        .map_err(|e| ApiError::bad_request("media.invalid_object_key", e))?;
 
-    // Finalise through the foundation's verified helper: it enforces the
-    // size cap, the MIME allowlist, and magic-byte verification of the
-    // stored bytes against the declared content type in one place, then pins
-    // the content type to the validated declared value.
-    let stored = match state
-        .blob_adapter
-        .finalise_upload_verified(object_key.as_str(), &req.content_type, &state.config.media)
-        .await
-    {
-        Ok(s) => s,
-        Err(e) => {
-            if let Some(rejection) = blob_rejection_to_api_error(&e, &state) {
-                // Policy rejection: clean up the stored object and fail the
-                // version, then surface the 4xx.
-                let _ = state.blob_adapter.delete_object_key(&object_key).await;
-                let _ = media::fail_media_version(pool, version_id).await;
-                return Err(rejection);
-            }
-
-            tracing::error!("Failed to finalise upload: {}", e);
-            let _ = media::fail_media_version(pool, version_id).await;
-            return Err(crate::db_errors::internal_with_diagnostics(
-                "media.upload_finalise_failed",
-                "Failed to finalise upload",
-                &e,
-            )
-            .with_context(json!({
-                "operation": "media.finalise_upload",
-                "media_id": media_id,
-                "version_id": version_id
-            })));
-        }
-    };
-
-    // Update version with storage info
-    let finalised_version = match media::finalise_media_version(
-        pool,
-        version_id,
-        stored.size as i64,
-        &stored.content_type,
-        &req.sha256,
-        "local", // storage provider
-        "media", // bucket
-        object_key.as_str(),
+    // Client sha256/size/provider/bucket/final key are not authority. Digest,
+    // size, MIME, provider, bucket, and destination key come from the
+    // captured promotion result.
+    let promoted = match promote_or_converge(
+        state.blob_adapter.as_ref(),
+        &staging_key,
+        &destination_key,
+        &req.content_type,
+        &state.config.media,
     )
     .await
     {
+        Ok(result) => result,
+        Err(err) => return Err(blob_finalise_error(err, state, media_id, version_id)),
+    };
+
+    let finalised_version = match store
+        .activate_ready_current(media_id, version_id, &promoted)
+        .await
+    {
         Ok(v) => v,
         Err(e) => {
-            tracing::error!("Failed to finalise version: {}", e);
+            tracing::error!("Failed to activate ready/current: {}", e);
             return Err(crate::db_errors::internal_with_diagnostics(
                 "media.version_finalise_failed",
                 "Failed to finalise upload",
@@ -304,28 +438,16 @@ pub async fn finalise_upload(
             .with_context(json!({
                 "operation": "media.finalise_upload",
                 "media_id": media_id,
-                "version_id": version_id
+                "version_id": version_id,
+                "staging_key": staging_key.as_str(),
+                "destination_key": destination_key.as_str()
             })));
         }
     };
 
-    // Set as current version
-    if let Err(e) = media::set_current_version(pool, media_id, version_id).await {
-        tracing::error!("Failed to set current version: {}", e);
-        return Err(crate::db_errors::internal_with_diagnostics(
-            "media.set_current_version_failed",
-            "Failed to finalise upload",
-            &e,
-        )
-        .with_context(json!({
-            "operation": "media.finalise_upload",
-            "media_id": media_id,
-            "version_id": version_id
-        })));
-    }
-
-    // Enqueue thumbnail generation job for images
-    if stored.content_type.starts_with("image/") && stored.content_type != "image/svg+xml" {
+    if promoted.object.content_type.starts_with("image/")
+        && promoted.object.content_type != "image/svg+xml"
+    {
         if let Some(job_repo) = &state.job_repository {
             let payload = json!({
                 "media_id": media_id,
@@ -336,7 +458,6 @@ pub async fn finalise_upload(
                 .create("media.generate_thumbnail", payload, &config)
                 .await
             {
-                // Log but don't fail the request - thumbnail is not critical
                 tracing::warn!("Failed to enqueue thumbnail job: {}", e);
             } else {
                 tracing::info!(
@@ -348,7 +469,14 @@ pub async fn finalise_upload(
         }
     }
 
-    // Get updated media
+    finalise_success_response(pool, media_id, finalised_version).await
+}
+
+async fn finalise_success_response(
+    pool: &acme_db::DbPool,
+    media_id: Uuid,
+    finalised_version: acme_db::media::MediaVersionRow,
+) -> Result<Response, ApiError> {
     let updated_media = match media::get_media(pool, media_id).await {
         Ok(Some(m)) => m,
         Ok(None) => {
@@ -366,8 +494,7 @@ pub async fn finalise_upload(
             )
             .with_context(json!({
                 "operation": "media.finalise_upload",
-                "media_id": media_id,
-                "version_id": version_id
+                "media_id": media_id
             })));
         }
     };
@@ -386,3 +513,7 @@ pub async fn finalise_upload(
     })
     .into_response())
 }
+
+#[cfg(test)]
+#[path = "../../../tests/routes/admin/media_finalise_promotion_tests.rs"]
+mod finalise_promotion_tests;

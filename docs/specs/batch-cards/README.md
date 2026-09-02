@@ -20,4 +20,4 @@ rollout.
 
 ## Next Task
 
-Execute card 003 under `g01.013` and stop at its PR for orchestrator review.
+Orchestrator exact-head review of the card 003 PR under `g01.013`.

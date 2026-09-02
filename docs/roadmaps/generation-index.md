@@ -19,5 +19,5 @@ strict-lane material has been purged from `specs/`.
 
 ## Next Task
 
-Keep `g01` active. Execute `g01.013` card 003 and stop at its PR for review.
-Resume `g01.007` afterwards; the next roadmap ID is `g01.014`.
+Keep `g01` active. Review the `g01.013` card 003 PR at exact head. Resume
+`g01.007` afterwards; the next roadmap ID is `g01.014`.

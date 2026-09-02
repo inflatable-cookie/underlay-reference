@@ -5,7 +5,7 @@
     "": {
       "name": "underlay-reference",
       "devDependencies": {
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.6",
       },
     },
     "apps/acme-admin": {
@@ -15,7 +15,7 @@
         "@acme/ui": "workspace:*",
         "@inflatable-cookie/poodle-core": "0.2.2",
         "@inflatable-cookie/poodle-svelte": "0.2.2",
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.6",
         "acme-client": "workspace:*",
         "bits-ui": "^2.18.1",
         "lucide-svelte": "^1.0.1",
@@ -43,7 +43,7 @@
         "@acme/ui": "workspace:*",
         "@inflatable-cookie/poodle-core": "0.2.2",
         "@inflatable-cookie/poodle-svelte": "0.2.2",
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.6",
         "acme-client": "workspace:*",
         "lucide-svelte": "^1.0.1",
       },
@@ -63,7 +63,7 @@
       "name": "acme-client",
       "version": "0.0.1",
       "dependencies": {
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.6",
       },
       "devDependencies": {
         "@types/node": "^25.3.0",
@@ -76,7 +76,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@inflatable-cookie/poodle-svelte": "0.2.2",
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.6",
         "marked": "^18.0.9",
       },
       "devDependencies": {
@@ -125,7 +125,7 @@
 
     "@inflatable-cookie/poodle-svelte": ["@inflatable-cookie/poodle-svelte@0.2.2", "", { "dependencies": { "@inflatable-cookie/poodle-core": "0.2.2", "marked": "^18.0.9" }, "peerDependencies": { "svelte": ">=5.38.6 <6" } }, "sha512-BZIKZuqZ3DdoqvyGstuOgaOX23t4+kpXgu7U0BEY7zEsUbYvOrxte1iu+S2/AsIpqaND0BYL3Wu/N5z1ekzc2A=="],
 
-    "@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@git+ssh://git@github.com/inflatable-cookie/underlay.git#8ffafb9243eaf5752d300ac5163aac25ff04d2b8", { "dependencies": { "@inflatable-cookie/poodle-svelte": "0.2.2", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "underlay-workspace-shape": "./ts/bin/underlay-workspace-shape.ts", "underlay-env-authority": "./ts/bin/underlay-env-authority.ts" } }, "8ffafb9243eaf5752d300ac5163aac25ff04d2b8"],
+    "@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@git+ssh://git@github.com/inflatable-cookie/underlay.git#4f6d75522c553fa9279b1ce36871ccc1cc1ce99d", { "dependencies": { "@inflatable-cookie/poodle-svelte": "0.2.2", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "underlay-workspace-shape": "./ts/bin/underlay-workspace-shape.ts", "underlay-env-authority": "./ts/bin/underlay-env-authority.ts" } }, "4f6d75522c553fa9279b1ce36871ccc1cc1ce99d"],
 
     "@internationalized/date": ["@internationalized/date@3.12.3", "", { "dependencies": { "@swc/helpers": "^0.5.0" } }, "sha512-fuLX+3ZKLsxI73y8b01EG/WjHb6gE6weCqlfawPO27kBWGMh9G1yH6Csv1uU7/cac9H2GHmOMt6CjmuQ1aia4Q=="],
 
@@ -459,28 +459,12 @@
 
     "zimmerframe": ["zimmerframe@1.1.4", "", {}, "sha512-B58NGBEoc8Y9MWWCQGl/gq9xBCe4IiKM0a2x7GZdQKOW5Exr8S1W24J6OgM1njK8xCRGvAJIL/MxXHf6SkmQKQ=="],
 
-    "@acme/ui/@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@git+ssh://git@github.com/inflatable-cookie/underlay.git#8ffafb9243eaf5752d300ac5163aac25ff04d2b8", { "dependencies": { "@inflatable-cookie/poodle-svelte": "0.2.2", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "underlay-workspace-shape": "./ts/bin/underlay-workspace-shape.ts", "underlay-env-authority": "./ts/bin/underlay-env-authority.ts" } }, "8ffafb9243eaf5752d300ac5163aac25ff04d2b8"],
-
     "@inflatable-cookie/underlay/marked": ["marked@17.0.6", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA=="],
 
     "@sveltejs/vite-plugin-svelte/magic-string": ["magic-string@1.2.2", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.5" } }, "sha512-veT/+7iXrXzT39XnEN4lOxtNl72dMgJ8Lp+5Bd6YcMSWpb0n0MjBM8Uuooi6jgJr8dhUW2swQgBmoZVMni5SVg=="],
 
     "@testing-library/dom/aria-query": ["aria-query@5.3.0", "", { "dependencies": { "dequal": "^2.0.3" } }, "sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A=="],
 
-    "acme-admin/@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@git+ssh://git@github.com/inflatable-cookie/underlay.git#8ffafb9243eaf5752d300ac5163aac25ff04d2b8", { "dependencies": { "@inflatable-cookie/poodle-svelte": "0.2.2", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "underlay-workspace-shape": "./ts/bin/underlay-workspace-shape.ts", "underlay-env-authority": "./ts/bin/underlay-env-authority.ts" } }, "8ffafb9243eaf5752d300ac5163aac25ff04d2b8"],
-
-    "acme-client/@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@git+ssh://git@github.com/inflatable-cookie/underlay.git#8ffafb9243eaf5752d300ac5163aac25ff04d2b8", { "dependencies": { "@inflatable-cookie/poodle-svelte": "0.2.2", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "underlay-workspace-shape": "./ts/bin/underlay-workspace-shape.ts", "underlay-env-authority": "./ts/bin/underlay-env-authority.ts" } }, "8ffafb9243eaf5752d300ac5163aac25ff04d2b8"],
-
-    "acme-front/@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@git+ssh://git@github.com/inflatable-cookie/underlay.git#8ffafb9243eaf5752d300ac5163aac25ff04d2b8", { "dependencies": { "@inflatable-cookie/poodle-svelte": "0.2.2", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "underlay-workspace-shape": "./ts/bin/underlay-workspace-shape.ts", "underlay-env-authority": "./ts/bin/underlay-env-authority.ts" } }, "8ffafb9243eaf5752d300ac5163aac25ff04d2b8"],
-
     "data-urls/whatwg-url": ["whatwg-url@16.0.1", "", { "dependencies": { "@exodus/bytes": "^1.11.0", "tr46": "^6.0.0", "webidl-conversions": "^8.0.1" } }, "sha512-1to4zXBxmXHV3IiSSEInrreIlu02vUOvrhxJJH5vcxYTBDAx51cqZiKdyTxlecdKNSjj8EcxGBxNf6Vg+945gw=="],
-
-    "@acme/ui/@inflatable-cookie/underlay/marked": ["marked@17.0.6", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA=="],
-
-    "acme-admin/@inflatable-cookie/underlay/marked": ["marked@17.0.6", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA=="],
-
-    "acme-client/@inflatable-cookie/underlay/marked": ["marked@17.0.6", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA=="],
-
-    "acme-front/@inflatable-cookie/underlay/marked": ["marked@17.0.6", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-gB0gkNafnonOw0obSTEGZTT86IuhILt2Wfx0mWH/1Au83kybTayroZ/V6nS25mN7u8ASy+5fMhgB3XPNrOZdmA=="],
   }
 }

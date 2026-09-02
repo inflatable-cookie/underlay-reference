@@ -1,19 +1,14 @@
-//! Upload-policy tests for the media path (g01.009).
+//! Upload-policy tests for initiate (g01.009, retained by g01.013).
 //!
-//! The routes delegate enforcement to the foundation's validated helpers
-//! (`initiate_upload_validated` / `finalise_upload_verified`) with the app's
-//! `AcmeConfig::default().media` policy. These tests prove that policy does
-//! what the roadmap requires: oversized uploads and disallowed/mismatched
-//! content are rejected, allowed images succeed, and the allowlist + size
-//! limit are the foundation defaults (no local re-list that can drift).
+//! Initiate still delegates size/MIME enforcement to
+//! `initiate_upload_validated`. Live finalisation is covered by the
+//! `promote_verified` composition tests.
 
 use crate::config::AcmeConfig;
 use underlay_blob::{
     BlobAdapterUploadExt, BlobError, BlobObjectKey, LocalAdapter, LocalConfig, UploadRequest,
     DEFAULT_ALLOWED_CONTENT_TYPES,
 };
-
-const PNG_MAGIC: &[u8] = &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00];
 
 async fn test_adapter() -> (LocalAdapter, std::path::PathBuf) {
     let dir = std::env::temp_dir().join(format!(
@@ -88,41 +83,6 @@ async fn disallowed_content_type_is_rejected_at_initiate() {
         .await
         .expect_err("SVG must be rejected by the default allowlist");
     assert!(matches!(err, BlobError::InvalidContentType(_)));
-
-    let _ = std::fs::remove_dir_all(dir);
-}
-
-#[tokio::test]
-async fn mismatched_bytes_are_rejected_and_real_image_succeeds() {
-    let (adapter, dir) = test_adapter().await;
-    let media = AcmeConfig::default().media;
-
-    // Declared PNG, stored HTML bytes: verified finalise must reject.
-    use underlay_blob::BlobAdapter;
-    adapter
-        .put_bytes(
-            "a/fake.png",
-            b"<html><body>not a png</body></html>",
-            "image/png",
-        )
-        .await
-        .expect("store fake png bytes");
-    let err = adapter
-        .finalise_upload_verified("a/fake.png", "image/png", &media)
-        .await
-        .expect_err("bytes that do not match the declared type must be rejected");
-    assert!(matches!(err, BlobError::InvalidContentType(_)));
-
-    // A real PNG passes and the content type is pinned to the declared value.
-    adapter
-        .put_bytes("a/real.png", PNG_MAGIC, "image/png")
-        .await
-        .expect("store real png bytes");
-    let stored = adapter
-        .finalise_upload_verified("a/real.png", "image/png", &media)
-        .await
-        .expect("allowed image must succeed");
-    assert_eq!(stored.content_type, "image/png");
 
     let _ = std::fs::remove_dir_all(dir);
 }

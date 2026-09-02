@@ -38,5 +38,5 @@ rollout.
 
 ## Next Task
 
-Execute card 003 under spec 003 and stop at its PR for orchestrator review.
-Resume spec 001 afterwards.
+Orchestrator exact-head review of the card 003 PR under spec 003. Resume spec
+001 afterwards.

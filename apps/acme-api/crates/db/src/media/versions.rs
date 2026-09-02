@@ -65,11 +65,15 @@ pub async fn list_media_versions(
     .collect()
 }
 
-/// Finalise a media version (transition to ready state).
+/// Atomically mark a version ready and commit `media.current_version_id`.
+///
+/// Both writes share one transaction. Failure leaves the version uploading
+/// and the current pointer unchanged.
 #[allow(clippy::too_many_arguments)]
-pub async fn finalise_media_version(
+pub async fn activate_ready_current(
     pool: &DbPool,
     id: Uuid,
+    media_id: Uuid,
     byte_size: i64,
     mime_type: &str,
     sha256: &str,
@@ -77,7 +81,8 @@ pub async fn finalise_media_version(
     bucket: &str,
     object_key: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
-    sqlx::query_as::<_, RawMediaVersionRow>(
+    let mut tx = pool.begin().await?;
+    let version = sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         UPDATE media.media_version
         SET state = 'ready',
@@ -87,7 +92,7 @@ pub async fn finalise_media_version(
             storage_provider = $5,
             bucket = $6,
             object_key = $7
-        WHERE id = $1 AND state = 'uploading'
+        WHERE id = $1 AND media_id = $8 AND state = 'uploading'
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
                   storage_provider, bucket, object_key, created_at, created_by
         "#,
@@ -99,9 +104,27 @@ pub async fn finalise_media_version(
     .bind(storage_provider)
     .bind(bucket)
     .bind(object_key)
-    .fetch_one(pool)
-    .await?
-    .try_into()
+    .bind(media_id)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let updated = sqlx::query(
+        r#"
+        UPDATE media.media
+        SET current_version_id = $2, updated_at = NOW()
+        WHERE id = $1
+        "#,
+    )
+    .bind(media_id)
+    .bind(id)
+    .execute(&mut *tx)
+    .await?;
+    if updated.rows_affected() != 1 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    tx.commit().await?;
+    version.try_into()
 }
 
 /// Update media's current_version_id.
