@@ -11,8 +11,8 @@ Logs capture meaningful execution batches for the reference implementation.
 
 ## Next Task
 
-Card 003 resumed against Underlay v0.9.7 with explicit owned-recovery migration
-authority in [2026-09/02-235000](./2026-09/02-235000-g01-013-v097-owned-recovery-resume.md).
+PR 14 closed `g01.013`; `g01.007` Card 001 resumed in
+[2026-09/03-002448](./2026-09/03-002448-g01-013-closeout-g01-007-resume.md).
 
 The `g01` front doors were reconciled before the external migration/testing
 worker launch

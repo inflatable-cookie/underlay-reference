@@ -1,6 +1,6 @@
 # 001 - Retained Underlay Surface Strict Lane
 
-Status: paused during overlapping `g01.012` repository audit
+Status: active
 Owner: repo maintainers
 Updated: 2026-04-10
 Roadmap refs: g01.007
@@ -20,7 +20,7 @@ boundary contract for downstream app migrations.
 
 ## Ready chain
 
-- `001-audit-retained-acme-admin-underlay-surface.md` — paused; preserved
+- `001-audit-retained-acme-admin-underlay-surface.md` — ready
 
 ## Stop Conditions
 
@@ -30,5 +30,4 @@ boundary contract for downstream app migrations.
 
 ## Next Task
 
-Execute `g01.012` card 002 first. Resume this spec and card 001 after audit
-closeout.
+Execute Card 001 and stop at its PR for exact-head review.

@@ -1,10 +1,10 @@
 # g01.007 Retained Underlay Surface Formalization
 
-Status: paused during overlapping `g01.012` repository audit
+Status: active
 Owner: repo maintainers
 Updated: 2026-04-10
 Governing refs: `docs/architecture/product-guardrails.md`, `docs/policy/001-working-rules.md`, `docs/specs/001-retained-underlay-surface-strict-lane.md`
-Planning state: paused; card 001 preserved
+Planning state: Card 001 ready
 
 ## Goal
 
@@ -42,5 +42,4 @@ Turn the completed Poodle coexistence proof into an explicit retained-Underlay c
 
 ## Next
 
-Execute `g01.012` card 002 first. Resume card 001 afterwards; the repository
-audit must not classify or close the retained Underlay boundary.
+Execute Card 001 and stop at its PR for exact-head review.

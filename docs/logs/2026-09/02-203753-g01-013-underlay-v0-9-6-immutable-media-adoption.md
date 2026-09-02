@@ -1,11 +1,11 @@
 # g01.013 Underlay v0.9.7 Owned Media Recovery
 
-Status: delivered-at-pr
+Status: complete — PR 14 merged as `0585c926`
 Owner: media worker
 Date: 2026-09-02
 Roadmap: `docs/roadmaps/g01/013-underlay-v0-9-6-immutable-media-adoption.md`
-Spec: `docs/specs/003-underlay-v0-9-6-immutable-media-adoption.md`
-Card: `docs/specs/batch-cards/003-underlay-v0-9-6-immutable-media-adoption.md`
+Spec: `docs/specs/archive/003-underlay-v0-9-6-immutable-media-adoption.md`
+Card: `docs/specs/archive/batch-cards/003-underlay-v0-9-6-immutable-media-adoption.md`
 Handoff: `docs/handoffs/20260902-235000-underlay-v0-9-7-owned-recovery-resume.md`
 
 ## Run Identity
@@ -111,5 +111,5 @@ rollback. Non-blocking follow-ups were left untouched.
 
 ## Next Task
 
-Orchestrator exact-head review of this PR. Do not merge from this worker.
-Resume `g01.007` after merge.
+PR 14 passed exact-head review at `cdda80f1` and merged as
+`0585c926db9678e5d64b3ca3e29071a37e964c8c`. Resume `g01.007` Card 001.

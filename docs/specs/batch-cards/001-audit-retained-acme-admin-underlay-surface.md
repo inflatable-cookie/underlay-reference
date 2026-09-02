@@ -1,6 +1,6 @@
 # 001 - Audit Retained Acme-Admin Underlay Surface
 
-Status: paused during overlapping `g01.012` repository audit
+Status: ready
 Owner: repo maintainers
 Updated: 2026-04-10
 Roadmap: g01.007
@@ -58,5 +58,4 @@ boundary as a durable contract artifact.
 
 ## Next Task
 
-Remain paused while card 002 audits the repository. Resume afterwards without
-treating language-audit findings as the retained-surface decision.
+Execute this card in one docs-only worker and stop at its PR for review.

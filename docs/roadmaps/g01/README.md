@@ -16,7 +16,7 @@
 - `010` TypeScript type-safety hygiene (from the g08 consumer audit)
 - `011` gate hardening and lint cleanup (from the g08 consumer audit)
 - `012` Northstar instruction and language-quality audit
-- `013` Underlay v0.9.7 owned media recovery
+- `013` Underlay v0.9.7 owned media recovery — complete in PR 14
 
 ## Next roadmap
 
@@ -37,5 +37,5 @@ larger follow-ups it deferred and completed on 2026-07-19.
 
 ## Next Task
 
-Resume `g01.013` Card 003 on existing PR 14. `g01.012` is complete. `g01.007`
-remains paused during the dependency and media rollout; resume it after merge.
+Execute `g01.007` Card 001 and stop at its PR for review. `g01.012` and
+`g01.013` are complete.

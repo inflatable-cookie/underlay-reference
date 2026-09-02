@@ -1,6 +1,6 @@
 # Underlay v0.9.7 Owned Media Recovery
 
-Status: active
+Status: complete — PR 14 merged as `0585c926`
 Owner: repo maintainers
 Created: 2026-09-02
 Roadmap: `g01.013`
@@ -96,5 +96,5 @@ root JS preparation, focused media/blob and database oracles, package checks,
 
 ## Next Task
 
-Resume the existing Card 003 worker, workspace, branch, and PR 14 against
-v0.9.7. Stop at its new exact head for review. Resume `g01.007` after merge.
+Complete. PR 14 merged as `0585c926db9678e5d64b3ca3e29071a37e964c8c`.
+Resume `g01.007` Card 001.

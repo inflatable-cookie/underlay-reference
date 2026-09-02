@@ -1,10 +1,10 @@
 # 003 - Underlay v0.9.7 Owned Media Recovery
 
-Status: revision-ready
+Status: complete — PR 14 merged as `0585c926`
 Owner: media worker
 Created: 2026-09-02
 Roadmap: `g01.013`
-Spec: `docs/specs/003-underlay-v0-9-6-immutable-media-adoption.md`
+Spec: `docs/specs/archive/003-underlay-v0-9-6-immutable-media-adoption.md`
 Auto-start next card: no
 
 ## Objective
@@ -52,4 +52,4 @@ adapter policy. Never edit Underlay or Poodle.
 
 ## Next Task
 
-Resume the existing worker and PR 14. Do not create a replacement lane or merge.
+Complete. Resume `g01.007` Card 001.

@@ -69,6 +69,5 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 
 ## Next Task
 
-Resume Card 003's existing PR 14 as the Underlay v0.9.7 owned-media recovery
-proof under `g01.013`. Stop at a new exact head for review, then resume the
-retained-surface card after merge.
+Execute `g01.007` Card 001, the retained Underlay surface audit, and stop at its
+PR for exact-head review. `g01.013` completed in merged PR 14.
