@@ -36,7 +36,7 @@ Turn the completed Poodle coexistence proof into an explicit retained-Underlay c
 
 ## Validation
 
-- [x] run `effigy docs check-links README.md vision/README.md roadmaps/README.md logs/README.md` from `docs/`
+- [x] run `effigy docs check links README.md vision/README.md roadmaps/README.md logs/README.md` from `docs/`
 - [x] confirm `docs/roadmaps/README.md` and `docs/roadmaps/g01/README.md` both show `g01.007` as the active milestone
 - [x] ensure the retained-surface artifact uses repo-root path references and stays aligned with the completed `g01.006` outcome
 

@@ -26,14 +26,15 @@ Card 001 executed as one docs-only worker against live `acme-admin` source
     the `acme-ui` note registrations consumed via `@acme/ui/*`.
   - Group 3 reference-app/domain-specific surface: the Poodle-first
     `system/poodle-gap-review` page and the acme composition layer under
-    `lib/cards|lists|forms|menus|ui`.
-  - Group 4 future Poodle review candidates (explicitly not part of
-    `g01.007`): toast store, slug/html/browser utilities,
+    `lib/cards|lists|forms|menus|ui|components|stores|utils`.
+  - Group 4 future Poodle review notes — explicitly not a second
+    classification — inside already-classified surfaces: the group 1
+    feedback-runtime toast store, slug/html/browser utilities,
     `createClientPagination`, `PasswordRequirements`.
 - Recorded the downstream rule: Poodle directly for primitives and simple
   composites; Underlay only where groups 1-2 name structural, workflow-heavy,
-  or data-heavy ownership; group 3 is app-local; group 4 waits for a review
-  lane.
+  or data-heavy ownership; group 3 is app-local; group 4 notes wait for a
+  roadmap decision.
 - Closed out roadmap `g01.007`, both roadmap indexes, spec 001, Card 001,
   product guardrails, and the docs/specs/logs front doors.
 
@@ -44,12 +45,19 @@ Card 001 executed as one docs-only worker against live `acme-admin` source
   `(app)/+layout.svelte` has since moved to Poodle `ErrorBoundary`.
 - The classification is a contract freeze, not a migration wave; no
   migrated primitive was reopened and no route was converted.
+- Review-note repair (post first PR review): the roadmap validation
+  criterion "absolute path references" was rewritten to "repo-root path
+  references" in the first batch; the contract uses repo-root-relative
+  paths, matching the durable process-notes convention.
+- Review-note repair: Card 001 `Owner` moved from "repo maintainers" to the
+  executing worker, matching the archived batch-card convention
+  (`specs/archive/batch-cards/003` uses `Owner: media worker`).
 
 ## Validation
 
 - `effigy acme-docs/qa:docs`
 - `effigy acme-docs/qa:northstar`
-- `effigy docs check-links README.md vision/README.md roadmaps/README.md logs/README.md` (from `docs/`)
+- `effigy docs check links README.md vision/README.md roadmaps/README.md logs/README.md` (from `docs/`)
 - `git diff --check` and a docs-only range diff against the pushed-main base
 
 ## Next Task

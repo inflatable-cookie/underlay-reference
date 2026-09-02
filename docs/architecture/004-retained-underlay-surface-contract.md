@@ -65,13 +65,20 @@ Representative surfaces:
   every detail and edit flow.
 - Feedback runtime: `apps/acme-admin/src/routes/(app)/+layout.svelte` creates
   the Underlay toast store and sets `UNDERLAY_TOASTS_CONTEXT_KEY`; Poodle
-  `ToastHost` renders it. `copyToClipboard` serves the account routes.
+  `ToastHost` renders it, and `useToasts` consumes the context in 8 list and
+  route surfaces. `copyToClipboard` serves the categories detail page
+  (`apps/acme-admin/src/routes/(app)/categories/[categoryId]/+page.svelte`);
+  the users detail page ships an app-local helper of the same name. The
+  toast store is classified here, in group 1, exactly once: a future Poodle
+  feedback contract could absorb it, but until a roadmap decision says
+  otherwise the structural-shell rule is what downstream apps follow.
 - Route protection: `underlay/client/route-protection` `resolveRedirectTo`
   guards the six `new`/`edit` routes under users, projects, and categories.
-- Stylesheets: `apps/acme-admin/src/routes/+layout.svelte` imports
-  `underlay/styles/base.css`, `tokens.css`, and `forms.css` before the
-  Poodle theme shell so retained template pages keep their form and base
-  styling under Poodle-owned theming.
+- Stylesheets: `apps/acme-admin/src/routes/+layout.svelte` imports the four
+  Poodle token stylesheets first, then `underlay/styles/base.css`,
+  `tokens.css`, and `forms.css`, followed by the app's own overrides.
+  Retained template pages keep their base and form styling under
+  Poodle-owned theming.
 
 ### Group 2 — Workflow-heavy and data-heavy template stacks
 
@@ -156,37 +163,52 @@ Representative surfaces:
   boundary.
 - The domain composition layer — `apps/acme-admin/src/lib/cards/`,
   `apps/acme-admin/src/lib/lists/`, `apps/acme-admin/src/lib/forms/`,
-  `apps/acme-admin/src/lib/menus/`, and `apps/acme-admin/src/lib/ui/` — is
-  acme data wiring (loaders calling `@api-client`, acme nav items feeding
-  the Underlay `AdminNavList` and `AdminUserMenu` templates in
-  `apps/acme-admin/src/lib/ui/AdminNavList.svelte` and
-  `apps/acme-admin/src/lib/ui/AdminUserMenu.svelte`). The Underlay
+  `apps/acme-admin/src/lib/menus/`, `apps/acme-admin/src/lib/ui/`,
+  `apps/acme-admin/src/lib/components/`, `apps/acme-admin/src/lib/stores/`,
+  and `apps/acme-admin/src/lib/utils/` — is acme data wiring: loaders
+  calling `@api-client`, acme nav items feeding the Underlay `AdminNavList`
+  and `AdminUserMenu` templates
+  (`apps/acme-admin/src/lib/ui/AdminNavList.svelte`,
+  `apps/acme-admin/src/lib/ui/AdminUserMenu.svelte`), the media actions
+  wrapper (`apps/acme-admin/src/lib/components/MediaActionsMenu.svelte`),
+  and the selection-history store
+  (`apps/acme-admin/src/lib/stores/selection-history.ts`). The Underlay
   dependencies inside this layer are group 1 and group 2 surfaces; the
   wiring itself is app-local.
 
-### Group 4 — Future Poodle review candidates (not part of g01.007)
+### Group 4 — Future Poodle review notes (not part of g01.007)
 
-- Category: candidate for future Poodle review, but not part of `g01.007`.
-- Owner: Poodle review lane (future decision); currently consumed by
-  `acme-admin`.
-- Why they remain today: each is small, self-contained, and not structural,
-  workflow-heavy, or data-heavy on its own. Nothing here blocks the frozen
-  boundary, and no migration is scheduled in this milestone.
+Group 4 is not a second classification. Every entry below lives inside a
+surface already classified in groups 1-3, and the containing group's
+category and owner win today. A note becomes actionable only when a
+roadmap milestone moves it.
 
-Candidates as of 2026-09-03:
+- Owner today: the containing group's owner (Underlay, or `acme-admin` for
+  the group 3 entry). Any Poodle ownership transfer requires a roadmap
+  decision.
+- Why they remain today: each is small, self-contained, and not
+  structural, workflow-heavy, or data-heavy on its own. Nothing here blocks
+  the frozen boundary, and no migration is scheduled in this milestone.
 
-- `underlay/runtime/feedback` toast store — a coexistence seam already
-  exists (Underlay store, Poodle `ToastHost` presentation); a Poodle
-  feedback contract could absorb the store.
+Notes as of 2026-09-03:
+
+- The group 1 feedback runtime's toast store is the strongest candidate: a
+  Poodle feedback contract could absorb the Underlay store behind the
+  existing Poodle `ToastHost` presentation seam. Retained today under its
+  group 1 classification.
 - `underlay/utils/slug` (`slugify`, `isValidSlugFormat`, `isReservedSlug`)
-  — simple string utilities with two consumers.
-- `underlay/utils/html` `sanitizeSvgHtml` — single consumer on the 2FA page.
+  — simple string utilities with two consumers in the group 2 category
+  form wiring.
+- `underlay/utils/html` `sanitizeSvgHtml` — single consumer on the 2FA
+  page, a group 1 auth-runtime consumer.
 - `underlay/runtime/browser` `detectBrowserTimezone` — single consumer on
-  the account page.
-- `underlay/runtime/collections` `createClientPagination` — single consumer,
-  the otherwise Poodle-first gap-review page.
-- `underlay/patterns` `PasswordRequirements` — small form helper on the
-  auth and account flows.
+  the account page, a group 1 auth-runtime consumer.
+- `underlay/runtime/collections` `createClientPagination` — single
+  consumer is the group 3 gap-review page, which is otherwise
+  Poodle-first.
+- `underlay/patterns` `PasswordRequirements` — small form helper imported
+  directly by the account password page; the login and forgot-password
+  flows sit on `LoginPage` and `ForgotPasswordFlow` instead.
 
 ## Boundary summary
 
@@ -194,8 +216,8 @@ The retained Underlay surface of the reference admin is exactly groups 1 and
 2. Poodle owns every foundational primitive and composite the coexistence
 proof moved in `g01.006`; this audit found no residual Underlay primitive or
 simple-composite usage to chase. Group 3 is app-local reference material.
-Group 4 is parked for a future review lane and must not drift into a
-migration wave without a roadmap.
+Group 4 holds future-review notes inside those already-classified surfaces
+and must not drift into a migration wave without a roadmap.
 
 ## Next Task
 
