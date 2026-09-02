@@ -37,7 +37,7 @@ promotion.
 
 Use the governing spec verbatim. Review must inspect the lock sources and try
 source mutation, non-regular/oversized input, occupied destinations, forged
-client metadata, post-promotion DB failure, and retry convergence.
+client metadata, post-promotion DB failure, and successful retry.
 
 ## Stop Conditions
 

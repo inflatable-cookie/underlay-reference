@@ -1,17 +1,19 @@
 use super::*;
 
-/// Create a new media version (in uploading state) with its staging object key.
+/// Create a new media version (in uploading state) with its staging object key
+/// and declared MIME. The declared MIME is server-owned from initiate.
 pub async fn create_media_version(
     pool: &DbPool,
     id: Uuid,
     media_id: Uuid,
     created_by: Option<Uuid>,
     object_key: &str,
+    mime_type: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
-        INSERT INTO media.media_version (id, media_id, state, created_by, object_key)
-        VALUES ($1, $2, 'uploading', $3, $4)
+        INSERT INTO media.media_version (id, media_id, state, created_by, object_key, mime_type)
+        VALUES ($1, $2, 'uploading', $3, $4, $5)
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
                   storage_provider, bucket, object_key, created_at, created_by
         "#,
@@ -20,9 +22,53 @@ pub async fn create_media_version(
     .bind(media_id)
     .bind(created_by)
     .bind(object_key)
+    .bind(mime_type)
     .fetch_one(pool)
     .await?
     .try_into()
+}
+
+/// Record adapter identity for an in-flight finalise. Digest/size stay null
+/// until exclusive create succeeds and facts are recorded.
+pub async fn record_publication_intent(
+    pool: &DbPool,
+    id: Uuid,
+    storage_provider: &str,
+    bucket: &str,
+) -> Result<MediaVersionRow, sqlx::Error> {
+    sqlx::query_as::<_, RawMediaVersionRow>(
+        r#"
+        UPDATE media.media_version
+        SET storage_provider = $2,
+            bucket = $3
+        WHERE id = $1 AND state = 'uploading' AND sha256 IS NULL
+        RETURNING id, media_id, state, byte_size, mime_type, sha256,
+                  storage_provider, bucket, object_key, created_at, created_by
+        "#,
+    )
+    .bind(id)
+    .bind(storage_provider)
+    .bind(bucket)
+    .fetch_one(pool)
+    .await?
+    .try_into()
+}
+
+/// Drop adapter identity after a refused collision so a later attempt does
+/// not treat the incumbent as this version's publication.
+pub async fn clear_publication_intent(pool: &DbPool, id: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        UPDATE media.media_version
+        SET storage_provider = NULL,
+            bucket = NULL
+        WHERE id = $1 AND state = 'uploading' AND sha256 IS NULL
+        "#,
+    )
+    .bind(id)
+    .execute(pool)
+    .await?;
+    Ok(())
 }
 
 /// Persist server-derived promotion facts while the version stays uploading

@@ -55,9 +55,10 @@ and Postgres:
 | Occupied destination plus post-capture staging swap | `occupied_destination_refuses_after_staging_mutates_post_capture` |
 | Forged client digest / identity | `forged_client_metadata_is_ignored_and_persisted_facts_are_server_derived` |
 | In-transaction ready/current rollback + durable retry | `activation_failure_keeps_identities_and_retry_does_not_duplicate` |
+| Crash after exclusive create, before fact recording | `crash_after_promote_recovers_from_destination_and_delete_cleans_it` |
 | Declared MIME vs bytes | `mismatched_declared_mime_refuses_before_publication` |
 
-Initiate policy tests remain.
+Initiate policy tests remain (3). Finalisation composition tests: 8. Total focused suite: 11.
 
 ## Lock Sources
 
@@ -69,7 +70,7 @@ Initiate policy tests remain.
 
 ## Validation
 
-- focused acme-api oracle + initiate tests: 9 passed against Postgres 16
+- focused acme-api oracle + initiate tests: 11 passed against Postgres 16
 - `cargo fmt --all --check`
 - `cargo clippy --workspace --all-targets --all-features -- -D warnings`
 - `effigy workspace:js:prepare`
@@ -95,6 +96,15 @@ Exact-head review at `210e954f` required three blockers. This revision:
 3. Replaced `FailingStore` with `activate_ready_current_failing_after_version_ready`,
    which raises `SELECT 1 / 0` inside the real transaction after the version-ready
    write. Fresh queries still show `uploading` and a null current pointer.
+
+Re-review at `ed5db4ab` required two further blockers:
+
+1. Publication intent (adapter provider/bucket) is committed before
+   `promote_verified`. A crash after exclusive create and before digest
+   recording recovers from the immutable destination without rereading
+   staging. Version delete/purge removes both staging and published keys.
+2. This log and the PR body now state universal collision refusal and the
+   actual focused suite count (11).
 
 ## Boundaries Held
 

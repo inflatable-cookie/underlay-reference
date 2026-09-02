@@ -81,6 +81,13 @@ impl FakeAdapter {
             .expect("fake adapter unreadable")
             .insert(key.to_string());
     }
+
+    fn remove(&self, key: &str) {
+        self.objects
+            .lock()
+            .expect("fake adapter objects")
+            .remove(key);
+    }
 }
 
 #[async_trait]
@@ -101,12 +108,27 @@ impl BlobAdapter for FakeAdapter {
         unimplemented!("finalise tests do not sign downloads")
     }
 
-    async fn delete(&self, _key: &str) -> BlobResult<()> {
+    async fn delete(&self, key: &str) -> BlobResult<()> {
+        self.objects
+            .lock()
+            .expect("fake adapter objects")
+            .remove(key);
         Ok(())
     }
 
-    async fn head(&self, _key: &str) -> BlobResult<ObjectInfo> {
-        unimplemented!("finalise tests do not head objects")
+    async fn head(&self, key: &str) -> BlobResult<ObjectInfo> {
+        let objects = self.objects.lock().expect("fake adapter objects");
+        let (bytes, content_type) = objects
+            .get(key)
+            .ok_or_else(|| BlobError::NotFound(key.to_string()))?;
+        Ok(ObjectInfo {
+            key: key.to_string(),
+            size: bytes.len() as u64,
+            content_type: content_type.clone(),
+            etag: None,
+            last_modified: None,
+            metadata: HashMap::new(),
+        })
     }
 
     async fn get_bytes(&self, _key: &str) -> BlobResult<Vec<u8>> {
@@ -283,9 +305,16 @@ async fn prepare_uploading(
     .await
     .expect("create media");
     let staging = version_object_key(media_id, version_id, "photo.png").expect("staging key");
-    db_media::create_media_version(pool, version_id, media_id, None, staging.as_str())
-        .await
-        .expect("create version");
+    db_media::create_media_version(
+        pool,
+        version_id,
+        media_id,
+        None,
+        staging.as_str(),
+        content_type,
+    )
+    .await
+    .expect("create version");
     let destination = published_object_key(&staging).expect("destination key");
     blob.seed(staging.as_str(), bytes, content_type);
     PreparedUpload {
@@ -549,6 +578,7 @@ async fn activation_failure_keeps_identities_and_retry_does_not_duplicate() {
         media_id,
         version_id,
         finalise_req(),
+        false,
     )
     .await
     .expect_err("injected in-transaction activation failure");
@@ -598,6 +628,117 @@ async fn activation_failure_keeps_identities_and_retry_does_not_duplicate() {
     .await
     .expect("idempotent retry of a completed finalise");
     assert_eq!(again.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn crash_after_promote_recovers_from_destination_and_delete_cleans_it() {
+    if skip_without_db() {
+        eprintln!("Skipping test: DATABASE_URL not set");
+        return;
+    }
+    let db = setup_test_db().await;
+    let pool = db.pool_clone();
+    let blob = Arc::new(FakeAdapter::default());
+
+    let recover = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let cleanup = prepare_uploading(&pool, &blob, PNG, "image/png").await;
+    let recover_state = build_test_state(pool.clone(), blob.clone()).await;
+    let cleanup_state = build_test_state(pool.clone(), blob.clone()).await;
+
+    let recover_ids = (recover.media_id, recover.version_id);
+    let recover_staging = recover.staging.clone();
+    let recover_dest = recover.destination.clone();
+    drop(recover);
+    let cleanup_ids = (cleanup.media_id, cleanup.version_id);
+    let cleanup_staging = cleanup.staging.clone();
+    let cleanup_dest = cleanup.destination.clone();
+    drop(cleanup);
+
+    for (state, media_id, version_id) in [
+        (recover_state, recover_ids.0, recover_ids.1),
+        (cleanup_state, cleanup_ids.0, cleanup_ids.1),
+    ] {
+        let err = finalise_upload_with(
+            &state,
+            PoolStore(state.local_auth.pool()),
+            media_id,
+            version_id,
+            finalise_req(),
+            true,
+        )
+        .await
+        .expect_err("injected crash after exclusive create");
+        assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    assert_eq!(blob.stored(recover_dest.as_str()).as_deref(), Some(PNG));
+    assert_eq!(blob.stored(cleanup_dest.as_str()).as_deref(), Some(PNG));
+    let recover_row = version_row(&pool, recover_ids.1).await;
+    assert_eq!(recover_row.state, "uploading");
+    assert_eq!(recover_row.sha256, None);
+    assert!(recover_row.storage_provider.is_some());
+    assert_eq!(current_version_id(&pool, recover_ids.0).await, None);
+
+    blob.remove(recover_staging.as_str());
+    blob.seed(
+        cleanup_staging.as_str(),
+        b"<html>mutated-staging</html>",
+        "text/html",
+    );
+    db_media::update_media(
+        &pool,
+        recover_ids.0,
+        "Oracle photo",
+        Some("renamed.png"),
+        "restricted",
+        None,
+    )
+    .await
+    .expect("rename recovered media");
+    db_media::update_media(
+        &pool,
+        cleanup_ids.0,
+        "Oracle photo",
+        Some("renamed.png"),
+        "restricted",
+        None,
+    )
+    .await
+    .expect("rename cleanup media");
+
+    let recovered = call_finalise(
+        build_test_state(pool.clone(), blob.clone()).await,
+        recover_ids.0,
+        recover_ids.1,
+    )
+    .await
+    .expect("retry must recover from immutable destination without staging");
+    assert_eq!(recovered.status(), StatusCode::OK);
+    let body = response_json(recovered).await;
+    assert_eq!(body["version"]["state"], "ready");
+    assert_eq!(body["version"]["sha256"], png_digest());
+    assert_eq!(body["version"]["object_key"], recover_dest.as_str());
+    assert_eq!(
+        body["media"]["current_version_id"],
+        recover_ids.1.to_string()
+    );
+    assert!(blob.stored(recover_staging.as_str()).is_none());
+    assert_eq!(blob.stored(recover_dest.as_str()).as_deref(), Some(PNG));
+
+    let cleanup_response = super::super::delete_version(
+        admin_user(),
+        State(build_test_state(pool.clone(), blob.clone()).await),
+        Path(cleanup_ids),
+    )
+    .await
+    .expect("delete version in the crash window");
+    assert_eq!(cleanup_response.status(), StatusCode::OK);
+    assert!(blob.stored(cleanup_dest.as_str()).is_none());
+    assert!(blob.stored(cleanup_staging.as_str()).is_none());
+    assert!(db_media::get_media_version(&pool, cleanup_ids.1)
+        .await
+        .expect("load deleted version")
+        .is_none());
 }
 
 #[tokio::test]
