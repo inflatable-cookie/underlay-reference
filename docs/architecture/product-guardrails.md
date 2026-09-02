@@ -28,5 +28,6 @@ Poodle-era coexistence and retained-Underlay normalization work.
 
 ## Next Task
 
-Use these guardrails while executing the strict wrapper around `g01.007`, then
-freeze the approved retained Underlay surface for `acme-admin`.
+Apply these guardrails against the frozen retained-surface contract in
+`docs/architecture/004-retained-underlay-surface-contract.md`, starting with
+the Card 001 PR review.

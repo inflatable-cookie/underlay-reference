@@ -1,8 +1,8 @@
 # 001 - Audit Retained Acme-Admin Underlay Surface
 
-Status: ready
-Owner: repo maintainers
-Updated: 2026-04-10
+Status: executed — PR pending orchestrator review
+Owner: retained-surface worker
+Updated: 2026-09-03
 Roadmap: g01.007
 Spec: docs/specs/001-retained-underlay-surface-strict-lane.md
 Governing refs: docs/architecture/product-guardrails.md, docs/policy/001-working-rules.md
@@ -28,27 +28,27 @@ boundary as a durable contract artifact.
 
 ## Steps
 
-- [ ] audit the meaningful retained Underlay surfaces still present in
+- [x] audit the meaningful retained Underlay surfaces still present in
       `acme-admin`
-- [ ] classify retained surfaces into the approved groups already named by
+- [x] classify retained surfaces into the approved groups already named by
       `g01.007`
-- [ ] write the durable retained-surface contract artifact for the reference
+- [x] write the durable retained-surface contract artifact for the reference
       app
-- [ ] refresh roadmap/front-door surfaces if the active next move changes
-- [ ] write the execution log with validation actually run
+- [x] refresh roadmap/front-door surfaces if the active next move changes
+- [x] write the execution log with validation actually run
 
 ## Acceptance Criteria
 
-- [ ] the major retained Underlay surface groups in `acme-admin` are named and
+- [x] the major retained Underlay surface groups in `acme-admin` are named and
       justified
-- [ ] the retained boundary is frozen in a durable doc artifact
-- [ ] `docs/roadmaps/README.md`, `docs/roadmaps/g01/README.md`, and
+- [x] the retained boundary is frozen in a durable doc artifact
+- [x] `docs/roadmaps/README.md`, `docs/roadmaps/g01/README.md`, and
       `docs/logs/README.md` agree about the active lane state
 
 ## Validation
 
-- [ ] `effigy acme-docs/qa:docs --repo ~/Dev/projects/underlay-reference`
-- [ ] `effigy acme-docs/qa:northstar --repo ~/Dev/projects/underlay-reference`
+- [x] `effigy acme-docs/qa:docs`
+- [x] `effigy acme-docs/qa:northstar`
 
 ## Stop Conditions
 
@@ -58,4 +58,5 @@ boundary as a durable contract artifact.
 
 ## Next Task
 
-Execute this card in one docs-only worker and stop at its PR for review.
+Review the PR at its exact head; the frozen contract lives at
+`docs/architecture/004-retained-underlay-surface-contract.md`.
