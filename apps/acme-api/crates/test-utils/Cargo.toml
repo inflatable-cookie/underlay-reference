@@ -11,7 +11,7 @@ doctest = false
 # Core dependencies
 acme-core = { path = "../core" }
 acme-domain = { path = "../domain" }
-acme-db = { path = "../db" }
+acme-db = { path = "../db", features = ["test-faults"] }
 
 # Async runtime
 tokio = { workspace = true, features = ["sync"] }

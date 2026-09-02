@@ -162,8 +162,9 @@ pub async fn activate_ready_current(
     bucket: &str,
     object_key: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
-    activate_ready_current_inner(
-        pool,
+    let mut tx = pool.begin().await?;
+    let version = mark_version_ready(
+        &mut tx,
         id,
         media_id,
         byte_size,
@@ -172,14 +173,19 @@ pub async fn activate_ready_current(
         storage_provider,
         bucket,
         object_key,
-        false,
     )
-    .await
+    .await?;
+    commit_current_pointer(&mut tx, media_id, id).await?;
+    tx.commit().await?;
+    version.try_into()
 }
 
 /// Same transaction as [`activate_ready_current`], but raises a Postgres error
 /// after the version-ready write and before the current-pointer write so the
 /// open transaction rolls back both statements.
+///
+/// Test-only. Production builds omit this entrypoint.
+#[cfg(feature = "test-faults")]
 #[allow(clippy::too_many_arguments)]
 pub async fn activate_ready_current_failing_after_version_ready(
     pool: &DbPool,
@@ -192,8 +198,9 @@ pub async fn activate_ready_current_failing_after_version_ready(
     bucket: &str,
     object_key: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
-    activate_ready_current_inner(
-        pool,
+    let mut tx = pool.begin().await?;
+    let version = mark_version_ready(
+        &mut tx,
         id,
         media_id,
         byte_size,
@@ -202,14 +209,17 @@ pub async fn activate_ready_current_failing_after_version_ready(
         storage_provider,
         bucket,
         object_key,
-        true,
     )
-    .await
+    .await?;
+    sqlx::query("SELECT 1 / 0").execute(&mut *tx).await?;
+    commit_current_pointer(&mut tx, media_id, id).await?;
+    tx.commit().await?;
+    version.try_into()
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn activate_ready_current_inner(
-    pool: &DbPool,
+async fn mark_version_ready(
+    tx: &mut sqlx::PgConnection,
     id: Uuid,
     media_id: Uuid,
     byte_size: i64,
@@ -218,10 +228,8 @@ async fn activate_ready_current_inner(
     storage_provider: &str,
     bucket: &str,
     object_key: &str,
-    fail_after_version_ready: bool,
-) -> Result<MediaVersionRow, sqlx::Error> {
-    let mut tx = pool.begin().await?;
-    let version = sqlx::query_as::<_, RawMediaVersionRow>(
+) -> Result<RawMediaVersionRow, sqlx::Error> {
+    sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         UPDATE media.media_version
         SET state = 'ready',
@@ -246,12 +254,14 @@ async fn activate_ready_current_inner(
     .bind(object_key)
     .bind(media_id)
     .fetch_one(&mut *tx)
-    .await?;
+    .await
+}
 
-    if fail_after_version_ready {
-        sqlx::query("SELECT 1 / 0").execute(&mut *tx).await?;
-    }
-
+async fn commit_current_pointer(
+    tx: &mut sqlx::PgConnection,
+    media_id: Uuid,
+    id: Uuid,
+) -> Result<(), sqlx::Error> {
     let updated = sqlx::query(
         r#"
         UPDATE media.media
@@ -266,9 +276,7 @@ async fn activate_ready_current_inner(
     if updated.rows_affected() != 1 {
         return Err(sqlx::Error::RowNotFound);
     }
-
-    tx.commit().await?;
-    version.try_into()
+    Ok(())
 }
 
 /// Update media's current_version_id.

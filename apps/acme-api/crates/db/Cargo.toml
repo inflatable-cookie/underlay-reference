@@ -23,6 +23,12 @@ uuid = { workspace = true }
 
 acme-infra = { path = "../infra" }
 
+[features]
+default = []
+# In-transaction failure seam for composition tests. Enabled only by
+# acme-test-utils; production builds leave it off.
+test-faults = []
+
 [[bin]]
 name = "migrate_dev_db"
 path = "src/bin/migrate_dev_db.rs"

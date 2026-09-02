@@ -10,7 +10,7 @@ use acme_auth::{
     AcmeLocalAuthProvider, AcmeLocalAuthService, EmailTotpService, UserId, UserPrincipal, UserRole,
 };
 use acme_db::media::{self as db_media, MediaVersionRow};
-use acme_test_utils::setup_test_db;
+use acme_test_utils::{activate_ready_current_failing_after_version_ready, setup_test_db};
 use async_trait::async_trait;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -327,7 +327,7 @@ impl ReadyCurrentStore for FailAfterVersionReadyStore<'_> {
         version_id: Uuid,
         promoted: &VerifiedPromotionResult,
     ) -> Result<MediaVersionRow, sqlx::Error> {
-        db_media::activate_ready_current_failing_after_version_ready(
+        activate_ready_current_failing_after_version_ready(
             self.0,
             version_id,
             media_id,

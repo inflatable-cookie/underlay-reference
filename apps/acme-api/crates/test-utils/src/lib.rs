@@ -24,5 +24,6 @@ pub mod cleanup;
 pub mod db;
 pub mod fixtures;
 
+pub use acme_db::media::activate_ready_current_failing_after_version_ready;
 pub use db::{setup_test_db, shared_runtime, TestDb};
 pub use fixtures::{TestCategory, TestProject, TestTask, TestUser};

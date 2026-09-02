@@ -133,8 +133,8 @@ pub(crate) async fn delete_version_blobs(
     }
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy)]
-#[cfg_attr(not(test), allow(dead_code))]
 enum FinaliseFault {
     None,
     BeforeCreate,
@@ -401,6 +401,7 @@ pub async fn finalise_upload(
         media_id,
         version_id,
         req,
+        #[cfg(test)]
         FinaliseFault::None,
     )
     .await
@@ -412,7 +413,7 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
     media_id: Uuid,
     version_id: Uuid,
     req: FinaliseUploadRequest,
-    fault: FinaliseFault,
+    #[cfg(test)] fault: FinaliseFault,
 ) -> Result<Response, ApiError> {
     if let Err(e) = req.validate() {
         return Err(ApiError::bad_request("validation.failed", e.to_string()));
@@ -524,6 +525,7 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
                 &authority,
                 media_id,
                 version_id,
+                #[cfg(test)]
                 fault,
             )
             .await?
@@ -565,6 +567,7 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
                 "version_id": version_id
             })));
         }
+        #[cfg(test)]
         if matches!(fault, FinaliseFault::BeforeCreate) {
             return Err(injected_crash(
                 "media.persist_crash_injected",
@@ -582,6 +585,7 @@ async fn finalise_upload_with<S: ReadyCurrentStore>(
             &token,
             media_id,
             version_id,
+            #[cfg(test)]
             fault,
         )
         .await?
@@ -672,7 +676,7 @@ async fn recover_or_promote_owned(
     authority: &OwnedDestinationAuthority,
     media_id: Uuid,
     version_id: Uuid,
-    fault: FinaliseFault,
+    #[cfg(test)] fault: FinaliseFault,
 ) -> Result<VerifiedPromotionResult, ApiError> {
     match state
         .blob_adapter
@@ -689,6 +693,7 @@ async fn recover_or_promote_owned(
                 token,
                 media_id,
                 version_id,
+                #[cfg(test)]
                 fault,
             )
             .await
@@ -706,7 +711,7 @@ async fn promote_verified_owned(
     token: &OwnershipToken,
     media_id: Uuid,
     version_id: Uuid,
-    fault: FinaliseFault,
+    #[cfg(test)] fault: FinaliseFault,
 ) -> Result<VerifiedPromotionResult, ApiError> {
     match state
         .blob_adapter
@@ -720,6 +725,7 @@ async fn promote_verified_owned(
         .await
     {
         Ok(result) => {
+            #[cfg(test)]
             if matches!(fault, FinaliseFault::AfterCreate) {
                 return Err(injected_crash(
                     "media.promote_crash_injected",
@@ -735,6 +741,7 @@ async fn promote_verified_owned(
     }
 }
 
+#[cfg(test)]
 fn injected_crash(
     code: &'static str,
     media_id: Uuid,

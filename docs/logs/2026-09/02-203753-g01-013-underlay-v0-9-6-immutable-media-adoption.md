@@ -70,7 +70,7 @@ Initiate policy tests remain (3). Finalisation composition tests: 11. Total focu
 
 ## Validation
 
-Recorded after the focused oracle, fmt, clippy, docs QA, and lock inspection.
+Recorded after the focused oracle, fmt, clippy, and lock inspection.
 
 `effigy container up` could not start the Effigy-owned Postgres (vault TTY).
 Oracle tests used a throwaway `postgres:16` plus host `migrate_dev_db`.
@@ -90,6 +90,16 @@ authorize a foreign incumbent, and delete/purge must not swallow blob
 cleanup failure. v0.9.6 could not bind a consumer token to both Postgres
 and the created object. This revision moves the same PR 14 lane to v0.9.7
 owned promotion/recovery.
+
+Re-review at `b2e3c357` required the test fault injection to leave the
+production surface. `activate_ready_current_failing_after_version_ready`
+now lives behind acme-db feature `test-faults`, enabled only by
+`acme-test-utils`, and is re-exported from that crate. `FinaliseFault`,
+the `fault` parameter, and `injected_crash` are `#[cfg(test)]`. Production
+`activate_ready_current` has no fail arm. A `--release` `acme-api` binary
+contains none of those symbols. The 11 finalisation tests still drive the
+real handler, the shared ready/current writes, and the in-transaction
+rollback. Non-blocking follow-ups were left untouched.
 
 ## Boundaries Held
 
