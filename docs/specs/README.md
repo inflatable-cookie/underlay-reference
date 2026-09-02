@@ -33,10 +33,10 @@ reference-app milestone needs tighter execution control.
 
 - `003-underlay-v0-9-6-immutable-media-adoption.md`
 
-Paused: spec 002 and audit card 002 during the overlapping rollout. Spec 001
-remains paused behind that audit.
+Spec 002 is complete and merged as PR 13. Spec 001 remains paused during this
+rollout.
 
 ## Next Task
 
 Execute card 003 under spec 003 and stop at its PR for orchestrator review.
-Resume spec 002 afterwards.
+Resume spec 001 afterwards.

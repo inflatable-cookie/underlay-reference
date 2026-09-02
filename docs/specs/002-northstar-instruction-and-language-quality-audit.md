@@ -1,6 +1,6 @@
 # 002 - Northstar Instruction And Language Quality Audit
 
-Status: paused-for-g01.013
+Status: complete (merged as PR 13)
 Owner: repo maintainers
 Created: 2026-09-01
 Roadmap refs: `g01.012`
@@ -15,9 +15,9 @@ retained-surface decision lane.
 
 ## Ready Chain
 
-- `002-northstar-agents-rust-typescript-audit.md` — ready
-- `001-audit-retained-acme-admin-underlay-surface.md` — paused; resumes after
-  audit closeout
+- `002-northstar-agents-rust-typescript-audit.md` — complete and merged as PR 13
+- `001-audit-retained-acme-admin-underlay-surface.md` — paused, unchanged;
+  resumes after the operator-prioritized `g01.013` rollout
 
 ## Authority Boundary
 
@@ -27,4 +27,5 @@ changes, or the retained-surface classification owned by `g01.007`.
 
 ## Next Task
 
-Execute card 002 and stop at its PR for orchestrator review.
+Audit delivery merged as PR 13. Execute `g01.013` card 003, then resume
+`g01.007` and card 001. The retained-surface classification is still open.

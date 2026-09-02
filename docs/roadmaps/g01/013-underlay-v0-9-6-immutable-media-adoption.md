@@ -4,7 +4,7 @@ Status: active
 Owner: repo maintainers
 Created: 2026-09-02
 Governing spec: `docs/specs/003-underlay-v0-9-6-immutable-media-adoption.md`
-Planning state: card 003 ready; `g01.012` card 002 paused intact for overlap
+Planning state: card 003 ready; `g01.012` card 002 complete and merged as PR 13
 
 ## Purpose
 
@@ -34,9 +34,9 @@ consumer and move the whole workspace to one `v0.9.6` dependency identity.
 ## Dependencies And Parallelism
 
 Underlay `v0.9.6` is released. Other consumer repositories may implement in
-parallel. Within this repository, card 003 runs alone because the broad
-`g01.012` audit owns overlapping media and dependency surfaces. Resume that
-audit after this PR merges; `g01.007` remains paused behind it.
+parallel. The broad `g01.012` audit completed and merged before dispatch.
+`g01.007` remains paused during this dependency/media rollout and resumes after
+its PR merges.
 
 ## Next Task
 

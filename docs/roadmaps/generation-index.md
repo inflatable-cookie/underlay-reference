@@ -4,8 +4,8 @@
   - Status: active
   - Range: `001`-`013`
   - Notes: initial reference-app roadmap sequence and Northstar alignment
-    tranche; `g01.013` is the active v0.9.6 adoption while `g01.012` and
-    `g01.007` remain paused intact;
+    tranche; `g01.012` merged as PR 13 and `g01.013` is the active v0.9.6
+    adoption while `g01.007` remains paused as the retained-surface owner;
     `g01.008`-`g01.011`, the g08 consumer-audit follow-up tranche, completed on
     2026-07-19
 
@@ -20,4 +20,4 @@ strict-lane material has been purged from `specs/`.
 ## Next Task
 
 Keep `g01` active. Execute `g01.013` card 003 and stop at its PR for review.
-Resume `g01.012` afterwards; the next roadmap ID is `g01.014`.
+Resume `g01.007` afterwards; the next roadmap ID is `g01.014`.

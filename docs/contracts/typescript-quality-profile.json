@@ -1,0 +1,267 @@
+{
+  "deviations_file": "docs/contracts/typescript-quality-deviations.json",
+  "evidence_selectors": {
+    "compiler": [],
+    "framework": [],
+    "lint": [],
+    "test": []
+  },
+  "exclusions": {
+    "build_output": [],
+    "documentation": [],
+    "fixtures": [],
+    "generated": [
+      "apps/acme-admin/src/lib/icons.generated.ts"
+    ],
+    "vendored": []
+  },
+  "language": "typescript",
+  "packages": [
+    {
+      "manifest": "package.json",
+      "overlays": [
+        "base"
+      ],
+      "ownership": "root_workspace",
+      "root": ".",
+      "typescript_evidence": {
+        "sources": [],
+        "status": "unavailable"
+      },
+      "version_evidence": {
+        "svelte": {
+          "source": null,
+          "status": "absent",
+          "version": null
+        },
+        "sveltekit": {
+          "source": null,
+          "status": "absent",
+          "version": null
+        }
+      }
+    },
+    {
+      "manifest": "apps/acme-admin/package.json",
+      "overlays": [
+        "base",
+        "svelte",
+        "sveltekit"
+      ],
+      "ownership": "workspace_member",
+      "root": "apps/acme-admin",
+      "typescript_evidence": {
+        "sources": [
+          "apps/acme-admin/scripts/generate-public-config.ts",
+          "apps/acme-admin/src/app.d.ts",
+          "apps/acme-admin/src/hooks.client.ts",
+          "apps/acme-admin/src/hooks.server.ts",
+          "apps/acme-admin/src/lib/cards/index.ts",
+          "apps/acme-admin/src/lib/config/public-api.ts",
+          "apps/acme-admin/src/lib/icons.generated.ts",
+          "apps/acme-admin/src/lib/index.ts",
+          "apps/acme-admin/src/lib/lists/index.ts",
+          "apps/acme-admin/src/lib/stores/auth.ts",
+          "apps/acme-admin/src/lib/stores/selection-history.ts",
+          "apps/acme-admin/src/lib/ui/poodle-icon-nodes.ts",
+          "apps/acme-admin/src/lib/utils/accents.ts",
+          "apps/acme-admin/src/lib/utils/api-errors.ts",
+          "apps/acme-admin/src/lib/utils/auth-tokens.ts",
+          "apps/acme-admin/src/lib/utils/media-usage-resolution.ts",
+          "apps/acme-admin/src/lib/utils/page-title.ts",
+          "apps/acme-admin/src/lib/utils/upload-pipeline.ts",
+          "apps/acme-admin/src/routes/(app)/categories/[categoryId]/+page.ts",
+          "apps/acme-admin/src/routes/(app)/categories/[categoryId]/edit/+page.ts",
+          "apps/acme-admin/src/routes/(app)/media/[mediaId]/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/edit/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/labels/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/labels/[labelId]/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/labels/[labelId]/edit/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/labels/new/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/tasks/[taskId]/edit/+page.ts",
+          "apps/acme-admin/src/routes/(app)/projects/[projectId]/tasks/new/+page.ts",
+          "apps/acme-admin/src/routes/(app)/users/[userId]/+page.ts",
+          "apps/acme-admin/src/routes/(app)/users/[userId]/edit/+page.ts",
+          "apps/acme-admin/src/routes/+layout.ts",
+          "apps/acme-admin/tests/components.test.ts",
+          "apps/acme-admin/tests/setup.ts",
+          "apps/acme-admin/tests/utils.test.ts",
+          "apps/acme-admin/vite.config.ts",
+          "apps/acme-admin/package.json",
+          "apps/acme-admin/tsconfig.json"
+        ],
+        "status": "supported"
+      },
+      "version_evidence": {
+        "svelte": {
+          "source": "apps/acme-admin/package.json",
+          "status": "supported",
+          "version": "^5.56.8"
+        },
+        "sveltekit": {
+          "source": "apps/acme-admin/package.json",
+          "status": "supported",
+          "version": "^2.70.2"
+        }
+      }
+    },
+    {
+      "manifest": "apps/acme-front/package.json",
+      "overlays": [
+        "base",
+        "svelte",
+        "sveltekit"
+      ],
+      "ownership": "workspace_member",
+      "root": "apps/acme-front",
+      "typescript_evidence": {
+        "sources": [
+          "apps/acme-front/scripts/generate-public-config.ts",
+          "apps/acme-front/src/app.d.ts",
+          "apps/acme-front/src/hooks.client.ts",
+          "apps/acme-front/src/hooks.server.ts",
+          "apps/acme-front/src/lib/config/public-api.ts",
+          "apps/acme-front/src/lib/index.ts",
+          "apps/acme-front/src/lib/stores/auth.ts",
+          "apps/acme-front/src/routes/(app)/projects/[projectId]/+page.ts",
+          "apps/acme-front/src/routes/+layout.ts",
+          "apps/acme-front/src/routes/+page.ts",
+          "apps/acme-front/tests/lib/stores/auth.test.ts",
+          "apps/acme-front/tests/routes/(app)/projects/[projectId]/page.test.ts",
+          "apps/acme-front/tests/routes/layout.test.ts",
+          "apps/acme-front/vite.config.ts",
+          "apps/acme-front/package.json",
+          "apps/acme-front/tsconfig.json"
+        ],
+        "status": "supported"
+      },
+      "version_evidence": {
+        "svelte": {
+          "source": "apps/acme-front/package.json",
+          "status": "supported",
+          "version": "^5.56.8"
+        },
+        "sveltekit": {
+          "source": "apps/acme-front/package.json",
+          "status": "supported",
+          "version": "^2.70.2"
+        }
+      }
+    },
+    {
+      "manifest": "packages/acme-client/package.json",
+      "overlays": [
+        "base"
+      ],
+      "ownership": "workspace_member",
+      "root": "packages/acme-client",
+      "typescript_evidence": {
+        "sources": [
+          "packages/acme-client/src/commands/account-commands.ts",
+          "packages/acme-client/src/commands/admin-commands.ts",
+          "packages/acme-client/src/commands/admin/activity-commands.ts",
+          "packages/acme-client/src/commands/admin/category-commands.ts",
+          "packages/acme-client/src/commands/admin/dashboard-commands.ts",
+          "packages/acme-client/src/commands/admin/error-log-commands.ts",
+          "packages/acme-client/src/commands/admin/job-commands.ts",
+          "packages/acme-client/src/commands/admin/label-commands.ts",
+          "packages/acme-client/src/commands/admin/project-commands.ts",
+          "packages/acme-client/src/commands/admin/scheduled-task-commands.ts",
+          "packages/acme-client/src/commands/admin/task-commands.ts",
+          "packages/acme-client/src/commands/admin/user-commands.ts",
+          "packages/acme-client/src/commands/admin/utils.ts",
+          "packages/acme-client/src/commands/admin/validation-commands.ts",
+          "packages/acme-client/src/commands/auth-commands.ts",
+          "packages/acme-client/src/commands/auth/core-commands.ts",
+          "packages/acme-client/src/commands/auth/email-totp-commands.ts",
+          "packages/acme-client/src/commands/auth/passkey-commands.ts",
+          "packages/acme-client/src/commands/auth/password-commands.ts",
+          "packages/acme-client/src/commands/auth/session-commands.ts",
+          "packages/acme-client/src/commands/auth/totp-commands.ts",
+          "packages/acme-client/src/commands/health-commands.ts",
+          "packages/acme-client/src/commands/media-commands.ts",
+          "packages/acme-client/src/commands/user-commands.ts",
+          "packages/acme-client/src/index.ts",
+          "packages/acme-client/src/types/account-types.ts",
+          "packages/acme-client/src/types/admin-types.ts",
+          "packages/acme-client/src/types/common-types.ts",
+          "packages/acme-client/src/types/media-types.ts",
+          "packages/acme-client/src/utils/auth-manager.ts",
+          "packages/acme-client/src/utils/client-factory.ts",
+          "packages/acme-client/src/utils/csrf-manager.ts",
+          "packages/acme-client/src/utils/http-client.ts",
+          "packages/acme-client/src/utils/token-store.ts",
+          "packages/acme-client/tests/commands/admin/task-commands.test.ts",
+          "packages/acme-client/tests/utils/http-client.reorder-conflict.test.ts",
+          "packages/acme-client/package.json",
+          "packages/acme-client/tsconfig.json"
+        ],
+        "status": "supported"
+      },
+      "version_evidence": {
+        "svelte": {
+          "source": null,
+          "status": "absent",
+          "version": null
+        },
+        "sveltekit": {
+          "source": null,
+          "status": "absent",
+          "version": null
+        }
+      }
+    },
+    {
+      "manifest": "packages/acme-ui/package.json",
+      "overlays": [
+        "base",
+        "svelte"
+      ],
+      "ownership": "workspace_member",
+      "root": "packages/acme-ui",
+      "typescript_evidence": {
+        "sources": [
+          "packages/acme-ui/src/components/index.ts",
+          "packages/acme-ui/src/editor.ts",
+          "packages/acme-ui/src/index.ts",
+          "packages/acme-ui/src/nightfire/editor-registrations.ts",
+          "packages/acme-ui/src/nightfire/index.ts",
+          "packages/acme-ui/src/nightfire/notes/editor.ts",
+          "packages/acme-ui/src/nightfire/notes/registrations.ts",
+          "packages/acme-ui/src/nightfire/notes/render.ts",
+          "packages/acme-ui/src/nightfire/notes/validation.ts",
+          "packages/acme-ui/src/nightfire/project-description/editor.ts",
+          "packages/acme-ui/src/nightfire/project-description/render.ts",
+          "packages/acme-ui/src/nightfire/project-description/validation.ts",
+          "packages/acme-ui/src/nightfire/render-registrations.ts",
+          "packages/acme-ui/src/nightfire/validation-registrations.ts",
+          "packages/acme-ui/src/render.ts",
+          "packages/acme-ui/src/types/sveltekit-shim.d.ts",
+          "packages/acme-ui/src/validation.ts",
+          "packages/acme-ui/package.json",
+          "packages/acme-ui/tsconfig.json"
+        ],
+        "status": "supported"
+      },
+      "version_evidence": {
+        "svelte": {
+          "source": "packages/acme-ui/package.json",
+          "status": "supported",
+          "version": "^5.56.8"
+        },
+        "sveltekit": {
+          "source": null,
+          "status": "absent",
+          "version": null
+        }
+      }
+    }
+  ],
+  "profile": "strict",
+  "schema_version": "1.0.0",
+  "unregistered_candidates": [],
+  "when_unresolved": "stop",
+  "workflow": "explicit_audit_repair"
+}

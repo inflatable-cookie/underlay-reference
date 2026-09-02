@@ -68,4 +68,5 @@ root JS preparation, focused media/blob and database oracles, package checks,
 ## Next Task
 
 Execute card 003 in one isolated worker and stop at its PR for exact-head
-review. Resume the paused instruction/language audit after this rollout merges.
+review. The instruction/language audit is merged; resume `g01.007` after this
+rollout.

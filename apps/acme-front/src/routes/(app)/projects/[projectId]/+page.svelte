@@ -1,31 +1,20 @@
 <script lang="ts">
-import "@acme/ui/render";
-import {
-  useToasts
-} from "@inflatable-cookie/underlay/runtime/feedback";
-import {
-  useAuthenticatedData
-} from "@inflatable-cookie/underlay/runtime/auth";
-import { NightfireRenderer } from "@inflatable-cookie/underlay/nightfire/renderer";
-import type { NightfireValue as RenderableNightfireValue } from "@inflatable-cookie/underlay/nightfire/validation";
-import {
-  goto } from "$app/navigation";
-  import { auth,
-  authLoading,
-  currentUser } from "$lib/stores/auth";
-  import * as userCommands from "@api-client/commands/user-commands.js";
-  import type { UserProject,
-  UserTask } from "@api-client/commands/user-commands.js";
-  import { FormDialog,
-  PageHeader as PoodlePageHeader,
-  PageLoading } from "@inflatable-cookie/poodle-svelte";
-  import type { PageData } from "./$types";
-    import {
+  import "@acme/ui/render";
+
+  import { goto } from "$app/navigation";
+  import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
+  import { useAuthenticatedData } from "@inflatable-cookie/underlay/runtime/auth";
+  import { NightfireRenderer } from "@inflatable-cookie/underlay/nightfire/renderer";
+  import type { NightfireValue as RenderableNightfireValue } from "@inflatable-cookie/underlay/nightfire/validation";
+  import {
     AlertDialog,
     Button,
     Callout,
     Field,
     FormActions,
+    FormDialog,
+    PageHeader as PoodlePageHeader,
+    PageLoading,
     Pill,
     Select,
     TextInput
@@ -33,6 +22,11 @@ import {
   import Plus from "lucide-svelte/icons/plus";
   import CheckSquare from "lucide-svelte/icons/check-square";
   import Trash2 from "lucide-svelte/icons/trash-2";
+
+  import { auth, authLoading, currentUser } from "$lib/stores/auth";
+  import * as userCommands from "@api-client/commands/user-commands.js";
+  import type { UserProject, UserTask } from "@api-client/commands/user-commands.js";
+  import type { PageData } from "./$types";
 
   interface Props {
     data: PageData;

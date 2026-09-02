@@ -37,6 +37,6 @@ larger follow-ups it deferred and completed on 2026-07-19.
 
 ## Next Task
 
-Execute `g01.013` card 003. `g01.012` card 002 is paused intact because its
-repository-wide audit overlaps this operator-prioritized dependency and media
-rollout; resume it after card 003 merges. `g01.007` remains paused behind it.
+Execute `g01.013` card 003. `g01.012` card 002 is complete and merged as PR 13.
+`g01.007` remains paused during the
+operator-prioritized dependency and media rollout; resume it afterwards.

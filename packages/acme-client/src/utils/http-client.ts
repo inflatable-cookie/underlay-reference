@@ -92,7 +92,7 @@ function toCamelCaseValue<T>(value: T): T {
 
 function convertError(error: unknown): never {
   if (error instanceof UnderlayHttpError) {
-    const underlayError = error as UnderlayHttpError;
+    const underlayError = error;
     const rawError = underlayError.envelope?.error as Record<string, unknown> | undefined;
     const requestId = rawError?.request_id as string | undefined;
     const fieldErrors = rawError?.field_errors as Record<string, unknown> | undefined;
@@ -192,7 +192,7 @@ export class HttpClient {
       return toCamelCaseValue(response) as T;
     } catch (error) {
       // Clear CSRF token on auth errors (session might be invalid)
-      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
         clearCsrfToken();
       }
       convertError(error);
@@ -211,7 +211,7 @@ export class HttpClient {
       );
       return toCamelCaseValue(response) as T;
     } catch (error) {
-      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
         clearCsrfToken();
       }
       convertError(error);
@@ -239,7 +239,7 @@ export class HttpClient {
         body: response.body ? (toCamelCaseValue(response.body) as T) : null,
       };
     } catch (error) {
-      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
         clearCsrfToken();
       }
       convertError(error);
@@ -258,7 +258,7 @@ export class HttpClient {
       );
       return toCamelCaseValue(response) as T;
     } catch (error) {
-      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
         clearCsrfToken();
       }
       convertError(error);
@@ -286,7 +286,7 @@ export class HttpClient {
         body: response.body ? (toCamelCaseValue(response.body) as T) : null,
       };
     } catch (error) {
-      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
         clearCsrfToken();
       }
       convertError(error);
@@ -301,7 +301,7 @@ export class HttpClient {
       const response = await this.underlayClient.delete<unknown>(path, mergedHeaders);
       return toCamelCaseValue(response) as T;
     } catch (error) {
-      if (error instanceof UnderlayHttpError && (error as UnderlayHttpError).status === 401) {
+      if (error instanceof UnderlayHttpError && error.status === 401) {
         clearCsrfToken();
       }
       convertError(error);

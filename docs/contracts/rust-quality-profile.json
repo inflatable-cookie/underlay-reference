@@ -1,0 +1,26 @@
+{
+  "deviations_file": "docs/contracts/rust-quality-deviations.json",
+  "exclusions": {
+    "generated": [],
+    "vendored": []
+  },
+  "language": "rust",
+  "msrv": {
+    "cargo_manifests": [
+      "apps/acme-api/Cargo.toml",
+      "apps/acme-api/crates/api/Cargo.toml",
+      "apps/acme-api/crates/auth/Cargo.toml",
+      "apps/acme-api/crates/core/Cargo.toml",
+      "apps/acme-api/crates/db/Cargo.toml",
+      "apps/acme-api/crates/domain/Cargo.toml",
+      "apps/acme-api/crates/infra/Cargo.toml",
+      "apps/acme-api/crates/jobs/Cargo.toml",
+      "apps/acme-api/crates/test-utils/Cargo.toml"
+    ],
+    "source": "repository_policy",
+    "toolchain_policy_paths": [],
+    "when_unresolved": "stop"
+  },
+  "profile": "strict",
+  "schema_version": "1.0.0"
+}

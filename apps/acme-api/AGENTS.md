@@ -21,14 +21,11 @@
 
 ## Effigy-First Execution
 
-- Let Effigy choose host vs container for normal work. Do not touch host-side `node_modules`, `vendor`, `target`, `.pnpm-store`, or `.svelte-kit` expecting it to affect the live runtime.
-- Use `effigy <task>`, `effigy prep`, or `effigy container shell` when you need to change runtime dependencies or inspect the live environment.
+Root `AGENTS.md` owns the runtime stance; this section only adds what is local
+to this scope.
 
-Default flow inside `apps/acme-api/`:
-1. Run `effigy tasks`
-2. Run `effigy health`
-3. Run `effigy validate`
-4. Prefer `effigy <task>` for repo-owned work instead of raw Cargo commands where Effigy already covers the path
+Run `effigy tasks` from `apps/acme-api/` to see what this crate workspace owns,
+and prefer `effigy <task>` over raw Cargo where Effigy already covers the path.
 
 Repo notes:
 - `health` uses `fmt` plus a cheap `cargo check` baseline; `validate` still runs `build`
@@ -48,13 +45,26 @@ Repo notes:
 Use `../../docs/` as the reference-app docs authority. Do not create package-local roadmap or report docs.
 
 - `../../docs/processes/210-reference-implementation-notes.md`
-- `../underlay/docs/guides/040-rust-backend.md`
-- `../underlay/docs/guides/050-database.md`
-- `../underlay/docs/guides/055-background-jobs.md`
-- `../underlay/docs/guides/070-api-handlers.md`
+- `../../../underlay/docs/guides/040-rust-backend.md`
+- `../../../underlay/docs/guides/050-database.md`
+- `../../../underlay/docs/guides/055-background-jobs.md`
+- `../../../underlay/docs/guides/070-api-handlers.md`
 
 ## Internal Writing Style
 
 Use the repo-local style reference for internal work and normal replies:
 
 - `../../docs/policy/internal-writing-style.md`
+
+<!-- northstar:rust-quality:start -->
+## Northstar Rust Quality
+
+Scope: Rust source, Cargo manifests, build files, tests, and directly related
+documentation under this directory.
+
+Use Northstar's strict everyday-authoring route for ordinary Rust work. Resolve
+the repository-owned profile and deviations under `docs/contracts/`; never
+assume a universal MSRV. Re-enter at task start and coherent batch closeout.
+Preserve unrelated work. A quality audit, no-slop pass, or audit-and-fix request
+is explicit audit intent; never route it through everyday authoring.
+<!-- northstar:rust-quality:end -->

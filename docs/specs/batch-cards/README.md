@@ -15,8 +15,8 @@ the reference implementation.
 
 - `003-underlay-v0-9-6-immutable-media-adoption.md`
 
-Paused: card 002 during the overlapping rollout; card 001 remains paused behind
-card 002.
+Card 002 is complete and merged as PR 13. Card 001 remains paused during this
+rollout.
 
 ## Next Task
 
