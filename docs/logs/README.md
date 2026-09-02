@@ -11,6 +11,9 @@ Logs capture meaningful execution batches for the reference implementation.
 
 ## Next Task
 
+Card 003 resumed against Underlay v0.9.7 with explicit owned-recovery migration
+authority in [2026-09/02-235000](./2026-09/02-235000-g01-013-v097-owned-recovery-resume.md).
+
 The `g01` front doors were reconciled before the external migration/testing
 worker launch
 ([planning repair](./2026-08/26-181224-g01-roadmap-front-door-repair.md)).

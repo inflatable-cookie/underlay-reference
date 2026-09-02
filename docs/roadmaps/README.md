@@ -16,8 +16,8 @@ Roadmaps hold executable work for the reference implementation.
 
 - Active generation: `g01`
 - Next roadmap ID: `g01.014`
-- `g01.013` is the active Underlay v0.9.6 immutable media adoption with ready
-  card 003
+- `g01.013` is the active Underlay v0.9.7 owned-media recovery adoption; Card
+  003 is revision-ready on existing PR 14
 - `g01.012` card 002 is complete and merged as PR 13
 - `g01.007` and card 001 remain paused during the dependency/media rollout
 - `g01.008`–`g01.011`, the g08 consumer-audit tranche, are complete
@@ -46,5 +46,5 @@ Before opening `gNN+1`:
 
 ## Next Task
 
-Execute `g01.013` card 003 and stop at its PR for orchestrator review. Resume
-`g01.007` afterwards.
+Resume `g01.013` Card 003 on existing PR 14 and stop at a new exact head for
+review. Resume `g01.007` after merge.

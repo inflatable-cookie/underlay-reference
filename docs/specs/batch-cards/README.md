@@ -13,11 +13,11 @@ the reference implementation.
 
 ## Active batch card
 
-- `003-underlay-v0-9-6-immutable-media-adoption.md`
+- `003-underlay-v0-9-6-immutable-media-adoption.md` (revision-ready on PR 14)
 
 Card 002 is complete and merged as PR 13. Card 001 remains paused during this
 rollout.
 
 ## Next Task
 
-Execute card 003 under `g01.013` and stop at its PR for orchestrator review.
+Resume Card 003 on existing PR 14 and stop at a new exact head for review.

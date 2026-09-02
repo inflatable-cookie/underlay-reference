@@ -69,6 +69,6 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 
 ## Next Task
 
-Execute card 003, the Underlay v0.9.6 immutable media adoption under `g01.013`,
-and stop at its PR for orchestrator review. The `g01.012` audit is merged;
-resume the retained-surface card after this rollout.
+Resume Card 003's existing PR 14 as the Underlay v0.9.7 owned-media recovery
+proof under `g01.013`. Stop at a new exact head for review, then resume the
+retained-surface card after merge.

@@ -31,12 +31,12 @@ reference-app milestone needs tighter execution control.
 
 ## Active spec
 
-- `003-underlay-v0-9-6-immutable-media-adoption.md`
+- `003-underlay-v0-9-6-immutable-media-adoption.md` (v0.9.7 owned-recovery revision)
 
 Spec 002 is complete and merged as PR 13. Spec 001 remains paused during this
 rollout.
 
 ## Next Task
 
-Execute card 003 under spec 003 and stop at its PR for orchestrator review.
-Resume spec 001 afterwards.
+Resume Card 003 on existing PR 14 and stop at a new exact head for orchestrator
+review. Resume spec 001 after merge.
