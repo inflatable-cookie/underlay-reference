@@ -619,13 +619,21 @@ pub async fn purge_media(
         }
     };
 
-    // Delete blobs for all versions
+    let mut cleanup_err = None;
     for version in &versions {
-        if let Some(ref object_key) = version.object_key {
-            if let Err(e) = state.blob_adapter.delete_object_key(object_key).await {
-                tracing::warn!("Failed to delete blob {}: {}", object_key, e);
-            }
+        if let Err(e) =
+            super::upload::delete_version_blobs(state.blob_adapter.as_ref(), version).await
+        {
+            cleanup_err = cleanup_err.or(Some(e));
         }
+    }
+    if let Some(e) = cleanup_err {
+        return Err(super::upload::blob_cleanup_error(
+            e,
+            "media.purge",
+            media_id,
+            None,
+        ));
     }
 
     // Purge from database

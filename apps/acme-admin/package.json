@@ -11,7 +11,7 @@
     "@acme/ui": "workspace:*",
     "@inflatable-cookie/poodle-core": "0.2.2",
     "@inflatable-cookie/poodle-svelte": "0.2.2",
-    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.5",
+    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.7",
     "acme-client": "workspace:*",
     "bits-ui": "^2.18.1",
     "lucide-svelte": "^1.0.1"

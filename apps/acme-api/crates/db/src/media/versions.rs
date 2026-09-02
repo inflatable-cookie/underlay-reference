@@ -1,23 +1,102 @@
 use super::*;
 
-/// Create a new media version (in uploading state).
+/// Create a new media version (in uploading state) with its staging object key
+/// and declared MIME. The declared MIME is server-owned from initiate.
 pub async fn create_media_version(
     pool: &DbPool,
     id: Uuid,
     media_id: Uuid,
     created_by: Option<Uuid>,
+    object_key: &str,
+    mime_type: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
-        INSERT INTO media.media_version (id, media_id, state, created_by)
-        VALUES ($1, $2, 'uploading', $3)
+        INSERT INTO media.media_version (id, media_id, state, created_by, object_key, mime_type)
+        VALUES ($1, $2, 'uploading', $3, $4, $5)
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
-                  storage_provider, bucket, object_key, created_at, created_by
+                  storage_provider, bucket, object_key, ownership_token,
+                  published_object_key, created_at, created_by
         "#,
     )
     .bind(id)
     .bind(media_id)
     .bind(created_by)
+    .bind(object_key)
+    .bind(mime_type)
+    .fetch_one(pool)
+    .await?
+    .try_into()
+}
+
+/// Persist token plus immutable destination authority before exclusive create.
+#[allow(clippy::too_many_arguments)]
+pub async fn record_owned_publication_authority(
+    pool: &DbPool,
+    id: Uuid,
+    ownership_token: &[u8],
+    published_object_key: &str,
+    storage_provider: &str,
+    bucket: &str,
+) -> Result<MediaVersionRow, sqlx::Error> {
+    sqlx::query_as::<_, RawMediaVersionRow>(
+        r#"
+        UPDATE media.media_version
+        SET ownership_token = $2,
+            published_object_key = $3,
+            storage_provider = $4,
+            bucket = $5
+        WHERE id = $1
+          AND state = 'uploading'
+          AND ownership_token IS NULL
+          AND published_object_key IS NULL
+        RETURNING id, media_id, state, byte_size, mime_type, sha256,
+                  storage_provider, bucket, object_key, ownership_token,
+                  published_object_key, created_at, created_by
+        "#,
+    )
+    .bind(id)
+    .bind(ownership_token)
+    .bind(published_object_key)
+    .bind(storage_provider)
+    .bind(bucket)
+    .fetch_one(pool)
+    .await?
+    .try_into()
+}
+
+/// Persist server-derived promotion facts while the version stays uploading
+/// and `object_key` remains the staging identity.
+#[allow(clippy::too_many_arguments)]
+pub async fn record_verified_promotion(
+    pool: &DbPool,
+    id: Uuid,
+    byte_size: i64,
+    mime_type: &str,
+    sha256: &str,
+    storage_provider: &str,
+    bucket: &str,
+) -> Result<MediaVersionRow, sqlx::Error> {
+    sqlx::query_as::<_, RawMediaVersionRow>(
+        r#"
+        UPDATE media.media_version
+        SET byte_size = $2,
+            mime_type = $3,
+            sha256 = $4,
+            storage_provider = $5,
+            bucket = $6
+        WHERE id = $1 AND state = 'uploading'
+        RETURNING id, media_id, state, byte_size, mime_type, sha256,
+                  storage_provider, bucket, object_key, ownership_token,
+                  published_object_key, created_at, created_by
+        "#,
+    )
+    .bind(id)
+    .bind(byte_size)
+    .bind(mime_type)
+    .bind(sha256)
+    .bind(storage_provider)
+    .bind(bucket)
     .fetch_one(pool)
     .await?
     .try_into()
@@ -31,7 +110,8 @@ pub async fn get_media_version(
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         SELECT id, media_id, state, byte_size, mime_type, sha256,
-               storage_provider, bucket, object_key, created_at, created_by
+               storage_provider, bucket, object_key, ownership_token,
+               published_object_key, created_at, created_by
         FROM media.media_version
         WHERE id = $1
         "#,
@@ -51,7 +131,8 @@ pub async fn list_media_versions(
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         SELECT id, media_id, state, byte_size, mime_type, sha256,
-               storage_provider, bucket, object_key, created_at, created_by
+               storage_provider, bucket, object_key, ownership_token,
+               published_object_key, created_at, created_by
         FROM media.media_version
         WHERE media_id = $1
         ORDER BY created_at DESC
@@ -65,11 +146,15 @@ pub async fn list_media_versions(
     .collect()
 }
 
-/// Finalise a media version (transition to ready state).
+/// Atomically mark a version ready and commit `media.current_version_id`.
+///
+/// Both writes share one transaction. Failure leaves the version uploading
+/// and the current pointer unchanged. Token and published key stay put.
 #[allow(clippy::too_many_arguments)]
-pub async fn finalise_media_version(
+pub async fn activate_ready_current(
     pool: &DbPool,
     id: Uuid,
+    media_id: Uuid,
     byte_size: i64,
     mime_type: &str,
     sha256: &str,
@@ -77,6 +162,73 @@ pub async fn finalise_media_version(
     bucket: &str,
     object_key: &str,
 ) -> Result<MediaVersionRow, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let version = mark_version_ready(
+        &mut tx,
+        id,
+        media_id,
+        byte_size,
+        mime_type,
+        sha256,
+        storage_provider,
+        bucket,
+        object_key,
+    )
+    .await?;
+    commit_current_pointer(&mut tx, media_id, id).await?;
+    tx.commit().await?;
+    version.try_into()
+}
+
+/// Same transaction as [`activate_ready_current`], but raises a Postgres error
+/// after the version-ready write and before the current-pointer write so the
+/// open transaction rolls back both statements.
+///
+/// Test-only. Production builds omit this entrypoint.
+#[cfg(feature = "test-faults")]
+#[allow(clippy::too_many_arguments)]
+pub async fn activate_ready_current_failing_after_version_ready(
+    pool: &DbPool,
+    id: Uuid,
+    media_id: Uuid,
+    byte_size: i64,
+    mime_type: &str,
+    sha256: &str,
+    storage_provider: &str,
+    bucket: &str,
+    object_key: &str,
+) -> Result<MediaVersionRow, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let version = mark_version_ready(
+        &mut tx,
+        id,
+        media_id,
+        byte_size,
+        mime_type,
+        sha256,
+        storage_provider,
+        bucket,
+        object_key,
+    )
+    .await?;
+    sqlx::query("SELECT 1 / 0").execute(&mut *tx).await?;
+    commit_current_pointer(&mut tx, media_id, id).await?;
+    tx.commit().await?;
+    version.try_into()
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn mark_version_ready(
+    tx: &mut sqlx::PgConnection,
+    id: Uuid,
+    media_id: Uuid,
+    byte_size: i64,
+    mime_type: &str,
+    sha256: &str,
+    storage_provider: &str,
+    bucket: &str,
+    object_key: &str,
+) -> Result<RawMediaVersionRow, sqlx::Error> {
     sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         UPDATE media.media_version
@@ -87,9 +239,10 @@ pub async fn finalise_media_version(
             storage_provider = $5,
             bucket = $6,
             object_key = $7
-        WHERE id = $1 AND state = 'uploading'
+        WHERE id = $1 AND media_id = $8 AND state = 'uploading'
         RETURNING id, media_id, state, byte_size, mime_type, sha256,
-                  storage_provider, bucket, object_key, created_at, created_by
+                  storage_provider, bucket, object_key, ownership_token,
+                  published_object_key, created_at, created_by
         "#,
     )
     .bind(id)
@@ -99,9 +252,31 @@ pub async fn finalise_media_version(
     .bind(storage_provider)
     .bind(bucket)
     .bind(object_key)
-    .fetch_one(pool)
-    .await?
-    .try_into()
+    .bind(media_id)
+    .fetch_one(&mut *tx)
+    .await
+}
+
+async fn commit_current_pointer(
+    tx: &mut sqlx::PgConnection,
+    media_id: Uuid,
+    id: Uuid,
+) -> Result<(), sqlx::Error> {
+    let updated = sqlx::query(
+        r#"
+        UPDATE media.media
+        SET current_version_id = $2, updated_at = NOW()
+        WHERE id = $1
+        "#,
+    )
+    .bind(media_id)
+    .bind(id)
+    .execute(&mut *tx)
+    .await?;
+    if updated.rows_affected() != 1 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+    Ok(())
 }
 
 /// Update media's current_version_id.

@@ -22,7 +22,7 @@ use axum::{
 };
 use serde::Deserialize;
 use serde_json::json;
-use underlay_blob::{BlobAdapterObjectKeyExt, UploadRequest};
+use underlay_blob::UploadRequest;
 use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
 use underlay_jobs::JobConfig;
 use underlay_media::storage::version_object_key;

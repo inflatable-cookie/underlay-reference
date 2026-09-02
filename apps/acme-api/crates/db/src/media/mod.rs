@@ -2,6 +2,8 @@
 //!
 //! Provides raw database operations for media, media versions, renditions, and usage tracking.
 
+use std::fmt;
+
 use crate::DbPool;
 use sqlx::FromRow;
 use underlay_http::query::QueryParams;
@@ -41,7 +43,7 @@ pub struct MediaRow {
 }
 
 /// Raw DB representation of a media version.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct MediaVersionRow {
     pub id: Uuid,
     pub media_id: Uuid,
@@ -52,8 +54,34 @@ pub struct MediaVersionRow {
     pub storage_provider: Option<String>,
     pub bucket: Option<String>,
     pub object_key: Option<BlobObjectKey>,
+    /// Private ownership token. Never selected into public DTOs.
+    pub ownership_token: Option<Vec<u8>>,
+    pub published_object_key: Option<BlobObjectKey>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub created_by: Option<Uuid>,
+}
+
+impl fmt::Debug for MediaVersionRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MediaVersionRow")
+            .field("id", &self.id)
+            .field("media_id", &self.media_id)
+            .field("state", &self.state)
+            .field("byte_size", &self.byte_size)
+            .field("mime_type", &self.mime_type)
+            .field("sha256", &self.sha256)
+            .field("storage_provider", &self.storage_provider)
+            .field("bucket", &self.bucket)
+            .field("object_key", &self.object_key)
+            .field(
+                "ownership_token",
+                &self.ownership_token.as_ref().map(|_| "[redacted]"),
+            )
+            .field("published_object_key", &self.published_object_key)
+            .field("created_at", &self.created_at)
+            .field("created_by", &self.created_by)
+            .finish()
+    }
 }
 
 /// Raw DB representation of a media rendition.
@@ -114,7 +142,7 @@ pub struct MediaWithVersionRow {
     pub thumbnail_object_key: Option<BlobObjectKey>,
 }
 
-#[derive(Debug, Clone, FromRow)]
+#[derive(Clone, FromRow)]
 pub(crate) struct RawMediaVersionRow {
     pub id: Uuid,
     pub media_id: Uuid,
@@ -125,8 +153,33 @@ pub(crate) struct RawMediaVersionRow {
     pub storage_provider: Option<String>,
     pub bucket: Option<String>,
     pub object_key: Option<String>,
+    pub ownership_token: Option<Vec<u8>>,
+    pub published_object_key: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub created_by: Option<Uuid>,
+}
+
+impl fmt::Debug for RawMediaVersionRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RawMediaVersionRow")
+            .field("id", &self.id)
+            .field("media_id", &self.media_id)
+            .field("state", &self.state)
+            .field("byte_size", &self.byte_size)
+            .field("mime_type", &self.mime_type)
+            .field("sha256", &self.sha256)
+            .field("storage_provider", &self.storage_provider)
+            .field("bucket", &self.bucket)
+            .field("object_key", &self.object_key)
+            .field(
+                "ownership_token",
+                &self.ownership_token.as_ref().map(|_| "[redacted]"),
+            )
+            .field("published_object_key", &self.published_object_key)
+            .field("created_at", &self.created_at)
+            .field("created_by", &self.created_by)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -174,6 +227,8 @@ impl TryFrom<RawMediaVersionRow> for MediaVersionRow {
             storage_provider: row.storage_provider,
             bucket: row.bucket,
             object_key: parse_optional_object_key(row.object_key)?,
+            ownership_token: row.ownership_token,
+            published_object_key: parse_optional_object_key(row.published_object_key)?,
             created_at: row.created_at,
             created_by: row.created_by,
         })
