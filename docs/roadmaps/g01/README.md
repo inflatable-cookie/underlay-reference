@@ -10,7 +10,7 @@
 - `004` wasteful endpoint calls remediation
 - `005` Acme reference Northstar doctrine alignment
 - `006` Poodle Underlay coexistence proof
-- `007` retained Underlay surface formalization — Card 001 executed, contract frozen pending PR review
+- `007` retained Underlay surface formalization — complete in merged PR 15
 - `008` auth service adoption and hardening (from the g08 consumer audit)
 - `009` media and blob production path (from the g08 consumer audit)
 - `010` TypeScript type-safety hygiene (from the g08 consumer audit)
@@ -37,5 +37,5 @@ larger follow-ups it deferred and completed on 2026-07-19.
 
 ## Next Task
 
-Review the `g01.007` Card 001 retained-surface contract PR at its exact head.
-`g01.012` and `g01.013` are complete.
+`g01.007`, `g01.012`, and `g01.013` are complete. Re-enter planning before
+opening `g01.014`; no implementation card is ready.

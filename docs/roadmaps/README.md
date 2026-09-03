@@ -18,7 +18,7 @@ Roadmaps hold executable work for the reference implementation.
 - Next roadmap ID: `g01.014`
 - `g01.013` completed in merged PR 14
 - `g01.012` card 002 is complete and merged as PR 13
-- `g01.007` is active; Card 001 is executed and the retained-surface contract is frozen pending PR review
+- `g01.007` is complete in merged PR 15; the retained-surface contract is frozen
 - `g01.008`–`g01.011`, the g08 consumer-audit tranche, are complete
 
 ## Index
@@ -45,4 +45,4 @@ Before opening `gNN+1`:
 
 ## Next Task
 
-Review the `g01.007` Card 001 retained-surface contract PR at its exact head.
+No implementation card is ready. Re-enter planning before opening `g01.014`.

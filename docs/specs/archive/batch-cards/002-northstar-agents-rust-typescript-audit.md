@@ -4,7 +4,7 @@ Status: complete (merged as PR 13)
 Owner: repo maintainers
 Created: 2026-09-01
 Roadmap: `g01.012`
-Spec: `docs/specs/002-northstar-instruction-and-language-quality-audit.md`
+Spec: `docs/specs/archive/002-northstar-instruction-and-language-quality-audit.md`
 Auto-start next card: no
 
 ## Objective
@@ -101,5 +101,5 @@ TypeScript/Svelte findings (four repaired across six files, the rest retained).
 
 ## Next Task
 
-Merged as PR 13. Execute card 003 under `g01.013`, then resume `g01.007` and
-card 001 from their unchanged paused state.
+Merged as PR 13. The dependent `g01.013` and `g01.007` lanes later completed
+in PRs 14 and 15.

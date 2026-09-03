@@ -13,10 +13,8 @@ the reference implementation.
 
 ## Active batch card
 
-- `001-audit-retained-acme-admin-underlay-surface.md`
-
-Cards 002 and 003 are archived after merged PRs 13 and 14.
+None. Cards 001, 002, and 003 are archived after merged PRs 15, 13, and 14.
 
 ## Next Task
 
-Execute Card 001 and stop at its PR for orchestrator review.
+No execution card is ready. Re-enter planning before compiling another card.

@@ -27,5 +27,5 @@ changes, or the retained-surface classification owned by `g01.007`.
 
 ## Next Task
 
-Audit delivery merged as PR 13. Execute `g01.013` card 003, then resume
-`g01.007` and card 001. The retained-surface classification is still open.
+Audit delivery merged as PR 13. The dependent `g01.013` and `g01.007` lanes
+later completed in PRs 14 and 15.

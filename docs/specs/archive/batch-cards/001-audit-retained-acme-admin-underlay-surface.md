@@ -1,10 +1,10 @@
 # 001 - Audit Retained Acme-Admin Underlay Surface
 
-Status: executed — PR pending orchestrator review
+Status: complete — merged as PR 15
 Owner: retained-surface worker
 Updated: 2026-09-03
 Roadmap: g01.007
-Spec: docs/specs/001-retained-underlay-surface-strict-lane.md
+Spec: docs/specs/archive/001-retained-underlay-surface-strict-lane.md
 Governing refs: docs/architecture/product-guardrails.md, docs/policy/001-working-rules.md
 
 ## Objective
@@ -58,5 +58,6 @@ boundary as a durable contract artifact.
 
 ## Next Task
 
-Review the PR at its exact head; the frozen contract lives at
-`docs/architecture/004-retained-underlay-surface-contract.md`.
+Complete in PR 15. The frozen contract lives at
+`docs/architecture/004-retained-underlay-surface-contract.md`; re-enter planning
+before opening another execution card.

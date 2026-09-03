@@ -11,8 +11,7 @@ Logs capture meaningful execution batches for the reference implementation.
 
 ## Next Task
 
-`g01.007` Card 001 is executed; the retained Underlay surface contract is
-frozen in
+`g01.007` Card 001 is complete in merged PR 15; the retained Underlay surface
+contract is frozen in
 [2026-09/03-003654](./2026-09/03-003654-g01-007-retained-surface-contract.md).
-Review its PR at the exact head. `g01.013` closed in merged PR 14
-([closeout](./2026-09/03-002448-g01-013-closeout-g01-007-resume.md)).
+No implementation card is ready. Re-enter planning before `g01.014`.

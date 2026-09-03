@@ -31,11 +31,8 @@ reference-app milestone needs tighter execution control.
 
 ## Active spec
 
-- `001-retained-underlay-surface-strict-lane.md`
-
-Specs 002 and 003 are archived after merged PRs 13 and 14.
+None. Specs 001, 002, and 003 are archived after merged PRs 15, 13, and 14.
 
 ## Next Task
 
-Card 001 under spec 001 is executed. Review its PR at the exact head, then
-archive the lane when it closes.
+No strict-lane card is ready. Re-enter planning before opening the next spec.

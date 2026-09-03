@@ -1,6 +1,6 @@
 # 001 - Retained Underlay Surface Strict Lane
 
-Status: active
+Status: complete — merged as PR 15
 Owner: repo maintainers
 Updated: 2026-04-10
 Roadmap refs: g01.007
@@ -20,7 +20,7 @@ boundary contract for downstream app migrations.
 
 ## Ready chain
 
-- `001-audit-retained-acme-admin-underlay-surface.md` — executed; PR pending review
+- `001-audit-retained-acme-admin-underlay-surface.md` — complete in merged PR 15
 
 ## Stop Conditions
 
@@ -30,5 +30,4 @@ boundary contract for downstream app migrations.
 
 ## Next Task
 
-Card 001 is executed. Review its PR at the exact head, then close or archive
-this lane; re-enter planning before any new downstream wave.
+Lane complete. Re-enter planning before any new downstream wave.

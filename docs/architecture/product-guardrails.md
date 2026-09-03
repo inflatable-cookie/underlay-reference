@@ -29,5 +29,5 @@ Poodle-era coexistence and retained-Underlay normalization work.
 ## Next Task
 
 Apply these guardrails against the frozen retained-surface contract in
-`docs/architecture/004-retained-underlay-surface-contract.md`, starting with
-the Card 001 PR review.
+`docs/architecture/004-retained-underlay-surface-contract.md`. Re-enter
+planning before any downstream rollout wave.

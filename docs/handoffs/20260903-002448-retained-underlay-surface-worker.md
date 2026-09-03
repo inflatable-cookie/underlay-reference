@@ -4,7 +4,7 @@ kind: northstar-handoff
 handoff_mode: worker-pr-loop
 worker_mode: implementation
 dispatch_authority: orchestrator
-status: ready-to-launch
+status: merged-pr-15
 owner: Tom / Northstar orchestrator
 created: 2026-09-03
 updated: 2026-09-03
@@ -23,7 +23,8 @@ contract artifact.
 
 - repository: `/Users/tom/Dev/projects/underlay-reference`;
 - authority: `docs/roadmaps/g01/007-retained-underlay-surface-formalization.md`,
-  `docs/specs/001-retained-underlay-surface-strict-lane.md`, Card 001,
+  `docs/specs/archive/001-retained-underlay-surface-strict-lane.md`, archived
+  Card 001,
   product guardrails, and working rules;
 - inspect live source as evidence, but do not edit production code;
 - do not reopen migrated Poodle primitives, perform a route conversion, invent

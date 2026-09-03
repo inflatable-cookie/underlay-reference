@@ -23,8 +23,8 @@ Affects: acme-docs, acme-admin, acme-front, acme-ui, acme-client, acme-api
 ### Strict retained-surface lane rules
 
 - Execute from the current ready card, not from roadmap summary alone.
-- Card 003 under `g01.013` merged as PR 14. The retained-surface owner in
-  `g01.007` and Card 001 is now active.
+- Card 001 under `g01.007` merged as PR 15. The retained-surface contract is
+  frozen and the strict lane is closed.
 - Treat retained Underlay surfaces as a contract-definition problem, not a
   fresh route-migration sweep.
 - If the retained-surface audit shows a wider migration wave is needed, stop
@@ -50,4 +50,4 @@ Work in the strict lane is not done unless:
 
 ## Next Task
 
-Execute `g01.007` Card 001 and stop at its PR for exact-head review.
+No strict-lane card is ready. Re-enter planning before opening `g01.014`.

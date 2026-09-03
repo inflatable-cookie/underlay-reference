@@ -4,8 +4,8 @@
   - Status: active
   - Range: `001`-`013`
   - Notes: initial reference-app roadmap sequence and Northstar alignment
-    tranche; `g01.012` merged as PR 13, `g01.013` merged as PR 14, and
-    `g01.007` is active with Card 001 ready;
+    tranche; `g01.007` merged as PR 15, `g01.012` merged as PR 13, and
+    `g01.013` merged as PR 14;
     `g01.008`-`g01.011`, the g08 consumer-audit follow-up tranche, completed on
     2026-07-19
 
@@ -19,5 +19,5 @@ strict-lane material has been purged from `specs/`.
 
 ## Next Task
 
-Keep `g01` active. Execute `g01.007` Card 001 and stop at its PR for review;
-next roadmap ID is `g01.014`.
+Keep `g01` active and re-enter planning before opening `g01.014`. No
+implementation card is ready.

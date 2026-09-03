@@ -1,7 +1,7 @@
 # g01.007 Retained Underlay Surface Contract
 
 Date: 2026-09-03
-Status: dispatched — PR pending orchestrator review
+Status: complete — accepted at `82b2c8e1`, merged as PR 15 (`cae33a51`)
 
 Card 001 executed as one docs-only worker against live `acme-admin` source
 (Underlay v0.9.7, Poodle 0.2.2). No production code changed.
@@ -62,5 +62,5 @@ Card 001 executed as one docs-only worker against live `acme-admin` source
 
 ## Next Task
 
-Review the Card 001 PR at its exact head; downstream rollout planning
-consumes the contract only after that review.
+The contract is accepted and merged. Re-enter planning before opening a
+downstream rollout or `g01.014`; no implementation card is ready.

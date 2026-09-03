@@ -5,7 +5,7 @@ Owner: repo maintainers
 Created: 2026-09-01
 Governing refs: root and nested `AGENTS.md`,
 `docs/policy/001-working-rules.md`,
-`docs/specs/002-northstar-instruction-and-language-quality-audit.md`, installed
+`docs/specs/archive/002-northstar-instruction-and-language-quality-audit.md`, installed
 Northstar
 Planning state: card 002 complete and merged; `g01.007` stays paused during `g01.013`
 

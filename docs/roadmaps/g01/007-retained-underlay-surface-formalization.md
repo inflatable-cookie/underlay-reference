@@ -1,10 +1,10 @@
 # g01.007 Retained Underlay Surface Formalization
 
-Status: active
+Status: complete — merged as PR 15
 Owner: repo maintainers
 Updated: 2026-09-03
-Governing refs: `docs/architecture/product-guardrails.md`, `docs/policy/001-working-rules.md`, `docs/specs/001-retained-underlay-surface-strict-lane.md`
-Planning state: Card 001 executed — contract frozen at `docs/architecture/004-retained-underlay-surface-contract.md`, PR pending review
+Governing refs: `docs/architecture/product-guardrails.md`, `docs/policy/001-working-rules.md`, `docs/specs/archive/001-retained-underlay-surface-strict-lane.md`
+Planning state: complete — Card 001 accepted at `82b2c8e1` and merged as PR 15 (`cae33a51`)
 
 ## Goal
 
@@ -42,5 +42,5 @@ Turn the completed Poodle coexistence proof into an explicit retained-Underlay c
 
 ## Next
 
-Card 001 is executed. Review the retained-surface contract PR at its exact
-head; downstream rollout planning starts only after that review.
+The retained-surface contract is accepted and merged. Re-enter planning before
+opening a downstream rollout or `g01.014`; no implementation card is ready.
