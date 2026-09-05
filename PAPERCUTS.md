@@ -7,6 +7,12 @@ they hit a solvable hurdle; they do not stop the current task to fix one.
 
 <!-- Keep entries short. Append newest entries at the top. Do not include secrets. -->
 
+### JS Underlay pin PR left Cargo crates on the previous tag
+- **Friction:** PR #16 moved JavaScript Underlay declarations and `bun.lock` to released `v0.9.8` / peel `97a26d9`, but `apps/acme-api/Cargo.toml` and `Cargo.lock` stayed on `v0.9.7` / `8a7ce84b`.
+- **Impact:** After the Poodle 0.3.0 consumer PR merged, the workspace still had two Underlay identities; a follow-up pin was required before the lane could claim every app manifest.
+- **Plausible fix:** Treat Cargo git tags as part of the same Underlay pin as `package.json` whenever the consumer has a Rust app.
+- **Surface:** g16.109 / `apps/acme-api/Cargo.toml` / consumer adoption wave
+
 ### Bun cannot resolve an annotated git tag until its install cache is cleared
 - **Friction:** `bun install` against `git+ssh://…underlay.git#v0.9.6` failed with `no commit matching "v0.9.6"` even though the annotated tag peels to `4f6d7552` and Cargo resolved the same tag immediately. `bun pm cache rm` then `bun install` succeeded.
 - **Impact:** A required JS lock refresh looks like a missing release until the cache is dropped.
