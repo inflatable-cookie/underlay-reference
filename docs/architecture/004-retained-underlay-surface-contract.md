@@ -2,7 +2,7 @@
 
 Status: active
 Owner: repo maintainers
-Updated: 2026-09-03
+Updated: 2026-09-05
 Roadmap refs: g01.007
 Governing refs: docs/architecture/product-guardrails.md, docs/policy/001-working-rules.md, docs/roadmaps/g01/006-poodle-underlay-coexistence-proof.md
 
@@ -17,7 +17,8 @@ or data-heavy ownership.
 
 Path references are repo-root-relative to the `underlay-reference`
 checkout. Classifications come from live `acme-admin` source inspection on
-2026-09-03 with Underlay v0.9.7 and Poodle 0.2.2 resolved.
+2026-09-03. The workspace now resolves Underlay v0.9.8 and public Poodle
+0.3.0.
 
 ## Downstream rule
 

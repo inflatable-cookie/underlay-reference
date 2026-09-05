@@ -65,6 +65,10 @@ app manifests:
   unrelated source change.
 - Updated the live README pin examples from Underlay `v0.9.7` / Poodle `0.2.2`
   to Underlay `v0.9.8` / Poodle `0.3.0`.
+- Updated the active retained-surface contract,
+  `docs/architecture/004-retained-underlay-surface-contract.md`, so its live
+  resolved identity is Underlay `v0.9.8` and public Poodle `0.3.0`. The
+  2026-09-03 inspection date and archive/log references stay historical.
 - Recorded a papercut that PR #16 left Cargo on `v0.9.7`. No existing PAPERCUT
   entry was closed: the open entries are tooling debt, not the ten consumer
   defects named in the Poodle `0.3.0` release note.
@@ -108,9 +112,17 @@ Effigy task locks under parallel validators.
 Root `effigy validate` was not used; it fans into the mounted Underlay catalog
 and is already recorded as an open papercut.
 
+PR 17 review at `adf3a139` requested the active architecture contract's live
+resolved identity. After that focused docs revision:
+
+- `effigy qa:docs`: pass (links, forbidden, headings)
+- `effigy qa:northstar`: pass
+- `git diff --check`: pass
+
 ## Review boundary
 
 PR https://github.com/inflatable-cookie/underlay-reference/pull/17 is open
-against `underlay-reference` `main`. Push the current branch and stop for
-independent exact-head review; do not merge, start another lane, edit Poodle
-or Underlay, or run native/desktop proofs.
+against `underlay-reference` `main`. This is a focused revision of that PR.
+Push the revised head and stop for a fresh independent exact-head review; do
+not merge, start another lane, edit Poodle or Underlay, or run native/desktop
+proofs.
