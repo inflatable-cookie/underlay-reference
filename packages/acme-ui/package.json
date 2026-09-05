@@ -34,8 +34,8 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@inflatable-cookie/poodle-svelte": "0.2.2",
-    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.7",
+    "@inflatable-cookie/poodle-svelte": "0.3.0",
+    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.8",
     "marked": "^18.0.9"
   }
 }

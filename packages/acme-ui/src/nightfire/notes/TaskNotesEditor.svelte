@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MarkdownEditor } from "@inflatable-cookie/poodle-svelte";
+  import { MarkdownEditor } from "@inflatable-cookie/poodle-svelte/markdown";
 
   type TaskNotesBlock = {
     type: string;
