@@ -4,7 +4,7 @@ kind: northstar-handoff
 handoff_mode: worker-pr-loop
 worker_mode: implementation
 dispatch_authority: orchestrator
-status: ready-for-pr
+status: paused-operator-request
 owner: Tom / Poodle coordinator
 created: 2026-09-05
 updated: 2026-09-05
@@ -79,6 +79,12 @@ native proof was launched.
 
 ## Review boundary
 
-Open one PR against `underlay-reference` `main` from this branch, push it,
-record its final exact head and URL, then stop. Do not merge, start another
-lane, edit Poodle or Underlay, or run native/desktop proofs.
+PR #16 is open against `underlay-reference` `main` at the current branch head,
+but the operator paused this lane on 2026-09-05. The Underlay PR #26 merge is
+not a released/tagged foundation version, so this lane is not complete and is
+not eligible for Tier 2 gating. Resume only after a released/tagged Underlay
+foundation carrying Poodle `0.3.0` exists and the consumer can pin that
+released/tagged version.
+
+Do not merge, start another lane, edit Poodle or Underlay, or run additional
+validation/native/desktop proofs while paused.
