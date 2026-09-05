@@ -110,6 +110,7 @@ and is already recorded as an open papercut.
 
 ## Review boundary
 
-Open one PR against current `underlay-reference` `main` from this branch, push
-it, record its final exact head and URL, then stop. Do not merge, start another
-lane, edit Poodle or Underlay, or run native/desktop proofs.
+PR https://github.com/inflatable-cookie/underlay-reference/pull/17 is open
+against `underlay-reference` `main`. Push the current branch and stop for
+independent exact-head review; do not merge, start another lane, edit Poodle
+or Underlay, or run native/desktop proofs.
