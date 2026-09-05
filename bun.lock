@@ -5,7 +5,7 @@
     "": {
       "name": "underlay-reference",
       "devDependencies": {
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#5a6709be190255190ba35bee346ea1e517897902",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.8",
       },
     },
     "apps/acme-admin": {
@@ -15,7 +15,7 @@
         "@acme/ui": "workspace:*",
         "@inflatable-cookie/poodle-core": "0.3.0",
         "@inflatable-cookie/poodle-svelte": "0.3.0",
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#5a6709be190255190ba35bee346ea1e517897902",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.8",
         "acme-client": "workspace:*",
         "bits-ui": "^2.18.1",
         "lucide-svelte": "^1.0.1",
@@ -43,7 +43,7 @@
         "@acme/ui": "workspace:*",
         "@inflatable-cookie/poodle-core": "0.3.0",
         "@inflatable-cookie/poodle-svelte": "0.3.0",
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#5a6709be190255190ba35bee346ea1e517897902",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.8",
         "acme-client": "workspace:*",
         "lucide-svelte": "^1.0.1",
       },
@@ -63,7 +63,7 @@
       "name": "acme-client",
       "version": "0.0.1",
       "dependencies": {
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#5a6709be190255190ba35bee346ea1e517897902",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.8",
       },
       "devDependencies": {
         "@types/node": "^25.3.0",
@@ -76,7 +76,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@inflatable-cookie/poodle-svelte": "0.3.0",
-        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#5a6709be190255190ba35bee346ea1e517897902",
+        "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.8",
         "marked": "^18.0.9",
       },
       "devDependencies": {
@@ -125,7 +125,7 @@
 
     "@inflatable-cookie/poodle-svelte": ["@inflatable-cookie/poodle-svelte@0.3.0", "", { "dependencies": { "@inflatable-cookie/poodle-core": "0.3.0" }, "peerDependencies": { "marked": "^18.0.9", "svelte": ">=5.56.8 <6" }, "optionalPeers": ["marked"] }, "sha512-MlbrMgXSdsKYEK9dOm+qedJpmc8I7DDzt6TDqYSlTQFSgM8iGtKsdJQuByVCNK2pZrl9GMFLIgXRxPW7keFvdw=="],
 
-    "@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@git+ssh://git@github.com/inflatable-cookie/underlay.git#5a6709be190255190ba35bee346ea1e517897902", { "dependencies": { "@inflatable-cookie/poodle-svelte": "0.3.0", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "underlay-workspace-shape": "./ts/bin/underlay-workspace-shape.ts", "underlay-env-authority": "./ts/bin/underlay-env-authority.ts" } }, "5a6709be190255190ba35bee346ea1e517897902"],
+    "@inflatable-cookie/underlay": ["@inflatable-cookie/underlay@git+ssh://git@github.com/inflatable-cookie/underlay.git#97a26d9fa0a58daf198926ddcd259193daa9d5c3", { "dependencies": { "@inflatable-cookie/poodle-svelte": "0.3.0", "esm-env": "^1.2.2", "isomorphic-dompurify": "^3.0.0", "marked": "^17.0.3", "smol-toml": "^1.6.1" }, "peerDependencies": { "@sveltejs/kit": "^2.53.0", "bits-ui": "^2.0.0", "lucide-svelte": "^0.563.0 || ^1.0.0", "svelte": "^5.0.0", "vite": "^7.0.0 || ^8.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["zod"], "bin": { "underlay-workspace-shape": "./ts/bin/underlay-workspace-shape.ts", "underlay-env-authority": "./ts/bin/underlay-env-authority.ts" } }, "97a26d9fa0a58daf198926ddcd259193daa9d5c3"],
 
     "@internationalized/date": ["@internationalized/date@3.12.3", "", { "dependencies": { "@swc/helpers": "^0.5.0" } }, "sha512-fuLX+3ZKLsxI73y8b01EG/WjHb6gE6weCqlfawPO27kBWGMh9G1yH6Csv1uU7/cac9H2GHmOMt6CjmuQ1aia4Q=="],
 
