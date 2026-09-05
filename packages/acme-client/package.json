@@ -10,7 +10,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {
-    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.9.7"
+    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#5a6709be190255190ba35bee346ea1e517897902"
   },
   "devDependencies": {
     "@types/node": "^25.3.0",
