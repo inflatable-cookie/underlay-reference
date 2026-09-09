@@ -104,9 +104,9 @@ underlay-reference/
 │   ├── processes/         # Implementation notes and runbooks
 │   ├── policy/            # Execution and authority rules
 │   ├── specs/             # Active strict-lane wrappers
-│   ├── roadmaps/          # Segmented roadmap generations
+│   ├── roadmaps/          # Promoted executable milestones only
 │   │   ├── g01/           # Active roadmap generation
-│   │   └── backlog/       # Unscheduled candidate milestones
+│   ├── triage/            # Deferred candidates until promotion (non-authoritative)
 │   ├── scripts/           # Effigy Rhai rollout-check helpers
 │   ├── handoffs/          # Cross-thread worker handoffs
 │   └── logs/              # Month-sharded execution history
