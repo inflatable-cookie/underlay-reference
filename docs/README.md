@@ -11,6 +11,7 @@ Use this repo section for four things:
 - `specs/` for active strict-lane execution wrappers when a milestone needs
   tighter control
 - `roadmaps/` for executable work queues
+- `triage/` for deferred candidates until promotion (non-authoritative)
 - `logs/` for timestamped execution history tied to roadmap work
 
 ## Core structure
@@ -21,6 +22,7 @@ Use this repo section for four things:
 - `processes/`
 - `specs/`
 - `roadmaps/`
+- `triage/`
 - `logs/`
 
 ## Reference app scope
@@ -65,6 +67,7 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 - Use [specs/README.md](specs/README.md) for the current ready-card surface.
 - Read [processes/210-reference-implementation-notes.md](processes/210-reference-implementation-notes.md) for implementation notes and validation commands.
 - Track active execution in [roadmaps/README.md](roadmaps/README.md).
+- Review deferred candidates in [triage/README.md](triage/README.md).
 - Record meaningful work batches in [logs/README.md](logs/README.md).
 
 ## Next Task

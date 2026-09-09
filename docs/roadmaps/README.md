@@ -1,6 +1,8 @@
 # Roadmaps
 
-Roadmaps hold executable work for the reference implementation.
+Roadmaps hold only promoted executable work for the reference implementation.
+Unresolved or deferred candidates live in `../triage/` until planning promotes
+them into a roadmap milestone. Triage is never execution authority.
 
 ## Rules
 
@@ -10,7 +12,9 @@ Roadmaps hold executable work for the reference implementation.
 - Generation rollover is manual only.
 - Treat a generation as a substantial run of roadmap work, normally around 20 to 40 milestones rather than a short convenience bucket.
 - Do not roll to a new generation until every roadmap in the current one is explicitly closed, superseded, or rehomed and the stale strict-lane material for that generation has been purged from `specs/`.
-- Backlog items that are not active milestones belong in `backlog/`.
+- Unresolved or deferred candidates belong in `../triage/`, never in a second
+  intake queue under `roadmaps/`. Migration into a roadmap is not approval:
+  only planning promotes a candidate into an executable milestone.
 
 ## Current generation
 
@@ -25,7 +29,7 @@ Roadmaps hold executable work for the reference implementation.
 
 - [generation-index.md](generation-index.md)
 - [g01/README.md](g01/README.md)
-- [backlog/README.md](backlog/README.md)
+- [../triage/README.md](../triage/README.md)
 
 ## Historical language boundary
 

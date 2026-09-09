@@ -337,9 +337,9 @@ Make it easy for others to use as a reference.
 
 ---
 
-## Phase 9: Advanced Features → Backlog
+## Phase 9: Advanced Features → Deferred to Triage
 
-*Moved to backlog: See [backlog/advanced-features.md](~/Dev/projects/underlay-reference/acme-docs/roadmaps/backlog/advanced-features.md)*
+*Deferred candidates: see [the retired-backlog triage note](../../triage/20260909-151500-retired-roadmap-backlog-advanced-features.md)*
 
 Lower priority items (OAuth/SSO, Real-time, Multi-tenancy, Advanced Media) have been deferred to allow focus on core patterns and infrastructure.
 
@@ -527,4 +527,4 @@ The reference implementation is complete when:
 7. **Phase 7** - Testing patterns ✓
 8. **Phase 8** - Documentation & developer experience ✓
 9. **Phase 10** - Underlay configuration audit ✓
-10. **Phase 9** - Advanced features → Backlog
+10. **Phase 9** - Advanced features → Deferred (see triage note)

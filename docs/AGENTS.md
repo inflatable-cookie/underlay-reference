@@ -6,7 +6,7 @@ Root `docs/` is the documentation authority for the Underlay reference implement
 
 ## Hard Rules
 
-- Put reference-app roadmap work in `roadmaps/g*/` with three-digit IDs.
+- Put reference-app roadmap work in `roadmaps/g*/` with three-digit IDs. Roadmaps hold only promoted executable tasks; unresolved or deferred candidates go in `triage/` until planning promotes them.
 - Put execution history and sweep closeouts in `logs/YYYY-MM/` using `DD-HHMMSS-slug.md` filenames.
 - Do not leave compatibility shim docs behind after moves; update links in place.
 - Keep `vision/` high-level and stable, `architecture/` concrete, and `processes/` operational.
