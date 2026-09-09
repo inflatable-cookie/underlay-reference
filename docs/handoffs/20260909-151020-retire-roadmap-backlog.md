@@ -4,7 +4,7 @@ title: "Retire the roadmap backlog in underlay-reference"
 handoff_mode: worker-pr-loop
 worker_mode: implementation
 dispatch_authority: orchestrator
-status: ready-to-launch
+status: complete-merged-pr-18
 base_required: pushed-main
 queue_dispatch: northstar-queue
 queue_approval: "The operator authorized Chatterbox on 2026-09-09 to roll out the roadmap-backlog retirement across projects without Orchestrator-owned Paseo threads, using Northstar Queue."
