@@ -75,8 +75,8 @@ These tasks wrap the active rollout audit scripts in the workspace root so agent
 `g01.007` is complete in merged PR 15. Its retained Underlay surface contract
 is frozen at
 [architecture/004-retained-underlay-surface-contract.md](architecture/004-retained-underlay-surface-contract.md).
-No strict-lane card is ready; re-enter planning before opening `g01.014` or a
-downstream rollout wave.
+No strict-lane card is ready; re-enter planning before opening the next task
+or a downstream rollout wave.
 <!-- northstar:lifecycle:begin schema=northstar.lifecycle.projection.v2 digest=sha256:8b624a596882e69251dfdf10ca0a47fed863ac75c0eb33245e5e5611fd2d287f -->
 | Generation | Disposition | Runway state |
 | --- | --- | --- |
