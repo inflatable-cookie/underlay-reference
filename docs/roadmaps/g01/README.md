@@ -35,6 +35,14 @@ larger follow-ups it deferred and completed on 2026-07-19.
 - Imported `g01.001` through `g01.004` milestones remain historical implementation records unless they are reopened.
 - Normalize local wording only when one of those imported roadmaps is reopened for active work or when an old label causes path/reference drift.
 
+## Queue lifecycle adoption
+
+- [g01.014 Effigy-hosted lifecycle hook](014-adopt-effigy-hosted-lifecycle-hook.md)
+  is an operator-approved, configuration-only maintenance lane. It follows its
+  declared Queue dependencies and may run without changing product priority.
+  Existing next-task text continues to describe product sequencing; this entry
+  authorizes no sibling product work.
+
 ## Next Task
 
 `g01.007`, `g01.012`, and `g01.013` are complete. Re-enter planning before
