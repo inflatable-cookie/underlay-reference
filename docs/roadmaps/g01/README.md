@@ -47,11 +47,12 @@ larger follow-ups it deferred and completed on 2026-07-19.
 
 `g01.007`, `g01.012`, and `g01.013` are complete. Re-enter planning before
 opening the next task; no implementation card is ready.
-<!-- northstar:lifecycle:begin schema=northstar.lifecycle.projection.v2 digest=sha256:8b624a596882e69251dfdf10ca0a47fed863ac75c0eb33245e5e5611fd2d287f -->
+<!-- northstar:lifecycle:begin schema=northstar.lifecycle.projection.v2 digest=sha256:81b65c0d2e6fefc929cdfb6e7fa0dfdfd4a1b7346be0c5f48ee182abf408c33d -->
 | Generation | Disposition | Runway state |
 | --- | --- | --- |
 | g01 | open | planning_required |
 | Task | Status | Stage | Revision | Record digest |
 | --- | --- | --- | --- | --- |
 | g01.014 | complete | none | 8 | sha256:4dee75213a769e2735b3c74b73851aac34ad5ff43840b54b9fa902f332939473 |
+| g01.015 | complete | none | 8 | sha256:943f2d28a6f065768a9174720e1b0111ff4a7a6f09b0a9742b02eddf7f58a34d |
 <!-- northstar:lifecycle:end -->
