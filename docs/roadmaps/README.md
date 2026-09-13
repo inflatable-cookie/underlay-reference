@@ -49,7 +49,8 @@ Before opening `gNN+1`:
 
 ## Next Task
 
-No implementation card is ready. Re-enter planning before opening `g01.014`.
+No implementation card is ready. Re-enter planning before opening the next
+task.
 <!-- northstar:lifecycle:begin schema=northstar.lifecycle.projection.v2 digest=sha256:8b624a596882e69251dfdf10ca0a47fed863ac75c0eb33245e5e5611fd2d287f -->
 | Generation | Disposition | Runway state |
 | --- | --- | --- |
