@@ -17,8 +17,8 @@ or data-heavy ownership.
 
 Path references are repo-root-relative to the `underlay-reference`
 checkout. Classifications come from live `acme-admin` source inspection on
-2026-09-03. The workspace now resolves Underlay v0.9.8 and public Poodle
-0.3.0.
+2026-09-03. The workspace now resolves Underlay v0.9.10 and public Poodle
+0.4.2.
 
 ## Downstream rule
 

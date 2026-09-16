@@ -39,31 +39,31 @@ image = "0.25"
 
 # File type detection by magic bytes
 
-# Underlay crates (released tag v0.9.8)
-underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-http = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8", features = ["error-logging"] }
-underlay-query = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-observability = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-auth = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-auth-session = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-auth-state-postgres = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-blob = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8", features = ["s3"] }
-underlay-auth-email-totp = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-auth-jwt = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-auth-oauth = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-auth-password = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-auth-totp = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-auth-webauthn = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-audit = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-config = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-db = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-devtools = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-email = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8", features = ["templates"] }
-underlay-events = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-jobs = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-jobs-postgres = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-media = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8", features = ["object-keys", "renditions"] }
-underlay-nightfire = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-ratelimit = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-security-alerts = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
-underlay-testing = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.8" }
+# Underlay crates (released tag v0.9.10)
+underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-http = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10", features = ["error-logging"] }
+underlay-query = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-observability = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-auth = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-auth-session = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-auth-state-postgres = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-blob = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10", features = ["s3"] }
+underlay-auth-email-totp = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-auth-jwt = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-auth-oauth = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-auth-password = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-auth-totp = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-auth-webauthn = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-audit = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-config = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-db = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-devtools = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-email = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10", features = ["templates"] }
+underlay-events = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-jobs = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-jobs-postgres = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-media = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10", features = ["object-keys", "renditions"] }
+underlay-nightfire = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-ratelimit = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-security-alerts = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
+underlay-testing = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.9.10" }
