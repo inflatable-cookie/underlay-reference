@@ -77,7 +77,7 @@ is frozen at
 [architecture/004-retained-underlay-surface-contract.md](architecture/004-retained-underlay-surface-contract.md).
 No strict-lane card is ready; re-enter planning before opening the next task
 or a downstream rollout wave.
-<!-- northstar:lifecycle:begin schema=northstar.lifecycle.projection.v2 digest=sha256:81b65c0d2e6fefc929cdfb6e7fa0dfdfd4a1b7346be0c5f48ee182abf408c33d -->
+<!-- northstar:lifecycle:begin schema=northstar.lifecycle.projection.v2 digest=sha256:7f4e6c2a5f1f9a1985b068fc98f098daab81ea7a0557e28111b760b8a9bbf2bd -->
 | Generation | Disposition | Runway state |
 | --- | --- | --- |
 | g01 | open | planning_required |
@@ -85,4 +85,5 @@ or a downstream rollout wave.
 | --- | --- | --- | --- | --- |
 | g01.014 | complete | none | 8 | sha256:4dee75213a769e2735b3c74b73851aac34ad5ff43840b54b9fa902f332939473 |
 | g01.015 | complete | none | 8 | sha256:943f2d28a6f065768a9174720e1b0111ff4a7a6f09b0a9742b02eddf7f58a34d |
+| g01.016 | complete | none | 8 | sha256:22f379a3a2999a2ff95e5b10c116dfed358a527763875c71753eab276509a2ed |
 <!-- northstar:lifecycle:end -->
