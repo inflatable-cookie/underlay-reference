@@ -2,10 +2,9 @@
 
 Status: triage (non-authoritative; not scheduled, approved, or runnable)
 Captured: 2026-09-09
-Source: `docs/roadmaps/backlog/advanced-features.md` (deleted in the
-roadmap-backlog retirement; originally Phase 9 of
-`docs/roadmaps/g01/001-reference-completion.md`, moved to the backlog so core
-patterns and infrastructure stayed in focus)
+Source: the retired backlog advanced-features note (Git history); originally
+Phase 9 of the reference-completion milestone, moved aside so core patterns
+and infrastructure stayed in focus
 
 This is the single triage record for every deferred item the retired backlog
 held. None of this work was approved, scheduled, or started; promotion of any
@@ -26,8 +25,8 @@ conflicts).
   Acme placeholder code in `acme-auth/src/local.rs`).
 - Open questions: which provider goes first; how account-linking conflicts
   resolve against existing users.
-- Promotion condition: planning scopes a reference-app auth milestone and
-  assigns it a roadmap ID; suggested start is Google, then GitHub.
+- Promotion condition: planning scopes a reference-app auth milestone;
+  suggested start is Google, then GitHub.
 
 ### 2. Real-time Features
 
@@ -41,7 +40,7 @@ UI updates, presence indicators.
 - Open questions: transport choice (`axum` WebSocket support vs
   `tokio-tungstenite`); broadcast topology at scale.
 - Promotion condition: planning accepts the infrastructure cost and scopes
-  a real-time milestone with an owning roadmap ID.
+  a real-time milestone.
 
 ### 3. Multi-tenancy Example
 
@@ -55,7 +54,7 @@ schema), permission inheritance with resource-specific overrides.
 - Open questions: whether this belongs in this repo at all; research
   PostgreSQL row-level security first.
 - Promotion condition: planning rules it in scope for this repo (or charters
-  the separate implementation) and assigns an owning roadmap ID.
+  the separate implementation).
 
 ### 4. Advanced Media
 
@@ -68,20 +67,18 @@ reordering with manual gallery ordering.
   considerations).
 - Open questions: server-side library choice (`image-rs` was suggested);
   gallery ordering semantics.
-- Promotion condition: planning scopes a media milestone with an owning
-  roadmap ID. Video upload additionally needs the transcode-pipeline and
-  storage-cost decisions reversed first.
+- Promotion condition: planning scopes a media milestone. Video upload
+  additionally needs the transcode-pipeline and storage-cost decisions
+  reversed first.
 
-## Owner / Next Check
+## Owner
 
-No owner assigned. Next check: re-enter planning before opening `g01.014`;
-no implementation card is ready.
+No owner assigned. These candidates stay deferred until planning promotes
+one into `docs/plan.md`.
 
 ## Disposition
 
-All four candidates above stay deferred in triage. No approved executable
-work was found (nothing merged into a `gNN.NNN` task, no new task created:
-scope, generation, and frontier placement for these candidates remain
-planning decisions, not migration decisions). No durable rules or accepted
-design were found (the source's implementation notes are candidate
-guidance, preserved above as constraints, not promoted to any contract).
+All four candidates above stay deferred in triage. None were approved or
+started. No durable rules or accepted design were found (the source's
+implementation notes are candidate guidance, preserved above as
+constraints, not promoted to any contract).

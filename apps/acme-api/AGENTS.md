@@ -42,9 +42,9 @@ Repo notes:
 
 ## Reference Docs
 
-Use `../../docs/` as the reference-app docs authority. Do not create package-local roadmap or report docs.
+Use `../../docs/` as the reference-app docs authority. Do not create package-local planning or report docs.
 
-- `../../docs/processes/210-reference-implementation-notes.md`
+- `../../docs/knowledge/operations/reference-implementation-notes.md`
 - `../../../underlay/docs/guides/040-rust-backend.md`
 - `../../../underlay/docs/guides/050-database.md`
 - `../../../underlay/docs/guides/055-background-jobs.md`
@@ -54,7 +54,7 @@ Use `../../docs/` as the reference-app docs authority. Do not create package-loc
 
 Use the repo-local style reference for internal work and normal replies:
 
-- `../../docs/policy/internal-writing-style.md`
+- `../../docs/knowledge/contracts/writing-style.md`
 
 <!-- northstar:rust-quality:start -->
 ## Northstar Rust Quality
@@ -63,7 +63,7 @@ Scope: Rust source, Cargo manifests, build files, tests, and directly related
 documentation under this directory.
 
 Use Northstar's strict everyday-authoring route for ordinary Rust work. Resolve
-the repository-owned profile and deviations under `docs/contracts/`; never
+the repository-owned profile and deviations under `docs/knowledge/contracts/`; never
 assume a universal MSRV. Re-enter at task start and coherent batch closeout.
 Preserve unrelated work. A quality audit, no-slop pass, or audit-and-fix request
 is explicit audit intent; never route it through everyday authoring.
