@@ -11,7 +11,8 @@ apps. Prefer canonical, reusable patterns over one-off customization.
 - Open questions: `docs/knowledge/questions.md`
 - What's next: `docs/plan.md`
 - Unresolved leads: `docs/triage/`
-- Tool and process friction: `PAPERCUTS.md`
+- Papercuts: Queue via `papercut.add` (see the `northstar-lean` skill); no
+  `PAPERCUTS.md`.
 - Package implementation notes: `docs/knowledge/operations/reference-implementation-notes.md`
 
 Tasks, briefs and status live in Queue, never in this repository.
@@ -86,7 +87,7 @@ fastest-failing first:
 Root `effigy validate` and `effigy qa` also run the mounted sibling `underlay`
 and `poodle` catalogs. A failure there can be sibling-owned rather than yours,
 so read which repo the failing task ran in before treating it as a regression
-here. Open instances are tracked in `PAPERCUTS.md`.
+here. Open papercuts are tracked in Queue.
 
 ## Env And Secret Authority
 

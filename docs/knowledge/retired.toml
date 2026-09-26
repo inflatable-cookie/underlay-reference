@@ -10,3 +10,11 @@ owner = "docs/knowledge/README.md"
 terms = ["roadmap card", "generation index", "lifecycle record", "northstar:lifecycle", "chatterbox handoff", "Next Task"]
 paths = [".northstar/lifecycle/", "docs/roadmaps/", "docs/handoffs/", "docs/logs/", "docs/specs/", "docs/vision/", "docs/policy/", "docs/processes/"]
 config_keys = ["northstar/queue:hook", "paseo.queue.control.v4"]
+
+[[retired]]
+id = "papercuts-file"
+retired = "2026-09-26"
+replacement = "File papercuts in Queue with papercut.add; see the northstar-lean skill."
+owner = "AGENTS.md"
+terms = ["PAPERCUTS.md"]
+allow = ["docs/knowledge/contracts/working-rules.md", "docs/knowledge/evidence/**", "docs/logs/**", "CHANGELOG.md"]
