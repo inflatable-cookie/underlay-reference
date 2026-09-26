@@ -4,16 +4,6 @@ minimum_effigy_version = "0.7.0"
 [catalog]
 alias = "acme-docs"
 
-[docs_policy.indexes.vision]
-file = "vision/README.md"
-dir = "vision"
-section = "Vision Artifacts"
-
-[docs_policy.next_actions.vision]
-index = "vision"
-heading = "## Next Task"
-allowlist_file = "policy/vision-next-task-verbs.txt"
-
 [tasks]
 health = [
   { task = "check:rollout admin-freshness" },
@@ -31,16 +21,15 @@ qa = [
 ]
 
 "qa:docs" = [
-  { task = "docs check links README.md vision/README.md roadmaps/README.md logs/README.md" },
+  { task = "docs check links README.md knowledge/README.md plan.md" },
   { task = "docs check forbidden AGENTS.md README.md --forbid '--repo .'" },
   { task = "docs check forbidden AGENTS.md README.md ../package.json --forbid '--repo .'" },
   { task = "qa:northstar" },
 ]
 
 "qa:northstar" = [
-  { task = "docs check headings vision/README.md --require-heading '## Vision Artifacts' --require-heading '## Next Task'" },
-  { task = "docs check headings roadmaps/README.md --require-heading '## Rules' --require-heading '## Current generation' --require-heading '## Next Task'" },
-  { task = "docs check headings roadmaps/g01/README.md --require-heading '## Sequence' --require-heading '## Next roadmap' --require-heading '## Next Task'" },
+  { task = "docs check contains ../AGENTS.md --require 'effigy tasks' --require 'effigy test --plan' --require 'docs/README.md' --require 'docs/knowledge/README.md' --require 'docs/plan.md'" },
+  { task = "docs check contains README.md --require 'knowledge/README.md' --require 'plan.md'" },
 ]
 
 "check:rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]

@@ -28,9 +28,9 @@ the path.
 
 ## Reference Docs
 
-Use `../../docs/` as the reference-app docs authority. Do not create package-local roadmap or report docs.
+Use `../../docs/` as the reference-app docs authority. Do not create package-local planning or report docs.
 
-- `../../docs/processes/210-reference-implementation-notes.md`
+- `../../docs/knowledge/operations/reference-implementation-notes.md`
 - `../../../underlay/docs/guides/071-json-naming.md`
 - `../../../underlay/docs/guides/080-typescript-client.md`
 
@@ -38,4 +38,4 @@ Use `../../docs/` as the reference-app docs authority. Do not create package-loc
 
 Use the repo-local style reference for internal work and normal replies:
 
-- `../../docs/policy/internal-writing-style.md`
+- `../../docs/knowledge/contracts/writing-style.md`

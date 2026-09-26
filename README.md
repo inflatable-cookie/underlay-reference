@@ -35,14 +35,15 @@ Committed application dependencies resolve Underlay from the released Git tag
 
 ## Documentation Authority
 
-Reference-app planning and architecture live in `docs/`.
+Reference-app knowledge and intent live in `docs/`.
 
 - Start with `docs/README.md`
-- Use `docs/vision/001-acme-reference-implementation-vision.md` for the long-term role of the repo
-- Use `docs/architecture/000-overview.md` for the package map and system layout
-- Use `docs/architecture/product-guardrails.md` for the active retained-surface guardrails
-- Use `docs/policy/001-working-rules.md` for the active strict execution rules
-- Use `docs/processes/210-reference-implementation-notes.md` for implementation notes and validation commands
+- Use `docs/knowledge/vision.md` for the long-term role of the repo
+- Use `docs/knowledge/architecture/000-overview.md` for the package map and system layout
+- Use `docs/knowledge/architecture/product-guardrails.md` for the active retained-surface guardrails
+- Use `docs/knowledge/contracts/working-rules.md` for the working rules
+- Use `docs/knowledge/operations/reference-implementation-notes.md` for implementation notes and validation commands
+- Use `docs/plan.md` for what matters next
 
 `AGENTS.md` files in this repository are intentionally kept lean and point back to that docs authority.
 

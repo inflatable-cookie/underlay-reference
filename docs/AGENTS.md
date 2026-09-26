@@ -2,16 +2,18 @@
 
 ## Scope
 
-Root `docs/` is the documentation authority for the Underlay reference implementation, addressed through the `acme-docs` Effigy catalog alias. Keep planning, architecture, and execution history here rather than in package-local docs.
+Root `docs/` is the documentation authority for the Underlay reference
+implementation, addressed through the `acme-docs` Effigy catalog alias. Keep
+knowledge and intent here rather than in package-local docs.
 
 ## Hard Rules
 
-- Put reference-app roadmap work in `roadmaps/g*/` with three-digit IDs. Roadmaps hold only promoted executable tasks; unresolved or deferred candidates go in `triage/` until planning promotes them.
-- Put execution history and sweep closeouts in `logs/YYYY-MM/` using `DD-HHMMSS-slug.md` filenames.
+- Current truth lives in `knowledge/`, one owner per fact. See `knowledge/README.md`.
+- Intent lives in `plan.md`. Unresolved leads live in `triage/` and are never
+  authority.
 - Do not leave compatibility shim docs behind after moves; update links in place.
-- Keep `vision/` high-level and stable, `architecture/` concrete, and `processes/` operational.
-- Prefer Underlay source docs for shared framework doctrine and root `docs/` for reference-app-specific application.
-- Keep new roadmap work in roadmap-ID and batch language. Treat inherited phase-era wording in imported roadmap files as historical unless a file is reopened for active work.
+- Prefer Underlay source docs for shared framework doctrine and root `docs/`
+  for reference-app-specific application.
 
 ## Effigy-First Execution
 
@@ -35,18 +37,17 @@ Repo notes:
 - `effigy acme-docs/health`
 - `effigy acme-docs/validate`
 - `effigy acme-docs/qa:docs`
-- Confirm docs do not reintroduce deprecated flat docs paths when editing historical references.
 
 ## Reference Docs
 
-- `vision/001-acme-reference-implementation-vision.md`
-- `architecture/000-overview.md`
-- `processes/210-reference-implementation-notes.md`
-- `roadmaps/README.md`
-- `logs/README.md`
+- `knowledge/README.md`
+- `knowledge/vision.md`
+- `knowledge/architecture/000-overview.md`
+- `knowledge/operations/reference-implementation-notes.md`
+- `plan.md`
 
 ## Internal Writing Style
 
 Use the repo-local style reference for internal work and normal replies:
 
-- `policy/internal-writing-style.md`
+- `knowledge/contracts/writing-style.md`

@@ -1,23 +1,23 @@
 # Agents Guide: Underlay Reference Implementation
 
-## Purpose
+This repository is a **reference template** for bootstrapping Underlay-based
+apps. Prefer canonical, reusable patterns over one-off customization.
 
-This repository is a **reference template** for bootstrapping Underlay-based apps. Prefer canonical, reusable patterns over one-off customization.
+## Where things live
 
-## Keep AGENTS Lean
+- Current state: `docs/README.md`
+- Knowledge (one owner per fact): `docs/knowledge/README.md`
+- Retired concepts, which must not come back: `docs/knowledge/retired.toml`
+- Open questions: `docs/knowledge/questions.md`
+- What's next: `docs/plan.md`
+- Unresolved leads: `docs/triage/`
+- Tool and process friction: `PAPERCUTS.md`
+- Package implementation notes: `docs/knowledge/operations/reference-implementation-notes.md`
 
-This root file carries repository-wide authority. The app and package
-`AGENTS.md` files under it should stay to four things:
+Tasks, briefs and status live in Queue, never in this repository.
 
-1. Scope and intent
-2. Hard operational rules that are genuinely local to that unit
-3. Minimal validation commands
-4. Links to detailed docs
-
-A nested file should point at this one rather than restate it. Detailed
-implementation notes are documented in:
-- `docs/processes/210-reference-implementation-notes.md`
-- `README.md`
+Nested `AGENTS.md` files stay to four things: scope, local hard rules, validation
+commands, and links. Point here rather than restating.
 
 ## Hard Rules
 
@@ -30,11 +30,10 @@ implementation notes are documented in:
 - Use `bun` for TypeScript/Svelte tasks.
 - Keep wire JSON naming and API conventions aligned with Underlay guides.
 - Keep changes scoped; avoid unrelated refactors.
-- Worker mode is active only when an orchestrator-dispatched handoff under
-  `docs/handoffs/` declares worker mode; read that handoff instead of inferring
-  worker mode from a path, branch, or harness. The operator-facing dispatch
-  path is absolute and names this owning repo. Do not treat an Underlay-relative
-  `docs/handoffs/…` lookup as the dispatch artifact.
+- When a change alters what is true, update the owning knowledge file in the
+  same PR.
+- An operator ruling given in conversation goes into its owning file before
+  the thread ends.
 
 ## Effigy-First Execution
 
@@ -99,20 +98,17 @@ here. Open instances are tracked in `PAPERCUTS.md`.
   runtime injection or the local vault.
 - Never commit a secret value. The authority files carry keys only.
 
-## Source of Truth
+## Shared framework docs
 
-For reference-app planning and architecture, prefer `docs/`. In the
-active strict lane, a bare `continue` should resolve through the previous
-`Next Task` into the current ready card under `docs/specs/` or back into
-planning if no ready card exists. For shared framework conventions, prefer
-Underlay docs in `../underlay/docs/guides/`. Do not create parallel roadmap or
-report docs elsewhere in this repo.
+For shared framework conventions, prefer Underlay docs in
+`../underlay/docs/guides/`. Do not create parallel planning or report docs
+elsewhere in this repo.
 
 ## Internal Writing Style
 
 Use the repo-local style reference for internal work and normal replies:
 
-- `docs/policy/internal-writing-style.md`
+- `docs/knowledge/contracts/writing-style.md`
 
 <!-- BEGIN EFFIGY AGENT CONTRACT -->
 ## Effigy Agent Contract
