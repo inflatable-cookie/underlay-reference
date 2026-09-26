@@ -11,7 +11,7 @@ apps. Prefer canonical, reusable patterns over one-off customization.
 - Open questions: `docs/knowledge/questions.md`
 - What's next: `docs/plan.md`
 - Unresolved leads: `docs/triage/`
-- Papercuts: Queue via `papercut.add` (see the `northstar-lean` skill); no
+- Papercuts: Queue via `papercut.add` (see the `northstar` skill); no
   `PAPERCUTS.md`.
 - Package implementation notes: `docs/knowledge/operations/reference-implementation-notes.md`
 

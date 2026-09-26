@@ -12,7 +12,7 @@ Depends on: [architecture overview](../architecture/000-overview.md)
   inventing the next wave.
 - Update code, knowledge, tests, and indexes together when they form one
   observable change.
-- File process friction in Queue with `papercut.add` (see the `northstar-lean`
+- File process friction in Queue with `papercut.add` (see the `northstar`
   skill); this repository has no `PAPERCUTS.md`.
 
 ## Retained-surface rule
