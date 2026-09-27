@@ -21,7 +21,7 @@ contract names it.
 
 ## What's next
 
-See [plan.md](plan.md). Unresolved leads are in [triage/](triage/).
+The project's plan is in Queue: its lanes, their documents and their order.
 
 ## Docs catalog
 

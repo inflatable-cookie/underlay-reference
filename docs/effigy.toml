@@ -28,8 +28,8 @@ qa = [
 ]
 
 "qa:northstar" = [
-  { task = "docs check contains ../AGENTS.md --require 'effigy tasks' --require 'effigy test --plan' --require 'docs/README.md' --require 'docs/knowledge/README.md' --require 'docs/plan.md'" },
-  { task = "docs check contains README.md --require 'knowledge/README.md' --require 'plan.md'" },
+  { task = "docs check contains ../AGENTS.md --require 'effigy tasks' --require 'effigy test --plan' --require 'docs/README.md' --require 'docs/knowledge/README.md'" },
+  { task = "docs check contains README.md --require 'knowledge/README.md'" },
 ]
 
 "check:rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]

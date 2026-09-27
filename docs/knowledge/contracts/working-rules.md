@@ -5,7 +5,7 @@ Depends on: [architecture overview](../architecture/000-overview.md)
 
 ## Execution
 
-- Start through `docs/README.md`, `docs/plan.md`, `effigy tasks`, and
+- Start through `docs/README.md`, the Queue plan, `effigy tasks`, and
   `effigy test --plan`.
 - Keep a change bounded to one coherent outcome.
 - When the next direction is materially ambiguous, stop and ask instead of

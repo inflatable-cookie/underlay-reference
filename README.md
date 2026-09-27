@@ -43,7 +43,7 @@ Reference-app knowledge and intent live in `docs/`.
 - Use `docs/knowledge/architecture/product-guardrails.md` for the active retained-surface guardrails
 - Use `docs/knowledge/contracts/working-rules.md` for the working rules
 - Use `docs/knowledge/operations/reference-implementation-notes.md` for implementation notes and validation commands
-- Use `docs/plan.md` for what matters next
+- Use the Queue plan (`plan.get`) for what matters next
 
 `AGENTS.md` files in this repository are intentionally kept lean and point back to that docs authority.
 
