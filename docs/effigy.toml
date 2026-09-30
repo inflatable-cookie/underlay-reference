@@ -28,7 +28,7 @@ qa = [
 ]
 
 "qa:northstar" = [
-  { task = "docs check contains ../AGENTS.md --require 'effigy tasks' --require 'effigy test --plan' --require 'docs/README.md' --require 'docs/knowledge/README.md'" },
+  { task = "docs check contains ../AGENTS.md --require 'Effigy Agent Skill' --require 'effigy acme-docs/qa:docs' --require 'docs/README.md' --require 'docs/knowledge/README.md'" },
   { task = "docs check contains README.md --require 'knowledge/README.md'" },
 ]
 
