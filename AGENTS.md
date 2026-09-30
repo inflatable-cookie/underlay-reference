@@ -38,9 +38,8 @@ commands, and links. Point here rather than restating.
 
 ## Effigy-First Execution
 
-Effigy is the default command surface. Route by job, not by a startup sequence —
-the Effigy Agent Contract at the end of this file is the routing rule. Two things
-are specific to this workspace and are not in that block:
+Effigy is the default command surface. Use the installed Effigy Agent Skill for
+shared command routing. These rules are specific to this workspace:
 
 - JS/Svelte work needs one frozen root install first: `effigy workspace:js:prepare`.
   That is the only install; never run a per-package `bun install`.
@@ -74,20 +73,20 @@ Workspace notes:
 
 ## Validation
 
-Run `effigy workspace:js:prepare` first if dependencies are not installed. Then,
-fastest-failing first:
+Run `effigy workspace:js:prepare` first if JavaScript dependencies are missing.
+Choose the narrowest selector for the change, and run each required check once:
 
-- `effigy health` — fmt plus a cheap typecheck/`cargo check` across the workspace
-- `effigy qa:docs` and `effigy qa:northstar` — docs authority checks (acme-docs)
-- `effigy qa:conformance` — released workspace-shape + env-authority checkers
-- `effigy <catalog>/validate` for each catalog you touched — `acme-api`,
-  `acme-admin`, `acme-front`, `acme-client`, `acme-ui`, `acme-docs`. These are
-  the authoritative per-package gates.
+- Docs-only changes: `effigy acme-docs/qa:docs`.
+- Package changes: the touched catalog's `validate` selector — `acme-api`,
+  `acme-admin`, `acme-front`, `acme-client`, `acme-ui`, or `acme-docs` — when
+  the change needs that package gate.
+- Workspace changes: `effigy health` for the cheap workspace check.
 
-Root `effigy validate` and `effigy qa` also run the mounted sibling `underlay`
-and `poodle` catalogs. A failure there can be sibling-owned rather than yours,
-so read which repo the failing task ran in before treating it as a regression
-here. Open papercuts are tracked in Queue.
+Run full `effigy qa` and workspace conformance checks on `main` at Queue
+milestones, not as a per-task default. Root `effigy validate` and `effigy qa`
+also run the mounted sibling `underlay` and `poodle` catalogs; read the task
+output to identify which repository owns any failure. Open papercuts are
+tracked in Queue.
 
 ## Env And Secret Authority
 
@@ -111,37 +110,19 @@ Use the repo-local style reference for internal work and normal replies:
 
 - `docs/knowledge/contracts/writing-style.md`
 
-<!-- BEGIN EFFIGY AGENT CONTRACT -->
-## Effigy Agent Contract
+## Effigy Agent Skill
 
-Use Effigy as the default command surface for supported project work.
+Use the maintained Effigy Agent Skill from the installed user-level skill
+roots, normally `~/.agents/skills/effigy`. Other supported roots should resolve
+to that same canonical directory. If the skill is missing or roots resolve to
+different trees, refresh the maintained skill at the canonical root, fix the
+aliases, then start a fresh agent context. Do not add a repository-local copy;
+plain `effigy init` does not install or refresh the skill.
 
-Route by job, not by startup ritual:
-- use `effigy graph` for code understanding
-- use `effigy tasks` for selector inventory
-- use `effigy doctor` for routing ambiguity or repo health
-- use `effigy test --plan` when test execution shape matters
-
-Use `effigy graph` when the job is code understanding: ownership, flow,
-implementation, or changed-file impact. Do not insert graph into unrelated
-deployment, state, docs, release, or direct task-execution work.
-
-Prefer `effigy <task>`, `effigy test`, and the matching built-in surface over
-raw package-manager or shell commands when Effigy covers the path. Use
-`effigy --json <command>` whenever another agent or tool will consume output.
-
-This repo's local `.agents/skills/effigy` copy is authoritative for this
-project. When an agent supports both project-local and global skills, prefer
-the project-local copy over any globally installed Effigy skill.
-
-Do not add `--repo .` while already inside the target repo. Do not edit
-`.github/workflows/` or run release mutations unless the user explicitly asks.
-
-Reference docs:
-- Effigy agent adoption: `docs/guides/047-agent-and-cross-repo-adoption.md`
-- Graph workflows: `docs/guides/076-code-graph-and-agent-workflows.md`
-- JSON contracts: `docs/guides/017-json-output-contracts.md`
-<!-- END EFFIGY AGENT CONTRACT -->
+The installed skill and `effigy` executable are separate. Check the executable
+with `command -v effigy`; when host-wide admission is needed, require
+`effigy admission status --json` to report `effigy.admission.status.v1`.
+Repository selectors and runtime guardrails remain in this file.
 
 <!-- northstar:typescript-quality:start -->
 ## Northstar TypeScript/Svelte explicit audit
