@@ -100,8 +100,6 @@ underlay-reference/
 │
 ├── docs/                  # Documentation authority
 │   ├── knowledge/         # Current truth, one owner per fact
-│   ├── plan.md            # What matters next
-│   ├── triage/            # Unresolved leads (never authority)
 │   └── scripts/           # Effigy Rhai rollout-check helpers
 │
 ├── config/                # Workspace-root config stack

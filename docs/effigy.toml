@@ -21,7 +21,7 @@ qa = [
 ]
 
 "qa:docs" = [
-  { task = "docs check links README.md knowledge/README.md plan.md" },
+  { task = "docs check links README.md knowledge/README.md" },
   { task = "docs check forbidden AGENTS.md README.md --forbid '--repo .'" },
   { task = "docs check forbidden AGENTS.md README.md ../package.json --forbid '--repo .'" },
   { task = "qa:northstar" },
