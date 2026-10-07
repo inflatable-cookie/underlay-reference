@@ -85,9 +85,8 @@ sequences. Run it explicitly with `effigy acme-front/test` once it has tests.
 The plan header reports `targets: 3` for that reason; read it rather than
 counting summary rows.
 
-The root test fanout excludes the `underlay` and `poodle` catalog aliases.
-The current Effigy bundle still declares those sibling catalogs, so task
-discovery and root `validate`/`qa` require sibling checkouts.
+The root plan contains this repository's catalogs only. Underlay and Poodle
+are released application dependencies, not sibling catalog checkouts.
 Database-backed Rust tests skip themselves unless `DATABASE_URL` or
 `TEST_DATABASE_URL` is set, so a plain `effigy test` stays useful without a
 running stack.
@@ -179,8 +178,8 @@ Bootstrap notes:
 - setup starts the workspace container and runs one frozen root workspace
   install; there is no per-package install step
 - this workspace uses released Underlay `v0.10.2` and Poodle `0.4.6`
-  dependencies; the current Effigy bundle still declares sibling catalogs for
-  task discovery
+  dependencies; its Effigy bundle opts out of sibling catalogs, bootstrap
+  children, and dependency sync
 - add `--start` when you want it to launch the root `dev` stack after setup
 
 ## Development Setup

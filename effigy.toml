@@ -1,5 +1,5 @@
 [manifest]
-minimum_effigy_version = "0.11.0"
+minimum_effigy_version = "0.13.1"
 
 [catalog]
 alias = "underlay-reference"
@@ -10,6 +10,9 @@ host = "acme.test"
 project_name = "underlay-reference-dev"
 workspace_subdir = "underlay-reference"
 databases = ["acme"]
+
+[bundle.sources]
+siblings = false
 
 # Physical ownership paths for the monorepo workspace shape (Underlay contract
 # 024). These feed catalog members, container isolated dirs, deploy source
@@ -32,9 +35,6 @@ admin = "acme-admin"
 
 [bundle.workspace]
 js_root = true
-
-[test]
-exclude_catalogs = ["poodle", "underlay"]
 
 # Released-package conformance. These run the binaries published by the
 # @inflatable-cookie/underlay dependency. Requires one prior

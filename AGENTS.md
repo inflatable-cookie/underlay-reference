@@ -69,8 +69,8 @@ Workspace notes:
 - when modifying a specific repo, follow that repo's local `AGENTS.md`
 - do not treat `cargo build`, `bun check`, or ad hoc shell commands as the default entrypoint when an Effigy task exists
 - This workspace consumes released Underlay `v0.10.2` and Poodle `0.4.6`
-  dependencies. The current Underlay Effigy bundle still declares sibling
-  catalogs for task discovery.
+  dependencies. Its Effigy bundle disables sibling catalogs and bootstrap
+  children with `bundle.sources.siblings = false`.
 - treat this repo as the canonical underlay consumer shape; prefer fixing shared patterns here or in the bundle before inventing app-specific exceptions elsewhere
 
 ## Validation
@@ -86,8 +86,8 @@ Choose the narrowest selector for the change, and run each required check once:
 
 Run full `effigy qa` and workspace conformance checks on `main` at Queue
 milestones, not as a per-task default. Root `effigy validate` and `effigy qa`
-follow the catalogs declared by the effective bundle. Open papercuts are
-tracked in Queue.
+cover this repository's catalogs; the bundle opts out of sibling catalogs.
+Open papercuts are tracked in Queue.
 
 ## Env And Secret Authority
 
