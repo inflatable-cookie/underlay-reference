@@ -5,7 +5,7 @@ runtime, a typed TypeScript client, an admin frontend, and a public
 frontend. Copy the repo and rename `acme`. It is a bootstrap target, not a
 product strategy surface.
 
-The workspace pins Underlay `v0.10.2` and public Poodle `0.4.6`. The retained
+The workspace pins Underlay `v0.10.2` and public Poodle `0.4.11`. The retained
 Underlay surface of `acme-admin` is frozen. Downstream apps use Poodle for
 primitives and simple composites, and keep Underlay only where the retained
 contract names it.

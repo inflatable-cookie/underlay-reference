@@ -2,7 +2,7 @@
 
 Status: active
 Owner: repo maintainers
-Updated: 2026-09-05
+Updated: 2026-10-07
 Governing refs: [product-guardrails.md](product-guardrails.md), [working-rules.md](../contracts/working-rules.md)
 
 ## Purpose
@@ -17,7 +17,7 @@ or data-heavy ownership.
 Path references are repo-root-relative to the `underlay-reference`
 checkout. Classifications come from live `acme-admin` source inspection on
 2026-09-03. The workspace now resolves Underlay v0.10.2 and public Poodle
-0.4.6.
+0.4.11.
 
 ## Downstream rule
 

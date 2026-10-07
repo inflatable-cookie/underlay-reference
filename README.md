@@ -193,7 +193,7 @@ The reference template consumes Underlay from the released Git repository:
 underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.10.2" }
 ```
 
-Poodle core/Svelte packages resolve from the public npm registry at `0.4.6`.
+Poodle core/Svelte packages resolve from the public npm registry at `0.4.11`.
 
 For lockstep Underlay framework development inside this workspace, Effigy may
 still mount a sibling `../underlay` checkout. Use `effigy deps link` when you
