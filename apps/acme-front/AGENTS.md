@@ -29,8 +29,8 @@ Run `effigy tasks` from `apps/acme-front/` to see what this app owns, and prefer
 Use `../../docs/` as the reference-app docs authority. Do not create package-local planning or report docs.
 
 - `../../docs/knowledge/operations/reference-implementation-notes.md`
-- `../../../underlay/docs/guides/066-spa-deployment-and-static-auth.md`
-- `../../../underlay/docs/guides/100-frontend-web.md`
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/066-spa-deployment-and-static-auth.md>
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/100-frontend-web.md>
 
 ## Internal Writing Style
 

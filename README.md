@@ -85,7 +85,9 @@ sequences. Run it explicitly with `effigy acme-front/test` once it has tests.
 The plan header reports `targets: 3` for that reason; read it rather than
 counting summary rows.
 
-Sibling `underlay` and `poodle` are excluded from the root plan.
+The root test fanout excludes the `underlay` and `poodle` catalog aliases.
+The current Effigy bundle still declares those sibling catalogs, so task
+discovery and root `validate`/`qa` require sibling checkouts.
 Database-backed Rust tests skip themselves unless `DATABASE_URL` or
 `TEST_DATABASE_URL` is set, so a plain `effigy test` stays useful without a
 running stack.
@@ -176,9 +178,9 @@ Bootstrap notes:
   repo-owned `[bootstrap]` contract
 - setup starts the workspace container and runs one frozen root workspace
   install; there is no per-package install step
-- the Effigy bundle may mount sibling `../underlay` and `../poodle` for local
-  framework development, cross-repo QA scripts, and docs — those mounts are not
-  the committed application dependency source
+- this workspace uses released Underlay `v0.10.2` and Poodle `0.4.6`
+  dependencies; the current Effigy bundle still declares sibling catalogs for
+  task discovery
 - add `--start` when you want it to launch the root `dev` stack after setup
 
 ## Development Setup
@@ -195,10 +197,9 @@ underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", t
 
 Poodle core/Svelte packages resolve from the public npm registry at `0.4.6`.
 
-For lockstep Underlay framework development inside this workspace, Effigy may
-still mount a sibling `../underlay` checkout. Use `effigy deps link` when you
-need to temporarily point Cargo or Bun back at that checkout; restore the tagged
-dependencies before opening a consumer adoption PR.
+These release pins are the supported application dependency shape. Update
+them as part of a deliberate dependency upgrade; package resolution does not
+link sibling source checkouts.
 
 ## What's Included
 

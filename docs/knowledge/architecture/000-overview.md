@@ -111,7 +111,8 @@ underlay-reference/
 The JavaScript workspace members are `apps/acme-admin`, `apps/acme-front`,
 `packages/acme-client`, and `packages/acme-ui`. `apps/acme-api` is Rust-only and
 keeps its Cargo workspace app-local. Underlay and Poodle arrive as released
-dependencies; sibling checkouts are QA/tooling mounts only.
+application dependencies; the current Effigy bundle still declares sibling
+catalogs for task discovery.
 
 ## Technology Stack
 

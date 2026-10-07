@@ -29,9 +29,9 @@ Run `effigy tasks` from `apps/acme-admin/` to see what this app owns, and prefer
 Use `../../docs/` as the reference-app docs authority. Do not create package-local planning or report docs.
 
 - `../../docs/knowledge/operations/reference-implementation-notes.md`
-- `../../../underlay/docs/guides/090-ui-kit.md`
-- `../../../underlay/docs/guides/098-shared-admin-patterns.md`
-- `../../../underlay/docs/guides/110-admin.md`
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/090-ui-kit.md>
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/098-shared-admin-patterns.md>
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/110-admin.md>
 
 ## Internal Writing Style
 

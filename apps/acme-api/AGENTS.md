@@ -45,10 +45,10 @@ Repo notes:
 Use `../../docs/` as the reference-app docs authority. Do not create package-local planning or report docs.
 
 - `../../docs/knowledge/operations/reference-implementation-notes.md`
-- `../../../underlay/docs/guides/040-rust-backend.md`
-- `../../../underlay/docs/guides/050-database.md`
-- `../../../underlay/docs/guides/055-background-jobs.md`
-- `../../../underlay/docs/guides/070-api-handlers.md`
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/040-rust-backend.md>
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/050-database.md>
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/055-background-jobs.md>
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/070-api-handlers.md>
 
 ## Internal Writing Style
 
