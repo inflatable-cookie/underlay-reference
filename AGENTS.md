@@ -68,7 +68,7 @@ Workspace notes:
   `qa:docs` and `qa:northstar` (acme-docs), `migration:*` (acme-api)
 - when modifying a specific repo, follow that repo's local `AGENTS.md`
 - do not treat `cargo build`, `bun check`, or ad hoc shell commands as the default entrypoint when an Effigy task exists
-- This workspace consumes released Underlay `v0.10.2` and Poodle `0.4.6`
+- This workspace consumes released Underlay and Poodle versions (pinned in `effigy.toml`, `Cargo.toml` and the `package.json` files)
   dependencies. Its Effigy bundle disables sibling catalogs and bootstrap
   children with `bundle.sources.siblings = false`.
 - treat this repo as the canonical underlay consumer shape; prefer fixing shared patterns here or in the bundle before inventing app-specific exceptions elsewhere

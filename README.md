@@ -177,7 +177,7 @@ Bootstrap notes:
   repo-owned `[bootstrap]` contract
 - setup starts the workspace container and runs one frozen root workspace
   install; there is no per-package install step
-- this workspace uses released Underlay `v0.10.2` and Poodle `0.4.6`
+- this workspace uses released Underlay and Poodle versions (pinned in `effigy.toml`, `Cargo.toml` and the `package.json` files)
   dependencies; its Effigy bundle opts out of sibling catalogs, bootstrap
   children, and dependency sync
 - add `--start` when you want it to launch the root `dev` stack after setup
