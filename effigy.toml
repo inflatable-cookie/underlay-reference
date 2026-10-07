@@ -39,6 +39,19 @@ mounts = [{ member = "underlay" }, { member = "poodle" }]
 [test]
 exclude_catalogs = ["poodle", "underlay"]
 
+# The bundle default validates the mounted Underlay source as part of the
+# consumer's root validation. Keep root validate/qa scoped to this workspace's
+# catalogs; the sibling remains available through its direct selector.
+[tasks.validate]
+run = [
+  { task = "acme-docs/validate" },
+  { task = "acme-api/validate" },
+  { task = "acme-client/validate" },
+  { task = "acme-ui/validate" },
+  { task = "acme-admin/validate" },
+  { task = "acme-front/validate" },
+]
+
 [tasks."qa:security"]
 run = "../underlay/scripts/check-consumer-conformance.sh ."
 run_in = "host"
