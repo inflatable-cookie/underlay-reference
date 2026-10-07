@@ -31,8 +31,8 @@ the path.
 Use `../../docs/` as the reference-app docs authority. Do not create package-local planning or report docs.
 
 - `../../docs/knowledge/operations/reference-implementation-notes.md`
-- `../../../underlay/docs/guides/071-json-naming.md`
-- `../../../underlay/docs/guides/080-typescript-client.md`
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/071-json-naming.md>
+- <https://github.com/inflatable-cookie/underlay/blob/v0.10.2/docs/guides/080-typescript-client.md>
 
 ## Internal Writing Style
 

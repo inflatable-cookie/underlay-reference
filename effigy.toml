@@ -1,5 +1,5 @@
 [manifest]
-minimum_effigy_version = "0.11.0"
+minimum_effigy_version = "0.13.1"
 
 [catalog]
 alias = "underlay-reference"
@@ -10,6 +10,9 @@ host = "acme.test"
 project_name = "underlay-reference-dev"
 workspace_subdir = "underlay-reference"
 databases = ["acme"]
+
+[bundle.sources]
+siblings = false
 
 # Physical ownership paths for the monorepo workspace shape (Underlay contract
 # 024). These feed catalog members, container isolated dirs, deploy source
@@ -33,23 +36,8 @@ admin = "acme-admin"
 [bundle.workspace]
 js_root = true
 
-[systems.dev]
-mounts = [{ member = "underlay" }, { member = "poodle" }]
-
-[test]
-exclude_catalogs = ["poodle", "underlay"]
-
-[tasks."qa:security"]
-run = "../underlay/scripts/check-consumer-conformance.sh ."
-run_in = "host"
-
-[tasks."qa:templates"]
-run = "../underlay/scripts/check-template-conformance.sh apps/acme-admin"
-run_in = "host"
-
 # Released-package conformance. These run the binaries published by the
-# @inflatable-cookie/underlay dependency, not sibling Underlay source, so the
-# proof holds without an ../underlay checkout. Requires one prior
+# @inflatable-cookie/underlay dependency. Requires one prior
 # `effigy workspace:js:prepare`.
 [tasks."qa:workspace-shape"]
 run = "./node_modules/.bin/underlay-workspace-shape ."
