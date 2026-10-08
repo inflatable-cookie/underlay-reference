@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@inflatable-cookie/poodle-svelte": "0.4.11",
-    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.10.2",
+    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.10.3",
     "marked": "^18.0.9"
   }
 }

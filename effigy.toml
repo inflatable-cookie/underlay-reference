@@ -39,6 +39,10 @@ js_root = true
 # Released-package conformance. These run the binaries published by the
 # @inflatable-cookie/underlay dependency. Requires one prior
 # `effigy workspace:js:prepare`.
+[tasks."qa:security"]
+run = "./node_modules/.bin/underlay-consumer-security ."
+run_in = "host"
+
 [tasks."qa:workspace-shape"]
 run = "./node_modules/.bin/underlay-workspace-shape ."
 run_in = "host"
@@ -49,6 +53,7 @@ run_in = "host"
 
 [tasks."qa:conformance"]
 run = [
+  { task = "qa:security" },
   { task = "qa:workspace-shape" },
   { task = "qa:env-authority" },
 ]

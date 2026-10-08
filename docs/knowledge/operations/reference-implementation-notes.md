@@ -198,6 +198,23 @@ For future structured fields, extend the Nightfire module set first. Do not re-i
 2. Add navigation entry in `apps/acme-admin/src/lib/ui/AdminNavList.svelte`.
 3. Prefer shared Underlay page/layout components.
 
+## Consumer security conformance
+
+Run `effigy qa:security` for the released `underlay-consumer-security`
+checker. `effigy qa:conformance` includes this check alongside workspace-shape
+and env-authority checks. The checker covers static patterns for fail-closed
+environment defaults, database error helpers, development-only OpenAPI mounts
+and seeds, HTML and SVG sanitization, served CSP, tracked secret files, TOTP
+cipher use, canonical sessions and refresh checks, role hierarchy, batched
+reorder and row reads, bounded list queries, detail-page fan-out, canonical
+CORS, and frontend build environment reads.
+
+The checks are source analysis, not proof of all runtime security behavior.
+They distinguish query-local bounds and documented bounded-read allowances
+from unbounded reads, and require development-only gates for OpenAPI mounts.
+A passing result covers only the checks that ran; an all-skipped run exits 2
+and reports that coverage was not assessed.
+
 ## Validation quick commands
 
 ```bash
