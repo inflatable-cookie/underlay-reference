@@ -103,6 +103,95 @@ async fn legitimate_refresh_chain_stays_valid() {
 }
 
 #[tokio::test]
+async fn passkey_internal_credential_read_traverses_all_batches() {
+    let Some((service, pool)) = test_service().await else {
+        return;
+    };
+
+    let registered = service
+        .register(
+            &unique_email("passkey-batch"),
+            TEST_PASSWORD,
+            "Passkey Batch Test",
+        )
+        .await
+        .expect("register fixture user");
+    let owner_id = registered.user.id.into_inner();
+    let foreign_owner_id = uuid::Uuid::now_v7();
+    sqlx::query("INSERT INTO auth.users (id, email) VALUES ($1, $2)")
+        .bind(foreign_owner_id)
+        .bind(unique_email("passkey-foreign"))
+        .execute(&pool)
+        .await
+        .expect("insert foreign owner");
+
+    let credential_ids = (0..205).map(|_| uuid::Uuid::now_v7()).collect::<Vec<_>>();
+    let mut expected_ids = credential_ids
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>();
+    expected_ids.sort();
+    sqlx::query(
+        r#"
+        INSERT INTO auth.credentials (id, user_id, type, secret_encrypted, metadata, verified)
+        SELECT id, $1, 'passkey',
+               jsonb_build_object(
+                   'credential_id', id::text,
+                   'passkey_json', '{}',
+                   'counter', NULL::text
+               )::text,
+               '{}'::jsonb, TRUE
+        FROM UNNEST($2::uuid[]) AS credential_ids(id)
+        "#,
+    )
+    .bind(owner_id)
+    .bind(&credential_ids)
+    .execute(&pool)
+    .await
+    .expect("insert passkey batch fixtures");
+
+    let excluded_ids = [uuid::Uuid::now_v7(), uuid::Uuid::now_v7()];
+    sqlx::query(
+        r#"
+        INSERT INTO auth.credentials (id, user_id, type, secret_encrypted, metadata, verified)
+        SELECT id, user_id, 'passkey',
+               jsonb_build_object(
+                   'credential_id', id::text,
+                   'passkey_json', '{}',
+                   'counter', NULL::text
+               )::text,
+               '{}'::jsonb, verified
+        FROM (VALUES ($1::uuid, $2::uuid, FALSE), ($3::uuid, $4::uuid, TRUE))
+             AS excluded(id, user_id, verified)
+        "#,
+    )
+    .bind(excluded_ids[0])
+    .bind(owner_id)
+    .bind(excluded_ids[1])
+    .bind(foreign_owner_id)
+    .execute(&pool)
+    .await
+    .expect("insert excluded passkey fixtures");
+
+    let passkeys = service
+        .find_passkey_credentials(registered.user.id)
+        .await
+        .expect("internal passkey read should traverse every batch");
+    let actual_ids = passkeys
+        .into_iter()
+        .map(|passkey| passkey.credential_id)
+        .collect::<Vec<_>>();
+    assert_eq!(actual_ids, expected_ids);
+
+    sqlx::query("DELETE FROM auth.users WHERE id = $1 OR id = $2")
+        .bind(owner_id)
+        .bind(foreign_owner_id)
+        .execute(&pool)
+        .await
+        .expect("cleanup passkey batch fixtures");
+}
+
+#[tokio::test]
 async fn totp_verification_is_throttled_per_user() {
     let Some((service, pool)) = test_service().await else {
         return;
