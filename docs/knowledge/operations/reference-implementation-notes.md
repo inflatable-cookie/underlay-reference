@@ -58,6 +58,14 @@ consumer security findings under these constraints:
 - Shared Underlay API changes, a new release, a new retention or resource-cap
   policy, and broader migrations require a separate ruling.
 
+### Isolated database validation
+
+PostgreSQL test servers run in disposable owned containers, not as host builds
+or host services. This is the operator's 2026-10-10 ruling. An unavailable
+container runtime is a fixture prerequisite to resolve; it does not authorize
+a host PostgreSQL substitute. Use fresh test data and preserve the operator's
+database, containers and configuration.
+
 ### Reorder conflict recovery (canonical-order lists only)
 
 - Canonical manual-order entities support reorder:
