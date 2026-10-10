@@ -40,6 +40,24 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 - Conflict-prone update endpoints should accept `If-Match` and return `412` with code `resource.precondition_failed` on mismatch.
 - Successful updates should return fresh payload + fresh `ETag` + admin cache-control header.
 
+### Bounded reads and OpenAPI exposure
+
+The operator's 2026-10-10 ruling permits scoped remediation of the retained
+consumer security findings under these constraints:
+
+- List reads use deterministic bounded pages or batches. Update affected API,
+  typed client and UI contracts together when the response shape changes.
+- Callers that require complete results, including media reconciliation,
+  traverse every batch. An arbitrary limit must not silently discard rows or
+  required usage edges.
+- OpenAPI and Swagger mounts derive their development-only gate from the
+  existing environment authority. Staging, production and unknown environments
+  must expose neither; inspect tooling callers as well as the runtime entry.
+- Keep the released Underlay checker and coherent immutable dependency pins.
+  Resolve findings without broad skips, allowances or a duplicated checker.
+- Shared Underlay API changes, a new release, a new retention or resource-cap
+  policy, and broader migrations require a separate ruling.
+
 ### Reorder conflict recovery (canonical-order lists only)
 
 - Canonical manual-order entities support reorder:
