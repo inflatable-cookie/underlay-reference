@@ -3,7 +3,7 @@
 //! Example domain routes demonstrating common patterns.
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -12,7 +12,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use underlay_http::context::RequestContext;
-use underlay_http::ApiError;
+use underlay_http::{ApiError, PagePaginationParams};
 use underlay_nightfire::NightfireValue;
 
 use acme_core::Uuid;
@@ -261,17 +261,30 @@ async fn ensure_project_owned(
     }
 }
 
-/// List all projects for the authenticated user.
+/// List one bounded page of projects for the authenticated user.
 pub async fn list_projects(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
+    Query(params): Query<PagePaginationParams>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
+    let mut params = params.clamped();
+    params.page = params.page.max(1);
+    params.limit = params.limit.max(1);
 
-    match tasks::list_projects_for_user(pool, user_id, false).await {
+    match tasks::list_projects_for_user(
+        pool,
+        user_id,
+        false,
+        params.limit_i64(),
+        params.offset_i64(),
+    )
+    .await
+    {
         Ok(projects) => {
             let response: Vec<ProjectResponse> = projects
+                .data
                 .into_iter()
                 .map(|project| {
                     ProjectResponse::from_row(
@@ -283,7 +296,7 @@ pub async fn list_projects(
                     )
                 })
                 .collect();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+            Ok(Json(params.wrap_page_list(response, projects.total as u64)).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list projects: {}", e);
@@ -606,22 +619,34 @@ pub async fn delete_project(
 // Task Handlers
 // ============================================================================
 
-/// List tasks for a project.
+/// List one bounded page of open tasks for a project.
 pub async fn list_tasks(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
     Path(project_id): Path<Uuid>,
+    Query(params): Query<PagePaginationParams>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
     let user_id = user.user_id.0.into_inner();
     let project_id = project_id.into_inner();
+    let mut params = params.clamped();
+    params.page = params.page.max(1);
+    params.limit = params.limit.max(1);
 
     ensure_project_owned(pool, user_id, project_id, "tasks.list").await?;
 
-    match tasks::list_tasks_for_project(pool, project_id, false).await {
-        Ok(task_list) => {
-            let response: Vec<TaskResponse> = task_list.into_iter().map(Into::into).collect();
-            Ok(Json(serde_json::json!({ "data": response })).into_response())
+    match tasks::list_tasks_for_project(
+        pool,
+        project_id,
+        false,
+        params.limit_i64(),
+        params.offset_i64(),
+    )
+    .await
+    {
+        Ok((task_rows, total)) => {
+            let response: Vec<TaskResponse> = task_rows.into_iter().map(Into::into).collect();
+            Ok(Json(params.wrap_page_list(response, total as u64)).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list tasks: {}", e);

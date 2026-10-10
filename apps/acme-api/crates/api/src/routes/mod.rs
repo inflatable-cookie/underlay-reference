@@ -37,29 +37,25 @@ pub use middleware::{
     ApiVersionState, CsrfState,
 };
 
-/// Build the API router with OpenAPI exposed.
+/// Build the API router using the application's resolved environment.
 ///
-/// Convenience for tests and tooling. `main.rs` uses
-/// [`build_router_with_options`] so exposure follows the environment.
+/// Convenience for tests and tooling. OpenAPI is available only when the
+/// resolved environment explicitly identifies a development runtime.
 pub fn build_router() -> Router<AppState> {
-    build_router_with_options(true)
+    let environment = Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
+    build_router_for_environment(environment)
 }
 
-/// Build the API router, optionally exposing Swagger UI and the OpenAPI JSON.
-///
-/// Pass `include_docs = false` outside development.
-pub fn build_router_with_options(include_docs: bool) -> Router<AppState> {
+/// Build with the already-resolved bootstrap environment.
+pub fn build_router_for_environment(environment: Environment) -> Router<AppState> {
     // Underlay CORS policy:
     // - `CORS_ORIGINS` supplies the explicit allowlist in deployed environments
     // - in local dev an empty list mirrors the request origin
     // - credentials are allowed so cookie auth works without reworking CORS
-    let cors = underlay_http::admin_cors_layer_from_env(Environment::resolve(
-        "ENVIRONMENT",
-        Some("ACME_ENV"),
-    ));
+    let cors = underlay_http::admin_cors_layer_from_env(environment);
 
     Router::new()
-        .merge(runtime::build_runtime_router(include_docs))
+        .merge(runtime::build_runtime_router_for_environment(environment))
         .merge(shared::build_shared_router())
         .merge(front::build_front_router())
         .merge(admin::build_admin_router())

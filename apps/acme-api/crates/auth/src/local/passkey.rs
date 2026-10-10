@@ -1,6 +1,8 @@
 use super::helpers::{map_credential_row, roles_for_user};
 use super::*;
 
+const PASSKEY_READ_BATCH_SIZE: i64 = 100;
+
 impl AcmeLocalAuthService {
     // ========================================================================
     // Passkey (WebAuthn) Management
@@ -11,17 +13,43 @@ impl AcmeLocalAuthService {
         &self,
         user_id: Uuid,
     ) -> AuthResult<Vec<underlay_auth_webauthn::StoredPasskey>> {
-        let rows = sqlx::query(
-            r#"
-            SELECT secret_encrypted
-            FROM auth.credentials
-            WHERE user_id = $1 AND type = 'passkey' AND verified = TRUE
-            "#,
-        )
-        .bind(user_id.into_inner())
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|_| AuthError::Internal("DB error".into()))?;
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|_| AuthError::Internal("DB error".into()))?;
+        sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| AuthError::Internal("DB error".into()))?;
+        let mut rows = Vec::new();
+        let mut offset = 0_i64;
+        loop {
+            let batch = sqlx::query(
+                r#"
+                SELECT id, secret_encrypted
+                FROM auth.credentials
+                WHERE user_id = $1 AND type = 'passkey' AND verified = TRUE
+                ORDER BY id
+                LIMIT $2 OFFSET $3
+                "#,
+            )
+            .bind(user_id.into_inner())
+            .bind(PASSKEY_READ_BATCH_SIZE)
+            .bind(offset)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|_| AuthError::Internal("DB error".into()))?;
+            let count = batch.len();
+            rows.extend(batch);
+            if count < PASSKEY_READ_BATCH_SIZE as usize {
+                break;
+            }
+            offset += count as i64;
+        }
+        tx.commit()
+            .await
+            .map_err(|_| AuthError::Internal("DB error".into()))?;
 
         let mut passkeys = Vec::with_capacity(rows.len());
         for row in rows {
@@ -68,22 +96,49 @@ impl AcmeLocalAuthService {
     }
 
     /// List all passkeys for a user with their display names.
-    pub async fn list_passkeys(&self, user_id: Uuid) -> AuthResult<Vec<PasskeyRecord>> {
+    pub async fn list_passkeys(
+        &self,
+        user_id: Uuid,
+        limit: i64,
+        offset: i64,
+    ) -> AuthResult<(Vec<PasskeyRecord>, i64)> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|_| AuthError::Internal("DB error".into()))?;
+        sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| AuthError::Internal("DB error".into()))?;
+        let total = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM auth.credentials WHERE user_id = $1 AND type = 'passkey'",
+        )
+        .bind(user_id.into_inner())
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(|_| AuthError::Internal("DB error".into()))?;
         let rows = sqlx::query(
             r#"
             SELECT id, user_id, type as credential_type, secret_encrypted, metadata, verified,
                    display_name, created_at, updated_at, last_used_at
             FROM auth.credentials
             WHERE user_id = $1 AND type = 'passkey'
-            ORDER BY created_at DESC
+            ORDER BY created_at DESC, id DESC
+            LIMIT $2 OFFSET $3
             "#,
         )
         .bind(user_id.into_inner())
-        .fetch_all(&self.pool)
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&mut *tx)
         .await
         .map_err(|_| AuthError::Internal("DB error".into()))?;
+        tx.commit()
+            .await
+            .map_err(|_| AuthError::Internal("DB error".into()))?;
 
-        Ok(rows
+        let passkeys = rows
             .into_iter()
             .map(|row| {
                 let display_name: Option<String> = row.get("display_name");
@@ -92,7 +147,8 @@ impl AcmeLocalAuthService {
                     display_name,
                 }
             })
-            .collect())
+            .collect();
+        Ok((passkeys, total))
     }
 
     /// Rename a passkey's display name.

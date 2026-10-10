@@ -8,6 +8,7 @@ use underlay_http::query::QueryParams;
 use underlay_query::{FieldMapping, WhereBuilder};
 use uuid::Uuid;
 
+use crate::pagination::{begin_repeatable_read, READ_BATCH_SIZE};
 use crate::DbPool;
 
 // ============================================================================
@@ -406,14 +407,66 @@ pub struct SessionRow {
     pub revocation_reason: Option<String>,
 }
 
-/// List all sessions for a user (admin view).
+/// List all sessions for a user in bounded batches (admin view).
 ///
-/// Returns all sessions (active, expired, revoked) for administrative purposes.
+/// Returns active, expired, and revoked sessions for internal complete-set
+/// callers. The HTTP admin route uses [`list_sessions_for_user_page`].
 pub async fn list_sessions_for_user(
     pool: &DbPool,
     user_id: Uuid,
 ) -> Result<Vec<SessionRow>, sqlx::Error> {
-    sqlx::query_as::<_, SessionRow>(
+    let mut tx = begin_repeatable_read(pool).await?;
+    let mut sessions = Vec::new();
+    let mut offset = 0_i64;
+    loop {
+        let batch = sqlx::query_as::<_, SessionRow>(
+            r#"
+            SELECT
+                id,
+                user_id,
+                status,
+                ip_address,
+                user_agent,
+                created_at,
+                last_used_at,
+                access_token_expires_at,
+                refresh_token_expires_at,
+                revoked_at,
+                revocation_reason
+            FROM auth.sessions
+            WHERE user_id = $1
+            ORDER BY created_at DESC, id DESC
+            LIMIT $2 OFFSET $3
+            "#,
+        )
+        .bind(user_id)
+        .bind(READ_BATCH_SIZE)
+        .bind(offset)
+        .fetch_all(&mut *tx)
+        .await?;
+        let count = batch.len();
+        sessions.extend(batch);
+        if count < READ_BATCH_SIZE as usize {
+            break;
+        }
+        offset += count as i64;
+    }
+    tx.commit().await?;
+    Ok(sessions)
+}
+
+pub async fn list_sessions_for_user_page(
+    pool: &DbPool,
+    user_id: Uuid,
+    limit: i64,
+    offset: i64,
+) -> Result<(Vec<SessionRow>, i64), sqlx::Error> {
+    let total =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM auth.sessions WHERE user_id = $1")
+            .bind(user_id)
+            .fetch_one(pool)
+            .await?;
+    let rows = sqlx::query_as::<_, SessionRow>(
         r#"
         SELECT
             id,
@@ -429,12 +482,16 @@ pub async fn list_sessions_for_user(
             revocation_reason
         FROM auth.sessions
         WHERE user_id = $1
-        ORDER BY created_at DESC
+        ORDER BY created_at DESC, id DESC
+        LIMIT $2 OFFSET $3
         "#,
     )
     .bind(user_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
-    .await
+    .await?;
+    Ok((rows, total))
 }
 
 /// Revoke a specific session (admin action).

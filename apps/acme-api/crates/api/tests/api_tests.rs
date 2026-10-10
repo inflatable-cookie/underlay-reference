@@ -1172,3 +1172,378 @@ mod database_tests {
             .expect("cleanup should succeed");
     }
 }
+
+mod bounded_collection_tests {
+    use std::env;
+
+    use acme_db::{media, tasks};
+    use acme_test_utils::{
+        cleanup,
+        fixtures::{create_test_project, create_test_task, create_test_user},
+        setup_test_db,
+    };
+    use chrono::Utc;
+    use underlay_media::{sync::sync_media_usages_for_record, MediaUsageProvenanceKind};
+    use uuid::Uuid;
+
+    const PAGE_SIZE: i64 = 100;
+
+    fn skip_without_db() -> bool {
+        env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err()
+    }
+
+    #[tokio::test]
+    async fn front_project_and_task_pages_are_stable_and_scoped() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        let db = setup_test_db().await;
+        let owner = create_test_user(db.pool(), Default::default()).await;
+        let other_owner = create_test_user(db.pool(), Default::default()).await;
+        let project = create_test_project(db.pool(), owner.id, Default::default()).await;
+        let other_project = create_test_project(db.pool(), owner.id, Default::default()).await;
+        let other_owner_project =
+            create_test_project(db.pool(), other_owner.id, Default::default()).await;
+
+        let project_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_project_ids = project_ids.clone();
+        expected_project_ids.sort();
+        let same_created_at = Utc::now();
+        sqlx::query(
+            r#"
+            INSERT INTO acme.projects (id, owner_id, name, status, weight, created_at)
+            SELECT id, $1, 'equal sort project', 'active', 7, $3
+            FROM UNNEST($2::uuid[]) AS project_ids(id)
+            "#,
+        )
+        .bind(owner.id)
+        .bind(&project_ids)
+        .bind(same_created_at)
+        .execute(db.pool())
+        .await
+        .expect("project page fixtures should insert");
+        let archived_project = Uuid::now_v7();
+        sqlx::query(
+            "INSERT INTO acme.projects (id, owner_id, name, status) VALUES ($1, $2, 'archived', 'archived')",
+        )
+        .bind(archived_project)
+        .bind(owner.id)
+        .execute(db.pool())
+        .await
+        .expect("archived project fixture should insert");
+
+        let project_page_1 =
+            tasks::list_projects_for_user(db.pool(), owner.id, false, PAGE_SIZE, 0)
+                .await
+                .expect("first project page should load");
+        let project_page_2 =
+            tasks::list_projects_for_user(db.pool(), owner.id, false, PAGE_SIZE, PAGE_SIZE)
+                .await
+                .expect("second project page should load");
+        let project_page_3 =
+            tasks::list_projects_for_user(db.pool(), owner.id, false, PAGE_SIZE, PAGE_SIZE * 2)
+                .await
+                .expect("last project page should load");
+        assert_eq!(project_page_1.total, 207);
+        assert_eq!(project_page_2.total, 207);
+        assert_eq!(project_page_3.total, 207);
+        assert_eq!(project_page_1.data.len(), 100);
+        assert_eq!(project_page_2.data.len(), 100);
+        assert_eq!(project_page_3.data.len(), 7);
+        let returned_project_ids = project_page_1
+            .data
+            .into_iter()
+            .chain(project_page_2.data)
+            .chain(project_page_3.data)
+            .filter(|row| row.name == "equal sort project")
+            .map(|row| row.id)
+            .collect::<Vec<_>>();
+        assert_eq!(returned_project_ids, expected_project_ids);
+        assert!(!returned_project_ids.contains(&other_owner_project.id));
+
+        let task_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_task_ids = task_ids.clone();
+        expected_task_ids.sort();
+        sqlx::query(
+            r#"
+            INSERT INTO acme.tasks (id, project_id, title, status, priority, position, created_at)
+            SELECT id, $1, 'equal sort task', 'pending', 'medium', 4, $3
+            FROM UNNEST($2::uuid[]) AS task_ids(id)
+            "#,
+        )
+        .bind(project.id)
+        .bind(&task_ids)
+        .bind(same_created_at)
+        .execute(db.pool())
+        .await
+        .expect("task page fixtures should insert");
+        sqlx::query(
+            "INSERT INTO acme.tasks (id, project_id, title, status, priority, position) VALUES ($1, $2, 'completed', 'completed', 'medium', 4)",
+        )
+        .bind(Uuid::now_v7())
+        .bind(project.id)
+        .execute(db.pool())
+        .await
+        .expect("completed task fixture should insert");
+        let other_project_task =
+            create_test_task(db.pool(), other_project.id, Default::default()).await;
+
+        let task_page_1 = tasks::list_tasks_for_project(db.pool(), project.id, false, PAGE_SIZE, 0)
+            .await
+            .expect("first task page should load");
+        let task_page_2 =
+            tasks::list_tasks_for_project(db.pool(), project.id, false, PAGE_SIZE, PAGE_SIZE)
+                .await
+                .expect("second task page should load");
+        let task_page_3 =
+            tasks::list_tasks_for_project(db.pool(), project.id, false, PAGE_SIZE, PAGE_SIZE * 2)
+                .await
+                .expect("last task page should load");
+        assert_eq!(task_page_1.1, 205);
+        assert_eq!(task_page_2.1, 205);
+        assert_eq!(task_page_3.1, 205);
+        assert_eq!(task_page_1.0.len(), 100);
+        assert_eq!(task_page_2.0.len(), 100);
+        assert_eq!(task_page_3.0.len(), 5);
+        let returned_task_ids = task_page_1
+            .0
+            .into_iter()
+            .chain(task_page_2.0)
+            .chain(task_page_3.0)
+            .map(|row| row.id)
+            .collect::<Vec<_>>();
+        assert_eq!(returned_task_ids, expected_task_ids);
+        assert!(!returned_task_ids.contains(&other_project_task.id));
+
+        cleanup::delete_user(db.pool(), owner.id)
+            .await
+            .expect("owner fixture cleanup should succeed");
+        cleanup::delete_user(db.pool(), other_owner.id)
+            .await
+            .expect("other owner fixture cleanup should succeed");
+    }
+
+    #[tokio::test]
+    async fn media_pages_and_reconciliation_traverse_every_bounded_batch() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        let db = setup_test_db().await;
+        let media_id = Uuid::now_v7();
+        let owner_id = Uuid::now_v7();
+        let other_owner_id = Uuid::now_v7();
+        let created_at = Utc::now();
+        sqlx::query(
+            "INSERT INTO media.media (id, kind, visibility, title) VALUES ($1, 'image', 'restricted', 'bounded collection fixture')",
+        )
+        .bind(media_id)
+        .execute(db.pool())
+        .await
+        .expect("media fixture should insert");
+
+        let edge_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_usage_ids = edge_ids.clone();
+        let foreign_edge_id = Uuid::now_v7();
+        let other_provenance_edge_id = Uuid::now_v7();
+        expected_usage_ids.push(foreign_edge_id);
+        expected_usage_ids.push(other_provenance_edge_id);
+        expected_usage_ids.sort_by(|left, right| right.cmp(left));
+
+        sqlx::query(
+            r#"
+            INSERT INTO media.media_usage (
+                id, media_id, used_by_type, used_by_id, owner_field,
+                content_kind, locator_kind, locator_key, usage_role, provenance_kind, created_at
+            )
+            SELECT id, $1, 'task', $2, 'notes', 'structured_content',
+                   'block_id', id::text, 'embedded', 'content_sync', $3
+            FROM UNNEST($4::uuid[]) AS edge_ids(id)
+            "#,
+        )
+        .bind(media_id)
+        .bind(owner_id)
+        .bind(created_at)
+        .bind(&edge_ids)
+        .execute(db.pool())
+        .await
+        .expect("usage edge fixtures should insert");
+        sqlx::query(
+            r#"
+            INSERT INTO media.media_usage (
+                id, media_id, used_by_type, used_by_id, owner_field,
+                content_kind, locator_kind, locator_key, usage_role, provenance_kind, created_at
+            ) VALUES
+                ($1, $3, 'task', $4, 'notes', 'structured_content', 'block_id', 'other-owner', 'embedded', 'content_sync', $5),
+                ($2, $3, 'task', $6, 'notes', 'structured_content', 'block_id', 'manual-edge', 'embedded', 'manual', $5)
+            "#,
+        )
+        .bind(foreign_edge_id)
+        .bind(other_provenance_edge_id)
+        .bind(media_id)
+        .bind(other_owner_id)
+        .bind(created_at)
+        .bind(owner_id)
+        .execute(db.pool())
+        .await
+        .expect("out-of-scope usage fixtures should insert");
+
+        let page_1 = media::list_media_usages(db.pool(), media_id, PAGE_SIZE, 0)
+            .await
+            .expect("first usage page should load");
+        let page_2 = media::list_media_usages(db.pool(), media_id, PAGE_SIZE, PAGE_SIZE)
+            .await
+            .expect("second usage page should load");
+        let page_3 = media::list_media_usages(db.pool(), media_id, PAGE_SIZE, PAGE_SIZE * 2)
+            .await
+            .expect("last usage page should load");
+        assert_eq!(page_1.1, 207);
+        assert_eq!(page_2.1, 207);
+        assert_eq!(page_3.1, 207);
+        assert_eq!(page_1.0.len(), 100);
+        assert_eq!(page_2.0.len(), 100);
+        assert_eq!(page_3.0.len(), 7);
+        let returned_usage_ids = page_1
+            .0
+            .into_iter()
+            .chain(page_2.0)
+            .chain(page_3.0)
+            .map(|row| row.id)
+            .collect::<Vec<_>>();
+        assert_eq!(returned_usage_ids, expected_usage_ids);
+
+        let entity_usages = media::list_usages_by_entity(db.pool(), "task", owner_id, "notes")
+            .await
+            .expect("entity usages should traverse every batch");
+        assert_eq!(entity_usages.len(), 206);
+        assert!(entity_usages
+            .iter()
+            .all(|row| row.used_by_id == Some(owner_id)));
+
+        let repo = media::AcmeMediaUsageSyncRepo::new(db.pool());
+        let report = sync_media_usages_for_record(
+            &repo,
+            "task",
+            owner_id,
+            &[],
+            &MediaUsageProvenanceKind::ContentSync,
+        )
+        .await
+        .expect("empty desired set should reconcile the full content-sync scope");
+        assert_eq!(report.removed, 205);
+        let content_sync_edges = media::list_usage_edges_for_owner(
+            db.pool(),
+            "task",
+            owner_id,
+            &MediaUsageProvenanceKind::ContentSync,
+        )
+        .await
+        .expect("remaining content-sync edges should load");
+        assert!(content_sync_edges.is_empty());
+        let manual_edges = media::list_usage_edges_for_owner(
+            db.pool(),
+            "task",
+            owner_id,
+            &MediaUsageProvenanceKind::Manual,
+        )
+        .await
+        .expect("manual provenance should remain outside content reconciliation");
+        assert_eq!(manual_edges.len(), 1);
+        let other_owner_edges = media::list_usage_edges_for_owner(
+            db.pool(),
+            "task",
+            other_owner_id,
+            &MediaUsageProvenanceKind::ContentSync,
+        )
+        .await
+        .expect("other owner scope should remain isolated");
+        assert_eq!(other_owner_edges.len(), 1);
+
+        sqlx::query("DELETE FROM media.media WHERE id = $1")
+            .bind(media_id)
+            .execute(db.pool())
+            .await
+            .expect("media fixture cleanup should succeed");
+    }
+
+    #[tokio::test]
+    async fn admin_session_pages_and_complete_list_preserve_revoked_rows() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        let db = setup_test_db().await;
+        let user = create_test_user(db.pool(), Default::default()).await;
+        let session_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_ids = session_ids.clone();
+        expected_ids.sort_by(|left, right| right.cmp(left));
+        let created_at = Utc::now();
+        sqlx::query(
+            r#"
+            INSERT INTO auth.sessions (
+                id, user_id, roles, is_active,
+                access_token_fingerprint, refresh_token_fingerprint,
+                refresh_token_id, refresh_token_version,
+                access_token_expires_at, refresh_token_expires_at,
+                created_at, updated_at, last_used_at, status
+            )
+            SELECT id, $1, '[]'::jsonb, TRUE,
+                   'access-fingerprint', 'refresh-fingerprint', id, 1,
+                   $3, $4, $2, $2, $2, 'active'
+            FROM UNNEST($5::uuid[]) AS session_ids(id)
+            "#,
+        )
+        .bind(user.id)
+        .bind(created_at)
+        .bind(created_at + chrono::Duration::hours(1))
+        .bind(created_at + chrono::Duration::days(1))
+        .bind(&session_ids)
+        .execute(db.pool())
+        .await
+        .expect("session fixtures should insert");
+
+        assert!(acme_db::users::revoke_session_admin(
+            db.pool(),
+            user.id,
+            session_ids[0],
+            "bounded list test",
+        )
+        .await
+        .expect("session revocation should succeed"));
+
+        let first_page =
+            acme_db::users::list_sessions_for_user_page(db.pool(), user.id, PAGE_SIZE, 0)
+                .await
+                .expect("first session page should load");
+        let last_page = acme_db::users::list_sessions_for_user_page(
+            db.pool(),
+            user.id,
+            PAGE_SIZE,
+            PAGE_SIZE * 2,
+        )
+        .await
+        .expect("last session page should load");
+        assert_eq!(first_page.1, 205);
+        assert_eq!(last_page.1, 205);
+        assert_eq!(first_page.0.len(), 100);
+        assert_eq!(last_page.0.len(), 5);
+
+        let all_sessions = acme_db::users::list_sessions_for_user(db.pool(), user.id)
+            .await
+            .expect("complete internal session list should traverse all batches");
+        assert_eq!(all_sessions.len(), 205);
+        let all_ids = all_sessions.iter().map(|row| row.id).collect::<Vec<_>>();
+        assert_eq!(all_ids, expected_ids);
+        assert!(all_sessions
+            .iter()
+            .any(|row| row.id == session_ids[0] && row.status == "revoked"));
+
+        cleanup::delete_user(db.pool(), user.id)
+            .await
+            .expect("session fixture cleanup should succeed");
+    }
+}

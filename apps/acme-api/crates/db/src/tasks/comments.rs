@@ -1,9 +1,8 @@
-// conformance: allow — parent-scoped collection, small by design
-
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+use crate::pagination::{begin_repeatable_read, READ_BATCH_SIZE};
 use crate::DbPool;
 
 /// Row type for acme.task_comments table.
@@ -45,15 +44,31 @@ pub async fn list_task_comments(
     pool: &DbPool,
     task_id: Uuid,
 ) -> Result<Vec<TaskCommentRow>, sqlx::Error> {
-    sqlx::query_as::<_, TaskCommentRow>(
-        r#"
-        SELECT id, task_id, author_id, body, created_at, updated_at
-        FROM acme.task_comments
-        WHERE task_id = $1
-        ORDER BY created_at
-        "#,
-    )
-    .bind(task_id)
-    .fetch_all(pool)
-    .await
+    let mut tx = begin_repeatable_read(pool).await?;
+    let mut rows = Vec::new();
+    let mut offset = 0_i64;
+    loop {
+        let batch = sqlx::query_as::<_, TaskCommentRow>(
+            r#"
+            SELECT id, task_id, author_id, body, created_at, updated_at
+            FROM acme.task_comments
+            WHERE task_id = $1
+            ORDER BY created_at, id
+            LIMIT $2 OFFSET $3
+            "#,
+        )
+        .bind(task_id)
+        .bind(READ_BATCH_SIZE)
+        .bind(offset)
+        .fetch_all(&mut *tx)
+        .await?;
+        let count = batch.len();
+        rows.extend(batch);
+        if count < READ_BATCH_SIZE as usize {
+            break;
+        }
+        offset += count as i64;
+    }
+    tx.commit().await?;
+    Ok(rows)
 }

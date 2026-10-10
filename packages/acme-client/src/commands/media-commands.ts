@@ -3,6 +3,7 @@ import {
   appendQueryParams,
   type QueryParams,
 } from "@inflatable-cookie/underlay/client/query";
+import { appendPageListParams } from "@inflatable-cookie/underlay/client/page-lists";
 /**
  * Media Library commands - media operations for admin UI
  */
@@ -31,6 +32,23 @@ export type MediaListProfile = "list" | "filter";
 export interface ListMediaOptions {
   profile?: MediaListProfile;
   query?: QueryParams;
+}
+
+const MEDIA_CHILD_PAGE_SIZE = 100;
+
+async function collectAllPages<T>(
+  fetchPage: (page: number) => Promise<PagedListResponse<T>>,
+): Promise<PagedListResponse<T>> {
+  const data: T[] = [];
+  let total = 0;
+  let page = 1;
+  while (true) {
+    const response = await fetchPage(page);
+    data.push(...response.data);
+    total = response.total;
+    if (!response.hasMore) return { data, total, hasMore: false };
+    page += 1;
+  }
 }
 
 function isLocalHostname(hostname: string): boolean {
@@ -373,8 +391,11 @@ export async function listVersions(
   accessToken: string,
 ): Promise<PagedListResponse<MediaVersion>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  const response = await http.get<PagedListResponse<MediaVersion>>(
-    `/v1/admin/media/${encodeURIComponent(mediaId)}/versions`,
+  const path = `/v1/admin/media/${encodeURIComponent(mediaId)}/versions`;
+  const response = await collectAllPages((page) =>
+    http.get<PagedListResponse<MediaVersion>>(
+      appendPageListParams(path, { page, limit: MEDIA_CHILD_PAGE_SIZE }),
+    ),
   );
   return {
     ...response,
@@ -424,8 +445,11 @@ export async function listUsages(
   accessToken: string,
 ): Promise<PagedListResponse<MediaUsage>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
-  return await http.get<PagedListResponse<MediaUsage>>(
-    `/v1/admin/media/${encodeURIComponent(mediaId)}/usage`,
+  const path = `/v1/admin/media/${encodeURIComponent(mediaId)}/usage`;
+  return collectAllPages((page) =>
+    http.get<PagedListResponse<MediaUsage>>(
+      appendPageListParams(path, { page, limit: MEDIA_CHILD_PAGE_SIZE }),
+    ),
   );
 }
 

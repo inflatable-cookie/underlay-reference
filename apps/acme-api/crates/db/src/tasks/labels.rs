@@ -1,11 +1,10 @@
-// conformance: allow — parent-scoped collection, small by design
-
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
 use underlay_http::query::QueryParams;
 use underlay_query::{FieldMapping, WhereBuilder};
 use uuid::Uuid;
 
+use crate::pagination::{begin_repeatable_read, READ_BATCH_SIZE};
 use crate::DbPool;
 
 #[derive(Debug)]
@@ -56,17 +55,33 @@ pub async fn list_labels_for_project(
     pool: &DbPool,
     project_id: Uuid,
 ) -> Result<Vec<LabelRow>, sqlx::Error> {
-    sqlx::query_as::<_, LabelRow>(
-        r#"
-        SELECT id, project_id, name, color, weight, created_at, updated_at, deleted_at
-        FROM acme.labels
-        WHERE project_id = $1 AND deleted_at IS NULL
-        ORDER BY weight, name
-        "#,
-    )
-    .bind(project_id)
-    .fetch_all(pool)
-    .await
+    let mut tx = begin_repeatable_read(pool).await?;
+    let mut rows = Vec::new();
+    let mut offset = 0_i64;
+    loop {
+        let batch = sqlx::query_as::<_, LabelRow>(
+            r#"
+            SELECT id, project_id, name, color, weight, created_at, updated_at, deleted_at
+            FROM acme.labels
+            WHERE project_id = $1 AND deleted_at IS NULL
+            ORDER BY weight, name, id
+            LIMIT $2 OFFSET $3
+            "#,
+        )
+        .bind(project_id)
+        .bind(READ_BATCH_SIZE)
+        .bind(offset)
+        .fetch_all(&mut *tx)
+        .await?;
+        let count = batch.len();
+        rows.extend(batch);
+        if count < READ_BATCH_SIZE as usize {
+            break;
+        }
+        offset += count as i64;
+    }
+    tx.commit().await?;
+    Ok(rows)
 }
 
 /// List labels for a project with filtering, sorting, and paging (admin).

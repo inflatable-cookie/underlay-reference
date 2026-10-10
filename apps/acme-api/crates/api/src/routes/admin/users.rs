@@ -10,7 +10,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use underlay_http::{context::RequestContext, query::QueryParams, ApiError};
+use underlay_http::{context::RequestContext, query::QueryParams, ApiError, PagePaginationParams};
 use utoipa::ToSchema;
 use uuid::Uuid;
 use validator::Validate;
@@ -888,26 +888,26 @@ pub struct UserSessionPath {
     pub session_id: Uuid,
 }
 
-/// List all sessions for a user (admin).
+/// List one bounded page of sessions for a user (admin).
 ///
 /// GET /v1/admin/users/:user_id/sessions
 pub async fn list_user_sessions(
     AdminUser(_admin): AdminUser,
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
+    Query(params): Query<PagePaginationParams>,
 ) -> Result<Response, ApiError> {
     let pool = state.local_auth.pool();
+    let mut params = params.clamped();
+    params.page = params.page.max(1);
+    params.limit = params.limit.max(1);
 
-    match users::list_sessions_for_user(pool, user_id).await {
-        Ok(sessions) => {
+    match users::list_sessions_for_user_page(pool, user_id, params.limit_i64(), params.offset_i64())
+        .await
+    {
+        Ok((sessions, total)) => {
             let items: Vec<SessionResponse> = sessions.into_iter().map(Into::into).collect();
-            let total = items.len();
-            Ok(Json(serde_json::json!({
-                "data": items,
-                "total": total,
-                "has_more": false
-            }))
-            .into_response())
+            Ok(Json(params.wrap_page_list(items, total as u64)).into_response())
         }
         Err(e) => {
             tracing::error!("Failed to list sessions for user: {}", e);

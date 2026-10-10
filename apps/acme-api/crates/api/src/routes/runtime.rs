@@ -14,6 +14,7 @@ use axum::routing::get;
 use axum::Router;
 use serde::Serialize;
 use underlay_http::ApiError;
+use underlay_observability::Environment;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -67,17 +68,24 @@ pub fn is_runtime_path(path: &str) -> bool {
 
 /// Build the runtime family.
 ///
-/// `include_docs` controls OpenAPI exposure. `main.rs` passes
-/// `env.is_development()`, so staging, production, and any unrecognised
-/// environment serve neither the JSON document nor Swagger UI. Changing that
-/// is a deployment policy decision, not a route change.
-pub fn build_runtime_router<S>(include_docs: bool) -> Router<S>
+/// OpenAPI exposure follows the same fail-closed environment resolver used by
+/// application configuration. Unset and unknown environments resolve to
+/// production and serve neither the JSON document nor Swagger UI.
+pub fn build_runtime_router<S>() -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+{
+    let environment = Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
+    build_runtime_router_for_environment(environment)
+}
+
+pub(super) fn build_runtime_router_for_environment<S>(environment: Environment) -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
 {
     let router = Router::new();
 
-    let router = if include_docs {
+    let router = if environment.is_development() {
         router.merge(SwaggerUi::new("/api/docs").url("/api/openapi.json", ApiDoc::openapi()))
     } else {
         router

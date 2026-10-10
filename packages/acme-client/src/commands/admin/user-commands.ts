@@ -11,6 +11,7 @@ import type {
 import { getAdminHttpClient } from "../../utils/client-factory.js";
 import { getHeaderValueCaseInsensitive, type WithEtag } from "./utils.js";
 import { appendQueryParams } from "@inflatable-cookie/underlay/client/query";
+import { appendPageListParams } from "@inflatable-cookie/underlay/client/page-lists";
 import { toSnakeQueryParams } from "./utils.js";
 
 /**
@@ -172,11 +173,15 @@ export async function unsuspendUser(
 export async function listUserSessions(
   userId: string,
   fetchFn: typeof fetch,
-  accessToken: string
+  accessToken: string,
+  request: { page: number; limit: number } = { page: 1, limit: 50 }
 ): Promise<PagedListResponse<Session>> {
   const http = getAdminHttpClient({ fetchFn, accessToken });
   return await http.get<PagedListResponse<Session>>(
-    `/v1/admin/users/${encodeURIComponent(userId)}/sessions`
+    appendPageListParams(
+      `/v1/admin/users/${encodeURIComponent(userId)}/sessions`,
+      request,
+    )
   );
 }
 

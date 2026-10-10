@@ -1,4 +1,5 @@
 use super::*;
+use crate::pagination::{begin_repeatable_read, READ_BATCH_SIZE};
 
 /// Create a new media version (in uploading state) with its staging object key
 /// and declared MIME. The declared MIME is server-owned from initiate.
@@ -128,22 +129,70 @@ pub async fn list_media_versions(
     pool: &DbPool,
     media_id: Uuid,
 ) -> Result<Vec<MediaVersionRow>, sqlx::Error> {
-    sqlx::query_as::<_, RawMediaVersionRow>(
+    let mut tx = begin_repeatable_read(pool).await?;
+    let mut rows = Vec::new();
+    let mut offset = 0_i64;
+    loop {
+        let batch = sqlx::query_as::<_, RawMediaVersionRow>(
+            r#"
+            SELECT id, media_id, state, byte_size, mime_type, sha256,
+                   storage_provider, bucket, object_key, ownership_token,
+                   published_object_key, created_at, created_by
+            FROM media.media_version
+            WHERE media_id = $1
+            ORDER BY created_at DESC, id DESC
+            LIMIT $2 OFFSET $3
+            "#,
+        )
+        .bind(media_id)
+        .bind(READ_BATCH_SIZE)
+        .bind(offset)
+        .fetch_all(&mut *tx)
+        .await?;
+        let count = batch.len();
+        rows.extend(batch);
+        if count < READ_BATCH_SIZE as usize {
+            break;
+        }
+        offset += count as i64;
+    }
+    tx.commit().await?;
+    rows.into_iter().map(TryInto::try_into).collect()
+}
+
+/// Fetch one bounded page of versions for the admin child-list route.
+pub async fn list_media_versions_page(
+    pool: &DbPool,
+    media_id: Uuid,
+    limit: i64,
+    offset: i64,
+) -> Result<(Vec<MediaVersionRow>, i64), sqlx::Error> {
+    let total = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM media.media_version WHERE media_id = $1",
+    )
+    .bind(media_id)
+    .fetch_one(pool)
+    .await?;
+    let rows = sqlx::query_as::<_, RawMediaVersionRow>(
         r#"
         SELECT id, media_id, state, byte_size, mime_type, sha256,
                storage_provider, bucket, object_key, ownership_token,
                published_object_key, created_at, created_by
         FROM media.media_version
         WHERE media_id = $1
-        ORDER BY created_at DESC
+        ORDER BY created_at DESC, id DESC
+        LIMIT $2 OFFSET $3
         "#,
     )
     .bind(media_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await?
     .into_iter()
     .map(TryInto::try_into)
-    .collect()
+    .collect::<Result<Vec<MediaVersionRow>, _>>()?;
+    Ok((rows, total))
 }
 
 /// Atomically mark a version ready and commit `media.current_version_id`.

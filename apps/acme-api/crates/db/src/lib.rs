@@ -7,6 +7,7 @@ pub mod activity;
 pub mod auth;
 pub mod categories;
 pub mod media;
+mod pagination;
 pub mod stats;
 pub mod tasks;
 pub mod users;

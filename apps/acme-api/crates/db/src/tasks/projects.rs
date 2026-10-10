@@ -14,6 +14,12 @@ pub struct ProjectListResponse {
     pub has_more: bool,
 }
 
+#[derive(Debug)]
+pub struct UserProjectListResponse {
+    pub data: Vec<ProjectRow>,
+    pub total: i64,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct ProjectTaskSummary {
     pub total: i64,
@@ -147,32 +153,56 @@ pub async fn list_projects_for_user(
     pool: &DbPool,
     owner_id: Uuid,
     include_archived: bool,
-) -> Result<Vec<ProjectRow>, sqlx::Error> {
-    if include_archived {
+    limit: i64,
+    offset: i64,
+) -> Result<UserProjectListResponse, sqlx::Error> {
+    let total = if include_archived {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM acme.projects WHERE owner_id = $1 AND deleted_at IS NULL",
+        )
+        .bind(owner_id)
+        .fetch_one(pool)
+        .await?
+    } else {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM acme.projects WHERE owner_id = $1 AND status = 'active' AND deleted_at IS NULL",
+        )
+        .bind(owner_id)
+        .fetch_one(pool)
+        .await?
+    };
+    let data = if include_archived {
         sqlx::query_as::<_, ProjectRow>(
             r#"
             SELECT id, owner_id, category_id, name, description, status, weight, created_at, updated_at, deleted_at
             FROM acme.projects
             WHERE owner_id = $1 AND deleted_at IS NULL
-            ORDER BY weight, created_at DESC
+            ORDER BY weight, created_at DESC, id
+            LIMIT $2 OFFSET $3
             "#,
         )
         .bind(owner_id)
+        .bind(limit)
+        .bind(offset)
         .fetch_all(pool)
-        .await
+        .await?
     } else {
         sqlx::query_as::<_, ProjectRow>(
             r#"
             SELECT id, owner_id, category_id, name, description, status, weight, created_at, updated_at, deleted_at
             FROM acme.projects
             WHERE owner_id = $1 AND status = 'active' AND deleted_at IS NULL
-            ORDER BY weight, created_at DESC
+            ORDER BY weight, created_at DESC, id
+            LIMIT $2 OFFSET $3
             "#,
         )
         .bind(owner_id)
+        .bind(limit)
+        .bind(offset)
         .fetch_all(pool)
-        .await
-    }
+        .await?
+    };
+    Ok(UserProjectListResponse { data, total })
 }
 
 /// List projects with filtering and sorting (admin).

@@ -10,9 +10,10 @@ import type {
   VerificationSessionResponse,
   LoginResponse,
   SingleResponse,
-  ListResponse,
+  PagedListResponse,
 } from "../../types/common-types.js";
 import { getHttpClient } from "../../utils/client-factory.js";
+import { appendPageListParams } from "@inflatable-cookie/underlay/client/page-lists";
 
 // ============================================================================
 // Passkeys - Registration
@@ -62,8 +63,16 @@ export async function listPasskeys(
   accessToken: string,
 ): Promise<PasskeyCredential[]> {
   const http = getHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ListResponse<PasskeyCredential>>("/v1/auth/passkeys");
-  return response.data;
+  const passkeys: PasskeyCredential[] = [];
+  let page = 1;
+  while (true) {
+    const response = await http.get<PagedListResponse<PasskeyCredential>>(
+      appendPageListParams("/v1/auth/passkeys", { page, limit: 100 }),
+    );
+    passkeys.push(...response.data);
+    if (!response.hasMore) return passkeys;
+    page += 1;
+  }
 }
 
 export async function deletePasskey(
