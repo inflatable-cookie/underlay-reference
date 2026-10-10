@@ -5,7 +5,23 @@
  * own projects and tasks.
  */
 import { getHttpClient } from "../utils/client-factory.js";
-import type { ListResponse } from "../types/common-types.js";
+import type { PagedListResponse } from "../types/common-types.js";
+import { appendPageListParams } from "@inflatable-cookie/underlay/client/page-lists";
+
+const USER_LIST_PAGE_SIZE = 100;
+
+async function collectPages<T>(
+  fetchPage: (page: number) => Promise<PagedListResponse<T>>,
+): Promise<T[]> {
+  const data: T[] = [];
+  let page = 1;
+  while (true) {
+    const response = await fetchPage(page);
+    data.push(...response.data);
+    if (!response.hasMore) return data;
+    page += 1;
+  }
+}
 
 type NightfireValue = {
   schema: string;
@@ -83,8 +99,11 @@ export async function listProjects(
   accessToken: string,
 ): Promise<UserProject[]> {
   const http = getHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ListResponse<UserProject>>("/v1/projects");
-  return response.data;
+  return collectPages((page) =>
+    http.get<PagedListResponse<UserProject>>(
+      appendPageListParams("/v1/projects", { page, limit: USER_LIST_PAGE_SIZE }),
+    ),
+  );
 }
 
 export async function createProject(
@@ -137,8 +156,12 @@ export async function listTasks(
   accessToken: string,
 ): Promise<UserTask[]> {
   const http = getHttpClient({ fetchFn, accessToken });
-  const response = await http.get<ListResponse<UserTask>>(`/v1/projects/${projectId}/tasks`);
-  return response.data;
+  const path = `/v1/projects/${projectId}/tasks`;
+  return collectPages((page) =>
+    http.get<PagedListResponse<UserTask>>(
+      appendPageListParams(path, { page, limit: USER_LIST_PAGE_SIZE }),
+    ),
+  );
 }
 
 export async function createTask(

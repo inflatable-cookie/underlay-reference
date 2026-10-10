@@ -1,11 +1,11 @@
-// conformance: allow — parent-scoped collection, small by design
-
 use async_trait::async_trait;
 use underlay_media::sync::MediaUsageSyncRepository;
 use underlay_media::{
     MediaContentKind, MediaId, MediaLocatorKind, MediaUsageEdge, MediaUsageEdgeInput,
     MediaUsageEdgeKey, MediaUsageProvenanceKind, MediaUsageRole,
 };
+
+use crate::pagination::{begin_repeatable_read, READ_BATCH_SIZE};
 
 use super::*;
 
@@ -112,8 +112,15 @@ pub async fn remove_media_usage_edge(
 pub async fn list_media_usages(
     pool: &DbPool,
     media_id: Uuid,
-) -> Result<Vec<MediaUsageRow>, sqlx::Error> {
-    sqlx::query_as::<_, MediaUsageRow>(
+    limit: i64,
+    offset: i64,
+) -> Result<(Vec<MediaUsageRow>, i64), sqlx::Error> {
+    let total =
+        sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM media.media_usage WHERE media_id = $1")
+            .bind(media_id)
+            .fetch_one(pool)
+            .await?;
+    let data = sqlx::query_as::<_, MediaUsageRow>(
         r#"
         SELECT
             id,
@@ -129,12 +136,16 @@ pub async fn list_media_usages(
             created_at
         FROM media.media_usage
         WHERE media_id = $1
-        ORDER BY created_at DESC
+        ORDER BY created_at DESC, id DESC
+        LIMIT $2 OFFSET $3
         "#,
     )
     .bind(media_id)
+    .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
-    .await
+    .await?;
+    Ok((data, total))
 }
 
 /// List all managed usage edges for one owner/provenance scope.
@@ -144,32 +155,47 @@ pub async fn list_usage_edges_for_owner(
     used_by_id: Uuid,
     provenance_kind: &MediaUsageProvenanceKind,
 ) -> Result<Vec<MediaUsageEdge>, sqlx::Error> {
-    let rows = sqlx::query_as::<_, MediaUsageRow>(
-        r#"
-        SELECT
-            id,
-            media_id,
-            used_by_type,
-            used_by_id,
-            owner_field,
-            content_kind,
-            locator_kind,
-            locator_key,
-            usage_role,
-            provenance_kind,
-            created_at
-        FROM media.media_usage
-        WHERE used_by_type = $1
-          AND used_by_id = $2
-          AND provenance_kind = $3
-        ORDER BY created_at DESC
-        "#,
-    )
-    .bind(used_by_type)
-    .bind(used_by_id)
-    .bind(provenance_kind.as_str())
-    .fetch_all(pool)
-    .await?;
+    let mut tx = begin_repeatable_read(pool).await?;
+    let mut rows = Vec::new();
+    let mut offset = 0_i64;
+    loop {
+        let batch = sqlx::query_as::<_, MediaUsageRow>(
+            r#"
+            SELECT
+                id,
+                media_id,
+                used_by_type,
+                used_by_id,
+                owner_field,
+                content_kind,
+                locator_kind,
+                locator_key,
+                usage_role,
+                provenance_kind,
+                created_at
+            FROM media.media_usage
+            WHERE used_by_type = $1
+              AND used_by_id = $2
+              AND provenance_kind = $3
+            ORDER BY created_at DESC, id DESC
+            LIMIT $4 OFFSET $5
+            "#,
+        )
+        .bind(used_by_type)
+        .bind(used_by_id)
+        .bind(provenance_kind.as_str())
+        .bind(READ_BATCH_SIZE)
+        .bind(offset)
+        .fetch_all(&mut *tx)
+        .await?;
+        let count = batch.len();
+        rows.extend(batch);
+        if count < READ_BATCH_SIZE as usize {
+            break;
+        }
+        offset += count as i64;
+    }
+    tx.commit().await?;
 
     rows.into_iter().map(media_usage_edge_from_row).collect()
 }
@@ -184,20 +210,36 @@ pub async fn get_media_usage_count(pool: &DbPool, media_id: Uuid) -> Result<i64,
 
 /// List media items with zero usages (excludes incomplete uploads).
 pub async fn list_unused_media(pool: &DbPool) -> Result<Vec<MediaRow>, sqlx::Error> {
-    sqlx::query_as::<_, MediaRow>(
-        r#"
-        SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
-               m.created_at, m.created_by, m.updated_at, m.updated_by, m.deleted_at, m.deleted_by
-        FROM media.media m
-        LEFT JOIN media.media_usage u ON m.id = u.media_id
-        WHERE m.deleted_at IS NULL
-          AND m.current_version_id IS NOT NULL
-          AND u.id IS NULL
-        ORDER BY m.created_at DESC
-        "#,
-    )
-    .fetch_all(pool)
-    .await
+    let mut tx = begin_repeatable_read(pool).await?;
+    let mut rows = Vec::new();
+    let mut offset = 0_i64;
+    loop {
+        let batch = sqlx::query_as::<_, MediaRow>(
+            r#"
+            SELECT m.id, m.kind, m.visibility, m.title, m.original_filename, m.current_version_id,
+                   m.created_at, m.created_by, m.updated_at, m.updated_by, m.deleted_at, m.deleted_by
+            FROM media.media m
+            LEFT JOIN media.media_usage u ON m.id = u.media_id
+            WHERE m.deleted_at IS NULL
+              AND m.current_version_id IS NOT NULL
+              AND u.id IS NULL
+            ORDER BY m.created_at DESC, m.id DESC
+            LIMIT $1 OFFSET $2
+            "#,
+        )
+        .bind(READ_BATCH_SIZE)
+        .bind(offset)
+        .fetch_all(&mut *tx)
+        .await?;
+        let count = batch.len();
+        rows.extend(batch);
+        if count < READ_BATCH_SIZE as usize {
+            break;
+        }
+        offset += count as i64;
+    }
+    tx.commit().await?;
+    Ok(rows)
 }
 
 /// List all usage rows for a specific entity field.
@@ -207,32 +249,48 @@ pub async fn list_usages_by_entity(
     used_by_id: Uuid,
     owner_field: &str,
 ) -> Result<Vec<MediaUsageRow>, sqlx::Error> {
-    sqlx::query_as::<_, MediaUsageRow>(
-        r#"
-        SELECT
-            id,
-            media_id,
-            used_by_type,
-            used_by_id,
-            owner_field,
-            content_kind,
-            locator_kind,
-            locator_key,
-            usage_role,
-            provenance_kind,
-            created_at
-        FROM media.media_usage
-        WHERE used_by_type = $1
-          AND used_by_id = $2
-          AND owner_field = $3
-        ORDER BY created_at DESC
-        "#,
-    )
-    .bind(used_by_type)
-    .bind(used_by_id)
-    .bind(owner_field)
-    .fetch_all(pool)
-    .await
+    let mut tx = begin_repeatable_read(pool).await?;
+    let mut rows = Vec::new();
+    let mut offset = 0_i64;
+    loop {
+        let batch = sqlx::query_as::<_, MediaUsageRow>(
+            r#"
+            SELECT
+                id,
+                media_id,
+                used_by_type,
+                used_by_id,
+                owner_field,
+                content_kind,
+                locator_kind,
+                locator_key,
+                usage_role,
+                provenance_kind,
+                created_at
+            FROM media.media_usage
+            WHERE used_by_type = $1
+              AND used_by_id = $2
+              AND owner_field = $3
+            ORDER BY created_at DESC, id DESC
+            LIMIT $4 OFFSET $5
+            "#,
+        )
+        .bind(used_by_type)
+        .bind(used_by_id)
+        .bind(owner_field)
+        .bind(READ_BATCH_SIZE)
+        .bind(offset)
+        .fetch_all(&mut *tx)
+        .await?;
+        let count = batch.len();
+        rows.extend(batch);
+        if count < READ_BATCH_SIZE as usize {
+            break;
+        }
+        offset += count as i64;
+    }
+    tx.commit().await?;
+    Ok(rows)
 }
 
 fn media_usage_edge_from_row(row: MediaUsageRow) -> Result<MediaUsageEdge, sqlx::Error> {

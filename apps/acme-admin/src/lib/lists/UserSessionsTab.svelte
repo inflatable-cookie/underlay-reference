@@ -18,8 +18,8 @@
   {active}
   {onCountChange}
   getStatusTone={getSessionStatusTone}
-  dataLoader={async (id, fetchFn, token) => {
-    return await adminCommands.listUserSessions(id, fetchFn, token);
+  dataLoader={async (id, fetchFn, token, request) => {
+    return await adminCommands.listUserSessions(id, fetchFn, token, request);
   }}
   revokeAction={async (session, fetchFn, token) => {
     await adminCommands.revokeUserSession(userId, session.id, fetchFn, token);

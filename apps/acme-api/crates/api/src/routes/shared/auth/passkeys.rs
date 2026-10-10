@@ -6,13 +6,21 @@ use crate::dto::auth::{
     PasskeyStartRegistrationDto, PasskeyVerifyFinishRequest, PasskeyVerifyStartRequest,
 };
 
-/// List all passkeys for the current user.
+/// List one bounded page of passkeys for the current user.
 pub async fn list_passkeys(
     AuthenticatedUser(user): AuthenticatedUser,
     State(state): State<AppState>,
+    Query(params): Query<PagePaginationParams>,
 ) -> impl IntoResponse {
-    match state.local_auth.list_passkeys(user.user_id.0).await {
-        Ok(passkeys) => {
+    let mut params = params.clamped();
+    params.page = params.page.max(1);
+    params.limit = params.limit.max(1);
+    match state
+        .local_auth
+        .list_passkeys(user.user_id.0, params.limit_i64(), params.offset_i64())
+        .await
+    {
+        Ok((passkeys, total)) => {
             let data: Vec<PasskeyCredentialDto> = passkeys
                 .into_iter()
                 .map(|pk| PasskeyCredentialDto {
@@ -23,7 +31,11 @@ pub async fn list_passkeys(
                     last_used_at: pk.credential.last_used_at,
                 })
                 .collect();
-            (StatusCode::OK, Json(ListResponse { data })).into_response()
+            (
+                StatusCode::OK,
+                Json(params.wrap_page_list(data, total as u64)),
+            )
+                .into_response()
         }
         Err(err) => map_auth_error_to_response(err),
     }

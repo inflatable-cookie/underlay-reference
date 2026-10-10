@@ -10,6 +10,8 @@ use underlay_core::Uuid;
 
 use crate::local::helpers::roles_for_user;
 
+const SESSION_READ_BATCH_SIZE: i64 = 100;
+
 fn map_session_record(row: &sqlx::postgres::PgRow) -> SessionRecord {
     SessionRecord {
         id: Uuid(row.get("id")),
@@ -182,14 +184,37 @@ impl SessionRepository for AcmeSessionRepo {
     }
 
     async fn list_sessions_for_user(&self, user_id: Uuid) -> AuthResult<Vec<SessionRecord>> {
-        let rows = sqlx::query(sqlx::AssertSqlSafe(format!(
-            "SELECT {SESSION_COLUMNS} FROM auth.sessions WHERE user_id = $1 ORDER BY created_at DESC"
-        )))
-        .bind(user_id.into_inner())
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|_| underlay_auth::AuthError::Internal("DB error".into()))?;
-
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|_| underlay_auth::AuthError::Internal("DB error".into()))?;
+        sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+            .execute(&mut *tx)
+            .await
+            .map_err(|_| underlay_auth::AuthError::Internal("DB error".into()))?;
+        let mut rows = Vec::new();
+        let mut offset = 0_i64;
+        loop {
+            let batch = sqlx::query(sqlx::AssertSqlSafe(format!(
+                "SELECT {SESSION_COLUMNS} FROM auth.sessions WHERE user_id = $1 ORDER BY created_at DESC, id DESC LIMIT $2 OFFSET $3"
+            )))
+            .bind(user_id.into_inner())
+            .bind(SESSION_READ_BATCH_SIZE)
+            .bind(offset)
+            .fetch_all(&mut *tx)
+            .await
+            .map_err(|_| underlay_auth::AuthError::Internal("DB error".into()))?;
+            let count = batch.len();
+            rows.extend(batch);
+            if count < SESSION_READ_BATCH_SIZE as usize {
+                break;
+            }
+            offset += count as i64;
+        }
+        tx.commit()
+            .await
+            .map_err(|_| underlay_auth::AuthError::Internal("DB error".into()))?;
         Ok(rows.iter().map(map_session_record).collect())
     }
 

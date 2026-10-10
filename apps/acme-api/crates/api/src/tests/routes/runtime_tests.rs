@@ -9,6 +9,7 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use axum::routing::get;
 use tower::util::ServiceExt;
+use underlay_observability::Environment;
 
 async fn business_handler() -> &'static str {
     "ok"
@@ -22,8 +23,8 @@ fn version_state() -> ApiVersionState {
 
 /// The runtime family layered under the real version middleware, plus one
 /// business route to prove the exemption is scoped rather than global.
-fn router(include_docs: bool) -> Router {
-    build_runtime_router(include_docs)
+fn router(environment: Environment) -> Router {
+    build_runtime_router_for_environment(environment)
         .route("/v1/projects", get(business_handler))
         .with_state(())
         .layer(axum::middleware::from_fn_with_state(
@@ -33,11 +34,24 @@ fn router(include_docs: bool) -> Router {
 }
 
 async fn status(include_docs: bool, path: &str, version: Option<&str>) -> StatusCode {
+    let environment = if include_docs {
+        Environment::Dev
+    } else {
+        Environment::Prod
+    };
+    status_for_environment(environment, path, version).await
+}
+
+async fn status_for_environment(
+    environment: Environment,
+    path: &str,
+    version: Option<&str>,
+) -> StatusCode {
     let mut builder = Request::builder().uri(path);
     if let Some(version) = version {
         builder = builder.header("x-api-version", version);
     }
-    router(include_docs)
+    router(environment)
         .oneshot(builder.body(Body::empty()).unwrap())
         .await
         .unwrap()
@@ -120,8 +134,8 @@ async fn openapi_is_served_when_docs_are_included() {
 
 #[tokio::test]
 async fn openapi_is_absent_when_docs_are_excluded() {
-    // `main.rs` passes `env.is_development()`, so staging, production, and any
-    // unrecognised environment land here.
+    // The production, staging, test, and fail-closed unknown environments do
+    // not mount either documentation route.
     assert_eq!(
         status(false, "/api/openapi.json", None).await,
         StatusCode::NOT_FOUND,
@@ -130,4 +144,22 @@ async fn openapi_is_absent_when_docs_are_excluded() {
         status(false, "/api/docs", None).await,
         StatusCode::NOT_FOUND
     );
+}
+
+#[tokio::test]
+async fn openapi_is_absent_for_staging_test_and_unknown_environments() {
+    for environment in [
+        Environment::Staging,
+        Environment::Test,
+        Environment::parse("unknown"),
+    ] {
+        assert_eq!(
+            status_for_environment(environment, "/api/openapi.json", None).await,
+            StatusCode::NOT_FOUND,
+        );
+        assert_eq!(
+            status_for_environment(environment, "/api/docs", None).await,
+            StatusCode::NOT_FOUND,
+        );
+    }
 }

@@ -213,7 +213,7 @@ async fn main() -> anyhow::Result<()> {
         .with_client_errors(true)
         .with_server_errors(true);
 
-    let app = routes::build_router_with_options(app_config.env.is_development())
+    let app = routes::build_router_for_environment(app_config.env)
         .with_state(state.clone())
         .layer(axum::Extension(trusted_proxy))
         .layer(axum::middleware::from_fn_with_state(

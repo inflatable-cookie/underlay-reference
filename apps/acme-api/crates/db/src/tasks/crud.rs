@@ -127,31 +127,56 @@ pub async fn list_tasks_for_project(
     pool: &DbPool,
     project_id: Uuid,
     include_completed: bool,
-) -> Result<Vec<TaskRow>, sqlx::Error> {
+    limit: i64,
+    offset: i64,
+) -> Result<(Vec<TaskRow>, i64), sqlx::Error> {
+    let total = if include_completed {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM acme.tasks WHERE project_id = $1 AND deleted_at IS NULL",
+        )
+        .bind(project_id)
+        .fetch_one(pool)
+        .await?
+    } else {
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM acme.tasks WHERE project_id = $1 AND status NOT IN ('completed', 'cancelled') AND deleted_at IS NULL",
+        )
+        .bind(project_id)
+        .fetch_one(pool)
+        .await?
+    };
     if include_completed {
-        sqlx::query_as::<_, TaskRow>(
+        let data = sqlx::query_as::<_, TaskRow>(
             r#"
             SELECT id, project_id, title, description, notes, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
             FROM acme.tasks
             WHERE project_id = $1 AND deleted_at IS NULL
-            ORDER BY position
+            ORDER BY position, id
+            LIMIT $2 OFFSET $3
             "#,
         )
         .bind(project_id)
+        .bind(limit)
+        .bind(offset)
         .fetch_all(pool)
-        .await
+        .await?;
+        Ok((data, total))
     } else {
-        sqlx::query_as::<_, TaskRow>(
+        let data = sqlx::query_as::<_, TaskRow>(
             r#"
             SELECT id, project_id, title, description, notes, status, priority, due_date, completed_at, position, weight, created_at, updated_at, deleted_at
             FROM acme.tasks
             WHERE project_id = $1 AND status NOT IN ('completed', 'cancelled') AND deleted_at IS NULL
-            ORDER BY position
+            ORDER BY position, id
+            LIMIT $2 OFFSET $3
             "#,
         )
         .bind(project_id)
+        .bind(limit)
+        .bind(offset)
         .fetch_all(pool)
-        .await
+        .await?;
+        Ok((data, total))
     }
 }
 

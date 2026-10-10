@@ -216,6 +216,42 @@ For future structured fields, extend the Nightfire module set first. Do not re-i
 2. Add navigation entry in `apps/acme-admin/src/lib/ui/AdminNavList.svelte`.
 3. Prefer shared Underlay page/layout components.
 
+## Consumer security conformance
+
+Run `effigy qa:security` for the released `underlay-consumer-security`
+checker. `effigy qa:conformance` includes this check alongside workspace-shape
+and env-authority checks. The checker covers static patterns for fail-closed
+environment defaults, database error helpers, development-only OpenAPI mounts
+and seeds, HTML and SVG sanitization, served CSP, tracked secret files, TOTP
+cipher use, canonical sessions and refresh checks, role hierarchy, batched
+reorder and row reads, bounded list queries, detail-page fan-out, canonical
+CORS, and frontend build environment reads.
+
+The checks are source analysis, not proof of all runtime security behavior.
+They distinguish query-local bounds and documented bounded-read allowances
+from unbounded reads, and require development-only gates for OpenAPI mounts.
+A passing result covers only the checks that ran; an all-skipped run exits 2
+and reports that coverage was not assessed.
+
+Reference's live project/task and admin child-list routes use Underlay's
+`page`/`limit` request and `{ data, total, has_more }` response. Each query
+caps a page at 100 rows and adds the row ID after its user-visible sort keys,
+so equal sort values have a stable boundary. The typed client walks every page
+for front project/task lists, passkeys, and media version/usage detail views;
+the admin sessions tab requests its selected page directly.
+
+Auth/session and internal media/task collection reads keep their complete-set
+semantics by fetching batches of at most 100 rows in a repeatable-read
+transaction. Their orderings include a unique ID tie-breaker. In particular,
+media reconciliation traverses every usage-edge batch before applying its
+set-diff; it does not treat one batch as the full owner state.
+
+The runtime router resolves `ENVIRONMENT` with the legacy `ACME_ENV` fallback
+and mounts OpenAPI only when that resolved value is a development environment.
+Unset and unknown values fail closed to production. The public `build_router`
+tooling entry point uses the same gate, so tests and offline tools do not get
+an unconditional documentation mount.
+
 ## Validation quick commands
 
 ```bash
