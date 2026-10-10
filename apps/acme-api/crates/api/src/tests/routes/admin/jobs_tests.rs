@@ -43,6 +43,9 @@ fn admin_user() -> AdminUser {
 
 async fn build_test_state(pool: sqlx::PgPool) -> AppState {
     ensure_test_env();
+    // These handlers intentionally use the process-global pool populated by
+    // `main`. Their test state must install the same isolated fixture pool.
+    let _ = crate::state::DB_POOL.set(pool.clone());
 
     let local_auth = Arc::new(
         AcmeLocalAuthService::from_env(pool.clone()).expect("should create local auth service"),

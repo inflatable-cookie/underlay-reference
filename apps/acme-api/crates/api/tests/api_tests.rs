@@ -895,21 +895,20 @@ mod database_tests {
 
         let notes: NightfireValue = serde_json::from_value(serde_json::json!({
             "schema": "acme:task/notes@1",
-            "block": {
+            "blocks": [{
                 "id": "gallery_01",
                 "type": "notes.gallery",
                 "version": "initial",
-                "hash": "",
                 "data": {
                     "pages": [
                         {
                             "title": "Cover",
-                            "imageId": media_id.to_string(),
+                            "image_id": media_id.to_string(),
                             "caption": "Nested media reference"
                         }
                     ]
                 }
-            }
+            }]
         }))
         .expect("nightfire value should deserialize");
 
@@ -943,7 +942,7 @@ mod database_tests {
         assert_eq!(usage.owner_field.as_deref(), Some("notes"));
         assert_eq!(usage.content_kind, "structured_content");
         assert_eq!(usage.locator_kind, "block_id");
-        assert_eq!(usage.locator_key, "gallery_01#/pages/0/imageId");
+        assert_eq!(usage.locator_key, "gallery_01#/pages/0/image_id");
         assert_eq!(usage.usage_role, "embedded");
         assert_eq!(usage.provenance_kind, "content_sync");
 
@@ -1010,21 +1009,20 @@ mod database_tests {
         .bind(project_id)
         .bind(serde_json::json!({
             "schema": "acme:task/notes@1",
-            "block": {
+            "blocks": [{
                 "id": "nf_locator_demo",
                 "type": "notes.gallery",
                 "version": "initial",
-                "hash": "",
                 "data": {
                     "pages": [
                         {
                             "title": "Lookup test",
-                            "imageId": media_id.to_string(),
+                            "image_id": media_id.to_string(),
                             "caption": "Current nested reference"
                         }
                     ]
                 }
-            }
+            }]
         }))
         .execute(db.pool())
         .await
@@ -1034,7 +1032,7 @@ mod database_tests {
             db.pool(),
             task_id,
             "block_id",
-            "nf_locator_demo#/pages/0/imageId",
+            "nf_locator_demo#/pages/0/image_id",
         )
         .await
         .expect("locator resolve should succeed");
@@ -1107,23 +1105,20 @@ mod database_tests {
 
         let description: NightfireValue = serde_json::from_value(serde_json::json!({
             "schema": "acme:project/description@1",
-            "blocks": [
-                {
+            "blocks": [{
                     "id": "project_gallery_01",
                     "type": "notes.gallery",
                     "version": "initial",
-                    "hash": "",
                     "data": {
                         "pages": [
                             {
                                 "title": "Overview",
-                                "imageId": media_id.to_string(),
+                            "image_id": media_id.to_string(),
                                 "caption": "Nested project description media reference"
                             }
                         ]
                     }
-                }
-            ]
+                }]
         }))
         .expect("nightfire value should deserialize");
 
@@ -1157,7 +1152,7 @@ mod database_tests {
         assert_eq!(usage.owner_field.as_deref(), Some("description"));
         assert_eq!(usage.content_kind, "structured_content");
         assert_eq!(usage.locator_kind, "block_id");
-        assert_eq!(usage.locator_key, "project_gallery_01#/pages/0/imageId");
+        assert_eq!(usage.locator_key, "project_gallery_01#/pages/0/image_id");
         assert_eq!(usage.usage_role, "embedded");
         assert_eq!(usage.provenance_kind, "content_sync");
 
@@ -1545,5 +1540,480 @@ mod bounded_collection_tests {
         cleanup::delete_user(db.pool(), user.id)
             .await
             .expect("session fixture cleanup should succeed");
+    }
+
+    #[tokio::test]
+    async fn media_versions_renditions_unused_media_comments_and_labels_traverse_all_batches() {
+        if skip_without_db() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        let db = setup_test_db().await;
+        let owner = create_test_user(db.pool(), Default::default()).await;
+        let project = create_test_project(db.pool(), owner.id, Default::default()).await;
+        let task = create_test_task(db.pool(), project.id, Default::default()).await;
+        let same_created_at = Utc::now();
+
+        let media_id = Uuid::now_v7();
+        sqlx::query(
+            "INSERT INTO media.media (id, kind, visibility, title) VALUES ($1, 'image', 'restricted', 'versions fixture')",
+        )
+        .bind(media_id)
+        .execute(db.pool())
+        .await
+        .expect("media version fixture should insert");
+
+        let version_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_version_ids = version_ids.clone();
+        expected_version_ids.sort_by(|left, right| right.cmp(left));
+        sqlx::query(
+            r#"
+            INSERT INTO media.media_version (id, media_id, state, mime_type, created_at)
+            SELECT id, $1, 'ready', 'image/png', $3
+            FROM UNNEST($2::uuid[]) AS version_ids(id)
+            "#,
+        )
+        .bind(media_id)
+        .bind(&version_ids)
+        .bind(same_created_at)
+        .execute(db.pool())
+        .await
+        .expect("version fixtures should insert");
+        let versions = media::list_media_versions(db.pool(), media_id)
+            .await
+            .expect("complete version listing should traverse every batch");
+        assert_eq!(versions.len(), 205);
+        assert_eq!(
+            versions.iter().map(|row| row.id).collect::<Vec<_>>(),
+            expected_version_ids
+        );
+
+        let rendition_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_renditions = rendition_ids
+            .iter()
+            .enumerate()
+            .map(|(index, id)| (format!("rendition-{index:03}"), *id))
+            .collect::<Vec<_>>();
+        expected_renditions.sort();
+        sqlx::query(
+            r#"
+            INSERT INTO media.media_rendition (
+                id, media_version_id, kind, byte_size, mime_type,
+                storage_provider, bucket, object_key
+            )
+            SELECT id, $1, 'rendition-' || lpad((ordinal - 1)::text, 3, '0'), 1, 'image/png',
+                   'test', 'test', 'renditions/' || id::text
+            FROM UNNEST($2::uuid[]) WITH ORDINALITY AS rendition_ids(id, ordinal)
+            "#,
+        )
+        .bind(version_ids[0])
+        .bind(&rendition_ids)
+        .execute(db.pool())
+        .await
+        .expect("rendition fixtures should insert");
+        let renditions = media::list_media_renditions(db.pool(), version_ids[0])
+            .await
+            .expect("complete rendition listing should traverse every batch");
+        assert_eq!(renditions.len(), 205);
+        assert_eq!(
+            renditions
+                .iter()
+                .map(|row| (row.kind.clone(), row.id))
+                .collect::<Vec<_>>(),
+            expected_renditions
+        );
+
+        let unused_media_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let unused_version_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_unused_ids = unused_media_ids.clone();
+        expected_unused_ids.sort_by(|left, right| right.cmp(left));
+        sqlx::query(
+            r#"
+            INSERT INTO media.media (id, kind, visibility, title, created_at)
+            SELECT id, 'image', 'restricted', 'unused batch fixture', $2
+            FROM UNNEST($1::uuid[]) AS media_ids(id)
+            "#,
+        )
+        .bind(&unused_media_ids)
+        .bind(same_created_at)
+        .execute(db.pool())
+        .await
+        .expect("unused media fixtures should insert");
+        sqlx::query(
+            r#"
+            INSERT INTO media.media_version (id, media_id, state, mime_type, created_at)
+            SELECT media_ids.version_id, media_ids.media_id, 'ready', 'image/png', $3
+            FROM UNNEST($1::uuid[], $2::uuid[]) AS media_ids(media_id, version_id)
+            "#,
+        )
+        .bind(&unused_media_ids)
+        .bind(&unused_version_ids)
+        .bind(same_created_at)
+        .execute(db.pool())
+        .await
+        .expect("unused media versions should insert");
+        sqlx::query(
+            r#"
+            UPDATE media.media AS media
+            SET current_version_id = fixtures.version_id
+            FROM UNNEST($1::uuid[], $2::uuid[]) AS fixtures(media_id, version_id)
+            WHERE media.id = fixtures.media_id
+            "#,
+        )
+        .bind(&unused_media_ids)
+        .bind(&unused_version_ids)
+        .execute(db.pool())
+        .await
+        .expect("unused media should reference its current versions");
+        let unused = media::list_unused_media(db.pool())
+            .await
+            .expect("complete unused media listing should traverse every batch");
+        let returned_unused_ids = unused
+            .iter()
+            .filter(|row| unused_media_ids.contains(&row.id))
+            .map(|row| row.id)
+            .collect::<Vec<_>>();
+        assert_eq!(returned_unused_ids, expected_unused_ids);
+
+        let comment_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_comment_ids = comment_ids.clone();
+        expected_comment_ids.sort();
+        sqlx::query(
+            r#"
+            INSERT INTO acme.task_comments (id, task_id, author_id, body, created_at)
+            SELECT id, $1, $2, 'bounded traversal comment', $4
+            FROM UNNEST($3::uuid[]) AS comment_ids(id)
+            "#,
+        )
+        .bind(task.id)
+        .bind(owner.id)
+        .bind(&comment_ids)
+        .bind(same_created_at)
+        .execute(db.pool())
+        .await
+        .expect("comment fixtures should insert");
+        let comments = tasks::list_task_comments(db.pool(), task.id)
+            .await
+            .expect("complete comment listing should traverse every batch");
+        assert_eq!(comments.len(), 205);
+        assert_eq!(
+            comments.iter().map(|row| row.id).collect::<Vec<_>>(),
+            expected_comment_ids
+        );
+
+        let label_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
+        let mut expected_label_ids = label_ids
+            .iter()
+            .enumerate()
+            .map(|(index, id)| (format!("bounded-label-{index:03}"), *id))
+            .collect::<Vec<_>>();
+        expected_label_ids.sort();
+        sqlx::query(
+            r#"
+            INSERT INTO acme.labels (id, project_id, name, color, weight, created_at)
+            SELECT id, $1, 'bounded-label-' || lpad((ordinal - 1)::text, 3, '0'), '#6366f1', 7, $3
+            FROM UNNEST($2::uuid[]) WITH ORDINALITY AS label_ids(id, ordinal)
+            "#,
+        )
+        .bind(project.id)
+        .bind(&label_ids)
+        .bind(same_created_at)
+        .execute(db.pool())
+        .await
+        .expect("label fixtures should insert");
+        let labels = tasks::list_labels_for_project(db.pool(), project.id)
+            .await
+            .expect("complete label listing should traverse every batch");
+        assert_eq!(labels.len(), 205);
+        assert_eq!(
+            labels
+                .iter()
+                .map(|row| (row.name.clone(), row.id))
+                .collect::<Vec<_>>(),
+            expected_label_ids
+        );
+
+        sqlx::query("DELETE FROM media.media WHERE id = $1 OR id = ANY($2)")
+            .bind(media_id)
+            .bind(&unused_media_ids)
+            .execute(db.pool())
+            .await
+            .expect("media traversal fixtures should clean up");
+        cleanup::delete_user(db.pool(), owner.id)
+            .await
+            .expect("task reader fixtures should clean up");
+    }
+}
+
+mod bounded_route_tests {
+    use std::{
+        env,
+        ffi::{OsStr, OsString},
+        sync::{Arc, OnceLock},
+    };
+
+    use acme_api::{config::AcmeConfig, routes, state::AppState};
+    use acme_auth::{AcmeLocalAuthService, EmailTotpService};
+    use acme_test_utils::{
+        cleanup,
+        fixtures::{create_test_project, create_test_task, create_test_user},
+        setup_test_db,
+    };
+    use async_trait::async_trait;
+    use axum::{body::Body, http::Request, Router};
+    use serde_json::Value;
+    use tower::util::ServiceExt;
+    use underlay_auth::{AuthError, AuthProvider, Principal, RoleSet};
+    use underlay_blob::NoopAdapter;
+    use underlay_jobs_postgres::JobRepository;
+    use underlay_observability::Environment;
+
+    static TEST_ENV_ONCE: OnceLock<()> = OnceLock::new();
+    static ENVIRONMENT_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+    #[derive(Clone)]
+    struct FixedUserAuthProvider {
+        user_id: acme_core::Uuid,
+    }
+
+    #[async_trait]
+    impl AuthProvider for FixedUserAuthProvider {
+        async fn authenticate_bearer(
+            &self,
+            bearer_token: &str,
+        ) -> underlay_auth::AuthResult<Principal> {
+            if bearer_token != "bounded-route-test-token" {
+                return Err(AuthError::TokenInvalid);
+            }
+            Ok(Principal {
+                user_id: self.user_id,
+                roles: RoleSet::new(["user"]),
+            })
+        }
+    }
+
+    fn ensure_test_environment() {
+        TEST_ENV_ONCE.get_or_init(|| {
+            let (jwt_cfg, _) =
+                underlay_auth_jwt::JwtConfig::generate().expect("test JWT keys should generate");
+            env::set_var("AUTH_JWT_PRIVATE_KEY", jwt_cfg.private_key_b64());
+            env::set_var("AUTH_JWT_PUBLIC_KEY", jwt_cfg.public_key_b64());
+            env::set_var("ENVIRONMENT", "test");
+            env::set_var("WEBAUTHN_RP_ID", "localhost");
+            env::set_var("WEBAUTHN_RP_ORIGIN", "http://localhost:3000");
+            env::set_var("WEBAUTHN_RP_NAME", "Reference API tests");
+        });
+    }
+
+    async fn test_state(pool: sqlx::PgPool, user_id: acme_core::Uuid) -> AppState {
+        ensure_test_environment();
+        let local_auth = Arc::new(
+            AcmeLocalAuthService::from_env(pool.clone()).expect("test auth service should build"),
+        );
+        let auth_provider: Arc<dyn AuthProvider> = Arc::new(FixedUserAuthProvider { user_id });
+        let app_config = acme_infra::AppConfig::from_env().expect("test config should load");
+        let email_manager = Arc::new(
+            acme_infra::create_email_manager(&app_config.email)
+                .expect("test email manager should build"),
+        );
+        let email_templates = Arc::new(
+            acme_infra::create_template_engine(&app_config.email)
+                .expect("test email templates should build"),
+        );
+        let email_totp = Arc::new(EmailTotpService::new(
+            pool.clone(),
+            email_manager.clone(),
+            email_templates.clone(),
+            app_config.email.clone(),
+        ));
+
+        AppState {
+            local_auth,
+            auth_provider,
+            cookie_config: underlay_http::AuthCookieConfig::default(),
+            email_manager,
+            email_templates,
+            email_totp,
+            email_config: app_config.email,
+            blob_adapter: Arc::new(NoopAdapter::new()),
+            job_repository: Some(Arc::new(JobRepository::new(pool))),
+            config: AcmeConfig::default(),
+        }
+    }
+
+    async fn json_body(response: axum::response::Response) -> Value {
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("route response body should be readable");
+        serde_json::from_slice(&body).expect("route response should be JSON")
+    }
+
+    async fn get_page(app: Router, path: &str) -> (axum::http::StatusCode, Value) {
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(path)
+                    .header("authorization", "Bearer bounded-route-test-token")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("front list route should respond");
+        let status = response.status();
+        (status, json_body(response).await)
+    }
+
+    #[tokio::test]
+    async fn project_and_task_http_routes_return_bounded_page_contracts() {
+        if env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        let db = setup_test_db().await;
+        let owner = create_test_user(db.pool(), Default::default()).await;
+        let first_project = create_test_project(db.pool(), owner.id, Default::default()).await;
+        let second_project = create_test_project(db.pool(), owner.id, Default::default()).await;
+        let tasks = [
+            create_test_task(db.pool(), first_project.id, Default::default()).await,
+            create_test_task(db.pool(), first_project.id, Default::default()).await,
+        ];
+        let environment_guard = ENVIRONMENT_LOCK.lock().await;
+        let state = test_state(db.pool_clone(), acme_core::Uuid(owner.id)).await;
+        drop(environment_guard);
+        let app = routes::build_router_for_environment(Environment::Test).with_state(state);
+
+        let (status, first_projects) = get_page(app.clone(), "/v1/projects?page=1&limit=1").await;
+        assert_eq!(status, axum::http::StatusCode::OK);
+        assert_eq!(first_projects["data"].as_array().unwrap().len(), 1);
+        assert_eq!(first_projects["total"], 2);
+        assert!(first_projects["has_more"].as_bool().unwrap());
+
+        let (status, last_project_page) =
+            get_page(app.clone(), "/v1/projects?page=2&limit=1").await;
+        assert_eq!(status, axum::http::StatusCode::OK);
+        assert_eq!(last_project_page["data"].as_array().unwrap().len(), 1);
+        assert_eq!(last_project_page["total"], 2);
+        assert!(!last_project_page["has_more"].as_bool().unwrap());
+
+        let task_path = format!("/v1/projects/{}/tasks?page=1&limit=1", first_project.id);
+        let (status, first_task_page) = get_page(app.clone(), &task_path).await;
+        assert_eq!(status, axum::http::StatusCode::OK);
+        assert_eq!(first_task_page["data"].as_array().unwrap().len(), 1);
+        assert_eq!(first_task_page["total"], 2);
+        assert!(first_task_page["has_more"].as_bool().unwrap());
+
+        let task_path = format!("/v1/projects/{}/tasks?page=2&limit=1", first_project.id);
+        let (status, last_task_page) = get_page(app, &task_path).await;
+        assert_eq!(status, axum::http::StatusCode::OK);
+        assert_eq!(last_task_page["data"].as_array().unwrap().len(), 1);
+        assert_eq!(last_task_page["total"], 2);
+        assert!(!last_task_page["has_more"].as_bool().unwrap());
+        let returned_task_ids = first_task_page["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .chain(last_task_page["data"].as_array().unwrap())
+            .map(|row| row["id"].as_str().unwrap())
+            .collect::<Vec<_>>();
+        let expected_task_ids = tasks
+            .iter()
+            .map(|task| task.id.to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            returned_task_ids,
+            expected_task_ids
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>()
+        );
+
+        cleanup::delete_user(db.pool(), owner.id)
+            .await
+            .expect("route test data should clean up");
+        assert_ne!(first_project.id, second_project.id);
+    }
+
+    struct RestoreEnvironment(Vec<(&'static OsStr, Option<OsString>)>);
+
+    impl Drop for RestoreEnvironment {
+        fn drop(&mut self) {
+            for (name, prior_value) in &self.0 {
+                if let Some(value) = prior_value {
+                    env::set_var(name, value);
+                } else {
+                    env::remove_var(name);
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn public_build_router_resolves_docs_environment_and_fails_closed() {
+        if env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err() {
+            eprintln!("Skipping test: DATABASE_URL not set");
+            return;
+        }
+
+        let _environment_guard = ENVIRONMENT_LOCK.lock().await;
+        let _restore = RestoreEnvironment(vec![
+            (OsStr::new("ENVIRONMENT"), env::var_os("ENVIRONMENT")),
+            (OsStr::new("ACME_ENV"), env::var_os("ACME_ENV")),
+        ]);
+        let db = setup_test_db().await;
+        let owner = create_test_user(db.pool(), Default::default()).await;
+        let state = test_state(db.pool_clone(), acme_core::Uuid(owner.id)).await;
+
+        env::set_var("ENVIRONMENT", "dev");
+        env::remove_var("ACME_ENV");
+        let development = routes::build_router()
+            .with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .uri("/api/openapi.json")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("development public router should answer");
+        assert_eq!(development.status(), axum::http::StatusCode::OK);
+
+        for environment in ["production", "staging", "unknown"] {
+            env::set_var("ENVIRONMENT", environment);
+            let response = routes::build_router()
+                .with_state(state.clone())
+                .oneshot(
+                    Request::builder()
+                        .uri("/api/openapi.json")
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .expect("non-development public router should answer");
+            assert_eq!(
+                response.status(),
+                axum::http::StatusCode::NOT_FOUND,
+                "OpenAPI must be absent for {environment}"
+            );
+        }
+
+        env::remove_var("ENVIRONMENT");
+        env::set_var("ACME_ENV", "unknown");
+        let unknown_alias = routes::build_router()
+            .with_state(state)
+            .oneshot(
+                Request::builder()
+                    .uri("/api/openapi.json")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("unknown alias environment should answer");
+        assert_eq!(unknown_alias.status(), axum::http::StatusCode::NOT_FOUND);
+
+        cleanup::delete_user(db.pool(), owner.id)
+            .await
+            .expect("route test user should clean up");
     }
 }
