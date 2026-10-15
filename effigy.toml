@@ -11,6 +11,14 @@ project_name = "underlay-reference-dev"
 workspace_subdir = "underlay-reference"
 databases = ["acme"]
 
+# Host development profiles: services in containers, API/front/admin/jobs on
+# the host. `effigy dev` starts the hybrid profile; `effigy dev:container`
+# keeps the whole-stack container session.
+[bundle.profiles]
+enabled = true
+dev = "hybrid"
+test_task = "acme-api/test"
+
 [bundle.sources]
 siblings = false
 

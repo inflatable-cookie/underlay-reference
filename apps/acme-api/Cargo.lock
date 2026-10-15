@@ -138,6 +138,7 @@ dependencies = [
  "rand 0.10.2",
  "serde",
  "thiserror 2.0.20",
+ "toml",
  "tracing",
  "underlay-config",
  "underlay-email",

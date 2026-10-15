@@ -52,10 +52,10 @@ Validation.
 
 ## Runtime Stance
 
-- Treat the live stack as Effigy-owned. Use `effigy dev`, `effigy container shell`, or a package-owned task (`acme-admin/prepare`, `acme-front/prepare`, `acme-api/migration:*`) when you need to affect the running environment.
+- Treat the live stack as Effigy-owned. `effigy dev` runs the hybrid profile (services in containers, API/jobs/front/admin on the host); `effigy dev:container` is the whole-stack container session. Use `effigy dev`, `effigy dev:down`, `effigy hybrid:exec -- <cmd>` or a package-owned task (`acme-admin/prepare`, `acme-front/prepare`, `acme-api/migration:*`) when you need to affect the running environment.
 - Do not run `bun install`, `npm install`, `pnpm install`, `cargo build`, or similar hydration/build commands on the host expecting them to change the live runtime unless the task is explicitly host-owned.
 - Do not treat host-side `node_modules`, `vendor`, `target`, `.pnpm-store`, `.svelte-kit`, or similar artifact dirs as the source of truth for the running stack. Those may be isolated inside the container runtime.
-- When raw `bun` or `cargo` is genuinely needed, prefer running it through `effigy container shell` when the live runtime matters.
+- When raw `bun` or `cargo` needs the live services, run it through `effigy hybrid:exec -- <cmd>` (hybrid) or `effigy container shell` (container mode).
 
 For first-time local bring-up from outside this repo:
 - use `effigy bootstrap git@github.com:inflatable-cookie/underlay-reference.git`
