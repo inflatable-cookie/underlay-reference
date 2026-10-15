@@ -5025,8 +5025,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-audit"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "chrono",
  "serde",
@@ -5041,8 +5041,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -5061,8 +5061,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-email-totp"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5074,8 +5074,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-jwt"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5094,8 +5094,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-oauth"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -5112,8 +5112,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-password"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5128,8 +5128,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-session"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5143,8 +5143,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-state-postgres"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "chrono",
  "serde",
@@ -5156,8 +5156,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-totp"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "base32",
  "hex",
@@ -5174,8 +5174,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-webauthn"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "base64urlsafedata",
  "serde",
@@ -5190,8 +5190,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-aws"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "aws-config",
  "aws-credential-types",
@@ -5200,8 +5200,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-blob"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "aws-sdk-s3",
@@ -5222,8 +5222,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-config"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "serde",
  "thiserror 2.0.20",
@@ -5232,8 +5232,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-core"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "serde",
  "uuid",
@@ -5241,8 +5241,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-db"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -5256,8 +5256,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-devtools"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -5277,8 +5277,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-email"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5293,8 +5293,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-http"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "axum",
  "chrono",
@@ -5318,8 +5318,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-jobs"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5332,8 +5332,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-jobs-postgres"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5350,8 +5350,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-media"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5367,8 +5367,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-migration-core"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5382,16 +5382,16 @@ dependencies = [
 
 [[package]]
 name = "underlay-nightfire"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "nightfire",
 ]
 
 [[package]]
 name = "underlay-observability"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "http 1.5.0",
  "pin-project-lite",
@@ -5404,16 +5404,16 @@ dependencies = [
 
 [[package]]
 name = "underlay-query"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "underlay-ratelimit"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "dashmap",
@@ -5424,8 +5424,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-security-alerts"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "chrono",
  "serde",
@@ -5439,8 +5439,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-testing"
-version = "0.10.3"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.3#72d6fd91a3096ffd85b2ab25e9f5cff8bb6e6d03"
+version = "0.10.4"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.4#c023d5e653768507e5f173a17f0eb99dbc029126"
 dependencies = [
  "async-trait",
  "axum",
