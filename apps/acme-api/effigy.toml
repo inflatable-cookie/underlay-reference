@@ -17,9 +17,11 @@ build = "cd {repo} && cargo build {args}"
 
 check = "cd {repo} && cargo check --workspace --all-features {args}"
 
-"migration:reset:schema" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin reset_dev_db {args}", run_in = "container" }
-"migration:apply" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin migrate_dev_db -- schema {args}", run_in = "container" }
-"migration:apply:overlay" = { run = "cd {repo}/../.. && cargo run --manifest-path apps/acme-api/Cargo.toml -p acme-db --bin migrate_dev_db -- overlay {args}", run_in = "container" }
+# Dev database tools run on the host against the running hybrid profile
+# (`effigy dev`); the bundle's hybrid:exec supplies its DATABASE_URL.
+"migration:reset:schema" = { run = "effigy --repo {repo}/../.. hybrid:exec -- cargo run --manifest-path {repo}/Cargo.toml -p acme-db --bin reset_dev_db {args}", run_in = "host" }
+"migration:apply" = { run = "effigy --repo {repo}/../.. hybrid:exec -- cargo run --manifest-path {repo}/Cargo.toml -p acme-db --bin migrate_dev_db -- schema {args}", run_in = "host" }
+"migration:apply:overlay" = { run = "effigy --repo {repo}/../.. hybrid:exec -- cargo run --manifest-path {repo}/Cargo.toml -p acme-db --bin migrate_dev_db -- overlay {args}", run_in = "host" }
 "migration:reset" = [
   { task = "migration:reset:schema" },
   { task = "migration:apply" },

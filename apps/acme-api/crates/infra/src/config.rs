@@ -543,10 +543,16 @@ impl AppBehaviorConfig {
         let overlay_name = Environment::resolve_name("ENVIRONMENT", Some("ACME_ENV"))
             .unwrap_or_else(|| "dev".to_string());
         let environment = Environment::resolve("ENVIRONMENT", Some("ACME_ENV"));
-        let parsed = underlay_config::ConfigStack::new(underlay_config::discover_config_dir(None))
-            .with_environment(overlay_name)
-            .with_optional_local_overlay("local")
-            .load_namespaced_or_legacy::<FileBehaviorConfig>("acme_api");
+        let mut stack =
+            underlay_config::ConfigStack::new(underlay_config::discover_config_dir(None))
+                .with_environment(overlay_name)
+                .with_optional_local_overlay("local");
+        if environment.is_local_dev() {
+            for (key, value) in host_profile_overrides(|key| env::var(key).ok()) {
+                stack = stack.with_env_override(key, toml::Value::String(value));
+            }
+        }
+        let parsed = stack.load_namespaced_or_legacy::<FileBehaviorConfig>("acme_api");
         let parsed = match parsed {
             Ok(parsed) => parsed,
             Err(err) => {
@@ -855,6 +861,38 @@ const LEGACY_BEHAVIOR_ENV_KEYS: [(&str, &str); 22] = [
     ),
 ];
 
+/// Typed-config overrides from the Effigy bundle's host profiles.
+///
+/// `dev:hybrid` and `dev:test` serve the admin app on a checkout-scoped name
+/// (`admin.acme-w<key>.test`, `admin.test.acme.test`). Passkeys and email
+/// links must use that origin, not the declared one in `config/effigy.toml`.
+/// Applied only in non-deployed environments.
+fn host_profile_overrides(lookup: impl Fn(&str) -> Option<String>) -> Vec<(&'static str, String)> {
+    let Some(admin) = lookup("EFFIGY_PROFILE_ADMIN_PUBLIC_URL")
+        .map(|value| value.trim().trim_end_matches('/').to_string())
+        .filter(|value| !value.is_empty())
+    else {
+        return Vec::new();
+    };
+    let Some(host) = admin
+        .split_once("://")
+        .map(|(_, rest)| {
+            rest.split([':', '/'])
+                .next()
+                .unwrap_or_default()
+                .to_string()
+        })
+        .filter(|host| !host.is_empty())
+    else {
+        return Vec::new();
+    };
+    vec![
+        ("acme_api.auth.webauthn_rp_id", host),
+        ("acme_api.auth.webauthn_rp_origin", admin.clone()),
+        ("acme_api.email.app_url", admin),
+    ]
+}
+
 fn collect_set_legacy_behavior_env_keys() -> Vec<(&'static str, &'static str)> {
     LEGACY_BEHAVIOR_ENV_KEYS
         .iter()
@@ -1050,3 +1088,39 @@ pub fn log_effective_config(config: &AppConfig) {
 #[cfg(test)]
 #[path = "tests/config_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod host_profile_override_tests {
+    use super::host_profile_overrides;
+
+    #[test]
+    fn scoped_admin_url_overrides_passkey_and_email_origins() {
+        let overrides = host_profile_overrides(|key| {
+            (key == "EFFIGY_PROFILE_ADMIN_PUBLIC_URL")
+                .then(|| "https://admin.acme-w1234.test/".to_string())
+        });
+        assert_eq!(
+            overrides,
+            vec![
+                (
+                    "acme_api.auth.webauthn_rp_id",
+                    "admin.acme-w1234.test".to_string()
+                ),
+                (
+                    "acme_api.auth.webauthn_rp_origin",
+                    "https://admin.acme-w1234.test".to_string()
+                ),
+                (
+                    "acme_api.email.app_url",
+                    "https://admin.acme-w1234.test".to_string()
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn no_profile_means_no_overrides() {
+        assert!(host_profile_overrides(|_| None).is_empty());
+        assert!(host_profile_overrides(|_| Some("  ".to_string())).is_empty());
+    }
+}

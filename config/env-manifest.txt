@@ -117,6 +117,9 @@ ACME_ALLOW_NOOP_BLOB
 # Container mode leaves both unset and uses https://s3.acme.test.
 EFFIGY_PROFILE_S3_ENDPOINT
 EFFIGY_PROFILE_S3_PUBLIC_URL
+# Development only: the host profiles' checkout-scoped admin origin. Overrides
+# the passkey relying party and email app URL from config/effigy.toml.
+EFFIGY_PROFILE_ADMIN_PUBLIC_URL
 # Conditional: S3 credentials resolve through the standard AWS chain, so these
 # are read by the AWS SDK rather than by app code. Not needed when an
 # instance/task role or shared config supplies them.

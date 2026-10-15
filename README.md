@@ -302,8 +302,18 @@ per-package install step.
 ### Running the Application
 
 ```bash
-# Full workspace: shell + admin + front + api + jobs + managed containers
+# Hybrid (default): Postgres, Mailpit, DbGate and Silo in containers;
+# API, jobs, front and admin on the host behind the gateway
 effigy dev
+effigy dev:hybrid:status
+effigy dev:hybrid:logs
+effigy dev:down
+
+# Whole stack inside one Linux workspace container (the previous default)
+effigy dev:container
+
+# Fresh isolated stack under test.acme.test, run acme-api/test once, tear down
+effigy dev:test
 ```
 
 ### Development URLs
@@ -315,16 +325,25 @@ effigy dev
 | API | https://api.acme.test |
 | pgweb | https://pgweb.acme.test |
 | Mailpit | https://mailpit.acme.test |
-| MinIO Console | https://minio.acme.test |
+| Silo Console | https://minio.acme.test |
 
 Notes:
-- `effigy dev` is the only supported workspace dev runner.
-- `effigy dev` starts one canonical `workspace` container and runs shell, API, jobs, front, and admin inside it.
-- The managed shell tab opens at the workspace root inside that running `workspace` container.
-- The local shape is domain-first through the Effigy gateway: HTTPS for front/admin/API/pgweb/Mailpit/MinIO Console, plus `https://s3.acme.test` for browser-facing S3 uploads.
-- Use the same `.test` aliases inside the workspace container too: `db.acme.test`, `smtp.acme.test`, `s3.acme.test`.
-- Postgres persists in the repo-scoped named volume `underlay-reference-dev-postgres-data`; MinIO uses `underlay-reference-dev-minio-data`.
-- Older host bind-mount paths under `.effigy/runtime/data/` are not migrated automatically into those named volumes.
+- `effigy dev` starts the bundle's hybrid profile and returns once every
+  listener is ready; `effigy dev:down` stops it. It needs Effigy `main` at or
+  after `e91cd4c` (`effigy bootstrap:local`), with the shared gateway restarted
+  after installing.
+- Host processes need the host toolchains: Rust for the API/jobs and Bun for
+  front/admin (`effigy workspace:js:prepare`).
+- `effigy dev:container` is the previous whole-stack session: one `workspace`
+  container running shell, API, jobs, front and admin.
+- Linked worktrees get their own scoped hostnames (`acme-w<key>.test`), ports
+  and data automatically.
+- The two modes keep separate data: hybrid uses the
+  `underlay-reference-dev-hybrid` volumes, container mode the
+  `underlay-reference-dev` ones. Run one mode at a time; both claim the same
+  hostnames.
+- `effigy acme-api/migration:*` and `effigy state ...` run on the host against
+  the hybrid database, so start `effigy dev` first.
 
 ### Error Logging Smoke Test
 

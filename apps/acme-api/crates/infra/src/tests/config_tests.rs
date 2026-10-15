@@ -4,6 +4,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+/// Serialize env-mutating tests and clear the host-profile override, which a
+/// developer's `dev:test` or `hybrid:exec` shell exports for the running app.
+fn lock_env() -> std::sync::MutexGuard<'static, ()> {
+    let guard = ENV_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    std::env::remove_var("EFFIGY_PROFILE_ADMIN_PUBLIC_URL");
+    guard
+}
+
 fn with_env_var(key: &str, value: Option<&str>) -> Option<String> {
     let previous = std::env::var(key).ok();
     match value {
@@ -40,7 +50,7 @@ fn write_default_toml(base_dir: &Path, content: &str) {
 
 #[test]
 fn migrated_behavior_keys_use_typed_config_not_env_overrides() {
-    let _lock = ENV_LOCK.lock().unwrap();
+    let _lock = lock_env();
 
     let test_dir = unique_temp_dir();
     write_default_toml(
@@ -127,7 +137,7 @@ argon2_parallelism = 13
 
 #[test]
 fn legacy_behavior_key_collection_detects_set_env_keys() {
-    let _lock = ENV_LOCK.lock().unwrap();
+    let _lock = lock_env();
 
     let prev_a = with_env_var("EMAIL_DEFAULT_FROM", Some("legacy@example.com"));
     let prev_b = with_env_var("AUTH_JWT_ISSUER", Some("legacy-issuer"));
@@ -253,7 +263,7 @@ fn csrf_stays_enabled_when_not_disabled() {
 
 #[test]
 fn csrf_protection_defaults_to_enabled_when_unset() {
-    let _lock = ENV_LOCK.lock().unwrap();
+    let _lock = lock_env();
 
     let previous = with_env_var("CSRF_PROTECTION", None);
     assert!(csrf_protection_requested(), "unset must mean protected");
@@ -275,7 +285,7 @@ fn csrf_protection_defaults_to_enabled_when_unset() {
 
 #[test]
 fn malformed_config_stack_is_fatal_in_a_deployed_environment() {
-    let _lock = ENV_LOCK.lock().unwrap();
+    let _lock = lock_env();
 
     let test_dir = unique_temp_dir();
     write_default_toml(&test_dir, "this is not = valid toml [[[");
@@ -298,7 +308,7 @@ fn malformed_config_stack_is_fatal_in_a_deployed_environment() {
 
 #[test]
 fn malformed_config_stack_falls_back_to_defaults_in_local() {
-    let _lock = ENV_LOCK.lock().unwrap();
+    let _lock = lock_env();
 
     let test_dir = unique_temp_dir();
     write_default_toml(&test_dir, "this is not = valid toml [[[");
@@ -375,7 +385,7 @@ fn cookie_defaults_are_the_safe_ones() {
 
 #[test]
 fn typed_api_and_cookie_config_override_the_defaults() {
-    let _lock = ENV_LOCK.lock().unwrap();
+    let _lock = lock_env();
 
     let test_dir = unique_temp_dir();
     write_default_toml(
@@ -417,7 +427,7 @@ refresh_token_max_age_secs = 900
 
 #[test]
 fn a_default_version_outside_the_supported_set_falls_back() {
-    let _lock = ENV_LOCK.lock().unwrap();
+    let _lock = lock_env();
 
     let test_dir = unique_temp_dir();
     write_default_toml(
@@ -450,7 +460,7 @@ default_version = "2030-01-01"
 
 #[test]
 fn migrated_env_keys_no_longer_configure_anything() {
-    let _lock = ENV_LOCK.lock().unwrap();
+    let _lock = lock_env();
 
     let test_dir = unique_temp_dir();
     write_default_toml(&test_dir, "[api]\nsupported_versions = [\"2025-01-01\"]\n");

@@ -12,5 +12,6 @@ rand = { workspace = true }
 thiserror = "2"
 tracing = { workspace = true }
 underlay-config = { workspace = true }
+toml = { workspace = true }
 underlay-email = { workspace = true, features = ["smtp", "templates"] }
 underlay-observability = { workspace = true }
