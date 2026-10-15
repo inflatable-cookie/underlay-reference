@@ -104,7 +104,7 @@ SES_REGION
 SES_CONFIGURATION_SET
 
 # --- Blob storage ----------------------------------------------------------
-# Local/effigy uses the bundled MinIO shape automatically. Outside it, either
+# Local/effigy uses the bundled Silo store automatically. Outside it, either
 # ACME_S3_BUCKET or ACME_ALLOW_NOOP_BLOB=1 is required or startup fails.
 ACME_S3_BUCKET
 ACME_S3_REGION
@@ -112,6 +112,11 @@ ACME_S3_ENDPOINT
 ACME_S3_PUBLIC_URL_BASE
 ACME_S3_PATH_STYLE
 ACME_ALLOW_NOOP_BLOB
+# Development only: the Effigy bundle's host profiles (dev:hybrid, dev:test)
+# set the loopback S3 endpoint and the checkout's browser-facing S3 URL.
+# Container mode leaves both unset and uses https://s3.acme.test.
+EFFIGY_PROFILE_S3_ENDPOINT
+EFFIGY_PROFILE_S3_PUBLIC_URL
 # Conditional: S3 credentials resolve through the standard AWS chain, so these
 # are read by the AWS SDK rather than by app code. Not needed when an
 # instance/task role or shared config supplies them.

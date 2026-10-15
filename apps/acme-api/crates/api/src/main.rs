@@ -119,7 +119,14 @@ async fn main() -> anyhow::Result<()> {
     // real S3 adapter from ACME_S3_* env vars (credentials come from the AWS
     // default chain: env vars, shared config, or an instance/task role).
     let blob_adapter: Arc<dyn BlobAdapter> = if app_config.env.is_development() {
-        let s3_config = S3Config::minio_dev("acme-media", "https://s3.acme.test");
+        let store = acme_infra::dev_object_store();
+        let s3_config = S3Config::minio_dev(acme_infra::DEV_MEDIA_BUCKET, store.endpoint)
+            .public_url_base(format!(
+                "{}/{}",
+                store.public_url,
+                acme_infra::DEV_MEDIA_BUCKET
+            ))
+            .presign_url_base(store.public_url);
         match S3Adapter::new(s3_config).await {
             Ok(adapter) => {
                 if let Err(err) = adapter.ensure_bucket_ready().await {
