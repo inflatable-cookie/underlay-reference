@@ -1,0 +1,6 @@
+{
+  "worktree": {
+    "setup": "effigy workspace:js:prepare",
+    "teardown": "rm -rf node_modules apps/acme-admin/node_modules apps/acme-front/node_modules packages/acme-client/node_modules packages/acme-ui/node_modules"
+  }
+}

@@ -1,8 +1,8 @@
 //! DB-backed hardening tests for the local auth service (g01.008).
 //!
 //! These tests exercise the foundation-aligned refresh-replay revocation and
-//! per-user 2FA throttling. They follow the workspace pattern of skipping
-//! when no test database is configured (DATABASE_URL / TEST_DATABASE_URL).
+//! per-user 2FA throttling. They require a test database and are ignored by
+//! the default suite; `effigy dev:test` runs them against disposable Postgres.
 
 use super::*;
 
@@ -20,12 +20,10 @@ fn ensure_jwt_env() {
     });
 }
 
-async fn test_service() -> Option<(AcmeLocalAuthService, sqlx::PgPool)> {
-    let Ok(url) = std::env::var("DATABASE_URL").or_else(|_| std::env::var("TEST_DATABASE_URL"))
-    else {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return None;
-    };
+async fn test_service() -> (AcmeLocalAuthService, sqlx::PgPool) {
+    let url = std::env::var("DATABASE_URL")
+        .or_else(|_| std::env::var("TEST_DATABASE_URL"))
+        .expect("DATABASE_URL or TEST_DATABASE_URL must be set for database tests");
 
     let pool = sqlx::PgPool::connect(&url)
         .await
@@ -33,7 +31,7 @@ async fn test_service() -> Option<(AcmeLocalAuthService, sqlx::PgPool)> {
 
     ensure_jwt_env();
     let service = AcmeLocalAuthService::from_env(pool.clone()).expect("build auth service");
-    Some((service, pool))
+    (service, pool)
 }
 
 fn unique_email(prefix: &str) -> String {
@@ -41,10 +39,9 @@ fn unique_email(prefix: &str) -> String {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn refresh_replay_revokes_session_family() {
-    let Some((service, _pool)) = test_service().await else {
-        return;
-    };
+    let (service, _pool) = test_service().await;
 
     let email = unique_email("replay");
     let session = service
@@ -83,10 +80,9 @@ async fn refresh_replay_revokes_session_family() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn legitimate_refresh_chain_stays_valid() {
-    let Some((service, _pool)) = test_service().await else {
-        return;
-    };
+    let (service, _pool) = test_service().await;
 
     let email = unique_email("chain");
     let session = service
@@ -103,10 +99,9 @@ async fn legitimate_refresh_chain_stays_valid() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn passkey_internal_credential_read_traverses_all_batches() {
-    let Some((service, pool)) = test_service().await else {
-        return;
-    };
+    let (service, pool) = test_service().await;
 
     let registered = service
         .register(
@@ -192,10 +187,9 @@ async fn passkey_internal_credential_read_traverses_all_batches() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn totp_verification_is_throttled_per_user() {
-    let Some((service, pool)) = test_service().await else {
-        return;
-    };
+    let (service, pool) = test_service().await;
 
     let email = unique_email("throttle");
     let session = service

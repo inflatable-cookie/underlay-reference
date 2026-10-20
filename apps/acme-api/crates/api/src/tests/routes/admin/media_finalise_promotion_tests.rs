@@ -27,10 +27,6 @@ const PNG: &[u8] = &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x01]
 const FORGED_SHA256: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const WRONG_TOKEN: &[u8] = b"other-token-not-the-first-one!!!!";
 
-fn skip_without_db() -> bool {
-    std::env::var("DATABASE_URL").is_err() && std::env::var("TEST_DATABASE_URL").is_err()
-}
-
 fn ensure_test_env() {
     static ONCE: std::sync::OnceLock<()> = std::sync::OnceLock::new();
     ONCE.get_or_init(|| {
@@ -503,11 +499,8 @@ fn assert_token_redacted(version: &MediaVersionRow) {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn captured_bytes_are_published_when_staging_mutates_after_capture() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
@@ -540,11 +533,8 @@ async fn captured_bytes_are_published_when_staging_mutates_after_capture() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn oversized_or_unreadable_source_refuses_before_publication() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
 
@@ -576,11 +566,8 @@ async fn oversized_or_unreadable_source_refuses_before_publication() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn occupied_destination_preserves_incumbent_even_with_identical_or_forged_bytes() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
 
@@ -622,11 +609,8 @@ async fn occupied_destination_preserves_incumbent_even_with_identical_or_forged_
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn occupied_destination_refuses_after_staging_mutates_post_capture() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
@@ -656,11 +640,8 @@ async fn occupied_destination_refuses_after_staging_mutates_post_capture() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn forged_client_metadata_is_ignored_and_persisted_facts_are_server_derived() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
@@ -698,11 +679,8 @@ async fn forged_client_metadata_is_ignored_and_persisted_facts_are_server_derive
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn activation_failure_keeps_identities_and_retry_does_not_duplicate() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
@@ -782,11 +760,8 @@ async fn activation_failure_keeps_identities_and_retry_does_not_duplicate() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn pre_create_crash_plus_foreign_incumbent_refuses() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
@@ -840,11 +815,8 @@ async fn pre_create_crash_plus_foreign_incumbent_refuses() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn post_owned_create_crash_recovers_without_staging() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
@@ -929,11 +901,8 @@ async fn post_owned_create_crash_recovers_without_staging() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn wrong_token_provider_bucket_or_destination_refuses_without_mutation() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
@@ -1045,11 +1014,8 @@ async fn wrong_token_provider_bucket_or_destination_refuses_without_mutation() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn delete_and_purge_blob_failure_retains_row_and_retry_converges() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());
@@ -1151,11 +1117,8 @@ async fn delete_and_purge_blob_failure_retains_row_and_retry_converges() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn mismatched_declared_mime_refuses_before_publication() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
     let db = setup_test_db().await;
     let pool = db.pool_clone();
     let blob = Arc::new(FakeAdapter::default());

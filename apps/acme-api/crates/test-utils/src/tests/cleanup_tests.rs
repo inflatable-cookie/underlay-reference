@@ -1,19 +1,10 @@
 use super::*;
 use crate::db::setup_test_db;
 use crate::fixtures::{create_test_project, create_test_task, create_test_user};
-use std::env;
-
-fn skip_without_db() -> bool {
-    env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err()
-}
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn test_delete_user_cascade() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
-
     let db = setup_test_db().await;
 
     // Create user, project, and task

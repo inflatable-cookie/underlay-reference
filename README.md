@@ -87,9 +87,9 @@ counting summary rows.
 
 The root plan contains this repository's catalogs only. Underlay and Poodle
 are released application dependencies, not sibling catalog checkouts.
-Database-backed Rust tests skip themselves unless `DATABASE_URL` or
-`TEST_DATABASE_URL` is set, so a plain `effigy test` stays useful without a
-running stack.
+Database-backed Rust tests are marked ignored with a reason in normal QA.
+`effigy dev:test` runs the full Rust suite, including those tests, against its
+disposable Postgres profile.
 
 ### Conformance
 

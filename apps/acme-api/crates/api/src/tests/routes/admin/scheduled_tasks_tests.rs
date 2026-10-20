@@ -3,10 +3,6 @@ use acme_auth::{UserId, UserPrincipal, UserRole};
 use acme_test_utils::setup_test_db;
 use serde_json::json;
 
-fn skip_without_db() -> bool {
-    std::env::var("DATABASE_URL").is_err() && std::env::var("TEST_DATABASE_URL").is_err()
-}
-
 fn admin_user() -> AdminUser {
     AdminUser(UserPrincipal {
         user_id: UserId(acme_core::Uuid::new_v7()),
@@ -64,13 +60,9 @@ async fn response_json(response: Response) -> serde_json::Value {
 }
 
 #[test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 fn list_scheduled_tasks_respects_enabled_filter() {
     acme_test_utils::shared_runtime().block_on(async {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let pool = db.pool();
         let _ = DB_POOL.set(db.pool_clone());
@@ -109,13 +101,9 @@ fn list_scheduled_tasks_respects_enabled_filter() {
 }
 
 #[test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 fn toggle_scheduled_task_updates_enabled_state() {
     acme_test_utils::shared_runtime().block_on(async {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let pool = db.pool();
         let _ = DB_POOL.set(db.pool_clone());
@@ -163,13 +151,9 @@ fn get_scheduled_task_rejects_invalid_uuid() {
 }
 
 #[test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 fn get_scheduled_task_returns_inserted_task() {
     acme_test_utils::shared_runtime().block_on(async {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let pool = db.pool();
         let _ = DB_POOL.set(db.pool_clone());
