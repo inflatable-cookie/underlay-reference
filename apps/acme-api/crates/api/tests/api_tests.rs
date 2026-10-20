@@ -624,24 +624,14 @@ mod pagination_tests {
 // ============================================================================
 
 mod database_tests {
-    //! Database integration tests - require DATABASE_URL to be set.
+    //! Database integration tests run with disposable Postgres via `effigy dev:test`.
     //!
     //! These tests demonstrate patterns for testing database operations.
     //! They use the test-utils crate for fixtures and cleanup.
 
-    use std::env;
-
-    fn skip_without_db() -> bool {
-        env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err()
-    }
-
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn test_fixture_creation_pattern() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         // Import test utilities
         use acme_test_utils::{
             cleanup,
@@ -667,12 +657,8 @@ mod database_tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn test_query_pattern() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         use acme_test_utils::{
             cleanup,
             fixtures::{
@@ -735,12 +721,8 @@ mod database_tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn task_update_requires_matching_project_scope() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         use acme_db::tasks;
         use acme_test_utils::{
             cleanup,
@@ -785,12 +767,8 @@ mod database_tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn task_delete_requires_matching_project_scope() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         use acme_db::tasks;
         use acme_test_utils::{
             cleanup,
@@ -825,12 +803,8 @@ mod database_tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn nightfire_media_usage_sync_stores_nested_block_id_locators() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         use acme_db::media;
         use acme_test_utils::{cleanup, setup_test_db};
         use underlay_media::nightfire::{NightfireFieldNameMatcher, NightfireMediaUsageExtractor};
@@ -958,12 +932,8 @@ mod database_tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn task_notes_locator_resolver_reads_current_nested_media_value() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         use acme_db::tasks;
         use acme_test_utils::{cleanup, setup_test_db};
         use uuid::Uuid;
@@ -1045,12 +1015,8 @@ mod database_tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn project_description_media_usage_sync_stores_nested_block_id_locators() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         use acme_db::media;
         use acme_test_utils::{cleanup, setup_test_db};
         use underlay_media::nightfire::{NightfireFieldNameMatcher, NightfireMediaUsageExtractor};
@@ -1169,8 +1135,6 @@ mod database_tests {
 }
 
 mod bounded_collection_tests {
-    use std::env;
-
     use acme_db::{media, tasks};
     use acme_test_utils::{
         cleanup,
@@ -1183,17 +1147,9 @@ mod bounded_collection_tests {
 
     const PAGE_SIZE: i64 = 100;
 
-    fn skip_without_db() -> bool {
-        env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err()
-    }
-
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn front_project_and_task_pages_are_stable_and_scoped() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let owner = create_test_user(db.pool(), Default::default()).await;
         let other_owner = create_test_user(db.pool(), Default::default()).await;
@@ -1321,12 +1277,8 @@ mod bounded_collection_tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn media_pages_and_reconciliation_traverse_every_bounded_batch() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let media_id = Uuid::now_v7();
         let owner_id = Uuid::now_v7();
@@ -1465,12 +1417,8 @@ mod bounded_collection_tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn admin_session_pages_and_complete_list_preserve_revoked_rows() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let user = create_test_user(db.pool(), Default::default()).await;
         let session_ids = (0..205).map(|_| Uuid::now_v7()).collect::<Vec<_>>();
@@ -1543,12 +1491,8 @@ mod bounded_collection_tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn media_versions_renditions_unused_media_comments_and_labels_traverse_all_batches() {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let owner = create_test_user(db.pool(), Default::default()).await;
         let project = create_test_project(db.pool(), owner.id, Default::default()).await;
@@ -1865,12 +1809,8 @@ mod bounded_route_tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn project_and_task_http_routes_return_bounded_page_contracts() {
-        if env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let owner = create_test_user(db.pool(), Default::default()).await;
         let first_project = create_test_project(db.pool(), owner.id, Default::default()).await;
@@ -1950,12 +1890,8 @@ mod bounded_route_tests {
     }
 
     #[tokio::test]
+    #[ignore = "requires disposable Postgres; run effigy dev:test"]
     async fn public_build_router_resolves_docs_environment_and_fails_closed() {
-        if env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let _environment_guard = ENVIRONMENT_LOCK.lock().await;
         let _restore = RestoreEnvironment(vec![
             (OsStr::new("ENVIRONMENT"), env::var_os("ENVIRONMENT")),

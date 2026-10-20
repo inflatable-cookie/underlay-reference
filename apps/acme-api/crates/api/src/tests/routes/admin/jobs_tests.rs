@@ -14,10 +14,6 @@ use underlay_jobs_postgres::JobRepository;
 
 static TEST_ENV_ONCE: std::sync::OnceLock<()> = std::sync::OnceLock::new();
 
-fn skip_without_db() -> bool {
-    env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err()
-}
-
 fn ensure_test_env() {
     TEST_ENV_ONCE.get_or_init(|| {
         let (jwt_cfg, _) =
@@ -206,13 +202,9 @@ fn retry_job_config_falls_back_to_job_values_without_policy() {
 }
 
 #[test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 fn list_jobs_filters_by_status() {
     acme_test_utils::shared_runtime().block_on(async {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let pool = db.pool_clone();
         let state = build_test_state(pool.clone()).await;
@@ -268,13 +260,9 @@ fn list_jobs_filters_by_status() {
 }
 
 #[test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 fn get_job_returns_job_detail() {
     acme_test_utils::shared_runtime().block_on(async {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let pool = db.pool_clone();
         let state = build_test_state(pool.clone()).await;
@@ -303,13 +291,9 @@ fn get_job_returns_job_detail() {
 }
 
 #[test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 fn cancel_job_updates_job_status() {
     acme_test_utils::shared_runtime().block_on(async {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let pool = db.pool_clone();
         let state = build_test_state(pool.clone()).await;
@@ -347,13 +331,9 @@ fn cancel_job_updates_job_status() {
 }
 
 #[test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 fn retry_job_creates_new_job_with_scheduled_policy_fields() {
     acme_test_utils::shared_runtime().block_on(async {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let pool = db.pool_clone();
         let state = build_test_state(pool.clone()).await;
@@ -407,13 +387,9 @@ fn retry_job_creates_new_job_with_scheduled_policy_fields() {
 }
 
 #[test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 fn get_job_stats_returns_numeric_fields() {
     acme_test_utils::shared_runtime().block_on(async {
-        if skip_without_db() {
-            eprintln!("Skipping test: DATABASE_URL not set");
-            return;
-        }
-
         let db = setup_test_db().await;
         let pool = db.pool_clone();
         let state = build_test_state(pool.clone()).await;

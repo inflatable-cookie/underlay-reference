@@ -17,7 +17,7 @@ databases = ["acme"]
 [bundle.profiles]
 enabled = true
 dev = "hybrid"
-test_task = "acme-api/test"
+test_task = "acme-api/test:db"
 
 [bundle.sources]
 siblings = false

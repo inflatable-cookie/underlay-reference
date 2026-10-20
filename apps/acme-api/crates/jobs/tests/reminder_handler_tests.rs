@@ -1,4 +1,4 @@
-use std::{env, sync::Arc};
+use std::sync::Arc;
 
 use acme_jobs::{CheckDueRemindersHandler, Job, JobConfig, JobHandler, JobRepository, JobStatus};
 use acme_test_utils::{
@@ -13,10 +13,6 @@ use serde_json::json;
 /// task, so concurrent runs enqueue reminders for each other's fixtures and
 /// break the count assertions.
 static HANDLER_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
-
-fn skip_without_db() -> bool {
-    env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err()
-}
 
 fn make_job(job_type: &str, payload: serde_json::Value) -> Job {
     let now = Utc::now();
@@ -90,13 +86,9 @@ async fn delete_reminder_jobs(pool: &sqlx::PgPool, task_id: uuid::Uuid, user_ema
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn check_due_reminders_skips_existing_reminder_jobs() {
     let _guard = HANDLER_TEST_LOCK.lock().await;
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
-
     let db = setup_test_db().await;
     let pool = db.pool();
 
@@ -152,13 +144,9 @@ async fn check_due_reminders_skips_existing_reminder_jobs() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn check_due_reminders_enqueues_with_expected_retry_attempts() {
     let _guard = HANDLER_TEST_LOCK.lock().await;
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
-
     let db = setup_test_db().await;
     let pool = db.pool();
 

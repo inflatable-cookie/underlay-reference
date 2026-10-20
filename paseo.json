@@ -1,0 +1,6 @@
+{
+  "worktree": {
+    "setup": "effigy workspace:js:prepare",
+    "teardown": "rm -rf node_modules"
+  }
+}

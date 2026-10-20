@@ -66,6 +66,11 @@ container runtime is a fixture prerequisite to resolve; it does not authorize
 a host PostgreSQL substitute. Use fresh test data and preserve the operator's
 database, containers and configuration.
 
+Rust DB integration tests use Rust's ignored-test status with the reason
+`requires disposable Postgres; run effigy dev:test`. The `dev:test` selector
+includes ignored tests in its disposable Postgres profile; missing database
+configuration fails those tests instead of returning early as a pass.
+
 ### Reorder conflict recovery (canonical-order lists only)
 
 - Canonical manual-order entities support reorder:

@@ -1,18 +1,9 @@
 use super::*;
 use crate::db::setup_test_db;
-use std::env;
-
-fn skip_without_db() -> bool {
-    env::var("DATABASE_URL").is_err() && env::var("TEST_DATABASE_URL").is_err()
-}
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn test_create_user_fixture() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
-
     let db = setup_test_db().await;
     let user = create_test_user(db.pool(), Default::default()).await;
 
@@ -22,12 +13,8 @@ async fn test_create_user_fixture() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn test_create_admin_fixture() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
-
     let db = setup_test_db().await;
     let admin = create_test_admin(db.pool()).await;
 
@@ -35,12 +22,8 @@ async fn test_create_admin_fixture() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn test_create_project_fixture() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
-
     let db = setup_test_db().await;
     let user = create_test_user(db.pool(), Default::default()).await;
     let project = create_test_project(db.pool(), user.id, Default::default()).await;
@@ -50,12 +33,8 @@ async fn test_create_project_fixture() {
 }
 
 #[tokio::test]
+#[ignore = "requires disposable Postgres; run effigy dev:test"]
 async fn test_create_task_fixture() {
-    if skip_without_db() {
-        eprintln!("Skipping test: DATABASE_URL not set");
-        return;
-    }
-
     let db = setup_test_db().await;
     let user = create_test_user(db.pool(), Default::default()).await;
     let project = create_test_project(db.pool(), user.id, Default::default()).await;
