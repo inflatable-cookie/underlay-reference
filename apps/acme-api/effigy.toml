@@ -14,7 +14,7 @@ rust = "cargo test --workspace"
 api = "cd {repo} && cargo run -p acme-api {args}"
 jobs = "cd {repo} && cargo run -p acme-jobs {args}"
 build = "cd {repo} && cargo build {args}"
-"test:db" = { run = "cd {repo} && if [ \"$EFFIGY_PROFILE_DATABASE\" != \"acme\" ]; then echo 'run DB tests through effigy dev:test'; exit 2; fi && cargo test --workspace -- --include-ignored --test-threads=1", run_in = "host" }
+"test:db" = { run = "cd {repo} && if [ \"$EFFIGY_PROFILE_DATABASE\" != \"acme\" ] || [ -z \"${EFFIGY_PROFILE_FRONT_DECLARED#test.}\" ] || [ \"${EFFIGY_PROFILE_FRONT_DECLARED#test.}\" = \"$EFFIGY_PROFILE_FRONT_DECLARED\" ]; then echo 'run DB tests through effigy dev:test disposable profile'; exit 2; fi && cargo test --workspace -- --include-ignored --test-threads=1", run_in = "host" }
 
 check = "cd {repo} && cargo check --workspace --all-features {args}"
 
