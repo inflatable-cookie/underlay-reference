@@ -55,7 +55,7 @@ The Acme reference implementation demonstrates a complete Underlay-based applica
          ▼                        ▼                        ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │   PostgreSQL    │     │   Blob Storage  │     │   Job Queue     │
-│   (Database)    │     │  (MinIO/S3)     │     │  (PostgreSQL)   │
+│   (Database)    │     │  (Silo/S3)      │     │  (PostgreSQL)   │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 

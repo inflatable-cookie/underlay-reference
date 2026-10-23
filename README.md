@@ -325,7 +325,7 @@ effigy dev:test
 | API | https://api.acme.test |
 | pgweb | https://pgweb.acme.test |
 | Mailpit | https://mailpit.acme.test |
-| Silo Console | https://minio.acme.test |
+| Silo Console | https://silo.acme.test |
 
 Notes:
 - `effigy dev` starts the bundle's hybrid profile and returns once every
