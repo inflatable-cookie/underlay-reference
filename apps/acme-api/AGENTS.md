@@ -25,20 +25,26 @@ Root `AGENTS.md` owns the runtime stance; this section only adds what is local
 to this scope.
 
 Run `effigy tasks` from `apps/acme-api/` to see what this crate workspace owns,
-and prefer `effigy <task>` over raw Cargo where Effigy already covers the path.
+and prefer `effigy <task>` over Oxide or Cargo where Effigy covers the path.
 
 Repo notes:
-- `health` uses `fmt` plus a cheap `cargo check` baseline; `validate` still runs `build`
-- the built-in `rust` test suite intentionally pins `cargo test --workspace`;
+- host Rust routes use Oxide: `oxide check`, `oxide test`, `oxide run -p acme-api`.
+  The managed Oxide block in the root `AGENTS.md` is the command rule.
+- `health` uses `fmt` plus a cheap `oxide check` baseline; `validate` still runs `build`
+- the built-in `rust` test suite intentionally pins `oxide test --workspace`;
   the checked-in Nextest profiles remain available for explicit direct use
-- `migration:*` stays owned here and resolves from the workspace root through child-catalog routing
-- raw `cargo` commands are fallback for work Effigy does not yet model directly
+- `migration:*` stays owned here, resolves from the workspace root through
+  child-catalog routing, and runs its Rust on the host inside the bundle's
+  `hybrid:exec`, which supplies the profile environment rather than a guest shell
+- there is no per-selector `:cargo` escape. The operator escape is
+  `EFFIGY_OXIDE_ESCAPE=cargo` or Cargo by hand. Keep `cargo:` build-script
+  directives, true CI/guest recipes and Cargo-subject fixtures as Cargo.
 
 ## Validation
 
 - `effigy health`
 - `effigy validate`
-- Optional deeper check when needed: `cargo test`
+- Optional deeper check when needed: `effigy test acme-api` (Oxide underneath)
 
 ## Reference Docs
 

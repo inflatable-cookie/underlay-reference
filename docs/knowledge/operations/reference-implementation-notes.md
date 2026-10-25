@@ -12,6 +12,35 @@ Use this as a lookup when implementing or copying patterns from the Acme referen
 - `apps/acme-front/` — SvelteKit public app
 - `packages/acme-ui/` — shared UI package
 
+## Host Rust commands
+
+Every ordinary local host Rust route in this workspace uses Oxide; the managed
+block in the root `AGENTS.md` is the command rule. `acme-api` declares
+`task_defaults.run_in = "host"`, and its API, jobs, build, check, clippy, fmt,
+`rust` test suite, `test:db` and `migration:*` selectors all run Rust through
+`oxide`. Keep Cargo only where Cargo is the subject: `build.rs` `cargo:`
+directives, true CI/guest recipes, Cargo-subject fixtures and historical
+records.
+
+- The bundle's `hybrid:exec` names the *hybrid profile*, not a guest. That task
+  is `run_in = "host"` and its script `os.execvpe`s the given command with the
+  profile environment, so `migration:*` is a host Rust call and uses `oxide run`
+  with the same manifest, package, binary and arguments as before.
+- There is no per-selector `:cargo` escape or plain-`cargo` twin. The operator
+  escape is `EFFIGY_OXIDE_ESCAPE=cargo` or Cargo by hand.
+- Oxide owns build output placement, so selectors pass no `--target-dir`.
+- `test:db` keeps its disposable-profile precondition refusal before
+  `oxide test`, so the environment guard still fails closed.
+
+## Scratch
+
+Agent and proof scratch lives under
+`/Volumes/Builds/scratch/underlay/<unique-run>` on the mounted Builds volume.
+Home-directory and drive-root scratch are not allowed, and the retired `~/ur.*`
+fixtures stay retired; do not recreate them. A missing mount refuses the
+placement instead of falling back to a home or system temp path. Colima host
+mounts are for an explicitly authorized future run only.
+
 ## acme-api details
 
 ### Crate organization

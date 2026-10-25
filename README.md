@@ -75,7 +75,7 @@ effigy test acme-api
 ```
 
 `effigy test` runs three targets: `acme-api` on the configured `rust` suite
-(`cargo test --workspace`), and `acme-admin` and `acme-client` on `vitest`.
+(`oxide test --workspace`), and `acme-admin` and `acme-client` on `vitest`.
 
 `acme-front` appears in the plan's target summary with `available-suites:
 vitest` but no default suite and `command: <none>`. That is deliberate —
@@ -455,7 +455,7 @@ For the current `underlay-reference` local shape:
 - keep non-secret dev values in the committed root `config/` stack
 - keep personal, machine-local overrides in `config/local.toml`
 - keep local secrets in the Effigy vault, injected at task/container runtime
-- keep `apps/acme-api/effigy.toml` as plain task orchestration (`cargo run ...`), not an env dump
+- keep `apps/acme-api/effigy.toml` as plain task orchestration (`oxide run ...`), not an env dump
 
 ### Environment classes
 

@@ -40,7 +40,7 @@ TEST_DATABASE_URL
 
 # --- Auth secrets ----------------------------------------------------------
 # Startup-critical Ed25519 JWT keypair (base64). Generate with
-# `cargo run -p acme-auth --bin generate-jwt-env`. The public key is not
+# `oxide run -p acme-auth --bin generate-jwt-env`. The public key is not
 # confidential, but it is startup-critical authority.
 AUTH_JWT_PRIVATE_KEY
 AUTH_JWT_PUBLIC_KEY

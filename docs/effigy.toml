@@ -20,17 +20,18 @@ qa = [
   { task = "qa:docs" },
 ]
 
-# Effigy resolves `docs check` file arguments from the repository root, not
-# this catalog's directory, so the paths here are root-relative.
+# `docs check` resolves explicit paths from the invoking task's cwd, which is
+# this catalog's directory (Effigy guide 085, v0.15 migration). Spell catalog
+# files cwd-relative and repository files `../`-relative.
 "qa:docs" = [
-  { task = "docs check links docs/README.md docs/knowledge/README.md" },
-  { task = "docs check forbidden docs/AGENTS.md docs/README.md AGENTS.md package.json --forbid '--repo .'" },
+  { task = "docs check links README.md knowledge/README.md" },
+  { task = "docs check forbidden AGENTS.md README.md ../AGENTS.md ../package.json --forbid '--repo .'" },
   { task = "qa:northstar" },
 ]
 
 "qa:northstar" = [
-  { task = "docs check contains AGENTS.md --require 'Effigy Agent Skill' --require 'effigy acme-docs/qa:docs' --require 'docs/README.md' --require 'docs/knowledge/README.md'" },
-  { task = "docs check contains docs/README.md --require 'knowledge/README.md'" },
+  { task = "docs check contains ../AGENTS.md --require 'Effigy Agent Skill' --require 'effigy acme-docs/qa:docs' --require 'docs/README.md' --require 'docs/knowledge/README.md'" },
+  { task = "docs check contains README.md --require 'knowledge/README.md'" },
 ]
 
 "check:rollout" = [{ rhai = "scripts/rollout-checks.rhai" }]

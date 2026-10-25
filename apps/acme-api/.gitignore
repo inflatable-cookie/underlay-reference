@@ -1,4 +1,4 @@
-target/
+/target
 .cache/
 .cargo/*
 !.cargo/config.toml
@@ -10,3 +10,4 @@ config/*.local.*
 .claude/settings.local.json
 .effigy/
 .DS_Store
+/.oxide-outputs/

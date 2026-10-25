@@ -296,7 +296,7 @@ trusted proxy sets it, never because the header is present.
 
 For production deployment:
 
-1. Build the API: `cargo build --release`
+1. Build the API: `oxide build --release`
 2. Build frontends: `bun run build` in each frontend
 3. Configure environment variables for production
 4. Set up PostgreSQL and blob storage
