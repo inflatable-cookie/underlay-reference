@@ -1,7 +1,7 @@
 // Generates an Argon2id password hash compatible with Underlay password auth.
 //
 // Usage:
-//   cargo run -p acme-auth --bin generate-password-hash -- "YourPasswordHere"
+//   oxide run -p acme-auth --bin generate-password-hash -- "YourPasswordHere"
 
 use underlay_auth_password::{Argon2Hasher, PasswordHasherExt};
 
