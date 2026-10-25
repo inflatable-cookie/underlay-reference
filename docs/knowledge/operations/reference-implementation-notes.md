@@ -29,6 +29,11 @@ records.
 - There is no per-selector `:cargo` escape or plain-`cargo` twin. The operator
   escape is `EFFIGY_OXIDE_ESCAPE=cargo` or Cargo by hand.
 - Oxide owns build output placement, so selectors pass no `--target-dir`.
+- For a Cargo-running tool, `oxide exec -- <tool>` replaces an inherited
+  `CARGO_TARGET_DIR` with `<workspace>/target`. Only a target directory set
+  by the tool for its own Cargo child survives, via that child's environment
+  or an inner Cargo `--target-dir` argument (Oxide contract correction at
+  `5222f9e`, 2026-10-25). Do not assume an outer environment variable is kept.
 - `test:db` keeps its disposable-profile precondition refusal before
   `oxide test`, so the environment guard still fails closed.
 
