@@ -9,13 +9,13 @@ apps. Prefer canonical, reusable patterns over one-off customization.
 - Knowledge (one owner per fact): `docs/knowledge/README.md`
 - Retired concepts, which must not come back: `docs/knowledge/retired.toml`
 - Open questions: `docs/knowledge/questions.md`
-- Papercuts: Queue via `papercut.add` (see the `northstar` skill); no
+- Papercuts: Queue via `papercut.add` (see the Nucleus skill); no
   `PAPERCUTS.md`.
 - Package implementation notes: `docs/knowledge/operations/reference-implementation-notes.md`
 
 The plan (lanes, their documents and their order), leads, papercuts, brief
 drafts, tasks and status live in Queue, never in this repository. Read what's
-next with `plan.get` (see the `northstar` skill).
+next with `plan.get` (see the Nucleus skill).
 
 Nested `AGENTS.md` files stay to four things: scope, local hard rules, validation
 commands, and links. Point here rather than restating.
