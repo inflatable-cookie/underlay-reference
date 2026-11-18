@@ -9,5 +9,3 @@ contract.
 | Working rules | [working-rules.md](working-rules.md) |
 | How we release | [release.md](release.md) |
 | Writing style | [writing-style.md](writing-style.md) |
-| Rust quality profile | [rust-quality-profile.json](rust-quality-profile.json) |
-| TypeScript quality profile | [typescript-quality-profile.json](typescript-quality-profile.json) |
