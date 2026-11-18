@@ -15,5 +15,4 @@ Every topic has exactly one owning file. Link to it; don't restate it.
 | How we release | [contracts/release.md](contracts/release.md) |
 | Writing style | [contracts/writing-style.md](contracts/writing-style.md) |
 | Package implementation notes | [operations/reference-implementation-notes.md](operations/reference-implementation-notes.md) |
-| Retired concepts | [retired.toml](retired.toml) |
 | Open questions | [questions.md](questions.md) |
