@@ -7,7 +7,6 @@ apps. Prefer canonical, reusable patterns over one-off customization.
 
 - Current state: `docs/README.md`
 - Knowledge (one owner per fact): `docs/knowledge/README.md`
-- Retired concepts, which must not come back: `docs/knowledge/retired.toml`
 - Open questions: `docs/knowledge/questions.md`
 - Papercuts: Queue via `papercut.add` (see the Nucleus skill); no
   `PAPERCUTS.md`.
