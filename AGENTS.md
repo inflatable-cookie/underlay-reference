@@ -5,7 +5,7 @@ apps. Prefer canonical, reusable patterns over one-off customization.
 
 ## Where things live
 
-- Current state: `docs/README.md`
+- Docs entry point: `docs/README.md`
 - Knowledge (one owner per fact): `docs/knowledge/README.md`
 - Open questions: `docs/knowledge/questions.md`
 - Papercuts: Nucleus via `papercut.add` (see the Nucleus skill); no

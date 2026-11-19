@@ -1,37 +1,15 @@
-# Underlay Reference — current state
+# Underlay Reference documentation
 
-Acme is the complete Underlay-based reference app: a Rust API and jobs
-runtime, a typed TypeScript client, an admin frontend, and a public
-frontend. Copy the repo and rename `acme`. It is a bootstrap target, not a
-product strategy surface.
+The entry point to the docs for Acme, the Underlay-based reference app. Start
+with the vision for what the reference app is for, then the retained Underlay
+surface contract for what downstream apps keep from Underlay.
 
-The workspace pins Underlay `v0.10.3` and public Poodle `0.4.11`. The retained
-Underlay surface of `acme-admin` is frozen. Downstream apps use Poodle for
-primitives and simple composites, and keep Underlay only where the retained
-contract names it.
-
-## By topic
-
-- Vision: [knowledge/vision.md](knowledge/vision.md)
-- Architecture: [knowledge/architecture/000-overview.md](knowledge/architecture/000-overview.md)
-- Retained Underlay surface: [knowledge/architecture/004-retained-underlay-surface-contract.md](knowledge/architecture/004-retained-underlay-surface-contract.md)
+- Why the reference app exists and what it is not: [knowledge/vision.md](knowledge/vision.md)
+- How the system is shaped: [knowledge/architecture/000-overview.md](knowledge/architecture/000-overview.md)
+- What downstream apps keep from Underlay: [knowledge/architecture/004-retained-underlay-surface-contract.md](knowledge/architecture/004-retained-underlay-surface-contract.md)
 - Working rules: [knowledge/contracts/working-rules.md](knowledge/contracts/working-rules.md)
-- Implementation notes: [knowledge/operations/reference-implementation-notes.md](knowledge/operations/reference-implementation-notes.md)
-- Everything else: [knowledge index](knowledge/README.md)
+- Package implementation notes: [knowledge/operations/reference-implementation-notes.md](knowledge/operations/reference-implementation-notes.md)
+- Everything, by topic: [knowledge/README.md](knowledge/README.md)
+- Docs selectors and scope rules: [AGENTS.md](AGENTS.md)
 
-## What's next
-
-The project's plan is in Nucleus: its lanes, their documents and their order.
-
-## Docs catalog
-
-Root `docs/` is addressed through the `acme-docs` Effigy catalog alias.
-
-```bash
-effigy acme-docs/health
-effigy acme-docs/qa:docs
-effigy acme-docs/qa:northstar
-effigy acme-docs/check:rollout admin-freshness
-effigy acme-docs/check:rollout auth-security-alerting
-effigy acme-docs/check:rollout reorder-conflict
-```
+The plan (lanes, their documents and their order) lives in Nucleus, not here.
