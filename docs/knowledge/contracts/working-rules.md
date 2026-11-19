@@ -5,14 +5,14 @@ Depends on: [architecture overview](../architecture/000-overview.md)
 
 ## Execution
 
-- Start through `docs/README.md`, the Queue plan, `effigy tasks`, and
+- Start through `docs/README.md`, the Nucleus plan, `effigy tasks`, and
   `effigy test --plan`.
 - Keep a change bounded to one coherent outcome.
 - When the next direction is materially ambiguous, stop and ask instead of
   inventing the next wave.
 - Update code, knowledge, tests, and indexes together when they form one
   observable change.
-- File process friction in Queue with `papercut.add` (see the `northstar`
+- File process friction in Nucleus with `papercut.add` (see the `northstar`
   skill); this repository has no `PAPERCUTS.md`.
 
 ## Retained-surface rule

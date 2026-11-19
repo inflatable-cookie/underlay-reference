@@ -9,7 +9,7 @@ knowledge and intent here rather than in package-local docs.
 ## Hard Rules
 
 - Current truth lives in `knowledge/`, one owner per fact. See `knowledge/README.md`.
-- The plan and unresolved leads live in Queue, never in this repository. Leads
+- The plan and unresolved leads live in Nucleus, never in this repository. Leads
   are never authority.
 - Do not leave compatibility shim docs behind after moves; update links in place.
 - Prefer Underlay source docs for shared framework doctrine and root `docs/`

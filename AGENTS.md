@@ -8,12 +8,12 @@ apps. Prefer canonical, reusable patterns over one-off customization.
 - Current state: `docs/README.md`
 - Knowledge (one owner per fact): `docs/knowledge/README.md`
 - Open questions: `docs/knowledge/questions.md`
-- Papercuts: Queue via `papercut.add` (see the Nucleus skill); no
+- Papercuts: Nucleus via `papercut.add` (see the Nucleus skill); no
   `PAPERCUTS.md`.
 - Package implementation notes: `docs/knowledge/operations/reference-implementation-notes.md`
 
 The plan (lanes, their documents and their order), leads, papercuts, brief
-drafts, tasks and status live in Queue, never in this repository. Read what's
+drafts, tasks and status live in Nucleus, never in this repository. Read what's
 next with `plan.get` (see the Nucleus skill).
 
 Nested `AGENTS.md` files stay to four things: scope, local hard rules, validation
@@ -99,10 +99,10 @@ Choose the narrowest selector for the change, and run each required check once:
   the change needs that package gate.
 - Workspace changes: `effigy health` for the cheap workspace check.
 
-Run full `effigy qa` and workspace conformance checks on `main` at Queue
+Run full `effigy qa` and workspace conformance checks on `main` at Nucleus
 milestones, not as a per-task default. Root `effigy validate` and `effigy qa`
 cover this repository's catalogs; the bundle opts out of sibling catalogs.
-Open papercuts are tracked in Queue.
+Open papercuts are tracked in Nucleus.
 
 ## Scratch
 
