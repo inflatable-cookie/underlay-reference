@@ -115,12 +115,11 @@ effigy dev
 effigy qa
 effigy qa:docs
 effigy qa:northstar
-effigy state plan
-effigy state apply local --yes
+effigy state:local
 effigy acme-api/migration:reset
 ```
 
-Root `effigy state plan` / `effigy state apply local --yes` orchestrate the local schema and dev-overlay stack. Package-owned `migration:*` tasks stay in `apps/acme-api/` and resolve through child-catalog routing from the workspace root.
+Root `effigy state:local` orchestrates the local schema and dev-overlay stack. Package-owned `migration:*` tasks stay in `apps/acme-api/` and resolve through child-catalog routing from the workspace root.
 
 ## Config And Secrets Policy
 
@@ -342,7 +341,7 @@ Notes:
   `underlay-reference-dev-hybrid` volumes, container mode the
   `underlay-reference-dev` ones. Run one mode at a time; both claim the same
   hostnames.
-- `effigy acme-api/migration:*` and `effigy state ...` run on the host against
+- `effigy acme-api/migration:*` and `effigy state:local` run on the host against
   the hybrid database, so start `effigy dev` first.
 
 ### Error Logging Smoke Test

@@ -1,5 +1,5 @@
 [manifest]
-minimum_effigy_version = "0.13.1"
+minimum_effigy_version = "0.15.0"
 
 [catalog]
 alias = "underlay-reference"
@@ -96,33 +96,12 @@ required = false
 targets = ["tasks", "containers"]
 description = "Application database URL. Local exception: local and effigy resolve it from the committed non-secret config/effigy.toml overlay, so no vault value is needed for the dev loop. Deployed environments must inject it as a real secret."
 
-[state]
-default = "local"
-
-[state.local]
-schema = "effigy.state-stack.v1"
-name = "underlay-reference-local"
-environment = "dev"
-
-[[state.local.layers]]
-key = "reset"
-role = "structure"
-source = "acme-api/migration:reset:schema"
-apply_mode = "task"
-environment_policy = "all"
-
-[[state.local.layers]]
-key = "structure"
-role = "structure"
-source = "acme-api/migration:apply"
-apply_mode = "task"
-environment_policy = "all"
-depends_on = ["reset"]
-
-[[state.local.layers]]
-key = "dev-overlay"
-role = "dev-overlay"
-source = "acme-api/migration:apply:overlay"
-apply_mode = "task"
-environment_policy = "dev-only"
-depends_on = ["structure"]
+# Local database stack as an ordinary repository task. Effigy v0.15 retires the
+# `[state.*]` layered state stack, so the local schema plus dev-overlay order
+# is a plain ordered `[tasks]` sequence.
+[tasks."state:local"]
+run = [
+  { task = "acme-api/migration:reset:schema" },
+  { task = "acme-api/migration:apply" },
+  { task = "acme-api/migration:apply:overlay" },
+]
