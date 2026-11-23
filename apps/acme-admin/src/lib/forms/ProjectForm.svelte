@@ -9,9 +9,8 @@ import {
 import { NightfireEditor } from "@inflatable-cookie/underlay/nightfire/editor";
 import {
   prepareNightfireForSave,
-  type NightfireDraftValue,
   type NightfireValue
-} from "@inflatable-cookie/underlay/nightfire/validation";
+} from "@inflatable-cookie/nightfire/validation";
 import {
   Button,
   Field,
@@ -91,7 +90,7 @@ import {
 
   // Local state for form fields
   let nameValue = $state(untrack(() => values.name ?? ""));
-  let descriptionValue = $state<NightfireDraftValue>(untrack(() => (
+  let descriptionValue = $state<NightfireValue>(untrack(() => (
     isNightfireValue(values.description)
       ? values.description
       : { schema: PROJECT_DESCRIPTION_SCHEMA, blocks: [] }

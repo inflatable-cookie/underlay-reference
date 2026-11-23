@@ -2,7 +2,7 @@
   import "@acme/ui/editor";
   import "@acme/ui/validation";
   import { NightfireEditor } from "@inflatable-cookie/underlay/nightfire/editor";
-  import type { NightfireDraftValue } from "@inflatable-cookie/underlay/nightfire/validation";
+  import type { NightfireValue } from "@inflatable-cookie/nightfire/validation";
   import {
     Button,
     Field,
@@ -18,7 +18,7 @@
     mode?: TaskFormMode;
     title?: string;
     description?: string;
-    notes?: NightfireDraftValue;
+    notes?: NightfireValue;
     status?: string;
     priority?: string;
     dueDate?: string;
@@ -38,7 +38,7 @@
     mode = "edit",
     title = $bindable(""),
     description = $bindable(""),
-    notes = $bindable({ schema: "acme:task/notes@1", blocks: [] } as NightfireDraftValue),
+    notes = $bindable({ schema: "acme:task/notes@1", blocks: [] } as NightfireValue),
     status = $bindable("pending"),
     priority = $bindable("medium"),
     dueDate = $bindable(""),

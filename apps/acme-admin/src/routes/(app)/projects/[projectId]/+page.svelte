@@ -7,7 +7,7 @@
     EntityAttributeList,
     EntityDetailModule
   } from "@inflatable-cookie/underlay/templates";
-  import { NightfireRenderer } from "@inflatable-cookie/underlay/nightfire/renderer";
+  import { NightfireRenderer } from "@inflatable-cookie/nightfire/renderer";
   import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
   import TasksListPage from "$lib/lists/TasksListPage.svelte";
   import { LabelsList } from "$lib/lists";

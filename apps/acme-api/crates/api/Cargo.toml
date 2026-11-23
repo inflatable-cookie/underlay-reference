@@ -2,6 +2,7 @@
 name = "acme-api"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
@@ -26,7 +27,7 @@ underlay-http = { workspace = true }
 underlay-jobs = { workspace = true }
 underlay-jobs-postgres = { workspace = true }
 underlay-media = { workspace = true }
-underlay-nightfire = { workspace = true }
+nightfire = { workspace = true }
 underlay-observability = { workspace = true }
 tower-http = { workspace = true }
 
@@ -55,3 +56,6 @@ axum-test = "20"
 tower = "0.5"
 http-body-util = "0.1"
 sqlx = { workspace = true }
+
+[lints]
+workspace = true

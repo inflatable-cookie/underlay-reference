@@ -16,8 +16,8 @@ or data-heavy ownership.
 
 Path references are repo-root-relative to the `underlay-reference`
 checkout. Classifications come from live `acme-admin` source inspection on
-2026-09-03. The workspace now resolves Underlay v0.10.2 and public Poodle
-0.4.11.
+2026-09-03. The workspace now resolves Underlay v0.11.0, Nightfire 0.6.0, and public
+Poodle 0.4.11.
 
 ## Downstream rule
 
@@ -135,9 +135,12 @@ Representative surfaces:
   powering `apps/acme-admin/src/lib/forms/ProjectCategorySelector.svelte`,
   `apps/acme-admin/src/lib/forms/ProjectForm.svelte`, and
   `apps/acme-admin/src/lib/stores/selection-history.ts`.
-- Nightfire rich-text stack: `underlay/nightfire/editor` (`NightfireEditor`),
-  `underlay/nightfire/validation`, `underlay/nightfire/renderer`, and
-  `underlay/nightfire/media-locator`, consumed by
+- Nightfire rich-text stack: `underlay/nightfire/editor` (`NightfireEditor`,
+  a pass-through to `@inflatable-cookie/nightfire/editor`), and
+  `@inflatable-cookie/nightfire/validation`, `@inflatable-cookie/nightfire/renderer`,
+  `@inflatable-cookie/nightfire/editor-registry`, and
+  `@inflatable-cookie/nightfire/render-registry` (media locator helpers live in
+  `validation` since Nightfire 0.6.0), consumed by
   `apps/acme-admin/src/lib/forms/ProjectForm.svelte`,
   `apps/acme-admin/src/lib/forms/TaskForm.svelte`, the project and task
   detail routes, and the note node registrations in

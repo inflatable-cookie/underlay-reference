@@ -1,6 +1,6 @@
 <script lang="ts">
 import { type SpaFormResult } from "@inflatable-cookie/underlay/patterns";
-import type { NightfireValue } from "@inflatable-cookie/underlay/nightfire/validation";
+import type { NightfireValue } from "@inflatable-cookie/nightfire/validation";
 import { EntityFormPage } from "@inflatable-cookie/underlay/templates";
 import {
   useAuthenticatedData

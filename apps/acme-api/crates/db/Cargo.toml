@@ -2,6 +2,7 @@
 name = "acme-db"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
@@ -18,7 +19,7 @@ underlay-email = { workspace = true }
 underlay-http = { workspace = true }
 underlay-query = { workspace = true }
 underlay-media = { workspace = true, features = ["nightfire"] }
-underlay-nightfire = { workspace = true }
+nightfire = { workspace = true }
 uuid = { workspace = true }
 
 acme-infra = { path = "../infra" }
@@ -36,3 +37,6 @@ path = "src/bin/migrate_dev_db.rs"
 [[bin]]
 name = "reset_dev_db"
 path = "src/bin/reset_dev_db.rs"
+
+[lints]
+workspace = true

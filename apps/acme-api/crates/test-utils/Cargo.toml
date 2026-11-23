@@ -2,6 +2,7 @@
 name = "acme-test-utils"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 
 # Only used for tests
 [lib]
@@ -30,3 +31,6 @@ serde_json = { workspace = true }
 
 # UUID
 uuid = { workspace = true }
+
+[lints]
+workspace = true

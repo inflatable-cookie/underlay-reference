@@ -2,6 +2,7 @@
 name = "acme-jobs"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
@@ -24,3 +25,6 @@ acme-infra = { path = "../infra" }
 
 [dev-dependencies]
 acme-test-utils = { path = "../test-utils" }
+
+[lints]
+workspace = true

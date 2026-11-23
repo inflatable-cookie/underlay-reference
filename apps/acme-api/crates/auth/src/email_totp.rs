@@ -248,8 +248,11 @@ impl EmailTotpService {
             return Err(EmailTotpError::InvalidCode);
         }
 
-        // Mark code as used
-        mark_email_totp_code_used(&self.pool, stored_code.id).await?;
+        // Mark code as used. A false result means a concurrent verify or
+        // resend consumed the code first, so this attempt must not succeed.
+        if !mark_email_totp_code_used(&self.pool, stored_code.id).await? {
+            return Err(EmailTotpError::NoActiveCode);
+        }
 
         Ok(())
     }

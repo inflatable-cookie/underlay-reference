@@ -2,6 +2,7 @@
 name = "acme-auth"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 aes-gcm = "0.11"
@@ -34,3 +35,6 @@ underlay-security-alerts = { workspace = true }
 uuid = { workspace = true }
 webauthn-rs-proto = "0.5.4"
 redis = { version = "1.5", features = ["tokio-comp", "connection-manager"] }
+
+[lints]
+workspace = true

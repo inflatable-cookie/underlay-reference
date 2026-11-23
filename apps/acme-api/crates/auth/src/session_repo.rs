@@ -183,6 +183,42 @@ impl SessionRepository for AcmeSessionRepo {
         Ok(())
     }
 
+    async fn revoke_session_if_current(
+        &self,
+        expected: &SessionRecord,
+        reason: &str,
+    ) -> AuthResult<bool> {
+        let now = chrono::Utc::now();
+        let result = sqlx::query(
+            r#"
+            UPDATE auth.sessions
+            SET is_active = FALSE,
+                status = 'revoked',
+                revocation_reason = $2,
+                revoked_at = $3,
+                updated_at = $3
+            WHERE id = $1
+              AND is_active = TRUE
+              AND user_id = $4
+              AND refresh_token_fingerprint = $5
+              AND refresh_token_id = $6
+              AND refresh_token_version = $7
+            "#,
+        )
+        .bind(expected.id.into_inner())
+        .bind(reason)
+        .bind(now)
+        .bind(expected.user_id.into_inner())
+        .bind(&expected.refresh_token_fingerprint)
+        .bind(expected.refresh_token_id.into_inner())
+        .bind(expected.refresh_token_version)
+        .execute(&self.pool)
+        .await
+        .map_err(|_| underlay_auth::AuthError::Internal("DB error".into()))?;
+
+        Ok(result.rows_affected() == 1)
+    }
+
     async fn list_sessions_for_user(&self, user_id: Uuid) -> AuthResult<Vec<SessionRecord>> {
         let mut tx = self
             .pool
