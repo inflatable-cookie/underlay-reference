@@ -6,8 +6,8 @@
   import type { SpaFormResult } from "@inflatable-cookie/underlay/patterns";
   import { useAuthenticatedData } from "@inflatable-cookie/underlay/runtime/auth";
   import { computeBackInfo, consumeNavigationContext } from "@inflatable-cookie/underlay/runtime/navigation";
-  import type { NightfireDraftValue } from "@inflatable-cookie/underlay/nightfire/validation";
-  import { prepareNightfireForSave } from "@inflatable-cookie/underlay/nightfire/validation";
+  import type { NightfireValue } from "@inflatable-cookie/nightfire/validation";
+  import { prepareNightfireForSave } from "@inflatable-cookie/nightfire/validation";
   import {
     adminCommands,
     type Label,
@@ -28,7 +28,7 @@
 
   let title = $state("");
   let description = $state("");
-  let notes = $state<NightfireDraftValue>({ schema: "acme:task/notes@1", blocks: [] });
+  let notes = $state<NightfireValue>({ schema: "acme:task/notes@1", blocks: [] });
   let status = $state<string>(TaskStatus.Pending);
   let priority = $state<string>(TaskPriority.Medium);
   let dueDate = $state("");

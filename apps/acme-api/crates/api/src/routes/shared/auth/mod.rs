@@ -237,7 +237,6 @@ pub(super) fn map_auth_error_to_response(
         | AuthError::TokenMalformed
         | AuthError::TokenNotYetValid
         | AuthError::TokenFingerprintMismatch
-        | AuthError::InvalidToken
         | AuthError::Unauthorized => StatusCode::UNAUTHORIZED,
         AuthError::Forbidden => StatusCode::FORBIDDEN,
         AuthError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,

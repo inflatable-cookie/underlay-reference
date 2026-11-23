@@ -171,11 +171,7 @@ fn is_valid_status(status: &str) -> bool {
 }
 
 fn field_name_for_errors(field: &str) -> &str {
-    match field {
-        "display_name" => "display_name",
-        "send_password_reset" => "send_password_reset",
-        other => other,
-    }
+    field
 }
 
 /// List users (admin).
@@ -561,6 +557,7 @@ fn hierarchy_error(err: underlay_auth::RoleHierarchyError) -> ApiError {
         E::CannotManageSuperRole => "admin.users.cannot_manage_superadmin",
         E::InsufficientPrivileges { .. } => "admin.users.insufficient_privileges",
         E::CannotPromoteToSuperRole => "admin.users.cannot_promote_to_superadmin",
+        E::UnknownRole => "admin.users.unknown_role",
     };
     ApiError::new(StatusCode::FORBIDDEN, code, err.to_string())
 }

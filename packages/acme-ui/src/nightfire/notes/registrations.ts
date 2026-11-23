@@ -1,10 +1,17 @@
-import type { SchemaDefinition } from "@inflatable-cookie/underlay/nightfire/editor-registry";
 import {
-  registerNightfireBlocks,
-  type NightfireBlockRegistration,
-} from "@inflatable-cookie/underlay/nightfire/editor";
-import { registerBlockRenderer } from "@inflatable-cookie/underlay/nightfire/render-registry";
-import { registerBlockValidator } from "@inflatable-cookie/underlay/nightfire/validation";
+  registerBlockEditor,
+  registerSchema,
+  type BlockEditorComponent,
+  type SchemaDefinition,
+} from "@inflatable-cookie/nightfire/editor-registry";
+import {
+  registerBlockRenderer,
+  type BlockRendererComponent,
+} from "@inflatable-cookie/nightfire/render-registry";
+import {
+  registerBlockValidator,
+  type BlockValidator,
+} from "@inflatable-cookie/nightfire/validation";
 
 import TaskChecklistEditor from "./TaskChecklistEditor.svelte";
 import TaskChecklistRenderer from "./TaskChecklistRenderer.svelte";
@@ -12,6 +19,18 @@ import TaskGalleryEditor from "./TaskGalleryEditor.svelte";
 import TaskGalleryRenderer from "./TaskGalleryRenderer.svelte";
 import TaskNotesEditor from "./TaskNotesEditor.svelte";
 import TaskNotesRenderer from "./TaskNotesRenderer.svelte";
+
+// One notes block's editor, renderer and validator. Nightfire 0.6 removed its
+// `registerNightfireBlocks` helper and the registration type with it, so this
+// module wires the registries directly.
+interface NotesBlockRegistration {
+  schema: SchemaDefinition;
+  type: string;
+  label: string;
+  editor: BlockEditorComponent;
+  renderer: BlockRendererComponent;
+  validator: BlockValidator;
+}
 
 type MarkdownBlock = {
   data?: {
@@ -140,7 +159,7 @@ function validateGalleryBlock(block: unknown): unknown {
 export function createNotesBlockRegistrations(
   schema: SchemaDefinition,
   labels: NotesBlockLabels
-): NightfireBlockRegistration[] {
+): NotesBlockRegistration[] {
   return [
     {
       schema,
@@ -173,12 +192,20 @@ export function registerNotesEditors(
   schema: SchemaDefinition,
   labels: NotesBlockLabels
 ): void {
-  registerNightfireBlocks(createNotesBlockRegistrations(schema, labels));
+  registerSchema(schema);
+  for (const registration of createNotesBlockRegistrations(schema, labels)) {
+    registerBlockEditor(
+      schema.schema,
+      registration.type,
+      registration.label,
+      registration.editor
+    );
+  }
 }
 
 export function registerNightfireRenderers(
   schema: string,
-  registrations: NightfireBlockRegistration[]
+  registrations: NotesBlockRegistration[]
 ): void {
   for (const registration of registrations) {
     if (registration.renderer) {
@@ -189,7 +216,7 @@ export function registerNightfireRenderers(
 
 export function registerNightfireValidators(
   schema: string,
-  registrations: NightfireBlockRegistration[]
+  registrations: NotesBlockRegistration[]
 ): void {
   for (const registration of registrations) {
     if (registration.validator) {

@@ -132,15 +132,13 @@ impl EmailTotpCodeRepository for AcmeEmailTotpCodeRepository {
         Ok(attempts)
     }
 
-    async fn mark_code_used(&self, code_id: &str) -> EmailTotpResult<()> {
+    async fn mark_code_used(&self, code_id: &str) -> EmailTotpResult<bool> {
         let code_uuid = uuid::Uuid::parse_str(code_id)
             .map_err(|e| EmailTotpError::Storage(format!("invalid code_id: {}", e)))?;
 
         mark_email_totp_code_used(&self.pool, code_uuid)
             .await
-            .map_err(|e| EmailTotpError::Storage(e.to_string()))?;
-
-        Ok(())
+            .map_err(|e| EmailTotpError::Storage(e.to_string()))
     }
 }
 

@@ -1,9 +1,9 @@
+use nightfire::{BlockDescriptor, BlockRegistration};
 use underlay_media::nightfire::{
     NightfireBlockMediaHandler, NightfireBlockMediaHandlerMap, NightfireBlockMediaReference,
     NightfireBlockMediaRegistration, NightfireMediaVisitContext,
 };
 use underlay_media::{MediaId, MediaUsageRole};
-use underlay_nightfire::{BlockDescriptor, BlockRegistration};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

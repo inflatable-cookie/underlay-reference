@@ -2,6 +2,7 @@
 name = "acme-infra"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 aes-gcm = "0.11"
@@ -15,3 +16,6 @@ underlay-config = { workspace = true }
 toml = { workspace = true }
 underlay-email = { workspace = true, features = ["smtp", "templates"] }
 underlay-observability = { workspace = true }
+
+[lints]
+workspace = true

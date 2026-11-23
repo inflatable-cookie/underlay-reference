@@ -8,8 +8,8 @@
   import { NightfireEditor } from "@inflatable-cookie/underlay/nightfire/editor";
   import {
     prepareNightfireForSave,
-    type NightfireDraftValue
-  } from "@inflatable-cookie/underlay/nightfire/validation";
+    type NightfireValue
+  } from "@inflatable-cookie/nightfire/validation";
   import {
     Button,
     Callout,
@@ -50,7 +50,7 @@
   // Create project dialog state
   let showCreateDialog = $state(false);
   let newProjectName = $state("");
-  let newProjectDescription = $state<NightfireDraftValue>({ schema: "acme:project/description@1", blocks: [] });
+  let newProjectDescription = $state<NightfireValue>({ schema: "acme:project/description@1", blocks: [] });
   let creating = $state(false);
 
   function openCreateDialog() {

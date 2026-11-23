@@ -4,8 +4,8 @@
   import { goto } from "$app/navigation";
   import { useToasts } from "@inflatable-cookie/underlay/runtime/feedback";
   import { useAuthenticatedData } from "@inflatable-cookie/underlay/runtime/auth";
-  import { NightfireRenderer } from "@inflatable-cookie/underlay/nightfire/renderer";
-  import type { NightfireValue as RenderableNightfireValue } from "@inflatable-cookie/underlay/nightfire/validation";
+  import { NightfireRenderer } from "@inflatable-cookie/nightfire/renderer";
+  import type { NightfireValue as RenderableNightfireValue } from "@inflatable-cookie/nightfire/validation";
   import {
     AlertDialog,
     Button,

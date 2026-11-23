@@ -7,7 +7,7 @@
     EntityDetailPage
   } from "@inflatable-cookie/underlay/templates";
   import { gotoWithContext } from "@inflatable-cookie/underlay/client/navigation";
-  import { NightfireRenderer } from "@inflatable-cookie/underlay/nightfire/renderer";
+  import { NightfireRenderer } from "@inflatable-cookie/nightfire/renderer";
   import type { PageData } from "./$types";
   import { goto } from "$app/navigation";
   import { adminCommands, type Label, type Project, type Task } from "@api-client";

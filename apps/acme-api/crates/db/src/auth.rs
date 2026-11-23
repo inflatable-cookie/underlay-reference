@@ -275,20 +275,26 @@ pub async fn increment_email_totp_attempts(
 }
 
 /// Mark an email TOTP code as used.
+///
+/// Returns `true` only when this call transitioned an active (unused,
+/// unexpired) code to used. `false` means it was already consumed, superseded,
+/// expired, or no longer exists.
 #[instrument(skip(pool))]
-pub async fn mark_email_totp_code_used(pool: &DbPool, code_id: Uuid) -> Result<(), sqlx::Error> {
-    sqlx::query(
+pub async fn mark_email_totp_code_used(pool: &DbPool, code_id: Uuid) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query(
         r#"
         UPDATE auth.email_totp_codes
         SET used_at = NOW()
         WHERE id = $1
+          AND used_at IS NULL
+          AND expires_at > NOW()
         "#,
     )
     .bind(code_id)
     .execute(pool)
     .await?;
 
-    Ok(())
+    Ok(result.rows_affected() == 1)
 }
 
 /// Rate limit result.

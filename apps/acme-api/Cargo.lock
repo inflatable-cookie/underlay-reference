@@ -20,6 +20,7 @@ dependencies = [
  "dotenvy",
  "hex",
  "http-body-util",
+ "nightfire",
  "once_cell",
  "rand 0.10.2",
  "serde",
@@ -41,7 +42,6 @@ dependencies = [
  "underlay-jobs",
  "underlay-jobs-postgres",
  "underlay-media",
- "underlay-nightfire",
  "underlay-observability",
  "underlay-testing",
  "utoipa",
@@ -102,6 +102,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "dotenvy",
+ "nightfire",
  "serde_json",
  "sqlx",
  "tokio",
@@ -112,7 +113,6 @@ dependencies = [
  "underlay-email",
  "underlay-http",
  "underlay-media",
- "underlay-nightfire",
  "underlay-query",
  "uuid",
 ]
@@ -1247,16 +1247,6 @@ dependencies = [
 
 [[package]]
 name = "core-foundation"
-version = "0.9.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91e195e091a93c46f7102ec7818a2aa394e1e1771c3ab4825963fa03e45afb8f"
-dependencies = [
- "core-foundation-sys",
- "libc",
-]
-
-[[package]]
-name = "core-foundation"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2a6cd9ae233e7f62ba4e9353e81a88df7fc8a5987b8d445b4d90c879bd156f6"
@@ -1752,15 +1742,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e079f19b08ca6239f47f8ba8509c11cf3ea30095831f7fed61441475edd8c449"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "encoding_rs"
-version = "0.8.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75030f3c4f45dafd7586dd6780965a8c7e8e285a5ecb86713e63a79c5b2766f3"
-dependencies = [
- "cfg-if",
 ]
 
 [[package]]
@@ -2370,11 +2351,9 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "socket2",
- "system-configuration",
  "tokio",
  "tower-service",
  "tracing",
- "windows-registry",
 ]
 
 [[package]]
@@ -2870,8 +2849,8 @@ dependencies = [
 
 [[package]]
 name = "nightfire"
-version = "0.4.1"
-source = "git+https://github.com/inflatable-cookie/nightfire.git?tag=v0.4.1#ccce719c27387d0eae2456ae07d2c169b3244c3f"
+version = "0.6.0"
+source = "git+https://github.com/inflatable-cookie/nightfire.git?tag=v0.6.0#a0b20645f1919b33c160fa04602b488cb7d8c952"
 dependencies = [
  "blake3",
  "serde",
@@ -3639,11 +3618,9 @@ checksum = "219c5811de6525e5416c7d5d53bb656d3afdbc6c5af816e0802bcfa42dbdc1c3"
 dependencies = [
  "base64 0.22.1",
  "bytes",
- "encoding_rs",
  "futures-channel",
  "futures-core",
  "futures-util",
- "h2",
  "http 1.5.0",
  "http-body 1.1.0",
  "http-body-util",
@@ -3652,7 +3629,6 @@ dependencies = [
  "hyper-util",
  "js-sys",
  "log",
- "mime",
  "percent-encoding",
  "pin-project-lite",
  "quinn",
@@ -3837,7 +3813,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26d1e2536ce4f35f4846aa13bff16bd0ff40157cdb14cc056c7b14ba41233ba0"
 dependencies = [
- "core-foundation 0.10.1",
+ "core-foundation",
  "core-foundation-sys",
  "jni",
  "log",
@@ -3927,7 +3903,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7f4bc775c73d9a02cde8bf7b2ec4c9d12743edf609006c7facc23998404cd1d"
 dependencies = [
  "bitflags",
- "core-foundation 0.10.1",
+ "core-foundation",
  "core-foundation-sys",
  "libc",
  "security-framework-sys",
@@ -4469,27 +4445,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "system-configuration"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a13f3d0daba03132c0aa9767f98351b3488edc2c100cda2d2ec2b04f3d8d3c8b"
-dependencies = [
- "bitflags",
- "core-foundation 0.9.4",
- "system-configuration-sys",
-]
-
-[[package]]
-name = "system-configuration-sys"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e1d1b10ced5ca923a1fcb8d03e96b8d3268065d724548c0211415ff6ac6bac4"
-dependencies = [
- "core-foundation-sys",
- "libc",
-]
-
-[[package]]
 name = "tempfile"
 version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4895,8 +4850,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-audit"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "chrono",
  "serde",
@@ -4911,8 +4866,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -4931,21 +4886,22 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-email-totp"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "chrono",
  "rand 0.10.2",
  "thiserror 2.0.20",
+ "tokio",
  "tracing",
  "underlay-auth",
 ]
 
 [[package]]
 name = "underlay-auth-jwt"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -4964,10 +4920,9 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-oauth"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
- "aes-gcm",
  "async-trait",
  "base64 0.22.1",
  "oauth2",
@@ -4975,6 +4930,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+ "tracing",
  "underlay-auth",
  "underlay-core",
  "url",
@@ -4982,13 +4938,14 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-password"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
  "rand 0.10.2",
  "serde",
+ "tokio",
  "underlay-auth",
  "underlay-core",
  "underlay-ratelimit",
@@ -4998,8 +4955,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-session"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5013,8 +4970,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-state-postgres"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "chrono",
  "serde",
@@ -5022,12 +4979,13 @@ dependencies = [
  "sqlx",
  "thiserror 2.0.20",
  "underlay-core",
+ "underlay-db",
 ]
 
 [[package]]
 name = "underlay-auth-totp"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "base32",
  "hex",
@@ -5044,8 +5002,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-auth-webauthn"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "base64urlsafedata",
  "serde",
@@ -5060,8 +5018,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-aws"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "aws-config",
  "aws-credential-types",
@@ -5070,13 +5028,12 @@ dependencies = [
 
 [[package]]
 name = "underlay-blob"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "aws-sdk-s3",
  "aws-smithy-runtime-api",
- "base64 0.22.1",
  "chrono",
  "hex",
  "libc",
@@ -5092,8 +5049,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-config"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "serde",
  "thiserror 2.0.20",
@@ -5102,8 +5059,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-core"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "serde",
  "uuid",
@@ -5111,8 +5068,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-db"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -5120,14 +5077,17 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 2.0.20",
+ "tokio",
+ "tracing",
  "underlay-core",
+ "url",
  "uuid",
 ]
 
 [[package]]
 name = "underlay-devtools"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -5147,8 +5107,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-email"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5163,8 +5123,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-http"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "axum",
  "chrono",
@@ -5182,14 +5142,13 @@ dependencies = [
  "underlay-db",
  "underlay-observability",
  "underlay-query",
- "urlencoding",
  "uuid",
 ]
 
 [[package]]
 name = "underlay-jobs"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5202,8 +5161,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-jobs-postgres"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5220,8 +5179,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-media"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5230,6 +5189,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.20",
+ "tokio",
  "tracing",
  "underlay-blob",
  "uuid",
@@ -5237,8 +5197,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-migration-core"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5251,17 +5211,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "underlay-nightfire"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
-dependencies = [
- "nightfire",
-]
-
-[[package]]
 name = "underlay-observability"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "http 1.5.0",
  "pin-project-lite",
@@ -5274,16 +5226,16 @@ dependencies = [
 
 [[package]]
 name = "underlay-query"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "underlay-ratelimit"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "dashmap",
@@ -5294,8 +5246,8 @@ dependencies = [
 
 [[package]]
 name = "underlay-security-alerts"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "chrono",
  "serde",
@@ -5309,14 +5261,13 @@ dependencies = [
 
 [[package]]
 name = "underlay-testing"
-version = "0.10.5"
-source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.10.5#54975f3d87684c84ad1e9b99ec9577db4df7c675"
+version = "0.11.0"
+source = "git+ssh://git@github.com/inflatable-cookie/underlay.git?tag=v0.11.0#df629f0c7068e321ea12fba4e5ce36475e1e08c8"
 dependencies = [
  "async-trait",
  "axum",
  "chrono",
  "http 1.5.0",
- "reqwest 0.13.4",
  "serde",
  "serde_json",
  "tokio",
@@ -5767,17 +5718,6 @@ name = "windows-link"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
-
-[[package]]
-name = "windows-registry"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02752bf7fbdcce7f2a27a742f798510f3e5ad88dbe84871e5168e2120c3d5720"
-dependencies = [
- "windows-link",
- "windows-result",
- "windows-strings",
-]
 
 [[package]]
 name = "windows-result"

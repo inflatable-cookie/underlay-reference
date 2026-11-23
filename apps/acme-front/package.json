@@ -19,9 +19,10 @@
   },
   "dependencies": {
     "@acme/ui": "workspace:*",
+    "@inflatable-cookie/nightfire": ">=0.6.0 <0.7",
     "@inflatable-cookie/poodle-core": "0.4.11",
     "@inflatable-cookie/poodle-svelte": "0.4.11",
-    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.10.5",
+    "@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.11.0",
     "acme-client": "workspace:*",
     "lucide-svelte": "^1.0.1"
   }

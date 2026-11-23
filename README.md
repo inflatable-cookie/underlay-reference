@@ -31,7 +31,7 @@ package edges use `workspace:*`. `apps/acme-api` is Rust-only and keeps its own
 app-local Cargo workspace, so it is not a JavaScript workspace member.
 
 Committed application dependencies resolve Underlay from the released Git tag
-(`v0.10.3`), not from sibling source paths.
+(`v0.11.0`), not from sibling source paths.
 
 ## Documentation Authority
 
@@ -186,14 +186,24 @@ Bootstrap notes:
 The reference template consumes Underlay from the released Git repository:
 
 ```json
-"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.10.3"
+"@inflatable-cookie/underlay": "git+ssh://git@github.com/inflatable-cookie/underlay.git#v0.11.0",
+"@inflatable-cookie/nightfire": ">=0.6.0 <0.7"
 ```
 
 ```toml
-underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.10.3" }
+underlay-core = { git = "ssh://git@github.com/inflatable-cookie/underlay.git", tag = "v0.11.0" }
+# HTTPS, not ssh: Underlay's own workspace uses this URL, and Cargo builds two
+# copies of nightfire when the two sources differ.
+nightfire = { git = "https://github.com/inflatable-cookie/nightfire.git", tag = "v0.6.0" }
 ```
 
-Poodle core/Svelte packages resolve from the public npm registry at `0.4.11`.
+Nightfire resolves from the public npm registry in the range `>=0.6.0 <0.7`,
+matching Underlay's own dependency range. Poodle core/Svelte packages resolve
+from the public npm registry at `0.4.11`.
+
+The Rust toolchain is pinned to `1.100.0` (with `rustfmt` and `clippy`) by the
+root `rust-toolchain.toml`. `rust-version` in `apps/acme-api/Cargo.toml` sets the
+matching MSRV for every workspace crate.
 
 These release pins are the supported application dependency shape. Update
 them as part of a deliberate dependency upgrade; package resolution does not

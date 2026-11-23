@@ -807,9 +807,9 @@ mod database_tests {
     async fn nightfire_media_usage_sync_stores_nested_block_id_locators() {
         use acme_db::media;
         use acme_test_utils::{cleanup, setup_test_db};
+        use nightfire::NightfireValue;
         use underlay_media::nightfire::{NightfireFieldNameMatcher, NightfireMediaUsageExtractor};
         use underlay_media::MediaUsageProvenanceKind;
-        use underlay_nightfire::NightfireValue;
         use uuid::Uuid;
 
         let db = setup_test_db().await;
@@ -1019,9 +1019,9 @@ mod database_tests {
     async fn project_description_media_usage_sync_stores_nested_block_id_locators() {
         use acme_db::media;
         use acme_test_utils::{cleanup, setup_test_db};
+        use nightfire::NightfireValue;
         use underlay_media::nightfire::{NightfireFieldNameMatcher, NightfireMediaUsageExtractor};
         use underlay_media::MediaUsageProvenanceKind;
-        use underlay_nightfire::NightfireValue;
         use uuid::Uuid;
 
         let db = setup_test_db().await;

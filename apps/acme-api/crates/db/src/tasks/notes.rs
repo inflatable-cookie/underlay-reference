@@ -1,5 +1,5 @@
+use nightfire::{NightfireMediaLocator, NightfireValue};
 use serde_json::Value;
-use underlay_nightfire::{NightfireMediaLocator, NightfireValue};
 use uuid::Uuid;
 
 use crate::DbPool;

@@ -51,6 +51,7 @@ export default defineConfig({
     exclude: [
       "@inflatable-cookie/underlay",
       "@inflatable-cookie/underlay/nightfire",
+      "@inflatable-cookie/nightfire",
       "@inflatable-cookie/underlay/runtime",
       "@inflatable-cookie/underlay/styles",
       "@inflatable-cookie/underlay/client",

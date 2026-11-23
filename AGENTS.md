@@ -128,7 +128,7 @@ files are not agent scratch and keep their existing behavior.
 ## Shared framework docs
 
 For shared framework conventions, prefer Underlay docs at
-<https://github.com/inflatable-cookie/underlay/tree/v0.10.2/docs/guides/>. Do
+<https://github.com/inflatable-cookie/underlay/tree/v0.11.0/docs/guides/>. Do
 not create parallel planning or report docs elsewhere in this repo.
 
 ## Internal Writing Style
